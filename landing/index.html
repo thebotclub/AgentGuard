@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentGuard — The Firewall for AI Agents</title>
+<meta name="description" content="Runtime policy enforcement, real-time monitoring, and compliance audit trails for every AI agent you deploy. Join the private beta.">
+<meta property="og:title" content="AgentGuard — The Firewall for AI Agents">
+<meta property="og:description" content="Your AI agents are in production. There's no security layer between them and catastrophic failure. AgentGuard fixes that.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ── RESET & TOKENS ─────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+:root {
+  --bg:          #0a0a1a;
+  --bg-card:     #111128;
+  --bg-card2:    #13132e;
+  --accent:      #6366f1;
+  --accent-dim:  rgba(99,102,241,0.15);
+  --accent-glow: rgba(99,102,241,0.25);
+  --accent-hi:   #818cf8;
+  --green:       #22c55e;
+  --red:         #ef4444;
+  --amber:       #f59e0b;
+  --text:        #e2e8f0;
+  --text-dim:    #94a3b8;
+  --text-bright: #f8fafc;
+  --border:      rgba(99,102,241,0.18);
+  --border-dim:  rgba(255,255,255,0.06);
+  --radius:      12px;
+  --radius-lg:   18px;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── TYPOGRAPHY ─────────────────────────────────────────────────── */
+h1, h2, h3 { font-weight: 700; color: var(--text-bright); line-height: 1.2; }
+h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); letter-spacing: -0.03em; }
+h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -0.02em; }
+h3 { font-size: 1.1rem; }
+p { color: var(--text-dim); }
+a { color: var(--accent-hi); text-decoration: none; }
+
+code, .mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--accent-hi);
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────────────── */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+section { padding: 80px 0; }
+
+/* ── NAV ────────────────────────────────────────────────────────── */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,26,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-dim);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-bright);
+}
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.nav-cta {
+  background: var(--accent);
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+.nav-cta:hover { background: #4f52c8; color: #fff; }
+
+/* ── HERO ───────────────────────────────────────────────────────── */
+#hero {
+  padding: 80px 0 60px;
+  position: relative;
+}
+#hero::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 600px;
+  background: radial-gradient(ellipse at center, rgba(99,102,241,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fca5a5;
+  margin-bottom: 20px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.badge-dot {
+  width: 7px; height: 7px;
+  background: var(--red);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+.hero-headline {
+  margin-bottom: 20px;
+}
+.hero-headline .gradient-text {
+  background: linear-gradient(135deg, #818cf8, #6366f1, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-sub {
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  margin-bottom: 32px;
+  max-width: 460px;
+  line-height: 1.7;
+}
+
+/* ── FORM CARD ──────────────────────────────────────────────────── */
+.form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: 0 0 60px rgba(99,102,241,0.1);
+}
+.form-card-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-hi);
+  margin-bottom: 6px;
+}
+.form-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+  color: var(--text-bright);
+}
+.form-group {
+  margin-bottom: 14px;
+}
+.form-group label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.form-group input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  color: var(--text-bright);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.form-group input::placeholder { color: #4a4a6a; }
+.form-group input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 13px 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: background 0.15s, transform 0.1s;
+  letter-spacing: 0.01em;
+}
+.btn-primary:hover { background: #4f52c8; }
+.btn-primary:active { transform: scale(0.99); }
+.form-trust {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #4a4a6a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.form-trust::before { content: '🔒'; font-size: 0.75rem; }
+
+/* ── SOCIAL PROOF BAR ───────────────────────────────────────────── */
+#social-proof {
+  padding: 36px 0;
+  border-top: 1px solid var(--border-dim);
+  border-bottom: 1px solid var(--border-dim);
+  background: rgba(17,17,40,0.5);
+}
+.social-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.social-stat {
+  font-size: 1rem;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.social-stat strong {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-bright);
+  letter-spacing: -0.02em;
+}
+.social-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--border-dim);
+  flex-shrink: 0;
+}
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.logo-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4a4a6a;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.urgency-bar {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 8px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #fca5a5;
+}
+.urgency-bar strong { color: var(--red); }
+
+/* ── SECTION HEADERS ────────────────────────────────────────────── */
+.section-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-hi);
+  margin-bottom: 10px;
+}
+.section-head {
+  margin-bottom: 12px;
+}
+.section-sub {
+  font-size: 1.05rem;
+  color: var(--text-dim);
+  max-width: 560px;
+  margin-bottom: 48px;
+}
+
+/* ── PROBLEM CARDS ──────────────────────────────────────────────── */
+#problem { background: var(--bg); }
+.cards-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.problem-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.problem-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--red), #f97316);
+}
+.problem-icon {
+  font-size: 1.8rem;
+  margin-bottom: 14px;
+}
+.problem-card h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: var(--text-bright);
+}
+.problem-card p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.problem-quote {
+  margin-top: 40px;
+  padding: 24px 28px;
+  background: var(--bg-card);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-style: italic;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+.problem-quote cite {
+  display: block;
+  margin-top: 10px;
+  font-style: normal;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+/* ── SOLUTION CARDS ─────────────────────────────────────────────── */
+#solution { background: var(--bg-card2); }
+.solution-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.solution-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 30px var(--accent-glow);
+}
+.solution-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+}
+.solution-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+.solution-visual {
+  font-size: 2rem;
+  margin-bottom: 14px;
+}
+.solution-card h3 {
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+}
+.solution-card p { font-size: 0.9rem; line-height: 1.6; }
+.solution-tag {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent);
+  background: var(--accent-dim);
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+
+/* ── PERSONA SECTION ────────────────────────────────────────────── */
+#personas { background: var(--bg); }
+.persona-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  transition: border-color 0.15s;
+}
+.persona-card:hover { border-color: var(--accent); }
+.persona-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-dim);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-hi);
+  margin-bottom: 14px;
+  letter-spacing: 0.04em;
+}
+.persona-card h3 {
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+.persona-pain {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  line-height: 1.65;
+  margin-bottom: 16px;
+}
+.persona-outcome {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--green);
+  font-weight: 500;
+}
+.persona-outcome::before { content: '✓'; flex-shrink: 0; }
+
+/* ── OSS BADGE ──────────────────────────────────────────────────── */
+#oss {
+  background: var(--bg-card2);
+  padding: 60px 0;
+}
+.oss-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 40px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 60px rgba(99,102,241,0.08);
+}
+.oss-left { flex: 1; }
+.oss-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: 100px;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #86efac;
+  margin-bottom: 14px;
+  letter-spacing: 0.04em;
+}
+.oss-badge-dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; }
+.oss-left h2 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+.oss-left p { font-size: 0.95rem; max-width: 500px; line-height: 1.7; }
+.oss-code-block {
+  background: #0d0d1f;
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  padding: 20px 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  line-height: 2;
+  color: var(--text-dim);
+  min-width: 280px;
+}
+.oss-code-block .cmd { color: var(--accent-hi); }
+.oss-code-block .comment { color: #3a3a5a; }
+.oss-code-block .str { color: #86efac; }
+
+/* ── SECOND CTA ─────────────────────────────────────────────────── */
+#cta2 {
+  background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, var(--bg) 100%);
+  border-top: 1px solid var(--border-dim);
+}
+.cta2-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+.cta2-left h2 { margin-bottom: 12px; }
+.cta2-left p { font-size: 1rem; line-height: 1.7; margin-bottom: 20px; }
+.stat-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.stat-item {
+  display: flex;
+  flex-direction: column;
+}
+.stat-item strong {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent-hi);
+  letter-spacing: -0.02em;
+}
+.stat-item span { font-size: 0.78rem; color: var(--text-dim); }
+
+/* ── FOOTER ─────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border-dim);
+  padding: 32px 0;
+}
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.footer-copy {
+  font-size: 0.82rem;
+  color: #3a3a5a;
+}
+.footer-links {
+  display: flex;
+  gap: 24px;
+}
+.footer-links a {
+  font-size: 0.82rem;
+  color: #4a4a6a;
+  transition: color 0.15s;
+}
+.footer-links a:hover { color: var(--accent-hi); }
+
+/* ── FORM STATUS ────────────────────────────────────────────────── */
+.form-success {
+  display: none;
+  text-align: center;
+  padding: 20px;
+}
+.form-success h3 { color: var(--green); margin-bottom: 8px; }
+.form-success p { font-size: 0.9rem; }
+.form-error {
+  display: none;
+  color: #fca5a5;
+  font-size: 0.82rem;
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .hero-inner { grid-template-columns: 1fr; gap: 40px; }
+  .hero-sub { max-width: 100%; }
+  .cards-3 { grid-template-columns: 1fr; }
+  .cta2-inner { grid-template-columns: 1fr; gap: 40px; }
+  .oss-inner { flex-direction: column; }
+  .oss-code-block { width: 100%; }
+  .social-inner { flex-direction: column; align-items: flex-start; }
+  .social-divider { display: none; }
+}
+@media (max-width: 600px) {
+  section { padding: 56px 0; }
+  .form-card { padding: 24px; }
+  h1 { font-size: 2rem; }
+  .stat-row { gap: 16px; }
+}
+
+/* ── UTILITY ────────────────────────────────────────────────────── */
+.text-center { text-align: center; }
+.mt-4 { margin-top: 4px; }
+.mb-0 { margin-bottom: 0; }
+</style>
+</head>
+
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────────────── -->
+<nav aria-label="Main navigation">
+  <div class="nav-inner">
+    <div class="logo">
+      <div class="logo-icon">🛡</div>
+      AgentGuard
+    </div>
+    <a href="#hero-form" class="nav-cta">Join Private Beta →</a>
+  </div>
+</nav>
+
+<!-- ── HERO ────────────────────────────────────────────────────── -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-inner">
+
+      <!-- Left: copy -->
+      <div class="hero-copy">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          EU AI Act enforcement begins August 2026
+        </div>
+        <h1 class="hero-headline">
+          The <span class="gradient-text">Firewall</span><br>
+          for AI Agents
+        </h1>
+        <p class="hero-sub">
+          Your agents are booking flights, approving payments, and accessing sensitive data — with no security layer between them and a catastrophic failure. AgentGuard fixes that.
+        </p>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-dim);">
+            <span style="color:var(--green);">✓</span> Any framework
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-dim);">
+            <span style="color:var(--green);">✓</span> &lt;50ms overhead
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-dim);">
+            <span style="color:var(--green);">✓</span> Open core
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: form -->
+      <div class="form-card" id="hero-form">
+        <div class="form-card-label">Private Beta</div>
+        <h3>Get Early Access</h3>
+        <form id="form-hero" action="https://formspree.io/f/xyzplaceholder" method="POST" novalidate>
+          <input type="hidden" name="_next" value="https://agentguard.dev/landing/thankyou.html">
+          <input type="hidden" name="_subject" value="AgentGuard Beta Request">
+          <input type="hidden" name="utm_source" id="utm_source_hero" value="">
+          <input type="hidden" name="utm_medium" id="utm_medium_hero" value="">
+          <input type="hidden" name="utm_campaign" id="utm_campaign_hero" value="">
+          <input type="hidden" name="form_id" value="hero">
+
+          <div class="form-group">
+            <label for="name-hero">Full Name</label>
+            <input type="text" id="name-hero" name="name" placeholder="Alex Chen" required autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label for="email-hero">Work Email</label>
+            <input type="email" id="email-hero" name="email" placeholder="alex@company.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="company-hero">Company</label>
+            <input type="text" id="company-hero" name="company" placeholder="Acme Corp" required autocomplete="organization">
+          </div>
+          <button type="submit" class="btn-primary">Join the Private Beta →</button>
+          <div class="form-error" id="form-hero-error">Something went wrong. Please try again.</div>
+        </form>
+        <div class="form-success" id="form-hero-success">
+          <h3>🎉 You're on the list.</h3>
+          <p>We'll be in touch with early access details.</p>
+        </div>
+        <div class="form-trust">No spam. Early access + agent security research only.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── SOCIAL PROOF BAR ─────────────────────────────────────────── -->
+<div id="social-proof">
+  <div class="container">
+    <div class="social-inner">
+      <div class="social-stat">
+        <strong>$6.34B</strong>
+        invested in AI security in 2025
+      </div>
+      <div class="social-divider"></div>
+      <div class="social-stat">
+        <strong>0</strong>
+        category leaders in agent runtime security
+      </div>
+      <div class="social-divider"></div>
+      <div class="urgency-bar">
+        ⚠️ <strong>August 2026:</strong> EU AI Act enforcement for high-risk AI systems begins
+      </div>
+    </div>
+    <div style="margin-top:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:0.78rem;color:#3a3a5a;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Design partners from</span>
+      <div class="logo-row">
+        <div class="logo-placeholder">Financial Services</div>
+        <div class="logo-placeholder">Healthcare AI</div>
+        <div class="logo-placeholder">Legal Tech</div>
+        <div class="logo-placeholder">Enterprise SaaS</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROBLEM ──────────────────────────────────────────────────── -->
+<section id="problem">
+  <div class="container">
+    <div class="section-eyebrow">The Problem</div>
+    <h2 class="section-head">Your agents are in production.<br>Your security team has no idea what they're doing.</h2>
+    <p class="section-sub">Traditional security tools see the API call. They don't understand why an agent made it — or whether it should have.</p>
+
+    <div class="cards-3">
+      <div class="problem-card">
+        <div class="problem-icon">🕳️</div>
+        <h3>Zero Runtime Visibility</h3>
+        <p>Your SIEM logs that a Stripe API was called for $4,200. It can't tell you if that was legitimate — or the result of a prompt injection attack via a crafted support ticket.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">🚫</div>
+        <h3>No Policy Enforcement Layer</h3>
+        <p>System prompts are not security controls. They're probabilistic suggestions the LLM can ignore, misinterpret, or be manipulated into bypassing. There's nothing between the agent's decision and the action it executes.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">📋</div>
+        <h3>Compliance Evidence Doesn't Exist</h3>
+        <p>EU AI Act Article 12 requires documented logging of every high-risk AI decision. When your auditor asks for it, "we have a system prompt in Notion" is not a compliance programme.</p>
+      </div>
+    </div>
+
+    <blockquote class="problem-quote">
+      "I have 200 agents deployed across 6 departments. I can't tell you what they accessed yesterday, whether any of them violated our data handling policies, or if one is currently exfiltrating PII to a third-party API. My board asks about AI risk every quarter and I have nothing to show them."
+      <cite>— CISO, Financial Services Enterprise (discovery interview, Jan 2026)</cite>
+    </blockquote>
+  </div>
+</section>
+
+<!-- ── SOLUTION ─────────────────────────────────────────────────── -->
+<section id="solution">
+  <div class="container">
+    <div class="section-eyebrow">The Solution</div>
+    <h2 class="section-head">Three layers of protection.<br>One 5-minute integration.</h2>
+    <p class="section-sub">AgentGuard sits between your agent and the world — enforcing policy, recording everything, and stopping runaway behaviour before it becomes a headline.</p>
+
+    <div class="cards-3">
+      <div class="solution-card">
+        <div class="solution-number">Layer 01</div>
+        <div class="solution-visual">🛡️</div>
+        <h3>Policy Engine</h3>
+        <p>Declarative policies — YAML, version-controlled, reviewed in PRs — define what agents <em>can and cannot</em> do. Enforced outside the model, so they can't be bypassed by a clever prompt.</p>
+        <div class="solution-tag">EU AI Act Art. 9</div>
+      </div>
+      <div class="solution-card">
+        <div class="solution-number">Layer 02</div>
+        <div class="solution-visual">📡</div>
+        <h3>Real-Time Monitoring</h3>
+        <p>Every agent action logged with full context: intent, plan, execution, result. Anomaly detection, chain-of-thought inspection, risk scoring. Enriched alerts flow into your existing Splunk or Sentinel.</p>
+        <div class="solution-tag">EU AI Act Art. 12–13</div>
+      </div>
+      <div class="solution-card">
+        <div class="solution-number">Layer 03</div>
+        <div class="solution-visual">⚡</div>
+        <h3>Kill Switch</h3>
+        <p>Instant halt in &lt;500ms. Human-in-the-loop gates for high-risk actions. Configurable fail-closed/fail-open per agent tier. Stop the worst cases before they cascade.</p>
+        <div class="solution-tag">EU AI Act Art. 14</div>
+      </div>
+    </div>
+
+    <div style="margin-top:40px;padding:20px 24px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;color:var(--accent-hi);">pip install agentguard</span>
+        <span style="font-size:0.85rem;color:var(--text-dim);">+ 3 lines of code. Works with LangChain, AutoGen, CrewAI, OpenAI SDK, and any custom framework.</span>
+      </div>
+      <div style="font-size:0.78rem;font-weight:600;color:var(--accent);white-space:nowrap;">&lt;50ms p99 latency guaranteed</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PERSONAS ──────────────────────────────────────────────────── -->
+<section id="personas">
+  <div class="container">
+    <div class="section-eyebrow">Who It's For</div>
+    <h2 class="section-head">Your title. Your pain.</h2>
+    <p class="section-sub">AgentGuard is built for the people responsible when an agent goes wrong — and for the engineers who want to ship safely before it does.</p>
+
+    <div class="cards-3">
+      <div class="persona-card">
+        <div class="persona-role">🔐 CISO / VP Security</div>
+        <h3>Finally, something to put on the board slide</h3>
+        <p class="persona-pain">You have agents deployed across multiple departments. You cannot tell the board what they accessed last month, whether any touched customer PII, or whether one is actively exfiltrating data. Every quarter the AI risk question gets harder.</p>
+        <div class="persona-outcome">Unified fleet visibility. Board-ready risk reports. Contractual SLA.</div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-role">⚙️ VP Eng / Head of AI Platform</div>
+        <h3>Ship agents without becoming a headline</h3>
+        <p class="persona-pain">Every team uses a different framework, handles secrets differently, logs differently. When something goes wrong at 2 AM, you have nothing to debug with. Security review keeps blocking production deploys.</p>
+        <div class="persona-outcome">Framework-agnostic. Policy as code. Unblock production in days.</div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-role">📊 GRC Lead / DPO</div>
+        <h3>Compliance evidence that exists before the audit</h3>
+        <p class="persona-pain">EU AI Act. ISO 42001. HIPAA. DORA. Your auditor wants documented evidence of AI oversight controls. Your current documentation is a Confluence page and a Slack thread last updated eight months ago.</p>
+        <div class="persona-outcome">Pre-built compliance reports. EU AI Act Art. 9, 12, 14 — done.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── OSS BADGE ────────────────────────────────────────────────── -->
+<section id="oss">
+  <div class="container">
+    <div class="oss-inner">
+      <div class="oss-left">
+        <div class="oss-badge">
+          <span class="oss-badge-dot"></span>
+          Open Source Core — Apache 2.0
+        </div>
+        <h2>Transparent by design.</h2>
+        <p style="margin-top:10px;">The core policy engine is open source. Read it. Audit it. Fork it. Enterprise features — compliance modules, SIEM integrations, advanced anomaly detection, executive reporting — are for teams that need them.</p>
+        <p style="margin-top:12px;">Security tools you can't read are security theatre. We're not that.</p>
+        <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+          <a href="https://github.com/agentguard" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid var(--border-dim);border-radius:8px;padding:8px 16px;font-size:0.85rem;font-weight:600;color:var(--text-dim);transition:color 0.15s;" onmouseover="this.style.color='var(--text-bright)'" onmouseout="this.style.color='var(--text-dim)'">⭐ Star on GitHub</a>
+          <a href="#cta2-form" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent-dim);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:0.85rem;font-weight:600;color:var(--accent-hi);">Get enterprise access →</a>
+        </div>
+      </div>
+      <div class="oss-code-block">
+        <div class="comment"># Add to your existing agent in 3 lines</div>
+        <div>
+          <span style="color:#c084fc;">from</span>
+          <span class="cmd"> agentguard </span>
+          <span style="color:#c084fc;">import</span>
+          <span class="cmd"> guard</span>
+        </div>
+        <div>&nbsp;</div>
+        <div>
+          <span class="comment"># Wrap your agent</span>
+        </div>
+        <div>
+          <span style="color:#fbbf24;">agent</span>
+          <span style="color:var(--text-dim);"> = guard(</span>
+          <span class="str">my_agent</span>
+          <span style="color:var(--text-dim);">,</span>
+        </div>
+        <div style="padding-left:16px;">
+          <span>policy</span>
+          <span style="color:var(--text-dim);">=</span>
+          <span class="str">"./policy.yaml"</span>
+        </div>
+        <div><span style="color:var(--text-dim);">)</span></div>
+        <div>&nbsp;</div>
+        <div class="comment"># That's it. Policy enforced.</div>
+        <div class="comment"># Audit log running. Kill switch active.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECOND CTA ───────────────────────────────────────────────── -->
+<section id="cta2">
+  <div class="container">
+    <div class="cta2-inner">
+
+      <div class="cta2-left">
+        <div class="section-eyebrow">Private Beta</div>
+        <h2>The window is 18 months.</h2>
+        <p>No category leader exists yet. Regulation is live. Agents are going to production. The enterprises that secure their agent infrastructure now won't be scrambling when their auditor — or their insurer — asks the hard questions.</p>
+        <div class="stat-row" style="margin-top:24px;">
+          <div class="stat-item">
+            <strong>$10B+</strong>
+            <span>TAM by 2027</span>
+          </div>
+          <div class="stat-item">
+            <strong>Aug '26</strong>
+            <span>EU AI Act deadline</span>
+          </div>
+          <div class="stat-item">
+            <strong>&lt;50ms</strong>
+            <span>Latency guarantee</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card" id="cta2-form">
+        <div class="form-card-label">Join the waitlist</div>
+        <h3>Request Early Access</h3>
+        <form id="form-cta2" action="https://formspree.io/f/xyzplaceholder" method="POST" novalidate>
+          <input type="hidden" name="_next" value="https://agentguard.dev/landing/thankyou.html">
+          <input type="hidden" name="_subject" value="AgentGuard Beta Request (CTA2)">
+          <input type="hidden" name="utm_source" id="utm_source_cta2" value="">
+          <input type="hidden" name="utm_medium" id="utm_medium_cta2" value="">
+          <input type="hidden" name="utm_campaign" id="utm_campaign_cta2" value="">
+          <input type="hidden" name="form_id" value="cta2">
+
+          <div class="form-group">
+            <label for="name-cta2">Full Name</label>
+            <input type="text" id="name-cta2" name="name" placeholder="Alex Chen" required autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label for="email-cta2">Work Email</label>
+            <input type="email" id="email-cta2" name="email" placeholder="alex@company.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="company-cta2">Company</label>
+            <input type="text" id="company-cta2" name="company" placeholder="Acme Corp" required autocomplete="organization">
+          </div>
+          <button type="submit" class="btn-primary">Join the Private Beta →</button>
+          <div class="form-error" id="form-cta2-error">Something went wrong. Please try again.</div>
+        </form>
+        <div class="form-success" id="form-cta2-success">
+          <h3>🎉 You're on the list.</h3>
+          <p>We'll be in touch with early access details.</p>
+        </div>
+        <div class="form-trust">No spam. Early access + agent security research only.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ───────────────────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-copy">AgentGuard © 2026 — Runtime security for the agentic era.</div>
+      <div class="footer-links">
+        <a href="https://github.com/agentguard">GitHub</a>
+        <a href="https://linkedin.com/company/agentguard">LinkedIn</a>
+        <a href="mailto:hello@agentguard.dev">hello@agentguard.dev</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ── JS ───────────────────────────────────────────────────────── -->
+<script>
+// UTM parameter capture
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const utmFields = ['source', 'medium', 'campaign'];
+  const formIds = ['hero', 'cta2'];
+
+  utmFields.forEach(field => {
+    const val = params.get('utm_' + field) || '';
+    formIds.forEach(id => {
+      const el = document.getElementById('utm_' + field + '_' + id);
+      if (el) el.value = val;
+    });
+  });
+})();
+
+// Form submission handler (AJAX to avoid page reload)
+function handleForm(formEl, successEl, errorEl) {
+  formEl.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = formEl.querySelector('button[type=submit]');
+    const originalText = btn.textContent;
+
+    // Basic validation
+    const email = formEl.querySelector('input[type=email]');
+    if (!email.value || !email.value.includes('@')) {
+      email.focus();
+      return;
+    }
+
+    btn.textContent = 'Sending…';
+    btn.disabled = true;
+    errorEl.style.display = 'none';
+
+    try {
+      const data = new FormData(formEl);
+      const res = await fetch(formEl.action, {
+        method: 'POST',
+        body: data,
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (res.ok) {
+        formEl.style.display = 'none';
+        successEl.style.display = 'block';
+        // Optionally redirect
+        // window.location.href = '/landing/thankyou.html';
+      } else {
+        throw new Error('Server error');
+      }
+    } catch (err) {
+      btn.textContent = originalText;
+      btn.disabled = false;
+      errorEl.style.display = 'block';
+    }
+  });
+}
+
+handleForm(
+  document.getElementById('form-hero'),
+  document.getElementById('form-hero-success'),
+  document.getElementById('form-hero-error')
+);
+
+handleForm(
+  document.getElementById('form-cta2'),
+  document.getElementById('form-cta2-success'),
+  document.getElementById('form-cta2-error')
+);
+
+// Smooth scroll for CTA anchors
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', function(e) {
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Focus first input in the form card if applicable
+      const input = target.querySelector('input[type=text]');
+      if (input) setTimeout(() => input.focus(), 400);
+    }
+  });
+});
+</script>
+
+</body>
+</html>
