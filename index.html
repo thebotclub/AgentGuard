@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentGuard — Cybersecurity for the Agentic Era</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-dark: #0a0a1a;
+  --bg-card: #111128;
+  --bg-card-hover: #16163a;
+  --accent: #6366f1;
+  --accent-bright: #818cf8;
+  --accent-glow: rgba(99,102,241,0.3);
+  --red: #ef4444;
+  --red-glow: rgba(239,68,68,0.3);
+  --green: #22c55e;
+  --green-glow: rgba(34,197,94,0.3);
+  --orange: #f59e0b;
+  --cyan: #06b6d4;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-bright: #f8fafc;
+  --border: rgba(99,102,241,0.15);
+  --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+  --gradient-2: linear-gradient(135deg, #06b6d4, #6366f1);
+  --gradient-red: linear-gradient(135deg, #ef4444, #f97316);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+/* ===================== KEYFRAMES ===================== */
+@keyframes floatOrb1 {
+  0%   { transform: translate(0,0) scale(1); }
+  25%  { transform: translate(40px,-60px) scale(1.05); }
+  50%  { transform: translate(-30px,-100px) scale(0.95); }
+  75%  { transform: translate(60px,-40px) scale(1.08); }
+  100% { transform: translate(0,0) scale(1); }
+}
+@keyframes floatOrb2 {
+  0%   { transform: translate(0,0) scale(1); }
+  33%  { transform: translate(-50px,70px) scale(1.1); }
+  66%  { transform: translate(30px,50px) scale(0.92); }
+  100% { transform: translate(0,0) scale(1); }
+}
+@keyframes floatOrb3 {
+  0%   { transform: translate(0,0) scale(1); }
+  20%  { transform: translate(80px,30px) scale(1.06); }
+  60%  { transform: translate(-20px,-80px) scale(0.97); }
+  80%  { transform: translate(50px,60px) scale(1.03); }
+  100% { transform: translate(0,0) scale(1); }
+}
+@keyframes livePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.7); }
+  70%  { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+  100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+}
+@keyframes livePulseOrange {
+  0%   { box-shadow: 0 0 0 0 rgba(245,158,11,0.7); }
+  70%  { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+  100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+@keyframes glowBreathe {
+  0%, 100% { box-shadow: 0 0 20px rgba(99,102,241,0.05); }
+  50%       { box-shadow: 0 0 40px rgba(99,102,241,0.18); }
+}
+@keyframes scanLine {
+  0%   { top: 0; opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+@keyframes connectorPulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.9; }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===================== BACKGROUND ===================== */
+.bg-grid {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  z-index: 0; pointer-events: none;
+}
+.bg-glow {
+  position: fixed; width: 600px; height: 600px;
+  border-radius: 50%; filter: blur(120px); opacity: 0.15;
+  pointer-events: none; z-index: 0;
+}
+.bg-glow-1 { top:-200px; right:-100px; background:var(--accent); animation: floatOrb1 18s ease-in-out infinite; }
+.bg-glow-2 { bottom:-200px; left:-100px; background:#8b5cf6; animation: floatOrb2 22s ease-in-out infinite; }
+.bg-glow-3 { top:40%; left:40%; width:400px; height:400px; background:rgba(6,182,212,0.4); opacity:0.06; animation: floatOrb3 28s ease-in-out infinite; }
+
+/* ===================== LAYOUT ===================== */
+.container { max-width:1200px; margin:0 auto; padding:0 24px; position:relative; z-index:1; }
+.container-wide { max-width:1400px; margin:0 auto; padding:0 24px; position:relative; z-index:1; }
+
+/* ===================== NAV ===================== */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  background:rgba(10,10,26,0.85); backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border); padding:0 24px;
+}
+nav .nav-inner {
+  max-width:1200px; margin:0 auto;
+  display:flex; align-items:center; justify-content:space-between; height:64px;
+}
+nav .logo { display:flex; align-items:center; gap:10px; font-weight:800; font-size:20px; color:var(--text-bright); text-decoration:none; }
+nav .logo .shield { font-size:24px; }
+nav .nav-links { display:flex; gap:32px; list-style:none; }
+nav .nav-links a { color:var(--text-dim); text-decoration:none; font-size:14px; font-weight:500; transition:color 0.2s; }
+nav .nav-links a:hover { color:var(--text-bright); }
+nav .nav-cta {
+  background:var(--gradient-1); color:white; border:none;
+  padding:8px 20px; border-radius:8px; font-weight:600; font-size:14px;
+  cursor:pointer; transition:transform 0.2s,box-shadow 0.2s; text-decoration:none;
+}
+nav .nav-cta:hover { transform:translateY(-1px); box-shadow:0 4px 20px var(--accent-glow); }
+
+/* ===================== HERO ===================== */
+.hero {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  text-align:center; padding:120px 24px 80px; position:relative;
+}
+.hero-badge {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(99,102,241,0.1); border:1px solid var(--border);
+  padding:6px 16px; border-radius:100px; font-size:13px; color:var(--accent-bright);
+  margin-bottom:24px; animation:glowBreathe 4s ease-in-out infinite;
+}
+.hero-badge .dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+.hero h1 { font-size:clamp(40px,7vw,80px); font-weight:900; line-height:1.05; color:var(--text-bright); margin-bottom:24px; letter-spacing:-2px; }
+.hero h1 .gradient-text { background:var(--gradient-1); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.hero .subtitle { font-size:clamp(16px,2.5vw,22px); color:var(--text-dim); max-width:700px; margin:0 auto 40px; line-height:1.6; font-weight:400; }
+.hero-ctas { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+.btn-primary {
+  background:var(--gradient-1); color:white; border:none;
+  padding:14px 32px; border-radius:12px; font-weight:700; font-size:16px;
+  cursor:pointer; transition:all 0.3s; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 30px var(--accent-glow); }
+.btn-secondary {
+  background:transparent; color:var(--text); border:1px solid var(--border);
+  padding:14px 32px; border-radius:12px; font-weight:600; font-size:16px;
+  cursor:pointer; transition:all 0.3s; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+}
+.btn-secondary:hover { border-color:var(--accent); background:rgba(99,102,241,0.05); }
+.hero-stats { display:flex; gap:48px; justify-content:center; margin-top:60px; flex-wrap:wrap; }
+.hero-stat { text-align:center; animation:countUp 0.8s ease both; }
+.hero-stat:nth-child(1){animation-delay:0.1s}
+.hero-stat:nth-child(2){animation-delay:0.2s}
+.hero-stat:nth-child(3){animation-delay:0.3s}
+.hero-stat:nth-child(4){animation-delay:0.4s}
+.hero-stat .num { font-size:36px; font-weight:800; color:var(--text-bright); font-variant-numeric:tabular-nums; }
+.hero-stat .num .unit { font-size:20px; color:var(--accent-bright); }
+.hero-stat .label { font-size:13px; color:var(--text-dim); margin-top:4px; }
+
+/* ===================== SECTIONS ===================== */
+section { padding:100px 0; position:relative; }
+.section-label { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:3px; color:var(--accent-bright); margin-bottom:16px; }
+.section-title { font-size:clamp(28px,4vw,48px); font-weight:800; color:var(--text-bright); margin-bottom:16px; letter-spacing:-1px; line-height:1.15; }
+.section-subtitle { font-size:18px; color:var(--text-dim); max-width:600px; margin-bottom:48px; }
+.section-subtitle.center { margin-left:auto; margin-right:auto; text-align:center; }
+
+/* FADE-IN — ALL VISIBLE BY DEFAULT (no JS intersection observer needed) */
+.fade-in { opacity:1; transform:none; }
+
+/* ===================== PROBLEM ===================== */
+.problem-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:20px; margin-top:40px; }
+.threat-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:16px; padding:28px; transition:all 0.3s; position:relative; overflow:hidden;
+}
+.threat-card:hover { border-color:var(--red); background:var(--bg-card-hover); transform:translateY(-2px); box-shadow:0 8px 30px rgba(239,68,68,0.1); }
+.threat-card .severity { display:inline-block; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:700; text-transform:uppercase; margin-bottom:12px; }
+.severity-critical { background:rgba(239,68,68,0.15); color:var(--red); }
+.severity-high { background:rgba(245,158,11,0.15); color:var(--orange); }
+.threat-card h3 { font-size:18px; font-weight:700; color:var(--text-bright); margin-bottom:8px; }
+.threat-card p { font-size:14px; color:var(--text-dim); line-height:1.6; }
+.scenario-card {
+  background:linear-gradient(135deg,rgba(239,68,68,0.05),rgba(239,68,68,0.02));
+  border:1px solid rgba(239,68,68,0.15); border-radius:16px; padding:32px; margin-top:20px;
+}
+.scenario-card h3 { color:var(--red); font-size:16px; margin-bottom:8px; }
+.scenario-card p { font-size:14px; color:var(--text-dim); }
+.scenario-card .impact { margin-top:12px; padding-top:12px; border-top:1px solid rgba(239,68,68,0.1); font-size:13px; font-weight:600; color:var(--red); }
+
+/* ===================== SOLUTION ===================== */
+.solution-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(350px,1fr)); gap:20px; }
+.solution-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:16px; padding:32px; transition:all 0.3s; position:relative;
+}
+.solution-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 30px var(--accent-glow); }
+.solution-card .icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:16px; background:rgba(99,102,241,0.1); }
+.solution-card h3 { font-size:20px; font-weight:700; color:var(--text-bright); margin-bottom:8px; }
+.solution-card p { font-size:14px; color:var(--text-dim); line-height:1.7; }
+.solution-card .features { list-style:none; margin-top:16px; padding:0; }
+.solution-card .features li { font-size:13px; color:var(--text-dim); padding:4px 0; display:flex; align-items:center; gap:8px; }
+.solution-card .features li::before { content:'✓'; color:var(--green); font-weight:700; font-size:12px; }
+
+/* ===================== CODE BLOCK ===================== */
+.code-block { background:#0d1117; border:1px solid rgba(255,255,255,0.08); border-radius:12px; overflow:hidden; margin-top:24px; }
+.code-header { background:rgba(255,255,255,0.03); padding:10px 16px; font-size:12px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:8px; }
+.code-body { padding:20px; font-family:'JetBrains Mono',monospace; font-size:13px; line-height:1.8; overflow-x:auto; }
+.code-body .key { color:#7ee787; }
+.code-body .val { color:#a5d6ff; }
+.code-body .comment { color:#8b949e; }
+.code-body .str { color:#ffa657; }
+.code-body .bool { color:#ff7b72; }
+
+/* ===================== ARCHITECTURE ===================== */
+.arch-container {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:20px; padding:48px; margin-top:40px; position:relative; overflow:hidden;
+}
+.arch-container::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--gradient-1); }
+.arch-container::after {
+  content:''; position:absolute; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(99,102,241,0.4),transparent);
+  animation:scanLine 6s linear infinite; pointer-events:none;
+}
+.arch-diagram { display:flex; flex-direction:column; gap:32px; align-items:center; }
+.arch-layer { width:100%; max-width:900px; border-radius:16px; padding:24px; position:relative; }
+.arch-layer-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px; }
+.arch-control-plane { background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.05)); border:1px solid rgba(99,102,241,0.25); }
+.arch-control-plane .arch-layer-label { color:var(--accent-bright); }
+.arch-modules { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+.arch-module { background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.2); border-radius:10px; padding:12px; text-align:center; font-size:12px; font-weight:600; color:var(--accent-bright); transition:all 0.3s; }
+.arch-module:hover { background:rgba(99,102,241,0.2); transform:scale(1.02); }
+.arch-module .module-icon { font-size:20px; margin-bottom:4px; display:block; }
+.arch-data-plane { background:linear-gradient(135deg,rgba(6,182,212,0.08),rgba(99,102,241,0.05)); border:1px solid rgba(6,182,212,0.2); }
+.arch-data-plane .arch-layer-label { color:var(--cyan); }
+.arch-agents-row { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+.arch-agent-box { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px 24px; text-align:center; min-width:160px; position:relative; }
+.arch-agent-box .agent-name { font-size:13px; font-weight:600; color:var(--text-bright); }
+.arch-agent-box .agent-framework { font-size:11px; color:var(--text-dim); }
+.arch-agent-box .agent-status { margin-top:8px; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:4px; }
+.status-secure { color:var(--green); }
+.status-warning { color:var(--orange); }
+.arch-connector { width:2px; height:24px; background:var(--border); margin:0 auto; position:relative; animation:connectorPulse 2s ease-in-out infinite; }
+.arch-connector::after { content:''; position:absolute; bottom:-4px; left:-4px; width:10px; height:10px; border-radius:50%; background:var(--accent); opacity:0.5; }
+.arch-tools-layer { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); }
+.arch-tools-layer .arch-layer-label { color:var(--text-dim); }
+.arch-tools { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+.arch-tool { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 16px; font-size:12px; color:var(--text-dim); }
+
+/* ===================== FLOW ===================== */
+.flow-section { margin-top:60px; }
+.flow-steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:24px; margin-top:32px; }
+.flow-step { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:28px; text-align:center; position:relative; }
+.flow-step .step-num { width:40px; height:40px; border-radius:50%; background:var(--gradient-1); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; margin:0 auto 16px; }
+.flow-step h3 { font-size:16px; font-weight:700; color:var(--text-bright); margin-bottom:8px; }
+.flow-step p { font-size:13px; color:var(--text-dim); }
+
+/* ===================== DASHBOARD ===================== */
+.dashboard-mock { background:var(--bg-card); border:1px solid var(--border); border-radius:20px; overflow:hidden; margin-top:48px; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+.dashboard-titlebar { background:rgba(255,255,255,0.03); padding:12px 20px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); }
+.dashboard-dot { width:10px; height:10px; border-radius:50%; }
+.dashboard-dot.r { background:#ef4444; }
+.dashboard-dot.y { background:#f59e0b; }
+.dashboard-dot.g { background:#22c55e; }
+.dashboard-titlebar span { margin-left:12px; font-size:13px; color:var(--text-dim); }
+.dashboard-body { padding:24px; }
+.dashboard-topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+.dashboard-topbar h2 { font-size:18px; font-weight:700; color:var(--text-bright); }
+.dashboard-status-pills { display:flex; gap:8px; }
+.status-pill { padding:4px 12px; border-radius:100px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:6px; }
+.pill-green { background:rgba(34,197,94,0.1); color:var(--green); border:1px solid rgba(34,197,94,0.2); }
+.pill-orange { background:rgba(245,158,11,0.1); color:var(--orange); border:1px solid rgba(245,158,11,0.2); }
+.pill-red { background:rgba(239,68,68,0.1); color:var(--red); border:1px solid rgba(239,68,68,0.2); }
+.dashboard-grid { display:grid; grid-template-columns:2fr 1fr; gap:16px; }
+.dash-card { background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; padding:20px; }
+.dash-card h4 { font-size:13px; font-weight:600; color:var(--text-dim); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+.agent-table { width:100%; font-size:13px; }
+.agent-table th { text-align:left; padding:8px 12px; color:var(--text-dim); border-bottom:1px solid var(--border); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:1px; }
+.agent-table td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.03); }
+.agent-table tr:hover td { background:rgba(99,102,241,0.03); }
+.risk-badge { padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; }
+.risk-low { background:rgba(34,197,94,0.1); color:var(--green); }
+.risk-medium { background:rgba(245,158,11,0.1); color:var(--orange); }
+.risk-high { background:rgba(239,68,68,0.1); color:var(--red); }
+.activity-log { list-style:none; }
+.activity-log li { padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.03); font-size:12px; display:flex; gap:8px; align-items:flex-start; }
+.activity-log .time { color:var(--text-dim); font-family:'JetBrains Mono',monospace; white-space:nowrap; font-size:11px; }
+.activity-log .event { color:var(--text); }
+.activity-log .event.blocked { color:var(--red); }
+.activity-log .event.approved { color:var(--green); }
+
+/* ===================== COMPLIANCE ===================== */
+.compliance-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-top:24px; }
+.compliance-badge { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; transition:all 0.3s; }
+.compliance-badge:hover { border-color:var(--accent); }
+.compliance-badge .badge-icon { font-size:28px; margin-bottom:6px; }
+.compliance-badge .badge-name { font-size:12px; font-weight:700; color:var(--text-bright); }
+.compliance-badge .badge-detail { font-size:10px; color:var(--text-dim); }
+
+/* ===================== MARKET ===================== */
+.market-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin:32px 0; }
+.market-stat { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:24px; text-align:center; }
+.market-stat .num { font-size:32px; font-weight:800; color:var(--text-bright); }
+.market-stat .label { font-size:13px; color:var(--text-dim); margin-top:4px; }
+.competitor-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin-top:24px; }
+.competitor-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+.competitor-card h4 { font-size:15px; font-weight:700; color:var(--text-bright); margin-bottom:4px; }
+.competitor-card .focus { font-size:13px; color:var(--accent-bright); margin-bottom:8px; }
+.competitor-card .gap-label { font-size:11px; font-weight:600; color:var(--red); text-transform:uppercase; letter-spacing:1px; margin-top:8px; }
+.competitor-card .gap { font-size:13px; color:var(--text-dim); }
+.gaps-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin-top:32px; }
+.gap-card { background:linear-gradient(135deg,rgba(34,197,94,0.05),rgba(34,197,94,0.02)); border:1px solid rgba(34,197,94,0.15); border-radius:16px; padding:24px; }
+.gap-card .gap-num { font-size:32px; font-weight:900; color:rgba(34,197,94,0.2); margin-bottom:4px; }
+.gap-card h4 { font-size:16px; font-weight:700; color:var(--green); margin-bottom:6px; }
+.gap-card p { font-size:13px; color:var(--text-dim); }
+
+/* ===================== PRICING ===================== */
+.pricing-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:20px; margin-top:32px; }
+.pricing-card { background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:32px; position:relative; transition:all 0.3s; }
+.pricing-card:hover { border-color:var(--accent); transform:translateY(-4px); }
+.pricing-card.featured { border-color:var(--accent); background:linear-gradient(180deg,rgba(99,102,241,0.08),var(--bg-card)); animation:glowBreathe 4s ease-in-out infinite; }
+.pricing-card.featured::before { content:'MOST POPULAR'; position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:var(--gradient-1); color:white; padding:4px 16px; border-radius:100px; font-size:11px; font-weight:700; }
+.pricing-card .tier { font-size:14px; font-weight:600; color:var(--accent-bright); margin-bottom:8px; }
+.pricing-card .price { font-size:36px; font-weight:800; color:var(--text-bright); }
+.pricing-card .price span { font-size:16px; color:var(--text-dim); font-weight:400; }
+.pricing-card .desc { font-size:13px; color:var(--text-dim); margin:12px 0 20px; }
+.pricing-card ul { list-style:none; }
+.pricing-card li { font-size:13px; color:var(--text-dim); padding:6px 0; display:flex; align-items:center; gap:8px; }
+.pricing-card li::before { content:'✓'; color:var(--green); font-weight:700; }
+
+/* ===================== FINANCIALS ===================== */
+.fin-table-wrap { overflow-x:auto; margin-top:24px; background:var(--bg-card); border:1px solid var(--border); border-radius:16px; }
+.fin-table { width:100%; border-collapse:collapse; font-size:14px; }
+.fin-table th { text-align:left; padding:14px 20px; background:rgba(99,102,241,0.08); color:var(--accent-bright); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:1px; }
+.fin-table td { padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.03); }
+.fin-table tbody tr:hover td { background:rgba(99,102,241,0.03); }
+.fin-highlight { color:var(--green); font-weight:700; }
+
+/* ===================== CTA / FOOTER ===================== */
+.cta-section { text-align:center; padding:100px 24px; background:linear-gradient(180deg,var(--bg-dark),rgba(99,102,241,0.05)); }
+.cta-section h2 { font-size:clamp(28px,4vw,48px); font-weight:800; color:var(--text-bright); margin-bottom:16px; }
+.cta-section p { font-size:18px; color:var(--text-dim); margin-bottom:32px; }
+footer { border-top:1px solid var(--border); padding:40px 24px; text-align:center; color:var(--text-dim); font-size:13px; }
+
+/* ===================== LIVE INDICATORS ===================== */
+.live-indicator { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--green); }
+.live-dot { width:8px; height:8px; border-radius:50%; background:var(--green); animation:livePulse 1.5s infinite; }
+
+/* ===================== MISC ===================== */
+.counter { font-variant-numeric:tabular-nums; }
+.section-divider { border:none; border-top:1px solid var(--border); margin:0 auto; max-width:200px; }
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width:768px) {
+  .hero h1 { font-size:36px; }
+  .hero-stats { gap:24px; }
+  .dashboard-grid { grid-template-columns:1fr; }
+  nav .nav-links { display:none; }
+  .problem-grid,.solution-grid { grid-template-columns:1fr; }
+  .arch-modules { grid-template-columns:repeat(3,1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+<div class="bg-glow bg-glow-3"></div>
+
+<!-- Navigation -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo"><span class="shield">🛡️</span> AgentGuard</a>
+    <ul class="nav-links">
+      <li><a href="#problem">Problem</a></li>
+      <li><a href="#solution">Solution</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#dashboard">Dashboard</a></li>
+      <li><a href="#market">Market</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#financials">Financials</a></li>
+    </ul>
+    <a href="#contact" class="nav-cta">Request Demo</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div>
+    <div class="hero-badge"><span class="dot"></span> Now in private beta</div>
+    <h1>The <span class="gradient-text">Firewall</span> for<br>AI Agents</h1>
+    <p class="subtitle">Monitor, constrain, and audit every AI agent in your organisation. Before they go catastrophic.</p>
+    <div class="hero-ctas">
+      <a href="#solution" class="btn-primary">See How It Works →</a>
+      <a href="#dashboard" class="btn-secondary">View Live Dashboard</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num counter">$6.3<span class="unit">B</span></div><div class="label">AI Security Funding (2025)</div></div>
+      <div class="hero-stat"><div class="num counter">0</div><div class="label">Category Leaders</div></div>
+      <div class="hero-stat"><div class="num counter">&lt;50<span class="unit">ms</span></div><div class="label">Latency Overhead</div></div>
+      <div class="hero-stat"><div class="num counter">Aug 2026</div><div class="label">EU AI Act Deadline</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Problem -->
+<section id="problem">
+  <div class="container">
+    <div class="section-label fade-in">The Problem</div>
+    <h2 class="section-title fade-in">AI agents have the keys.<br>Nobody's watching the door.</h2>
+    <p class="section-subtitle fade-in">Agents book flights, write code, move money, access patient records. There's no security layer between "agent was told to do X" and "agent did something catastrophic."</p>
+    <div class="problem-grid">
+      <div class="threat-card fade-in">
+        <span class="severity severity-critical">Critical</span>
+        <h3>🎯 Prompt Injection</h3>
+        <p>Malicious inputs hijack agent behaviour. Your agent follows attacker instructions instead of yours. Every agent with external input is vulnerable.</p>
+      </div>
+      <div class="threat-card fade-in">
+        <span class="severity severity-critical">Critical</span>
+        <h3>🧬 Cross-Agent Lateral Movement</h3>
+        <p>One compromised agent injects malicious instructions into the agent graph. Lateral movement via language — no network exploits needed.</p>
+      </div>
+      <div class="threat-card fade-in">
+        <span class="severity severity-critical">Critical</span>
+        <h3>💉 Memory Poisoning</h3>
+        <p>Persistent backdoors in RAG stores and vector databases. Every future decision is influenced by poisoned data. Detection is nearly impossible.</p>
+      </div>
+      <div class="threat-card fade-in">
+        <span class="severity severity-high">High</span>
+        <h3>📈 Privilege Escalation</h3>
+        <p>Agents accumulate permissions incrementally. Each grant looks reasonable. The aggregate is catastrophic access to crown jewels.</p>
+      </div>
+      <div class="threat-card fade-in">
+        <span class="severity severity-high">High</span>
+        <h3>🌀 Multi-Agent Cascade</h3>
+        <p>Agents "fixing" each other's fixes in emergent failure loops. No single agent violates policy. The system fails collectively.</p>
+      </div>
+      <div class="threat-card fade-in">
+        <span class="severity severity-high">High</span>
+        <h3>👻 Shadow Actions</h3>
+        <p>Side-effects nobody asked for — data exfiltration, API calls, spending. The agent completes your task AND does something else.</p>
+      </div>
+    </div>
+    <div class="scenario-card fade-in" style="margin-top:32px;">
+      <h3>⚠️ Real-World Scenario: "The Cascading Agent Failure"</h3>
+      <p>An infrastructure agent remediates a minor issue. Its fix triggers a secondary issue. A second agent "fixes" that. Within 30 minutes, seven agents have each corrected the previous agent's correction. Complete production outage. No individual agent acted outside policy. The failure was emergent.</p>
+      <div class="impact">Estimated impact: $2.5M in downtime + customer trust erosion</div>
+    </div>
+    <div class="scenario-card fade-in">
+      <h3>⚠️ Real-World Scenario: "The Compliance Catastrophe"</h3>
+      <p>Healthcare agents store PHI in non-compliant logging, discuss patient details across sessions, and make triage recommendations constituting unlicensed medical advice. Simultaneous HIPAA, malpractice, and licensing violations.</p>
+      <div class="impact">Estimated exposure: $50M+ in regulatory penalties</div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- Solution -->
+<section id="solution">
+  <div class="container">
+    <div class="section-label fade-in">The Solution</div>
+    <h2 class="section-title fade-in">Runtime security for<br>every AI agent.</h2>
+    <p class="section-subtitle fade-in">AgentGuard sits between your agents and the world. Every action checked against policy. Every decision logged. Every risk scored.</p>
+    <div class="solution-grid">
+      <div class="solution-card fade-in">
+        <div class="icon">🔥</div>
+        <h3>Policy Engine</h3>
+        <p>The first "OPA for AI agents." Declarative YAML/JSON policies, version-controlled, enforced at runtime.</p>
+        <ul class="features">
+          <li>Action-level permissions per agent</li>
+          <li>Budget and rate limits</li>
+          <li>Scope boundaries (data, systems, people)</li>
+          <li>Git-native policy-as-code</li>
+        </ul>
+      </div>
+      <div class="solution-card fade-in">
+        <div class="icon">👁️</div>
+        <h3>Real-Time SOC</h3>
+        <p>Every agent action monitored with full context — intent, plan, execution, result. Anomaly detection that understands reasoning.</p>
+        <ul class="features">
+          <li>Chain-of-thought inspection</li>
+          <li>Behavioural anomaly detection</li>
+          <li>Risk scoring per action &amp; agent</li>
+          <li>SIEM integration (Splunk, Sentinel)</li>
+        </ul>
+      </div>
+      <div class="solution-card fade-in">
+        <div class="icon">🛑</div>
+        <h3>Kill Switch &amp; HITL</h3>
+        <p>Instant halt. Human-in-the-loop gates for high-risk actions. Graceful degradation, not hard crashes.</p>
+        <ul class="features">
+          <li>One-click global kill switch</li>
+          <li>Configurable approval workflows</li>
+          <li>Fail-closed or fail-open per tier</li>
+          <li>Automatic circuit breakers</li>
+        </ul>
+      </div>
+      <div class="solution-card fade-in">
+        <div class="icon">📋</div>
+        <h3>Compliance Engine</h3>
+        <p>One-click compliance reports mapping agent behaviour to regulatory requirements. Court-admissible forensics.</p>
+        <ul class="features">
+          <li>EU AI Act (Art. 9, 12-15)</li>
+          <li>SOC 2, ISO 42001, HIPAA, DORA</li>
+          <li>Tamper-evident audit logs</li>
+          <li>Board-ready risk reports</li>
+        </ul>
+      </div>
+      <div class="solution-card fade-in">
+        <div class="icon">🔗</div>
+        <h3>Multi-Agent Governance</h3>
+        <p>Visibility and control when agents talk to each other. Prevent collusion, cascade failures, and lateral movement.</p>
+        <ul class="features">
+          <li>Cross-agent communication monitoring</li>
+          <li>Hierarchical permission model</li>
+          <li>Collusion detection</li>
+          <li>Coordination policy enforcement</li>
+        </ul>
+      </div>
+      <div class="solution-card fade-in">
+        <div class="icon">🔌</div>
+        <h3>MCP Security Layer</h3>
+        <p>The first firewall for Model Context Protocol. Inspect, validate, and control every tool call.</p>
+        <ul class="features">
+          <li>Tool call validation &amp; sanitisation</li>
+          <li>Parameter integrity checking</li>
+          <li>Credential protection</li>
+          <li>MCP-native integration</li>
+        </ul>
+      </div>
+    </div>
+    <div class="code-block fade-in" style="margin-top:40px;">
+      <div class="code-header">📄 policy.yaml — 5-minute setup</div>
+      <div class="code-body">
+<span class="comment"># AgentGuard Policy — Human-readable, version-controlled, enforced at runtime</span>
+<span class="key">agent</span>: <span class="str">finance-assistant</span>
+<span class="key">version</span>: <span class="val">"2.1"</span>
+
+<span class="key">permissions</span>:
+  <span class="key">tools</span>:
+    <span class="key">allow</span>: [<span class="str">read_transactions</span>, <span class="str">generate_report</span>, <span class="str">send_email_draft</span>]
+    <span class="key">deny</span>:  [<span class="str">execute_transfer</span>, <span class="str">modify_account</span>, <span class="str">delete_records</span>]
+  <span class="key">data</span>:
+    <span class="key">can_access</span>: [<span class="str">transactions</span>, <span class="str">invoices</span>, <span class="str">public_filings</span>]
+    <span class="key">cannot_access</span>: [<span class="str">employee_pii</span>, <span class="str">board_materials</span>, <span class="str">m&amp;a_docs</span>]
+
+<span class="key">limits</span>:
+  <span class="key">spending</span>: <span class="val">$0</span>        <span class="comment"># Cannot initiate any spend</span>
+  <span class="key">api_calls</span>: <span class="val">1000/hr</span>  <span class="comment"># Rate limit</span>
+  <span class="key">runtime</span>: <span class="val">30min</span>    <span class="comment"># Max session duration</span>
+
+<span class="key">human_approval</span>:
+  <span class="key">required_for</span>: [<span class="str">send_email</span>, <span class="str">external_api_call</span>]
+  <span class="key">timeout</span>: <span class="val">5min</span>       <span class="comment"># Auto-deny if no response</span>
+  <span class="key">escalation</span>: <span class="str">ciso@company.com</span>
+
+<span class="key">anomaly_detection</span>:
+  <span class="key">baseline_deviation</span>: <span class="val">2.5σ</span>  <span class="comment"># Alert on unusual behaviour</span>
+  <span class="key">auto_quarantine</span>: <span class="bool">true</span>     <span class="comment"># Isolate agent on critical anomaly</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- Architecture -->
+<section id="architecture">
+  <div class="container">
+    <div class="section-label fade-in">Architecture</div>
+    <h2 class="section-title fade-in">Zero-Trust Agent Security</h2>
+    <p class="section-subtitle fade-in">Every agent is untrusted by default. Every action is verified. Every permission is earned.</p>
+    <div class="arch-container fade-in">
+      <div class="arch-diagram">
+        <div class="arch-layer arch-control-plane">
+          <div class="arch-layer-label">⚡ AgentGuard Control Plane</div>
+          <div class="arch-modules">
+            <div class="arch-module"><span class="module-icon">🔥</span>Policy Engine</div>
+            <div class="arch-module"><span class="module-icon">🔑</span>Identity &amp; AuthZ</div>
+            <div class="arch-module"><span class="module-icon">🧠</span>Anomaly Detection</div>
+            <div class="arch-module"><span class="module-icon">📊</span>Threat Intel</div>
+            <div class="arch-module"><span class="module-icon">📋</span>Compliance Engine</div>
+            <div class="arch-module"><span class="module-icon">🚨</span>Incident Response</div>
+            <div class="arch-module"><span class="module-icon">🔍</span>Forensics &amp; Replay</div>
+            <div class="arch-module"><span class="module-icon">📦</span>Supply Chain</div>
+            <div class="arch-module"><span class="module-icon">🔌</span>MCP Security</div>
+          </div>
+        </div>
+        <div class="arch-connector"></div>
+        <div class="arch-layer arch-data-plane">
+          <div class="arch-layer-label">🔒 Data Plane — Per-Agent Security Envelope</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;font-size:12px;">
+            <div style="background:rgba(6,182,212,0.08);border-radius:8px;padding:10px;text-align:center;color:var(--cyan);">Identity Verification<br><span style="font-size:10px;color:var(--text-dim);">mTLS / JWT</span></div>
+            <div style="background:rgba(6,182,212,0.08);border-radius:8px;padding:10px;text-align:center;color:var(--cyan);">Action Policy Check<br><span style="font-size:10px;color:var(--text-dim);">Every call verified</span></div>
+            <div style="background:rgba(6,182,212,0.08);border-radius:8px;padding:10px;text-align:center;color:var(--cyan);">Data Classification<br><span style="font-size:10px;color:var(--text-dim);">PII / PHI gate</span></div>
+            <div style="background:rgba(6,182,212,0.08);border-radius:8px;padding:10px;text-align:center;color:var(--cyan);">Budget Enforcement<br><span style="font-size:10px;color:var(--text-dim);">Spend &amp; rate limits</span></div>
+            <div style="background:rgba(6,182,212,0.08);border-radius:8px;padding:10px;text-align:center;color:var(--cyan);">Telemetry Capture<br><span style="font-size:10px;color:var(--text-dim);">Chain-of-thought log</span></div>
+            <div style="background:rgba(6,182,212,0.08);border-radius:8px;padding:10px;text-align:center;color:var(--cyan);">Kill Switch<br><span style="font-size:10px;color:var(--text-dim);">Instant halt</span></div>
+          </div>
+        </div>
+        <div class="arch-connector"></div>
+        <div class="arch-agents-row">
+          <div class="arch-agent-box">
+            <div class="agent-name">Finance Agent</div>
+            <div class="agent-framework">LangChain · GPT-4</div>
+            <div class="agent-status status-secure"><span class="live-dot" style="width:6px;height:6px;"></span> Secured</div>
+          </div>
+          <div class="arch-agent-box">
+            <div class="agent-name">DevOps Agent</div>
+            <div class="agent-framework">CrewAI · Claude</div>
+            <div class="agent-status status-secure"><span class="live-dot" style="width:6px;height:6px;"></span> Secured</div>
+          </div>
+          <div class="arch-agent-box">
+            <div class="agent-name">Support Agent</div>
+            <div class="agent-framework">Custom · Gemini</div>
+            <div class="agent-status status-warning">⚠ Under Review</div>
+          </div>
+          <div class="arch-agent-box">
+            <div class="agent-name">Research Agent</div>
+            <div class="agent-framework">AutoGen · GPT-4o</div>
+            <div class="agent-status status-secure"><span class="live-dot" style="width:6px;height:6px;"></span> Secured</div>
+          </div>
+        </div>
+        <div class="arch-connector"></div>
+        <div class="arch-layer arch-tools-layer">
+          <div class="arch-layer-label">🌍 External World — All Access Proxied via AgentGuard</div>
+          <div class="arch-tools">
+            <div class="arch-tool">🗄️ Databases</div>
+            <div class="arch-tool">📧 Email / Comms</div>
+            <div class="arch-tool">💳 Payment APIs</div>
+            <div class="arch-tool">☁️ Cloud Infra</div>
+            <div class="arch-tool">📁 File Systems</div>
+            <div class="arch-tool">🔗 Third-Party APIs</div>
+            <div class="arch-tool">🌐 Web Browsers</div>
+            <div class="arch-tool">💬 Messaging</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="flow-section">
+      <h3 style="font-size:24px;font-weight:700;color:var(--text-bright);text-align:center;" class="fade-in">How Every Agent Action Flows</h3>
+      <div class="flow-steps">
+        <div class="flow-step fade-in"><div class="step-num">1</div><h3>Agent Requests Action</h3><p>Agent wants to call a tool, access data, or communicate. Request intercepted by AgentGuard data plane.</p></div>
+        <div class="flow-step fade-in"><div class="step-num">2</div><h3>Identity Verified</h3><p>mTLS certificate checked. Agent identity confirmed. Session context validated against registered profile.</p></div>
+        <div class="flow-step fade-in"><div class="step-num">3</div><h3>Policy Evaluated</h3><p>Action checked against declarative policy. Permissions, budgets, scope boundaries, and data classification gates applied.</p></div>
+        <div class="flow-step fade-in"><div class="step-num">4</div><h3>Anomaly Scored</h3><p>ML-based anomaly detection compares against behavioural baseline. Chain-of-thought analysed for goal drift or manipulation.</p></div>
+        <div class="flow-step fade-in"><div class="step-num">5</div><h3>Decision Gate</h3><p><strong>Allow</strong> → action proceeds, logged. <strong>HITL</strong> → human approver notified. <strong>Block</strong> → action denied, alert raised. <strong>Quarantine</strong> → agent isolated.</p></div>
+        <div class="flow-step fade-in"><div class="step-num">6</div><h3>Full Telemetry</h3><p>Action, result, reasoning chain, latency, resource usage — all captured in tamper-evident, append-only log.</p></div>
+      </div>
+    </div>
+    <div style="margin-top:48px;">
+      <h3 style="font-size:20px;font-weight:700;color:var(--text-bright);margin-bottom:16px;" class="fade-in">Deployment Options</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+        <div class="solution-card fade-in" style="padding:20px;"><h3 style="font-size:15px;">SDK / Middleware</h3><p>Wrap any agent framework. 5-minute setup. One import statement.</p></div>
+        <div class="solution-card fade-in" style="padding:20px;"><h3 style="font-size:15px;">Proxy / Gateway</h3><p>Zero-code deployment. Intercepts all agent-tool calls at the network layer.</p></div>
+        <div class="solution-card fade-in" style="padding:20px;"><h3 style="font-size:15px;">SaaS Dashboard</h3><p>Cloud-hosted control plane. Setup in minutes. SOC 2 compliant infrastructure.</p></div>
+        <div class="solution-card fade-in" style="padding:20px;"><h3 style="font-size:15px;">On-Prem / VPC</h3><p>For regulated industries. HIPAA, FedRAMP compatible. Full data sovereignty.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- Live Dashboard -->
+<section id="dashboard">
+  <div class="container-wide">
+    <div class="section-label fade-in" style="text-align:center;">Live Dashboard</div>
+    <h2 class="section-title fade-in" style="text-align:center;">See everything. Control everything.</h2>
+    <p class="section-subtitle center fade-in">Real-time visibility into every agent's actions, risk levels, and compliance status.</p>
+    <div class="dashboard-mock fade-in">
+      <div class="dashboard-titlebar">
+        <span class="dashboard-dot r"></span>
+        <span class="dashboard-dot y"></span>
+        <span class="dashboard-dot g"></span>
+        <span>AgentGuard Dashboard — acme-corp.agentguard.io</span>
+        <span style="margin-left:auto;"><span class="live-indicator"><span class="live-dot"></span> Live</span></span>
+      </div>
+      <div class="dashboard-body">
+        <div class="dashboard-topbar">
+          <h2>Agent Fleet Overview</h2>
+          <div class="dashboard-status-pills">
+            <span class="status-pill pill-green">● 47 Healthy</span>
+            <span class="status-pill pill-orange">● 3 Under Review</span>
+            <span class="status-pill pill-red">● 1 Quarantined</span>
+          </div>
+        </div>
+        <div class="dashboard-grid">
+          <div class="dash-card">
+            <h4>Active Agents</h4>
+            <table class="agent-table">
+              <thead>
+                <tr><th>Agent</th><th>Framework</th><th>Actions/hr</th><th>Risk</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="color:var(--text-bright);font-weight:600;">finance-assistant-01</td>
+                  <td>LangChain</td><td>342</td>
+                  <td><span class="risk-badge risk-low">Low</span></td>
+                  <td style="color:var(--green);">● Active</td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-bright);font-weight:600;">devops-remediation-03</td>
+                  <td>CrewAI</td><td>891</td>
+                  <td><span class="risk-badge risk-medium">Medium</span></td>
+                  <td style="color:var(--green);">● Active</td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-bright);font-weight:600;">customer-support-12</td>
+                  <td>Custom</td><td>1,247</td>
+                  <td><span class="risk-badge risk-low">Low</span></td>
+                  <td style="color:var(--green);">● Active</td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-bright);font-weight:600;">data-pipeline-agent</td>
+                  <td>AutoGen</td><td>56</td>
+                  <td><span class="risk-badge risk-high">High</span></td>
+                  <td style="color:var(--orange);">⚠ Review</td>
+                </tr>
+                <tr>
+                  <td style="color:var(--text-bright);font-weight:600;">research-crawler-07</td>
+                  <td>LangGraph</td><td>0</td>
+                  <td><span class="risk-badge risk-high">Critical</span></td>
+                  <td style="color:var(--red);">🔒 Quarantined</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="dash-card">
+            <h4>Security Events</h4>
+            <ul class="activity-log">
+              <li><span class="time">14:32:01</span><span class="event blocked">🛑 BLOCKED — research-crawler-07 attempted external data exfiltration</span></li>
+              <li><span class="time">14:31:45</span><span class="event">🔒 AUTO-QUARANTINE — research-crawler-07 anomaly score exceeded threshold (4.2σ)</span></li>
+              <li><span class="time">14:28:12</span><span class="event approved">✅ APPROVED — finance-assistant-01 email draft sent (HITL: j.smith)</span></li>
+              <li><span class="time">14:25:33</span><span class="event">⚠️ ANOMALY — data-pipeline-agent unusual query pattern detected (2.8σ)</span></li>
+              <li><span class="time">14:22:01</span><span class="event">📋 POLICY — devops-remediation-03 rate limit reached, throttled</span></li>
+              <li><span class="time">14:18:44</span><span class="event approved">✅ APPROVED — customer-support-12 refund processed ($145.00)</span></li>
+              <li><span class="time">14:15:22</span><span class="event blocked">🛑 BLOCKED — research-crawler-07 attempted to access board_materials (denied by policy)</span></li>
+              <li><span class="time">14:12:08</span><span class="event">🔄 POLICY UPDATE — finance-assistant v2.1 deployed (via git push)</span></li>
+            </ul>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px;">
+          <div class="dash-card" style="text-align:center;padding:16px;"><div style="font-size:28px;font-weight:800;color:var(--text-bright);">12,847</div><div style="font-size:11px;color:var(--text-dim);">Actions Today</div></div>
+          <div class="dash-card" style="text-align:center;padding:16px;"><div style="font-size:28px;font-weight:800;color:var(--red);">23</div><div style="font-size:11px;color:var(--text-dim);">Blocked Actions</div></div>
+          <div class="dash-card" style="text-align:center;padding:16px;"><div style="font-size:28px;font-weight:800;color:var(--green);">99.7%</div><div style="font-size:11px;color:var(--text-dim);">Policy Compliance</div></div>
+          <div class="dash-card" style="text-align:center;padding:16px;"><div style="font-size:28px;font-weight:800;color:var(--accent-bright);">34ms</div><div style="font-size:11px;color:var(--text-dim);">Avg Latency</div></div>
+          <div class="dash-card" style="text-align:center;padding:16px;"><div style="font-size:28px;font-weight:800;color:var(--orange);">7</div><div style="font-size:11px;color:var(--text-dim);">HITL Pending</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- Compliance -->
+<section id="compliance">
+  <div class="container">
+    <div class="section-label fade-in" style="text-align:center;">Compliance</div>
+    <h2 class="section-title fade-in" style="text-align:center;">Every framework. One click.</h2>
+    <p class="section-subtitle center fade-in">Automated compliance evidence generation. Audit-ready reports. Board-level risk summaries.</p>
+    <div class="compliance-grid fade-in">
+      <div class="compliance-badge"><div class="badge-icon">🇪🇺</div><div class="badge-name">EU AI Act</div><div class="badge-detail">Art. 9, 12–15</div></div>
+      <div class="compliance-badge"><div class="badge-icon">🔒</div><div class="badge-name">SOC 2 Type II</div><div class="badge-detail">Full mapping</div></div>
+      <div class="compliance-badge"><div class="badge-icon">🏛️</div><div class="badge-name">NIST AI RMF</div><div class="badge-detail">All functions</div></div>
+      <div class="compliance-badge"><div class="badge-icon">🏥</div><div class="badge-name">HIPAA</div><div class="badge-detail">Technical safeguards</div></div>
+      <div class="compliance-badge"><div class="badge-icon">💳</div><div class="badge-name">PCI-DSS v4</div><div class="badge-detail">Access &amp; logging</div></div>
+      <div class="compliance-badge"><div class="badge-icon">🏦</div><div class="badge-name">DORA</div><div class="badge-detail">EU financial</div></div>
+      <div class="compliance-badge"><div class="badge-icon">🌐</div><div class="badge-name">ISO 42001</div><div class="badge-detail">AI management</div></div>
+      <div class="compliance-badge"><div class="badge-icon">📊</div><div class="badge-name">SEC Cyber</div><div class="badge-detail">Incident disclosure</div></div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- Market -->
+<section id="market">
+  <div class="container">
+    <div class="section-label fade-in">Market Opportunity</div>
+    <h2 class="section-title fade-in">$6.34B invested. No winner yet.</h2>
+    <p class="section-subtitle fade-in">The market is real and funded. But critical gaps remain unfilled.</p>
+    <div class="market-stats fade-in">
+      <div class="market-stat"><div class="num">$6.34B</div><div class="label">AI Security Funding (2025)</div></div>
+      <div class="market-stat"><div class="num">3×</div><div class="label">YoY Growth</div></div>
+      <div class="market-stat"><div class="num">$30B+</div><div class="label">TAM by 2028</div></div>
+      <div class="market-stat"><div class="num">10+</div><div class="label">Funded Competitors</div></div>
+      <div class="market-stat"><div class="num">0</div><div class="label">Category Leaders</div></div>
+    </div>
+    <h3 style="font-size:20px;font-weight:700;color:var(--text-bright);margin-top:40px;" class="fade-in">Competitive Landscape</h3>
+    <div class="competitor-grid fade-in">
+      <div class="competitor-card"><h4>Lakera 🇨🇭</h4><div class="focus">Prompt injection defence · Series A+</div><div class="gap-label">Gap</div><div class="gap">No agent lifecycle governance, kill switch, or multi-agent coordination</div></div>
+      <div class="competitor-card"><h4>Protect AI 🇺🇸</h4><div class="focus">Model scanning &amp; red teaming · Series B</div><div class="gap-label">Gap</div><div class="gap">ML model security focus. Less on agentic behaviour &amp; action policies</div></div>
+      <div class="competitor-card"><h4>CalypsoAI 🇺🇸</h4><div class="focus">Full lifecycle AI security · Series B</div><div class="gap-label">Gap</div><div class="gap">Closest competitor. Weaker on policy engine, HITL, multi-agent</div></div>
+      <div class="competitor-card"><h4>Invariant Labs → Snyk</h4><div class="focus">Agent behaviour inspection · Acquired</div><div class="gap-label">Signal</div><div class="gap">Validates category. Now locked inside Snyk ecosystem — independent position open</div></div>
+      <div class="competitor-card"><h4>WitnessAI 🇺🇸</h4><div class="focus">Agentic AI governance · $58M</div><div class="gap-label">Gap</div><div class="gap">Governance focus — less on runtime enforcement and incident response</div></div>
+      <div class="competitor-card"><h4>7AI</h4><div class="focus">AI identity &amp; access · $130M Series A</div><div class="gap-label">Gap</div><div class="gap">Identity layer only — no action policies, audit trails, or compliance</div></div>
+    </div>
+    <h3 style="font-size:20px;font-weight:700;color:var(--green);margin-top:48px;" class="fade-in">7 Unfilled Gaps — Our Opportunity</h3>
+    <div class="gaps-grid fade-in">
+      <div class="gap-card"><div class="gap-num">01</div><h4>Multi-Agent Governance</h4><p>Everyone builds for single agents. Multi-agent orchestration is the 2027+ wave — we're ready now.</p></div>
+      <div class="gap-card"><div class="gap-num">02</div><h4>Declarative Policy Engine</h4><p>No "OPA for AI agents" exists. Competitors detect but can't enforce. We enforce.</p></div>
+      <div class="gap-card"><div class="gap-num">03</div><h4>MCP Security</h4><p>Model Context Protocol is becoming the standard. No standalone MCP firewall exists. We're building it.</p></div>
+      <div class="gap-card"><div class="gap-num">04</div><h4>Agent Zero-Trust</h4><p>No mTLS between agents, no JIT privilege elevation, no continuous verification. We bring zero-trust to agents.</p></div>
+      <div class="gap-card"><div class="gap-num">05</div><h4>Cross-Framework</h4><p>Most tools are model-specific. We're framework-agnostic — LangChain, CrewAI, AutoGen, custom. All secured.</p></div>
+      <div class="gap-card"><div class="gap-num">06</div><h4>EU AI Act Automation</h4><p>Deadline August 2026. No automated compliance evidence for agentic AI. We generate it one-click.</p></div>
+      <div class="gap-card"><div class="gap-num">07</div><h4>Human-in-the-Loop</h4><p>OWASP flagged HITL as top risk. Tools detect without intervening. We intervene — approval workflows, escalation, kill switch.</p></div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- Pricing -->
+<section id="pricing">
+  <div class="container">
+    <div class="section-label fade-in" style="text-align:center;">Pricing</div>
+    <h2 class="section-title fade-in" style="text-align:center;">Start free. Scale with confidence.</h2>
+    <p class="section-subtitle center fade-in">Open-source core for developers. Enterprise features for regulated industries.</p>
+    <div class="pricing-grid fade-in">
+      <div class="pricing-card">
+        <div class="tier">Open Source</div>
+        <div class="price">$0</div>
+        <div class="desc">For developers and small teams exploring agent security.</div>
+        <ul>
+          <li>3 agents monitored</li>
+          <li>10K actions/month</li>
+          <li>Core policy engine</li>
+          <li>Local logging</li>
+          <li>Community support</li>
+        </ul>
+      </div>
+      <div class="pricing-card">
+        <div class="tier">Team</div>
+        <div class="price">$499<span>/mo</span></div>
+        <div class="desc">For teams shipping agents to production.</div>
+        <ul>
+          <li>25 agents monitored</li>
+          <li>100K actions included</li>
+          <li>Dashboard &amp; anomaly detection</li>
+          <li>Basic SIEM integration</li>
+          <li>Email support</li>
+        </ul>
+      </div>
+      <div class="pricing-card featured">
+        <div class="tier">Business</div>
+        <div class="price">$2,500<span>/mo</span></div>
+        <div class="desc">For organisations with compliance requirements.</div>
+        <ul>
+          <li>Unlimited agents</li>
+          <li>500K actions included</li>
+          <li>Compliance modules available</li>
+          <li>HITL approval workflows</li>
+          <li>Full SIEM/SOAR integration</li>
+          <li>Priority support + SLA</li>
+        </ul>
+      </div>
+      <div class="pricing-card">
+        <div class="tier">Enterprise</div>
+        <div class="price">Custom</div>
+        <div class="desc">For regulated industries. On-prem available.</div>
+        <ul>
+          <li>Everything in Business</li>
+          <li>On-prem / VPC deployment</li>
+          <li>Custom compliance modules</li>
+          <li>Dedicated support engineer</li>
+          <li>Red team as a service</li>
+          <li>Board-ready reporting</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- Financials -->
+<section id="financials">
+  <div class="container">
+    <div class="section-label fade-in">Financials</div>
+    <h2 class="section-title fade-in">Built to scale efficiently.</h2>
+    <p class="section-subtitle fade-in">Conservative projections. Benchmarked against Snyk's developer-first trajectory.</p>
+    <div class="fin-table-wrap fade-in">
+      <table class="fin-table">
+        <thead>
+          <tr><th>Metric</th><th>Year 1</th><th>Year 2</th><th>Year 3</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Enterprise Customers</td><td>3</td><td>25</td><td>100</td></tr>
+          <tr><td>Team / Business Customers</td><td>20</td><td>80</td><td>280</td></tr>
+          <tr><td>ARR</td><td>$150K</td><td>$2.0M</td><td class="fin-highlight">$8.5M</td></tr>
+          <tr><td>Gross Margin</td><td>82%</td><td>81%</td><td>80%</td></tr>
+          <tr><td>Headcount</td><td>8</td><td>18</td><td>42</td></tr>
+          <tr><td>Burn Multiple</td><td>10.7×</td><td>1.5×</td><td class="fin-highlight">0.6×</td></tr>
+          <tr><td>Net Revenue Retention</td><td>—</td><td>120%</td><td class="fin-highlight">135%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:32px;">
+      <div class="dash-card fade-in">
+        <h4>The Ask — $5–8M Seed</h4>
+        <ul style="list-style:none;font-size:14px;">
+          <li style="padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--border);"><span>Engineering (40%)</span><span style="color:var(--text-bright);font-weight:600;">$2.0M</span></li>
+          <li style="padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--border);"><span>Go-To-Market (16%)</span><span style="color:var(--text-bright);font-weight:600;">$0.8M</span></li>
+          <li style="padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--border);"><span>Infrastructure (6%)</span><span style="color:var(--text-bright);font-weight:600;">$0.3M</span></li>
+          <li style="padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--border);"><span>Operations (8%)</span><span style="color:var(--text-bright);font-weight:600;">$0.4M</span></li>
+          <li style="padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--border);"><span>Working Capital (10%)</span><span style="color:var(--text-bright);font-weight:600;">$0.5M</span></li>
+          <li style="padding:6px 0;display:flex;justify-content:space-between;"><span>Reserve (20%)</span><span style="color:var(--text-bright);font-weight:600;">$1.0M</span></li>
+        </ul>
+        <div style="margin-top:12px;padding-top:12px;border-top:2px solid var(--accent);text-align:center;font-weight:700;color:var(--accent-bright);">~20 months runway</div>
+      </div>
+      <div class="dash-card fade-in">
+        <h4>Series A Triggers</h4>
+        <ul style="list-style:none;font-size:14px;">
+          <li style="padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--border);"><span>ARR</span><span style="color:var(--green);font-weight:600;">$1.5–2.5M</span></li>
+          <li style="padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--border);"><span>MoM Growth</span><span style="color:var(--green);font-weight:600;">20%+</span></li>
+          <li style="padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--border);"><span>Enterprise Logos</span><span style="color:var(--green);font-weight:600;">8–15</span></li>
+          <li style="padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--border);"><span>NRR</span><span style="color:var(--green);font-weight:600;">&gt;120%</span></li>
+          <li style="padding:6px 0;display:flex;justify-content:space-between;border-bottom:1px solid var(--border);"><span>Gross Margin</span><span style="color:var(--green);font-weight:600;">&gt;75%</span></li>
+          <li style="padding:6px 0;display:flex;justify-content:space-between;"><span>Burn Multiple</span><span style="color:var(--green);font-weight:600;">&lt;2×</span></li>
+        </ul>
+        <div style="margin-top:12px;padding-top:12px;border-top:2px solid var(--green);text-align:center;font-weight:700;color:var(--green);">Target: $8–15M Series A at $30–60M</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- CTA -->
+<section class="cta-section" id="contact">
+  <div class="container">
+    <h2>Every company with AI agents<br>will need a firewall.</h2>
+    <p>We're building it. Join the private beta.</p>
+    <div class="hero-ctas">
+      <a href="mailto:founders@agentguard.io" class="btn-primary">Talk to Founders →</a>
+      <a href="#" class="btn-secondary">View Pitch Deck</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <p style="font-size:16px;margin-bottom:8px;">🛡️ <strong>AgentGuard</strong></p>
+    <p>Cybersecurity for the Agentic Era</p>
+    <p style="margin-top:16px;opacity:0.5;">Confidential — February 2026</p>
+  </div>
+</footer>
+
+<script>
+// Smooth scroll for nav links — no IntersectionObserver needed
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+// Animate dashboard stats on first view (optional live counter effect)
+let animated = false;
+window.addEventListener('scroll', () => {
+  if (animated) return;
+  const dash = document.querySelector('.dashboard-mock');
+  if (!dash) return;
+  const rect = dash.getBoundingClientRect();
+  if (rect.top < window.innerHeight) {
+    animated = true;
+    // Pulse the status pills once
+    document.querySelectorAll('.status-pill').forEach((el, i) => {
+      setTimeout(() => {
+        el.style.transform = 'scale(1.1)';
+        setTimeout(() => el.style.transform = '', 200);
+      }, i * 150);
+    });
+  }
+}, { passive: true });
+</script>
+
+</body>
+</html>
