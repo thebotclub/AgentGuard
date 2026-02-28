@@ -5,143 +5,727 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>How to Secure Your LangChain Agents: A Practical Guide | AgentGuard</title>
   <meta name="description" content="Step-by-step tutorial for securing LangChain agents: define a policy, wrap your agent, monitor actions, set up a kill switch, and generate compliance audit trails.">
-  <meta name="keywords" content="LangChain security, secure LangChain agent, LangChain guardrails, LangChain prompt injection, LangChain production security">
+  <meta name="keywords" content="LangChain security, secure LangChain agent, LangChain guardrails, LangChain production security, LangChain prompt injection">
   <meta property="og:title" content="How to Secure Your LangChain Agents: A Practical Guide">
-  <meta property="og:description" content="A developer tutorial: 5 steps to add runtime security, monitoring, and compliance audit trails to your LangChain agents.">
+  <meta property="og:description" content="5 steps to add runtime security, monitoring, and compliance audit trails to your LangChain agents.">
   <meta property="og:type" content="article">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #0a0a1a; --bg-card: #111128; --bg-code: #0d0d22;
-      --accent: #6366f1; --accent-light: #818cf8; --accent-dim: rgba(99,102,241,0.15);
-      --text: #e2e8f0; --text-muted: #94a3b8; --text-dim: #64748b;
-      --border: rgba(99,102,241,0.2); --danger: #ef4444;
-      --warning: #f59e0b; --success: #10b981;
-      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a1a;--bg-card:#111128;--bg-code:#0c0c20;
+      --accent:#6366f1;--accent-light:#818cf8;--accent-dim:rgba(99,102,241,.15);
+      --text:#e2e8f0;--text-muted:#94a3b8;--text-dim:#64748b;
+      --border:rgba(99,102,241,.2);--danger:#ef4444;--warning:#f59e0b;--success:#10b981;
+      --font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+      --mono:'JetBrains Mono','Fira Code',Consolas,monospace;
     }
-    html { scroll-behavior: smooth; }
-    body { background: var(--bg); color: var(--text); font-family: var(--font-sans); line-height: 1.75; font-size: 17px; }
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.75;font-size:17px}
 
-    nav {
-      background: rgba(10,10,26,0.95); backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border); padding: 0 2rem;
-      position: sticky; top: 0; z-index: 100;
-      display: flex; align-items: center; justify-content: space-between; height: 60px;
+    nav{background:rgba(10,10,26,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;height:60px}
+    .nb{font-weight:700;font-size:1.1rem;color:var(--accent-light);text-decoration:none;letter-spacing:-.02em}
+    .nb span{color:var(--text-muted);font-weight:400}
+    .nl{display:flex;gap:1.5rem;align-items:center}
+    .nl a{color:var(--text-muted);text-decoration:none;font-size:.9rem;transition:color .2s}
+    .nl a:hover{color:var(--text)}
+    .ncta{background:var(--accent);color:#fff!important;padding:.4rem 1rem;border-radius:6px;font-weight:600!important}
+    .ncta:hover{background:var(--accent-light)!important}
+
+    .hero{padding:5rem 2rem 3rem;max-width:800px;margin:0 auto}
+    .tag{display:inline-block;background:var(--accent-dim);color:var(--accent-light);font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.3rem .75rem;border-radius:4px;margin-bottom:1.5rem}
+    h1{font-size:clamp(1.8rem,4vw,2.5rem);font-weight:800;line-height:1.2;letter-spacing:-.03em;color:#fff;margin-bottom:1.25rem}
+    h1 em{color:var(--accent-light);font-style:normal}
+    .meta{display:flex;align-items:center;gap:1rem;font-size:.875rem;color:var(--text-muted);flex-wrap:wrap;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border)}
+    .meta .dot{opacity:.4}
+
+    .wrap{max-width:800px;margin:0 auto;padding:0 2rem 6rem}
+    h2{font-size:1.4rem;font-weight:700;color:#fff;margin:3rem 0 1rem;letter-spacing:-.02em;line-height:1.3}
+    h3{font-size:1.05rem;font-weight:700;color:var(--accent-light);margin:1.75rem 0 .75rem}
+    p{margin-bottom:1.25rem}
+    a{color:var(--accent-light);text-decoration:underline;text-underline-offset:3px}
+    a:hover{color:#fff}
+    strong{color:#fff;font-weight:600}
+    ul,ol{padding-left:1.5rem;margin-bottom:1.25rem}
+    li{margin-bottom:.5rem}
+
+    .toc{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin:2rem 0 3rem}
+    .toc h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin:0 0 1rem}
+    .toc ol{padding-left:1.25rem}
+    .toc li{margin-bottom:.4rem}
+    .toc a{color:var(--text-muted);text-decoration:none;font-size:.925rem}
+    .toc a:hover{color:var(--accent-light)}
+
+    .step{margin:3.5rem 0 0;padding-top:2rem;border-top:1px solid var(--border)}
+    .step-badge{display:inline-flex;align-items:center;gap:.6rem;margin-bottom:1rem}
+    .step-num{background:var(--accent);color:#fff;font-weight:800;font-size:.78rem;letter-spacing:.05em;padding:.25rem .7rem;border-radius:4px;text-transform:uppercase}
+    .step h2{margin:0;font-size:1.35rem}
+
+    .cw{position:relative;margin:1.5rem 0}
+    .cl{background:rgba(99,102,241,.2);color:var(--accent-light);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:.3rem .75rem;border-radius:4px 4px 0 0;display:inline-block;margin-bottom:-1px}
+    pre{background:var(--bg-code);border:1px solid var(--border);border-radius:0 8px 8px 8px;padding:1.5rem;overflow-x:auto;font-family:var(--mono);font-size:.83rem;line-height:1.65}
+    .cw .cl+pre{border-top-left-radius:0}
+    code{font-family:var(--mono);font-size:.875em;background:rgba(99,102,241,.12);padding:.15em .4em;border-radius:3px;color:var(--accent-light)}
+    pre code{background:none;padding:0;color:#c4b5fd;font-size:1em}
+
+    .cm{color:#4b5568}
+    .kw{color:#f472b6}
+    .st{color:#34d399}
+    .fn{color:#60a5fa}
+    .va{color:#a5f3fc}
+    .tp{color:#fbbf24}
+    .nu{color:#fb923c}
+
+    .info-box{background:rgba(99,102,241,.07);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:6px;padding:1.25rem 1.5rem;margin:1.5rem 0}
+    .info-box .il{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent-light);margin-bottom:.5rem}
+    .info-box p{margin:0;font-size:.95rem;color:var(--text-muted)}
+
+    .warn-box{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-left:4px solid var(--warning);border-radius:6px;padding:1.25rem 1.5rem;margin:1.5rem 0}
+    .warn-box .wl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--warning);margin-bottom:.5rem}
+    .warn-box p{margin:0;font-size:.95rem;color:var(--text-muted)}
+
+    .danger-box{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-left:4px solid var(--danger);border-radius:6px;padding:1.25rem 1.5rem;margin:1.5rem 0}
+    .danger-box .dl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--danger);margin-bottom:.5rem}
+    .danger-box p{margin:0;font-size:.95rem;color:var(--text-muted)}
+
+    .success-box{background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);border-left:4px solid var(--success);border-radius:6px;padding:1.25rem 1.5rem;margin:1.5rem 0}
+    .success-box .sl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--success);margin-bottom:.5rem}
+    .success-box p{margin:0;font-size:.95rem;color:var(--text-muted)}
+
+    /* Dashboard mockup */
+    .dash{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:1.5rem 0;font-size:.82rem}
+    .dash-bar{background:rgba(99,102,241,.15);padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+    .dash-bar .dt{color:var(--accent-light);font-weight:700;font-family:var(--font);font-size:.85rem}
+    .dash-online{display:flex;align-items:center;gap:.4rem;font-family:var(--font);font-size:.75rem;color:var(--success)}
+    .dash-online .blink{width:7px;height:7px;border-radius:50%;background:var(--success);animation:bl 1.5s infinite}
+    @keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
+    .dash-body{padding:1rem 1.25rem;font-family:var(--mono)}
+    .dash-row{display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid rgba(99,102,241,.08)}
+    .dash-row:last-child{border-bottom:none}
+    .dash-row .dk{color:var(--text-dim);font-size:.78rem}
+    .dash-row .dv{font-size:.8rem;color:var(--text-muted)}
+    .ok{color:var(--success)!important}
+    .wr{color:var(--warning)!important}
+    .er{color:var(--danger)!important}
+    .dash-events{margin-top:.75rem;padding-top:.75rem;border-top:1px solid rgba(99,102,241,.1)}
+    .de{display:flex;gap:.75rem;padding:.3rem 0;font-size:.78rem;align-items:flex-start}
+    .de-time{color:var(--text-dim);white-space:nowrap;flex-shrink:0}
+    .de-badge{padding:.1rem .4rem;border-radius:3px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;flex-shrink:0}
+    .badge-ok{background:rgba(16,185,129,.2);color:var(--success)}
+    .badge-warn{background:rgba(245,158,11,.2);color:var(--warning)}
+    .badge-block{background:rgba(239,68,68,.2);color:var(--danger)}
+    .badge-info{background:var(--accent-dim);color:var(--accent-light)}
+    .de-msg{color:var(--text-muted);line-height:1.4}
+
+    hr{border:none;border-top:1px solid var(--border);margin:3rem 0}
+
+    .cta-section{background:linear-gradient(135deg,rgba(99,102,241,.12) 0%,rgba(99,102,241,.04) 100%);border:1px solid var(--border);border-radius:12px;padding:3rem 2.5rem;margin-top:4rem;text-align:center}
+    .cta-section h2{font-size:1.75rem;margin:0 0 .75rem;color:#fff}
+    .cta-section>p{color:var(--text-muted);max-width:520px;margin:0 auto 2rem;font-size:1rem}
+    .cta-form{display:flex;gap:.75rem;max-width:460px;margin:0 auto;flex-wrap:wrap}
+    .cta-form input[type=email]{flex:1;min-width:220px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;color:var(--text);font-size:.95rem;outline:none;transition:border-color .2s}
+    .cta-form input[type=email]:focus{border-color:var(--accent)}
+    .cta-form input[type=email]::placeholder{color:var(--text-dim)}
+    .cta-form button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:.75rem 1.5rem;font-size:.95rem;font-weight:700;cursor:pointer;transition:background .2s;white-space:nowrap}
+    .cta-form button:hover{background:var(--accent-light)}
+    .cta-note{font-size:.8rem;color:var(--text-dim);margin-top:1rem}
+
+    footer{border-top:1px solid var(--border);padding:2rem;text-align:center;font-size:.85rem;color:var(--text-dim)}
+    footer a{color:var(--text-muted)}
+
+    @media(max-width:640px){
+      .hero{padding:3rem 1.25rem 2rem}
+      .wrap{padding:0 1.25rem 4rem}
+      .cta-section{padding:2rem 1.25rem}
+      nav{padding:0 1.25rem}
     }
-    .nav-brand { font-weight: 700; font-size: 1.1rem; color: var(--accent-light); text-decoration: none; letter-spacing: -0.02em; }
-    .nav-brand span { color: var(--text-muted); font-weight: 400; }
-    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
-    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
-    .nav-links a:hover { color: var(--text); }
-    .nav-cta { background: var(--accent); color: #fff !important; padding: 0.4rem 1rem; border-radius: 6px; font-weight: 600 !important; }
-    .nav-cta:hover { background: var(--accent-light) !important; }
+  </style>
+</head>
+<body>
 
-    .hero { padding: 5rem 2rem 3rem; max-width: 800px; margin: 0 auto; }
-    .tag {
-      display: inline-block; background: var(--accent-dim); color: var(--accent-light);
-      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-      padding: 0.3rem 0.75rem; border-radius: 4px; margin-bottom: 1.5rem;
-    }
-    h1 { font-size: clamp(1.8rem,4vw,2.6rem); font-weight: 800; line-height: 1.2; letter-spacing: -0.03em; color: #fff; margin-bottom: 1.25rem; }
-    h1 em { color: var(--accent-light); font-style: normal; }
-    .hero-meta { display: flex; align-items: center; gap: 1rem; font-size: 0.875rem; color: var(--text-muted); flex-wrap: wrap; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
-    .hero-meta .dot { opacity: 0.4; }
+<nav>
+  <a href="../index.html" class="nb">Agent<span>Guard</span></a>
+  <div class="nl">
+    <a href="index.html">Blog</a>
+    <a href="../index.html">Product</a>
+    <a href="#cta" class="ncta">Get Early Access</a>
+  </div>
+</nav>
 
-    .article-wrap { max-width: 800px; margin: 0 auto; padding: 0 2rem 6rem; }
+<article>
+  <div class="hero">
+    <div class="tag">Developer Tutorial</div>
+    <h1>How to Secure Your LangChain Agents:<br><em>A Practical Guide</em></h1>
+    <p style="font-size:1.05rem;color:var(--text-muted);margin-top:.5rem">
+      LangChain makes it easy to give your agent tools — web search, code execution, database access, API calls. That's exactly the problem. Every tool is an attack surface. This guide walks you through 5 concrete steps to add runtime security, real-time monitoring, and a kill switch to any LangChain agent.
+    </p>
+    <div class="meta">
+      <span>AgentGuard Engineering</span>
+      <span class="dot">·</span>
+      <span>February 2026</span>
+      <span class="dot">·</span>
+      <span>10 min read</span>
+      <span class="dot">·</span>
+      <span>Tutorial · Python</span>
+    </div>
+  </div>
 
-    h2 { font-size: 1.5rem; font-weight: 700; color: #fff; margin: 3rem 0 1rem; letter-spacing: -0.02em; }
-    h3 { font-size: 1.1rem; font-weight: 700; color: var(--accent-light); margin: 2rem 0 0.75rem; }
-    p { margin-bottom: 1.25rem; }
-    a { color: var(--accent-light); text-decoration: underline; text-underline-offset: 3px; }
-    a:hover { color: #fff; }
-    strong { color: #fff; font-weight: 600; }
-    ul, ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
-    li { margin-bottom: 0.5rem; }
+  <div class="wrap">
+    <div class="toc">
+      <h3>Steps in this guide</h3>
+      <ol>
+        <li><a href="#why">Why LangChain Agents Need Runtime Security</a></li>
+        <li><a href="#step1">Step 1: Define a Policy</a></li>
+        <li><a href="#step2">Step 2: Wrap Your Agent</a></li>
+        <li><a href="#step3">Step 3: Monitor Actions</a></li>
+        <li><a href="#step4">Step 4: Set Up the Kill Switch</a></li>
+        <li><a href="#step5">Step 5: Audit Trail for Compliance</a></li>
+      </ol>
+    </div>
 
-    .toc { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 2rem 0 3rem; }
-    .toc h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin: 0 0 1rem; }
-    .toc ol { padding-left: 1.25rem; }
-    .toc li { margin-bottom: 0.4rem; }
-    .toc a { color: var(--text-muted); text-decoration: none; font-size: 0.925rem; }
-    .toc a:hover { color: var(--accent-light); }
+    <h2 id="why">Why LangChain Agents Need Runtime Security</h2>
+    <p>
+      LangChain's tool abstraction is genuinely elegant. You give the agent a list of tools, a goal, and it figures out how to use them. That design philosophy — maximum agent autonomy — is what makes LangChain powerful. It's also what makes unsecured LangChain agents a production risk.
+    </p>
+    <p>
+      When you give an agent a <code>bash_tool</code>, a <code>write_file</code> tool, or a Stripe API wrapper, you're not just giving it capabilities. You're expanding the attack surface for anyone who can influence that agent's inputs. And in a LangChain agent, inputs come from everywhere: user messages, web search results, database queries, retrieved documents, outputs from other agents.
+    </p>
 
-    /* STEP HEADER */
-    .step-header {
-      display: flex; align-items: center; gap: 1rem;
-      margin: 3rem 0 1.25rem; padding-top: 1rem;
-      border-top: 1px solid var(--border);
-    }
-    .step-num {
-      background: var(--accent); color: #fff; font-weight: 800;
-      font-size: 0.8rem; letter-spacing: 0.05em;
-      padding: 0.3rem 0.75rem; border-radius: 4px; white-space: nowrap;
-    }
-    .step-header h2 { margin: 0; border: none; padding: 0; font-size: 1.35rem; }
+    <div class="danger-box">
+      <div class="dl">⚠ The Fundamental Problem</div>
+      <p>LangChain's system prompt is probabilistic, not deterministic. You can write <code>"Never access /etc/passwd"</code> in your system prompt and an adversarial user or poisoned tool output can still cause the agent to attempt it. System prompts are guidance to an LLM. Runtime policies are enforced controls. They are not the same thing.</p>
+    </div>
 
-    /* CODE BLOCKS */
-    .code-wrap { position: relative; margin: 1.5rem 0; }
-    .code-label {
-      background: rgba(99,102,241,0.2); color: var(--accent-light);
-      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
-      padding: 0.3rem 0.75rem; border-radius: 4px 4px 0 0;
-      display: inline-block; margin-bottom: -1px;
-    }
-    pre {
-      background: var(--bg-code); border: 1px solid var(--border);
-      border-radius: 0 8px 8px 8px; padding: 1.5rem;
-      overflow-x: auto; font-family: var(--font-mono);
-      font-size: 0.84rem; line-height: 1.65;
-    }
-    .code-wrap .code-label + pre { border-top-left-radius: 0; }
-    code {
-      font-family: var(--font-mono); font-size: 0.875em;
-      background: rgba(99,102,241,0.12); padding: 0.15em 0.4em;
-      border-radius: 3px; color: var(--accent-light);
-    }
-    pre code { background: none; padding: 0; color: #c4b5fd; font-size: 1em; }
+    <p>Here's a minimal example of a LangChain agent with tool access — and what an unsecured version looks like:</p>
 
-    /* Syntax highlight classes */
-    .c { color: #4b5568; } /* comment */
-    .k { color: #f472b6; } /* keyword */
-    .s { color: #34d399; } /* string */
-    .n { color: #60a5fa; } /* function/method name */
-    .o { color: #fb923c; } /* operator / special */
-    .v { color: #a5f3fc; } /* variable */
-    .t { color: #fbbf24; } /* type */
-    .p { color: #e2e8f0; } /* punctuation/plain */
+    <div class="cw">
+      <div class="cl">Python · Vulnerable Pattern</div>
+      <pre><code><span class="cm"># Don't do this in production</span>
+<span class="kw">from</span> langchain.agents <span class="kw">import</span> AgentExecutor, create_openai_functions_agent
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+<span class="kw">from</span> langchain.tools <span class="kw">import</span> BashTool, WriteFileTool, WebSearchTool
 
-    /* INFO / WARNING / SUCCESS BOXES */
-    .info-box { background: rgba(99,102,241,0.07); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 6px; padding: 1.25rem 1.5rem; margin: 1.5rem 0; }
-    .info-box .il { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-light); margin-bottom: 0.5rem; }
-    .info-box p { margin: 0; font-size: 0.95rem; color: var(--text-muted); }
+<span class="va">llm</span> = <span class="fn">ChatOpenAI</span>(model=<span class="st">"gpt-4o"</span>)
+<span class="va">tools</span> = [<span class="fn">BashTool</span>(), <span class="fn">WriteFileTool</span>(), <span class="fn">WebSearchTool</span>()]
+<span class="va">agent</span> = <span class="fn">create_openai_functions_agent</span>(llm, tools, prompt)
+<span class="va">executor</span> = <span class="fn">AgentExecutor</span>(agent=agent, tools=tools)
 
-    .warning-box { background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.25); border-left: 4px solid var(--warning); border-radius: 6px; padding: 1.25rem 1.5rem; margin: 1.5rem 0; }
-    .warning-box .wl { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--warning); margin-bottom: 0.5rem; }
-    .warning-box p { margin: 0; font-size: 0.95rem; color: var(--text-muted); }
+<span class="cm"># No policy enforcement. No audit trail. No kill switch.
+# Every tool call goes directly to execution.
+# One poisoned web search result = arbitrary code execution.</span>
+<span class="va">result</span> = executor.<span class="fn">invoke</span>({<span class="st">"input"</span>: user_input})</code></pre>
+    </div>
 
-    .danger-box { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.25); border-left: 4px solid var(--danger); border-radius: 6px; padding: 1.25rem 1.5rem; margin: 1.5rem 0; }
-    .danger-box .dl { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--danger); margin-bottom: 0.5rem; }
-    .danger-box p { margin: 0; font-size: 0.95rem; color: var(--text-muted); }
+    <p>
+      The rest of this guide shows you exactly how to fix this — with a policy layer, monitoring, and a kill switch that doesn't require rebuilding your agent from scratch.
+    </p>
 
-    /* DASHBOARD MOCKUP */
-    .dashboard {
-      background: var(--bg-code); border: 1px solid var(--border);
-      border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0;
-      font-family: var(--font-mono); font-size: 0.82rem;
-    }
-    .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
-    .dash-title { color: var(--accent-light); font-weight: 700; font-size: 0.9rem; font-family: var(--font-sans); }
-    .dash-status { display: flex; align-items: center; gap: 0.5rem; }
-    .dot-green { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: blink 2s infinite; }
-    @keyframes blink { 0%,100%{opacity:1;}50%{opacity:0.4;} }
-    .dash-status span { font-size: 0.75rem; color: var(--success); font-family: var(--font-sans); }
-    .dash-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(99,102,241,0.08); font-size: 0.8rem; }
-    .dash-row:last-child { border-bottom: none; }
-    .dash-row .dr-label { color: var(--text-dim); }
-    .dash-row .dr-val { color: var(--text-muted); }
-    .dash-row .dr-val.ok { color: var(--success); }
-    .dash-row .dr-val.warn { color: var(--warning); }
-    .dash-row .dr-val.err { color: var(--danger); }
-    .dash-events { margin-top: 1rem; }
-    .dash-event { display: flex; gap
+    <div class="step" id="step1">
+      <div class="step-badge">
+        <span class="step-num">Step 1</span>
+        <h2>Define a Policy</h2>
+      </div>
+      <p>
+        Security starts with a policy: a formal, version-controlled definition of what your agent is allowed to do. Not a system prompt — a policy file. The difference is that system prompts are read by the LLM (and can be overridden by adversarial inputs). Policy files are enforced by a runtime layer that sits <em>outside</em> the LLM.
+      </p>
+      <p>
+        AgentGuard policies are declared in YAML. Here's a complete policy for a customer service agent with web search and email capabilities:
+      </p>
+
+      <div class="cw">
+        <div class="cl">agentguard-policy.yaml</div>
+        <pre><code><span class="cm"># AgentGuard Policy — Customer Service Agent v1.2
+# Owner: platform-team@company.com
+# Last reviewed: 2026-02-28</span>
+
+<span class="va">agent</span>:
+  <span class="va">id</span>: <span class="st">"customer-service-agent"</span>
+  <span class="va">version</span>: <span class="st">"1.2"</span>
+  <span class="va">description</span>: <span class="st">"Handles customer support queries, can search docs and send templated emails"</span>
+  <span class="va">owner</span>: <span class="st">"platform-team"</span>
+
+<span class="cm"># What this agent is allowed to do</span>
+<span class="va">permissions</span>:
+  <span class="va">tools</span>:
+    - <span class="va">name</span>: <span class="st">"web_search"</span>
+      <span class="va">allowed</span>: <span class="kw">true</span>
+      <span class="va">constraints</span>:
+        <span class="va">domains_allowlist</span>: [<span class="st">"docs.company.com"</span>, <span class="st">"support.company.com"</span>]
+        <span class="va">max_calls_per_session</span>: <span class="nu">10</span>
+
+    - <span class="va">name</span>: <span class="st">"send_email"</span>
+      <span class="va">allowed</span>: <span class="kw">true</span>
+      <span class="va">constraints</span>:
+        <span class="va">recipient_domain_allowlist</span>: [<span class="st">"*.company.com"</span>]
+        <span class="va">require_template</span>: <span class="kw">true</span>
+        <span class="va">templates_allowlist</span>: [<span class="st">"support-reply"</span>, <span class="st">"ticket-update"</span>, <span class="st">"escalation"</span>]
+        <span class="va">human_approval_required</span>: <span class="kw">false</span>
+
+    - <span class="va">name</span>: <span class="st">"write_file"</span>
+      <span class="va">allowed</span>: <span class="kw">false</span>  <span class="cm"># Explicitly denied</span>
+
+    - <span class="va">name</span>: <span class="st">"bash_tool"</span>
+      <span class="va">allowed</span>: <span class="kw">false</span>  <span class="cm"># Explicitly denied</span>
+
+<span class="cm"># Data access controls</span>
+<span class="va">data</span>:
+  <span class="va">can_access_pii</span>: <span class="kw">false</span>
+  <span class="va">can_store_conversation</span>: <span class="kw">true</span>
+  <span class="va">retention_days</span>: <span class="nu">30</span>
+  <span class="va">pii_detection</span>: <span class="st">"redact"</span>  <span class="cm"># auto-redact PII from logs</span>
+
+<span class="cm"># Session limits</span>
+<span class="va">limits</span>:
+  <span class="va">max_session_duration_minutes</span>: <span class="nu">30</span>
+  <span class="va">max_actions_per_session</span>: <span class="nu">50</span>
+  <span class="va">max_cost_usd_per_session</span>: <span class="nu">2.00</span>
+
+<span class="cm"># High-risk actions requiring human approval</span>
+<span class="va">human_in_the_loop</span>:
+  <span class="va">require_approval_for</span>:
+    - <span class="st">"send_email to external domains"</span>
+    - <span class="st">"any action with risk_score > 7"</span>
+  <span class="va">approval_timeout_seconds</span>: <span class="nu">300</span>
+  <span class="va">timeout_action</span>: <span class="st">"deny"</span>  <span class="cm"># fail-closed on timeout</span>
+
+<span class="cm"># Anomaly detection thresholds</span>
+<span class="va">anomaly_detection</span>:
+  <span class="va">alert_on_prompt_injection_score</span>: <span class="nu">0.7</span>
+  <span class="va">alert_on_goal_drift_score</span>: <span class="nu">0.6</span>
+  <span class="va">auto_halt_on_score</span>: <span class="nu">0.9</span></code></pre>
+      </div>
+
+      <p>
+        This policy file is version-controlled, human-readable, and serves double duty: it's your runtime enforcement config <em>and</em> your Art. 9 risk management documentation for EU AI Act compliance. One source of truth.
+      </p>
+
+      <div class="info-box">
+        <div class="il">💡 Policy-as-Code Philosophy</div>
+        <p>Treat your agent policy like you treat Terraform or Kubernetes configs — in version control, reviewed via pull requests, deployed through CI/CD. Every change is auditable. This is what "governing AI at scale" actually looks like in practice.</p>
+      </div>
+    </div>
+
+    <div class="step" id="step2">
+      <div class="step-badge">
+        <span class="step-num">Step 2</span>
+        <h2>Wrap Your Agent</h2>
+      </div>
+      <p>
+        You don't need to rewrite your LangChain agent. AgentGuard wraps your existing <code>AgentExecutor</code> with a security middleware layer. The wrapper intercepts every tool call before execution, evaluates it against your policy, and either allows, blocks, or escalates it.
+      </p>
+
+      <div class="cw">
+        <div class="cl">Python · Install</div>
+        <pre><code>pip install agentguard-sdk langchain langchain-openai</code></pre>
+      </div>
+
+      <div class="cw">
+        <div class="cl">Python · Secure Agent</div>
+        <pre><code><span class="kw">import</span> agentguard
+<span class="kw">from</span> langchain.agents <span class="kw">import</span> AgentExecutor, create_openai_functions_agent
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+<span class="kw">from</span> langchain.tools <span class="kw">import</span> WebSearchTool, SendEmailTool
+<span class="kw">from</span> langchain.prompts <span class="kw">import</span> ChatPromptTemplate
+
+<span class="cm"># 1. Initialise AgentGuard with your policy file</span>
+<span class="va">guard</span> = agentguard.<span class="fn">Guard</span>(
+    policy_file=<span class="st">"./agentguard-policy.yaml"</span>,
+    api_key=<span class="st">"ag_your_api_key"</span>,  <span class="cm"># or env var AGENTGUARD_API_KEY</span>
+    environment=<span class="st">"production"</span>
+)
+
+<span class="cm"># 2. Build your agent as normal</span>
+<span class="va">llm</span> = <span class="fn">ChatOpenAI</span>(model=<span class="st">"gpt-4o"</span>, temperature=<span class="nu">0</span>)
+<span class="va">raw_tools</span> = [<span class="fn">WebSearchTool</span>(), <span class="fn">SendEmailTool</span>()]
+
+<span class="cm"># 3. Wrap tools with AgentGuard policy enforcement
+# Every tool call is intercepted before execution</span>
+<span class="va">secured_tools</span> = guard.<span class="fn">secure_tools</span>(raw_tools)
+
+<span class="va">prompt</span> = <span class="fn">ChatPromptTemplate</span>.<span class="fn">from_messages</span>([
+    (<span class="st">"system"</span>, <span class="st">"You are a customer service agent for Acme Corp."</span>),
+    (<span class="st">"human"</span>, <span class="st">"{input}"</span>),
+    (<span class="st">"placeholder"</span>, <span class="st">"{agent_scratchpad}"</span>),
+])
+
+<span class="va">agent</span> = <span class="fn">create_openai_functions_agent</span>(llm, secured_tools, prompt)
+
+<span class="cm"># 4. Create a secured executor — wraps the executor to add chain-of-thought logging</span>
+<span class="va">executor</span> = guard.<span class="fn">secure_executor</span>(
+    <span class="fn">AgentExecutor</span>(
+        agent=agent,
+        tools=secured_tools,
+        verbose=<span class="kw">False</span>,
+        return_intermediate_steps=<span class="kw">True</span>  <span class="cm"># required for audit trail</span>
+    ),
+    agent_id=<span class="st">"customer-service-agent"</span>,
+    user_id=<span class="va">user_id</span>,  <span class="cm"># for per-user policy and attribution</span>
+    session_metadata={<span class="st">"ticket_id"</span>: <span class="va">ticket_id</span>, <span class="st">"channel"</span>: <span class="st">"web"</span>}
+)
+
+<span class="cm"># 5. Run exactly as before — security is transparent to your code</span>
+<span class="kw">try</span>:
+    <span class="va">result</span> = executor.<span class="fn">invoke</span>({<span class="st">"input"</span>: user_message})
+    <span class="fn">print</span>(result[<span class="st">"output"</span>])
+<span class="kw">except</span> agentguard.<span class="tp">PolicyViolationError</span> <span class="kw">as</span> <span class="va">e</span>:
+    <span class="cm"># Policy violation was caught and blocked before execution</span>
+    <span class="fn">print</span>(f<span class="st">"Action blocked: {e.action} — {e.reason}"</span>)
+    <span class="fn">print</span>(f<span class="st">"Risk score: {e.risk_score}"</span>)
+<span class="kw">except</span> agentguard.<span class="tp">KillSwitchError</span>:
+    <span class="cm"># Agent was halted by kill switch (manual or automatic)</span>
+    <span class="fn">print</span>(<span class="st">"Agent halted. Manual review required."</span>)</code></pre>
+      </div>
+
+      <p>What happens under the hood when you call <code>executor.invoke()</code>:</p>
+      <ol>
+        <li>AgentGuard intercepts each tool call before LangChain executes it</li>
+        <li>The tool call is evaluated against your policy file (tool allowlist, parameter constraints, session limits)</li>
+        <li>Prompt injection detection runs on the inputs to each tool call</li>
+        <li>Risk scoring runs on the full action context (what's the agent been doing this session?)</li>
+        <li>If the action passes, it's executed and logged. If it fails, a <code>PolicyViolationError</code> is raised — the tool call never happens</li>
+      </ol>
+
+      <div class="info-box">
+        <div class="il">⚡ Latency Impact</div>
+        <p>The policy evaluation layer adds &lt;50ms p99 overhead. Policy checks are asynchronous for logging; only enforcement is synchronous. Your agent's performance SLA is preserved.</p>
+      </div>
+    </div>
+
+    <div class="step" id="step3">
+      <div class="step-badge">
+        <span class="step-num">Step 3</span>
+        <h2>Monitor Actions in Real Time</h2>
+      </div>
+      <p>
+        Policies prevent known bad actions. Monitoring catches unknown bad patterns — unusual sequences, anomalous behaviour, emerging attacks. The AgentGuard dashboard gives you a real-time view of your agent fleet.
+      </p>
+      <p>Here's what the monitoring dashboard looks like for a production agent:</p>
+
+      <div class="dash">
+        <div class="dash-bar">
+          <span class="dt">AgentGuard Dashboard — customer-service-agent</span>
+          <div class="dash-online">
+            <span class="blink"></span>
+            <span>Live — 3 active sessions</span>
+          </div>
+        </div>
+        <div class="dash-body">
+          <div class="dash-row"><span class="dk">AGENT</span><span class="dv">customer-service-agent v1.2</span></div>
+          <div class="dash-row"><span class="dk">POLICY VERSION</span><span class="dv">agentguard-policy.yaml @ git:a3f7c91</span></div>
+          <div class="dash-row"><span class="dk">ACTIONS TODAY</span><span class="dv">2,847 total · 2,841 allowed · 6 blocked</span></div>
+          <div class="dash-row"><span class="dk">POLICY VIOLATIONS (24h)</span><span class="dv er">6 blocked</span></div>
+          <div class="dash-row"><span class="dk">PROMPT INJECTION SCORE (avg)</span><span class="dv ok">0.08 — normal</span></div>
+          <div class="dash-row"><span class="dk">GOAL DRIFT SCORE (avg)</span><span class="dv ok">0.12 — normal</span></div>
+          <div class="dash-row"><span class="dk">P99 LATENCY OVERHEAD</span><span class="dv ok">34ms</span></div>
+          <div class="dash-row"><span class="dk">SESSION COST (avg)</span><span class="dv">$0.18 USD</span></div>
+          <div class="dash-row"><span class="dk">KILL SWITCH STATUS</span><span class="dv ok">ARMED — ready</span></div>
+
+          <div class="dash-events">
+            <div class="de">
+              <span class="de-time">14:23:07</span>
+              <span class="de-badge badge-block">BLOCKED</span>
+              <span class="de-msg">send_email · recipient external@outsidedomain.com not in allowlist · risk_score: 8.2 · session: sess_a7x2</span>
+            </div>
+            <div class="de">
+              <span class="de-time">14:19:44</span>
+              <span class="de-badge badge-warn">ALERT</span>
+              <span class="de-msg">Prompt injection pattern detected in web_search result · score: 0.73 · content sanitised before context injection</span>
+            </div>
+            <div class="de">
+              <span class="de-time">14:15:22</span>
+              <span class="de-badge badge-ok">ALLOWED</span>
+              <span class="de-msg">send_email · template: support-reply · recipient: customer@company.com · approved by policy</span>
+            </div>
+            <div class="de">
+              <span class="de-time">13:58:01</span>
+              <span class="de-badge badge-info">HITL</span>
+              <span class="de-msg">Action paused pending human approval · high risk_score: 7.4 · approved by j.smith@company.com 00:42s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p>You can also access monitoring data programmatically — useful for integrating with your existing SIEM or alerting stack:</p>
+
+      <div class="cw">
+        <div class="cl">Python · Programmatic Monitoring</div>
+        <pre><code><span class="kw">import</span> agentguard
+
+<span class="va">client</span> = agentguard.<span class="fn">Client</span>(api_key=<span class="st">"ag_your_api_key"</span>)
+
+<span class="cm"># Get live metrics for your agent</span>
+<span class="va">metrics</span> = client.agents[<span class="st">"customer-service-agent"</span>].<span class="fn">get_metrics</span>(
+    window=<span class="st">"1h"</span>
+)
+<span class="fn">print</span>(metrics.violations_count)       <span class="cm"># 6</span>
+<span class="fn">print</span>(metrics.avg_injection_score)    <span class="cm"># 0.08</span>
+<span class="fn">print</span>(metrics.sessions_active)        <span class="cm"># 3</span>
+
+<span class="cm"># Subscribe to real-time events via webhook</span>
+<span class="cm"># (configure in dashboard or via API)</span>
+<span class="cm"># AgentGuard posts to your endpoint on:</span>
+<span class="cm"># - policy_violation (severity: warn / block / halt)</span>
+<span class="cm"># - injection_detected</span>
+<span class="cm"># - kill_switch_triggered</span>
+<span class="cm"># - session_anomaly</span>
+
+<span class="cm"># Forward to Splunk / Sentinel / PagerDuty as needed</span>
+<span class="cm"># Webhook payload is OpenTelemetry-compatible</span>
+
+<span class="cm"># Or pull events for SIEM ingestion</span>
+<span class="va">events</span> = client.agents[<span class="st">"customer-service-agent"</span>].<span class="fn">get_events</span>(
+    since=<span class="st">"2026-02-28T00:00:00Z"</span>,
+    severity=[<span class="st">"warn"</span>, <span class="st">"block"</span>, <span class="st">"halt"</span>]
+)
+<span class="kw">for</span> <span class="va">event</span> <span class="kw">in</span> events:
+    <span class="fn">send_to_splunk</span>(event.<span class="fn">to_dict</span>())</code></pre>
+      </div>
+    </div>
+
+    <div class="step" id="step4">
+      <div class="step-badge">
+        <span class="step-num">Step 4</span>
+        <h2>Set Up the Kill Switch</h2>
+      </div>
+      <p>
+        The kill switch is the most important control in your runtime security stack — and the most overlooked. It's your ability to halt a running agent mid-session, either manually or automatically, when something goes wrong. EU AI Act Article 14 requires demonstrable human oversight capability. The kill switch is that capability.
+      </p>
+      <p>
+        AgentGuard provides three kill switch modes:
+      </p>
+      <ul>
+        <li><strong>Manual halt</strong> — triggered via dashboard, API, or CLI by an operator</li>
+        <li><strong>Automatic halt</strong> — triggered when an agent's risk score exceeds a configured threshold</li>
+        <li><strong>Circuit breaker</strong> — triggered when a fleet-wide anomaly pattern is detected (e.g., multiple agents behaving abnormally simultaneously)</li>
+      </ul>
+
+      <div class="cw">
+        <div class="cl">Python · Kill Switch Configuration</div>
+        <pre><code><span class="cm"># In your policy YAML (already covers basic auto-halt):</span>
+<span class="cm"># auto_halt_on_score: 0.9 — configured in Step 1</span>
+
+<span class="cm"># Programmatic manual halt — e.g., from your incident response runbook</span>
+<span class="kw">import</span> agentguard
+
+<span class="va">client</span> = agentguard.<span class="fn">Client</span>(api_key=<span class="st">"ag_your_api_key"</span>)
+
+<span class="cm"># Halt a specific session immediately</span>
+client.sessions[<span class="st">"sess_a7x2"</span>].<span class="fn">halt</span>(
+    reason=<span class="st">"Suspicious exfiltration pattern — manual halt by SOC"</span>,
+    operator=<span class="st">"soc-analyst-01"</span>
+)
+
+<span class="cm"># Halt ALL sessions for an agent (e.g., security incident)</span>
+client.agents[<span class="st">"customer-service-agent"</span>].<span class="fn">halt_all</span>(
+    reason=<span class="st">"Incident response — prompt injection campaign detected"</span>,
+    fail_closed=<span class="kw">True</span>  <span class="cm"># new sessions also blocked until re-armed</span>
+)
+
+<span class="cm"># Re-arm after incident review</span>
+client.agents[<span class="st">"customer-service-agent"</span>].<span class="fn">rearm</span>(
+    approved_by=<span class="st">"security-lead@company.com"</span>,
+    incident_id=<span class="st">"INC-2026-041"</span>
+)</code></pre>
+      </div>
+
+      <div class="cw">
+        <div class="cl">Python · Automatic Kill Switch (Event-Driven)</div>
+        <pre><code><span class="kw">from</span> agentguard <span class="kw">import</span> Guard, HaltPolicy
+
+<span class="cm"># Configure fine-grained auto-halt rules in code (overrides YAML for dynamic scenarios)</span>
+<span class="va">guard</span> = <span class="fn">Guard</span>(
+    policy_file=<span class="st">"./agentguard-policy.yaml"</span>,
+    halt_policy=<span class="fn">HaltPolicy</span>(
+        <span class="cm"># Halt if risk score exceeds threshold</span>
+        risk_score_threshold=<span class="nu">0.9</span>,
+
+        <span class="cm"># Halt if agent attempts more than N blocked actions in a session</span>
+        max_violations_per_session=<span class="nu">3</span>,
+
+        <span class="cm"># Halt if session exceeds cost limit</span>
+        max_cost_usd=<span class="nu">5.00</span>,
+
+        <span class="cm"># Halt if a specific tool is called with suspicious parameters</span>
+        suspicious_tool_patterns=[
+            <span class="st">"write_file: path contains /etc"</span>,
+            <span class="st">"bash_tool: command contains curl"</span>,
+            <span class="st">"send_email: recipient matches *.external.com"</span>,
+        ],
+
+        <span class="cm"># What to do with the in-flight session when halted</span>
+        halt_action=<span class="st">"preserve_state"</span>,  <span class="cm"># save context for forensic review</span>
+        notify_webhook=<span class="st">"https://your-pagerduty-endpoint/alert"</span>
+    )
+)</code></pre>
+      </div>
+
+      <div class="warn-box">
+        <div class="wl">⚠ Test Your Kill Switch</div>
+        <p>The kill switch you never tested is the kill switch that fails during an incident. Run a quarterly drill: trigger a manual halt in your staging environment, verify the agent stops within the expected time window, and log the test result. Auditors will ask for evidence that oversight controls actually work — not just that they exist.</p>
+      </div>
+    </div>
+
+    <div class="step" id="step5">
+      <div class="step-badge">
+        <span class="step-num">Step 5</span>
+        <h2>Audit Trail for Compliance</h2>
+      </div>
+      <p>
+        By the time you've completed Steps 1–4, you're already generating the compliance evidence that EU AI Act Article 12 requires. Step 5 is about making that evidence accessible — exportable in formats auditors expect, and structured so your compliance team can answer questions without engineering involvement.
+      </p>
+
+      <div class="cw">
+        <div class="cl">Python · Generate Compliance Report</div>
+        <pre><code><span class="kw">import</span> agentguard
+<span class="kw">from</span> datetime <span class="kw">import</span> datetime, timedelta
+
+<span class="va">client</span> = agentguard.<span class="fn">Client</span>(api_key=<span class="st">"ag_your_api_key"</span>)
+
+<span class="cm"># Export full audit trail for a date range</span>
+<span class="va">audit_log</span> = client.agents[<span class="st">"customer-service-agent"</span>].<span class="fn">export_audit_trail</span>(
+    start=datetime.<span class="fn">now</span>() - timedelta(days=<span class="nu">90</span>),
+    end=datetime.<span class="fn">now</span>(),
+    format=<span class="st">"eu_ai_act"</span>,   <span class="cm"># structured for Art. 12 compliance</span>
+    include_reasoning=<span class="kw">True</span>,  <span class="cm"># chain-of-thought captured at decision time</span>
+    include_hitl_records=<span class="kw">True</span>  <span class="cm"># human approval decisions included</span>
+)
+
+<span class="cm"># Save as tamper-evident JSON with cryptographic signature</span>
+audit_log.<span class="fn">save</span>(<span class="st">"./audit-q1-2026.json"</span>)
+<span class="fn">print</span>(audit_log.integrity_hash)    <span class="cm"># SHA-256 of full log for chain of custody</span>
+<span class="fn">print</span>(audit_log.entry_count)       <span class="cm"># 847,293 logged actions</span>
+
+<span class="cm"># Generate pre-built compliance summary (human-readable)</span>
+<span class="va">report</span> = client.agents[<span class="st">"customer-service-agent"</span>].<span class="fn">generate_compliance_report</span>(
+    framework=<span class="st">"eu_ai_act"</span>,   <span class="cm"># or "soc2", "iso42001", "hipaa", "dora"</span>
+    period_days=<span class="nu">90</span>
+)
+report.<span class="fn">export_pdf</span>(<span class="st">"./compliance-report-q1-2026.pdf"</span>)
+
+<span class="cm"># The PDF includes:
+# - Article 9: Risk management evidence (policy versions, changes, violations)
+# - Article 12: Log summary statistics + integrity proof
+# - Article 13: Agent scope documentation (from your policy YAML)
+# - Article 14: HITL approval records + kill switch test log
+# - Article 15: Anomaly detection events + adversarial input summary</span></code></pre>
+      </div>
+
+      <p>The audit trail each action record contains:</p>
+      <ul>
+        <li><strong>Timestamp</strong> (millisecond precision, UTC, tamper-evident)</li>
+        <li><strong>Agent ID + version + policy version</strong> at the time of the action</li>
+        <li><strong>Action type</strong> and tool called</li>
+        <li><strong>Input parameters</strong> (with PII redacted per your policy)</li>
+        <li><strong>Reasoning chain</strong> — what was in the agent's context window at decision time</li>
+        <li><strong>Policy evaluation result</strong> — allowed / blocked / escalated, and which rule applied</li>
+        <li><strong>Output</strong> (with PII redacted)</li>
+        <li><strong>Risk score</strong> at the time of evaluation</li>
+        <li><strong>Session ID and User ID</strong> for attribution</li>
+        <li><strong>Cryptographic chain link</strong> to previous and next records (tamper detection)</li>
+      </ul>
+
+      <div class="success-box">
+        <div class="sl">✓ Compliance Evidence Available Before the Audit</div>
+        <p>The most common compliance failure mode is assembling evidence <em>after</em> an audit request — which produces incomplete, retrospective documentation that auditors distrust. With AgentGuard, your audit trail is generated in real time and available on demand. When an auditor asks "show me evidence of human oversight for your AI agent in Q1 2026," you export a PDF — not a PowerPoint.</p>
+      </div>
+    </div>
+
+    <hr>
+
+    <h2>Putting It All Together</h2>
+    <p>
+      Here's the complete secure LangChain agent pattern — from policy to execution:
+    </p>
+
+    <div class="cw">
+      <div class="cl">Python · Complete Secure Agent Pattern</div>
+      <pre><code><span class="cm">"""
+Secure LangChain Agent — Production Pattern
+==========================================
+1. Policy from YAML (version-controlled)
+2. Tools wrapped by AgentGuard
+3. Executor wrapped for audit logging
+4. Kill switch configured
+5. Compliance reporting enabled
+"""</span>
+<span class="kw">import</span> agentguard
+<span class="kw">from</span> langchain.agents <span class="kw">import</span> AgentExecutor, create_openai_functions_agent
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+<span class="kw">from</span> langchain.tools <span class="kw">import</span> WebSearchTool, SendEmailTool
+<span class="kw">from</span> langchain.prompts <span class="kw">import</span> ChatPromptTemplate
+
+<span class="cm"># Initialise guard from policy file</span>
+<span class="va">guard</span> = agentguard.<span class="fn">Guard</span>.<span class="fn">from_policy</span>(<span class="st">"./agentguard-policy.yaml"</span>)
+
+<span class="cm"># Build agent with secured tools</span>
+<span class="va">llm</span> = <span class="fn">ChatOpenAI</span>(model=<span class="st">"gpt-4o"</span>, temperature=<span class="nu">0</span>)
+<span class="va">tools</span> = guard.<span class="fn">secure_tools</span>([<span class="fn">WebSearchTool</span>(), <span class="fn">SendEmailTool</span>()])
+<span class="va">prompt</span> = <span class="fn">ChatPromptTemplate</span>.<span class="fn">from_messages</span>([
+    (<span class="st">"system"</span>, <span class="st">"You are a customer service agent for Acme Corp."</span>),
+    (<span class="st">"human"</span>, <span class="st">"{input}"</span>),
+    (<span class="st">"placeholder"</span>, <span class="st">"{agent_scratchpad}"</span>),
+])
+<span class="va">agent</span> = <span class="fn">create_openai_functions_agent</span>(llm, tools, prompt)
+<span class="va">executor</span> = guard.<span class="fn">secure_executor</span>(
+    <span class="fn">AgentExecutor</span>(agent=agent, tools=tools, return_intermediate_steps=<span class="kw">True</span>),
+    agent_id=<span class="st">"customer-service-agent"</span>
+)
+
+<span class="cm"># Run — security, monitoring, and audit trail are automatic</span>
+<span class="kw">def</span> <span class="fn">handle_customer_query</span>(<span class="va">user_message</span>: <span class="tp">str</span>, <span class="va">user_id</span>: <span class="tp">str</span>, <span class="va">ticket_id</span>: <span class="tp">str</span>) -> <span class="tp">str</span>:
+    <span class="kw">with</span> guard.<span class="fn">session</span>(user_id=user_id, metadata={<span class="st">"ticket_id"</span>: ticket_id}):
+        <span class="kw">try</span>:
+            <span class="va">result</span> = executor.<span class="fn">invoke</span>({<span class="st">"input"</span>: user_message})
+            <span class="kw">return</span> result[<span class="st">"output"</span>]
+        <span class="kw">except</span> agentguard.<span class="tp">PolicyViolationError</span> <span class="kw">as</span> <span class="va">e</span>:
+            <span class="cm"># Log, alert, return safe fallback</span>
+            <span class="va">logger</span>.<span class="fn">warning</span>(f<span class="st">"Policy violation: {e.action} blocked. Risk: {e.risk_score}"</span>)
+            <span class="kw">return</span> <span class="st">"I'm unable to complete that action. A human agent will follow up."</span>
+        <span class="kw">except</span> agentguard.<span class="tp">KillSwitchError</span>:
+            <span class="kw">return</span> <span class="st">"Our AI assistant is temporarily unavailable. Please contact support directly."</span></code></pre>
+    </div>
+
+    <h2>What You've Built</h2>
+    <p>After completing these five steps, your LangChain agent has:</p>
+    <ul>
+      <li>✅ <strong>Runtime policy enforcement</strong> — outside the LLM, can't be bypassed by prompt injection</li>
+      <li>✅ <strong>Tool-level access controls</strong> — allowlists, parameter constraints, session limits</li>
+      <li>✅ <strong>Prompt injection detection</strong> — on all tool inputs, not just user messages</li>
+      <li>✅ <strong>Real-time monitoring dashboard</strong> — risk scores, violations, active sessions</li>
+      <li>✅ <strong>Kill switch</strong> — manual and automatic, with &lt;500ms response time</li>
+      <li>✅ <strong>Tamper-evident audit trail</strong> — chain-of-thought logging, exportable for compliance</li>
+      <li>✅ <strong>EU AI Act Art. 9, 12, 13, 14, 15 compliance evidence</strong> — generated automatically</li>
+    </ul>
+
+    <p>
+      The system prompt you wrote before is still useful — it guides the agent's behaviour. But now it's backed by runtime controls that enforce your policies regardless of what the model "decides." That's the difference between hoping your agent behaves and <em>knowing</em> it's constrained.
+    </p>
+    <p>
+      AgentGuard integrates with LangChain, CrewAI, AutoGen, OpenAI Assistants, and Anthropic tool use — the same policy, the same monitoring dashboard, the same audit trail, regardless of which framework powers your agents.
+    </p>
+
+    <div class="cta-section" id="cta">
+      <h2>Get Early Access to AgentGuard</h2>
+      <p>We're onboarding design partners who are deploying LangChain agents in production. Early access includes a free security assessment of your current agent architecture and direct line to the engineering team.</p>
+      <form class="cta-form" onsubmit="handleSubmit(event)">
+        <input type="email" placeholder="eng@yourcompany.com" required>
+        <button type="submit">Request Access</button>
+      </form>
+      <p class="cta-note">Open-source SDK available on GitHub. Early access gets you the control plane + compliance modules.</p>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <p>&copy; 2026 AgentGuard. Runtime security for the agentic era. &nbsp;·&nbsp; <a href="../index.html">Home</a> &nbsp;·&nbsp; <a href="index.html">Blog</a></p>
+</footer>
+
+<script>
+  function handleSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    form.innerHTML = '<p style="color:#10b981;font-weight:600;font-size:1rem;">✓ You\'re on the list. We\'ll reach out within 48h.</p>';
+  }
+</script>
+
+</body>
+</html>
