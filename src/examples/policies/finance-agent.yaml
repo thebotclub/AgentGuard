@@ -1,0 +1,60 @@
+# AgentGuard Policy: Finance Agent
+# Scope: Read-only access to financial data. No fund transfers. HITL for emails.
+# Compliance: SOC 2, PCI-DSS (no cardholder data write access)
+
+id: finance-agent-v1
+version: 1.0.0
+description: >
+  Read-only financial data agent. May query balances, transactions, and
+  reports. Cannot initiate transfers or payments. Sending emails requires
+  human approval (prevents accidental disclosure of financial data).
+
+tools:
+  allow:
+    - finance:read_balance
+    - finance:read_transactions
+    - finance:generate_report
+    - search:web
+    - calendar:read
+    - data:query
+  deny:
+    - finance:transfer
+    - finance:payment
+    - finance:wire
+    - finance:withdraw
+    - db:write
+    - db:delete
+    - file:delete
+
+dataAccess:
+  allowedClassifications:
+    - public
+    - internal
+    - financial-readonly
+  deniedDatasets:
+    - raw-pii
+    - cardholder-data
+    - credentials
+  allowExport: false
+  allowPII: false
+
+rateLimits:
+  globalCallsPerMinute: 60
+  perTool:
+    finance:read_transactions: 20
+    data:query: 30
+
+spending:
+  maxTotalUsd: 50.00
+  maxPerActionUsd: 5.00
+  currency: USD
+
+humanInTheLoop:
+  requireApprovalFor:
+    - send_email
+    - email:send
+    - notify:external
+    - finance:generate_report   # Reports containing sensitive data need sign-off
+  timeoutSeconds: 120
+
+defaultAction: deny

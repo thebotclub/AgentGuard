@@ -1,0 +1,69 @@
+# AgentGuard Policy: Customer Support Agent
+# Scope: Customer lookups, ticket management. No PII export. $500 spend cap.
+# Compliance: GDPR, CCPA — PII access logged, no bulk export
+
+id: support-agent-v1
+version: 1.0.0
+description: >
+  Customer support agent. May look up customer records, read and update
+  tickets, and send internal notes. Explicitly denied from exporting PII
+  in bulk or accessing payment data. $500 total spend cap per session.
+  Refund issuance above $100 requires human approval.
+
+tools:
+  allow:
+    - customer:lookup
+    - customer:read_profile
+    - customer:read_orders
+    - ticket:read
+    - ticket:create
+    - ticket:update
+    - ticket:add_note
+    - ticket:close
+    - knowledge:search
+    - search:internal
+    - send_email          # Customer-facing emails allowed (not HITL by default)
+    - notify:internal
+    - refund:issue        # Covered by HITL rules below
+  deny:
+    - customer:bulk_export
+    - customer:delete
+    - customer:modify_id
+    - payment:charge
+    - payment:read_card
+    - db:raw_query        # No direct SQL — prevents data exfiltration
+    - db:export
+    - admin:*             # Glob: no admin actions
+
+dataAccess:
+  allowedClassifications:
+    - public
+    - customer-service
+    - internal
+  deniedDatasets:
+    - raw-payment-data
+    - bulk-pii-export
+    - internal-hr
+  allowExport: false
+  allowPII: true          # Agents CAN read PII for lookups, but cannot export
+
+rateLimits:
+  globalCallsPerMinute: 90
+  perTool:
+    customer:lookup: 30
+    customer:read_profile: 20
+    send_email: 10         # Throttle emails to prevent spam
+
+spending:
+  maxTotalUsd: 500.00
+  maxPerActionUsd: 150.00  # Single refund cap before HITL
+  currency: USD
+
+humanInTheLoop:
+  requireApprovalFor:
+    - refund:issue         # Any refund needs human sign-off
+    - ticket:escalate
+    - customer:unsubscribe # Permanent actions need review
+  timeoutSeconds: 180
+
+defaultAction: deny
