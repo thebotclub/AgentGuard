@@ -11,133 +11,47 @@
   <meta property="og:type" content="article">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0a0a1a;
-      --bg-card: #111128;
-      --bg-code: #0d0d24;
-      --accent: #6366f1;
-      --accent-light: #818cf8;
-      --accent-dim: rgba(99, 102, 241, 0.15);
-      --text: #e2e8f0;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-      --border: rgba(99, 102, 241, 0.2);
-      --danger: #ef4444;
-      --warning: #f59e0b;
-      --success: #10b981;
+      --bg: #0a0a1a; --bg-card: #111128; --accent: #6366f1;
+      --accent-light: #818cf8; --accent-dim: rgba(99,102,241,0.15);
+      --text: #e2e8f0; --text-muted: #94a3b8; --text-dim: #64748b;
+      --border: rgba(99,102,241,0.2); --danger: #ef4444;
+      --warning: #f59e0b; --success: #10b981;
       --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
     }
-
     html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font-sans);
-      line-height: 1.75;
-      font-size: 17px;
-    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font-sans); line-height: 1.75; font-size: 17px; }
 
     nav {
-      background: rgba(10, 10, 26, 0.95);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 2rem;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 60px;
+      background: rgba(10,10,26,0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border); padding: 0 2rem;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between; height: 60px;
     }
-    .nav-brand {
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: var(--accent-light);
-      text-decoration: none;
-      letter-spacing: -0.02em;
-    }
+    .nav-brand { font-weight: 700; font-size: 1.1rem; color: var(--accent-light); text-decoration: none; letter-spacing: -0.02em; }
     .nav-brand span { color: var(--text-muted); font-weight: 400; }
     .nav-links { display: flex; gap: 1.5rem; align-items: center; }
-    .nav-links a {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-size: 0.9rem;
-      transition: color 0.2s;
-    }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
     .nav-links a:hover { color: var(--text); }
-    .nav-cta {
-      background: var(--accent);
-      color: #fff !important;
-      padding: 0.4rem 1rem;
-      border-radius: 6px;
-      font-weight: 600 !important;
-    }
+    .nav-cta { background: var(--accent); color: #fff !important; padding: 0.4rem 1rem; border-radius: 6px; font-weight: 600 !important; }
     .nav-cta:hover { background: var(--accent-light) !important; }
 
-    .hero {
-      padding: 5rem 2rem 3rem;
-      max-width: 800px;
-      margin: 0 auto;
-    }
+    .hero { padding: 5rem 2rem 3rem; max-width: 800px; margin: 0 auto; }
     .tag {
-      display: inline-block;
-      background: var(--accent-dim);
-      color: var(--accent-light);
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 0.3rem 0.75rem;
-      border-radius: 4px;
-      margin-bottom: 1.5rem;
+      display: inline-block; background: var(--accent-dim); color: var(--accent-light);
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 0.3rem 0.75rem; border-radius: 4px; margin-bottom: 1.5rem;
     }
-    h1 {
-      font-size: clamp(1.8rem, 4vw, 2.6rem);
-      font-weight: 800;
-      line-height: 1.2;
-      letter-spacing: -0.03em;
-      color: #fff;
-      margin-bottom: 1.25rem;
-    }
+    h1 { font-size: clamp(1.8rem,4vw,2.6rem); font-weight: 800; line-height: 1.2; letter-spacing: -0.03em; color: #fff; margin-bottom: 1.25rem; }
     h1 em { color: var(--accent-light); font-style: normal; }
-    .hero-meta {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      flex-wrap: wrap;
-      margin-top: 1.5rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid var(--border);
-    }
+    .hero-meta { display: flex; align-items: center; gap: 1rem; font-size: 0.875rem; color: var(--text-muted); flex-wrap: wrap; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
     .hero-meta .dot { opacity: 0.4; }
 
-    .article-wrap {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 0 2rem 6rem;
-    }
+    .article-wrap { max-width: 800px; margin: 0 auto; padding: 0 2rem 6rem; }
 
-    h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #fff;
-      margin: 3rem 0 1rem;
-      letter-spacing: -0.02em;
-      line-height: 1.3;
-    }
-    h3 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--accent-light);
-      margin: 2rem 0 0.75rem;
-      letter-spacing: -0.01em;
-    }
+    h2 { font-size: 1.5rem; font-weight: 700; color: #fff; margin: 3rem 0 1rem; letter-spacing: -0.02em; line-height: 1.3; }
+    h3 { font-size: 1.1rem; font-weight: 700; color: var(--accent-light); margin: 2rem 0 0.75rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin: 1.25rem 0 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
     p { margin-bottom: 1.25rem; }
     a { color: var(--accent-light); text-decoration: underline; text-underline-offset: 3px; }
     a:hover { color: #fff; }
@@ -145,225 +59,95 @@
     ul, ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
     li { margin-bottom: 0.5rem; }
 
-    /* ARTICLE CARD */
-    .article-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 2rem;
-      margin: 2rem 0;
-    }
-    .article-box .article-tag {
-      display: inline-block;
-      background: rgba(99,102,241,0.2);
-      color: var(--accent-light);
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 0.25rem 0.6rem;
-      border-radius: 4px;
-      margin-bottom: 0.75rem;
-    }
-    .article-box h3 { margin-top: 0; font-size: 1.15rem; }
-    .article-box p { color: var(--text-muted); margin-bottom: 0.75rem; font-size: 0.95rem; }
-    .article-box p:last-child { margin-bottom: 0; }
-
-    /* REQUIREMENT ROW */
-    .req-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
-    .req-table th {
-      background: rgba(99,102,241,0.15);
-      color: var(--accent-light);
-      text-align: left;
-      padding: 0.75rem 1rem;
-      font-weight: 700;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .req-table td {
-      border-bottom: 1px solid rgba(99,102,241,0.1);
-      padding: 0.875rem 1rem;
-      color: var(--text-muted);
-      vertical-align: top;
-    }
-    .req-table tr:last-child td { border-bottom: none; }
-    .req-table td:first-child { color: var(--accent-light); font-weight: 600; white-space: nowrap; }
-
-    /* TIMELINE */
-    .timeline { margin: 2rem 0; }
-    .timeline-item {
-      display: flex;
-      gap: 1.5rem;
-      margin-bottom: 1.5rem;
-      position: relative;
-    }
-    .timeline-marker {
-      flex-shrink: 0;
-      width: 40px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .timeline-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: var(--accent);
-      border: 2px solid var(--bg);
-      box-shadow: 0 0 0 2px var(--accent);
-      margin-top: 4px;
-      flex-shrink: 0;
-    }
-    .timeline-dot.past { background: var(--text-dim); box-shadow: 0 0 0 2px var(--text-dim); }
-    .timeline-dot.urgent { background: var(--danger); box-shadow: 0 0 0 2px var(--danger); }
-    .timeline-line {
-      width: 2px;
-      flex: 1;
-      background: var(--border);
-      margin: 4px auto 0;
-    }
-    .timeline-content { flex: 1; padding-bottom: 0.5rem; }
-    .timeline-date { font-size: 0.8rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
-    .timeline-title { font-weight: 700; color: #fff; margin-bottom: 0.35rem; }
-    .timeline-desc { font-size: 0.9rem; color: var(--text-muted); }
-
-    /* WARNING BOX */
-    .warning-box {
-      background: rgba(239,68,68,0.07);
-      border: 1px solid rgba(239,68,68,0.25);
-      border-left: 4px solid var(--danger);
-      border-radius: 6px;
-      padding: 1.25rem 1.5rem;
-      margin: 1.5rem 0;
-    }
-    .warning-box .wl { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--danger); margin-bottom: 0.5rem; }
-    .warning-box p { margin: 0; font-size: 0.95rem; color: var(--text-muted); }
-
-    /* INFO BOX */
-    .info-box {
-      background: rgba(99,102,241,0.07);
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--accent);
-      border-radius: 6px;
-      padding: 1.25rem 1.5rem;
-      margin: 1.5rem 0;
-    }
-    .info-box .il { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-light); margin-bottom: 0.5rem; }
-    .info-box p { margin: 0; font-size: 0.95rem; color: var(--text-muted); }
-
-    /* CHECKLIST */
-    .checklist {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 2rem;
-      margin: 2rem 0;
-    }
-    .checklist h3 { margin-top: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
-    .checklist-section { margin-top: 1.5rem; }
-    .checklist-section h4 { font-size: 0.9rem; font-weight: 700; color: var(--accent-light); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    .check-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid rgba(99,102,241,0.07);
-    }
-    .check-item:last-child { border-bottom: none; }
-    .check-box {
-      width: 18px;
-      height: 18px;
-      border: 2px solid var(--border);
-      border-radius: 3px;
-      flex-shrink: 0;
-      margin-top: 3px;
-    }
-    .check-item span { font-size: 0.9rem; color: var(--text-muted); }
-
-    /* AGENTGUARD MAPPING */
-    .mapping-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin: 1rem 0;
-    }
-    .mapping-card .mc-article { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-light); margin-bottom: 0.4rem; }
-    .mapping-card .mc-title { font-weight: 700; color: #fff; margin-bottom: 0.5rem; font-size: 1rem; }
-    .mapping-card .mc-req { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.75rem; border-left: 3px solid var(--accent); padding-left: 0.75rem; }
-    .mapping-card .mc-solution { font-size: 0.875rem; color: #10b981; }
-    .mapping-card .mc-solution::before { content: "AgentGuard → "; font-weight: 700; }
-
-    hr { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
-
-    .cta-section {
-      background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0.04) 100%);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 3rem 2.5rem;
-      margin-top: 4rem;
-      text-align: center;
-    }
-    .cta-section h2 { font-size: 1.75rem; margin: 0 0 0.75rem; color: #fff; }
-    .cta-section p { color: var(--text-muted); max-width: 500px; margin: 0 auto 2rem; font-size: 1rem; }
-    .cta-form {
-      display: flex;
-      gap: 0.75rem;
-      max-width: 460px;
-      margin: 0 auto;
-      flex-wrap: wrap;
-    }
-    .cta-form input[type="email"] {
-      flex: 1;
-      min-width: 220px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.75rem 1rem;
-      color: var(--text);
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .cta-form input[type="email"]:focus { border-color: var(--accent); }
-    .cta-form input[type="email"]::placeholder { color: var(--text-dim); }
-    .cta-form button {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 0.75rem 1.5rem;
-      font-size: 0.95rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-    .cta-form button:hover { background: var(--accent-light); }
-    .cta-note { font-size: 0.8rem; color: var(--text-dim); margin-top: 1rem; }
-
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 2rem;
-      text-align: center;
-      font-size: 0.85rem;
-      color: var(--text-dim);
-    }
-    footer a { color: var(--text-muted); }
-
-    .toc {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin: 2rem 0 3rem;
-    }
+    .toc { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 2rem 0 3rem; }
     .toc h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin: 0 0 1rem; }
     .toc ol { padding-left: 1.25rem; }
     .toc li { margin-bottom: 0.4rem; }
     .toc a { color: var(--text-muted); text-decoration: none; font-size: 0.925rem; }
     .toc a:hover { color: var(--accent-light); }
+
+    .article-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-left: 4px solid var(--accent); border-radius: 8px;
+      padding: 1.75rem 2rem; margin: 2rem 0;
+    }
+    .article-card .ac-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-light); margin-bottom: 0.5rem; }
+    .article-card h3 { margin-top: 0; font-size: 1.1rem; color: #fff; }
+    .article-card p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .article-card p:last-child { margin-bottom: 0; }
+    .article-card .req-box { background: rgba(99,102,241,0.08); border: 1px solid var(--border); border-radius: 5px; padding: 0.75rem 1rem; margin-top: 0.75rem; }
+    .article-card .req-box strong { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 0.4rem; }
+    .article-card .req-box ul { margin-bottom: 0; }
+    .article-card .req-box li { font-size: 0.875rem; color: var(--text-muted); }
+    .article-card .guard-map { color: var(--success); font-size: 0.875rem; margin-top: 0.75rem; margin-bottom: 0; }
+    .article-card .guard-map::before { content: "→ AgentGuard: "; font-weight: 700; }
+
+    .req-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+    .req-table th { background: rgba(99,102,241,0.15); color: var(--accent-light); text-align: left; padding: 0.75rem 1rem; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .req-table td { border-bottom: 1px solid rgba(99,102,241,0.1); padding: 0.875rem 1rem; color: var(--text-muted); vertical-align: top; }
+    .req-table tr:last-child td { border-bottom: none; }
+    .req-table td:first-child { color: var(--accent-light); font-weight: 600; }
+
+    .warning-box { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.25); border-left: 4px solid var(--danger); border-radius: 6px; padding: 1.25rem 1.5rem; margin: 1.5rem 0; }
+    .warning-box .wl { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--danger); margin-bottom: 0.5rem; }
+    .warning-box p { margin: 0; font-size: 0.95rem; color: var(--text-muted); }
+
+    .info-box { background: rgba(99,102,241,0.07); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 6px; padding: 1.25rem 1.5rem; margin: 1.5rem 0; }
+    .info-box .il { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-light); margin-bottom: 0.5rem; }
+    .info-box p { margin: 0; font-size: 0.95rem; color: var(--text-muted); }
+
+    .success-box { background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.25); border-left: 4px solid var(--success); border-radius: 6px; padding: 1.25rem 1.5rem; margin: 1.5rem 0; }
+    .success-box .sl { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--success); margin-bottom: 0.5rem; }
+    .success-box p { margin: 0; font-size: 0.95rem; color: var(--text-muted); }
+
+    .timeline { margin: 2rem 0; }
+    .tl-item { display: flex; gap: 1.25rem; margin-bottom: 0; position: relative; }
+    .tl-left { display: flex; flex-direction: column; align-items: center; width: 36px; flex-shrink: 0; }
+    .tl-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); box-shadow: 0 0 0 2px var(--accent); flex-shrink: 0; margin-top: 5px; }
+    .tl-dot.past { background: var(--text-dim); box-shadow: 0 0 0 2px var(--text-dim); }
+    .tl-dot.urgent { background: var(--danger); box-shadow: 0 0 0 2px var(--danger); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{ box-shadow: 0 0 0 2px var(--danger); } 50%{ box-shadow: 0 0 0 5px rgba(239,68,68,0.3); } }
+    .tl-line { width: 2px; flex: 1; background: var(--border); min-height: 20px; margin-top: 4px; }
+    .tl-content { flex: 1; padding-bottom: 2rem; }
+    .tl-date { font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.25rem; }
+    .tl-title { font-weight: 700; color: #fff; margin-bottom: 0.35rem; font-size: 1rem; }
+    .tl-desc { font-size: 0.9rem; color: var(--text-muted); margin: 0; }
+
+    .checklist-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 2rem; margin: 2rem 0; }
+    .checklist-wrap > h3 { margin-top: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 1.5rem; }
+    .cl-section { margin-bottom: 1.5rem; }
+    .cl-section h4 { font-size: 0.85rem; font-weight: 700; color: var(--accent-light); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .cl-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.5rem 0; }
+    .cl-box { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 3px; flex-shrink: 0; margin-top: 2px; }
+    .cl-item span { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+
+    .cta-section {
+      background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0.04) 100%);
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 3rem 2.5rem; margin-top: 4rem; text-align: center;
+    }
+    .cta-section h2 { font-size: 1.75rem; margin: 0 0 0.75rem; color: #fff; }
+    .cta-section > p { color: var(--text-muted); max-width: 520px; margin: 0 auto 2rem; font-size: 1rem; }
+    .cta-form { display: flex; gap: 0.75rem; max-width: 460px; margin: 0 auto; flex-wrap: wrap; }
+    .cta-form input[type="email"] {
+      flex: 1; min-width: 220px; background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem;
+      color: var(--text); font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+    }
+    .cta-form input[type="email"]:focus { border-color: var(--accent); }
+    .cta-form input[type="email"]::placeholder { color: var(--text-dim); }
+    .cta-form button {
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 0.75rem 1.5rem; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s; white-space: nowrap;
+    }
+    .cta-form button:hover { background: var(--accent-light); }
+    .cta-note { font-size: 0.8rem; color: var(--text-dim); margin-top: 1rem; }
+
+    footer { border-top: 1px solid var(--border); padding: 2rem; text-align: center; font-size: 0.85rem; color: var(--text-dim); }
+    footer a { color: var(--text-muted); }
 
     @media (max-width: 640px) {
       .hero { padding: 3rem 1.25rem 2rem; }
@@ -371,7 +155,6 @@
       .cta-section { padding: 2rem 1.25rem; }
       nav { padding: 0 1.25rem; }
       .req-table { font-size: 0.8rem; }
-      .req-table th, .req-table td { padding: 0.6rem 0.75rem; }
     }
   </style>
 </head>
@@ -391,7 +174,7 @@
     <div class="tag">Compliance &amp; Regulation</div>
     <h1>EU AI Act and AI Agents:<br><em>What You Need to Know Before August 2026</em></h1>
     <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: 0.5rem;">
-      The EU AI Act is not a future problem. High-risk AI system provisions are actively enforced. If your organisation is deploying AI agents — systems that take autonomous actions on behalf of users — you are almost certainly in scope. Here is the practical compliance guide for GRC teams who need to get ahead of this.
+      The EU AI Act is not a future problem. High-risk AI system provisions are actively enforced. If your organisation deploys AI agents — systems that take autonomous actions — you are almost certainly in scope. Here is the practical compliance guide for GRC teams who need to get ahead of this.
     </p>
     <div class="hero-meta">
       <span>AgentGuard Compliance Team</span>
@@ -420,59 +203,433 @@
 
     <div class="warning-box">
       <div class="wl">⏱ Compliance Deadline</div>
-      <p>EU AI Act obligations for high-risk AI systems are actively enforced. GPAI model provisions entered force in August 2025. August 2026 is the hard deadline for full technical compliance documentation for high-risk AI systems — including agentic AI deployed in regulated sectors. The evidence trail needs to exist <em>before</em> the deadline, not during the audit.</p>
+      <p>GPAI model provisions entered force in August 2025. August 2026 is the hard deadline for full technical compliance for high-risk AI systems — including agentic AI in regulated sectors. The evidence trail needs to exist <em>before</em> the audit, not be assembled during one.</p>
     </div>
 
     <h2 id="scope">Are Your Agents In Scope?</h2>
     <p>
-      The first question GRC teams ask is: "Does the EU AI Act apply to us?" The answer, if you're deploying AI agents in or affecting EU citizens, is almost certainly yes — and the relevant provisions are broader than most compliance teams initially assume.
+      The first question GRC teams ask is: "Does the EU AI Act apply to us?" If you're deploying AI agents that interact with EU users or affect EU citizens, the answer is almost certainly yes — and the relevant provisions are broader than most compliance teams initially assume.
     </p>
-    <p>
-      The EU AI Act applies to any AI system that is:
-    </p>
-    <ul>
-      <li><strong>Placed on the EU market</strong> — even if you're a US or UK company, if EU users interact with your AI system, the Act applies</li>
-      <li><strong>Used in the EU</strong> — including internal enterprise deployments where EU employees interact with AI agents</li>
-      <li><strong>Deployed as a "high-risk AI system"</strong> — determined by the sector and use case, not the technology type</li>
-    </ul>
+    <p>The EU AI Act applies to any AI system that is placed on the EU market, used in the EU, or operated by a non-EU entity where outputs affect EU users. This includes US and UK companies with EU-facing products or EU employee deployments.</p>
 
     <h3>What Makes an AI Agent "High-Risk"?</h3>
     <p>
-      The EU AI Act's Annex III defines high-risk AI systems by sector and use case. AI agents are most likely to be classified as high-risk when they operate in:
+      The Act's Annex III defines high-risk AI systems by sector and use case. AI agents are most likely classified as high-risk when operating in:
+    </p>
+    <table class="req-table">
+      <thead>
+        <tr><th>Sector</th><th>High-Risk Agent Use Cases</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Financial Services</td><td>Credit assessment, fraud detection, trading, customer onboarding, KYC/AML</td></tr>
+        <tr><td>Healthcare</td><td>Clinical decision support, patient triage, medical record analysis</td></tr>
+        <tr><td>HR &amp; Employment</td><td>CV screening, candidate ranking, employee monitoring, performance evaluation</td></tr>
+        <tr><td>Critical Infrastructure</td><td>Energy grid, water systems, transport operations</td></tr>
+        <tr><td>Education</td><td>Student assessment, admission decisions, learning path determination</td></tr>
+        <tr><td>Public Services</td><td>Benefits eligibility, visa decisions, public benefit allocation</td></tr>
+        <tr><td>Law Enforcement</td><td>Risk assessment, evidence analysis, predictive tools</td></tr>
+      </tbody>
+    </table>
+
+    <p>
+      <strong>The critical distinction for agents:</strong> An AI system that autonomously takes actions — sends emails, calls APIs, executes transactions, modifies records — raises the risk classification bar compared to a system that only provides recommendations. The degree of autonomy is a key factor regulators evaluate.
+    </p>
+
+    <div class="info-box">
+      <div class="il">📋 Key Question for Your Risk Assessment</div>
+      <p>Does your AI agent make or implement decisions that have a significant effect on people's lives, employment, access to services, or safety? If yes, you are in high-risk territory. Consult your legal team on the specific classification — but build the technical compliance infrastructure now.</p>
+    </div>
+
+    <h2 id="articles">The Five Articles That Matter Most for Agentic AI</h2>
+    <p>
+      The EU AI Act contains 113 articles. Five of them — Articles 9, 12, 13, 14, and 15 — are where most agentic AI compliance requirements live. Here is what each requires and what it means in practice for agent deployments.
+    </p>
+
+    <div class="article-card" id="art9">
+      <div class="ac-label">Article 9</div>
+      <h3>Risk Management System</h3>
+      <p>Requires providers and deployers of high-risk AI systems to establish, implement, document, and maintain a risk management system — throughout the entire lifecycle of the AI system.</p>
+      <div class="req-box">
+        <strong>What this means for agents</strong>
+        <ul>
+          <li>A documented risk identification process for each agent deployment</li>
+          <li>Residual risk estimation and mitigation measures</li>
+          <li>Testing procedures to evaluate agent behaviour against known risks</li>
+          <li>Continuous monitoring — not a one-time assessment</li>
+          <li>Updates when the agent's scope, tools, or behaviour changes</li>
+        </ul>
+      </div>
+      <p class="guard-map">Policy engine provides declarative risk controls per agent; continuous monitoring surfaces risk events in real time; version-controlled policies create an auditable risk management trail</p>
+    </div>
+
+    <div class="article-card" id="art12">
+      <div class="ac-label">Article 12</div>
+      <h3>Record-Keeping &amp; Logging</h3>
+      <p>High-risk AI systems must automatically generate logs that enable post-hoc review of the system's operation. These logs must be kept for at least 6 months (or longer where required by other legislation).</p>
+      <div class="req-box">
+        <strong>What this means for agents</strong>
+        <ul>
+          <li>Every agent action must be logged — not just final outputs, but the reasoning chain</li>
+          <li>Logs must identify the period of each use, the input data, and the output produced</li>
+          <li>For agents with human oversight gates: log who approved what, when</li>
+          <li>Logs must be tamper-evident — regulators can challenge chains of custody</li>
+          <li>The logging system itself must be part of conformity assessment</li>
+        </ul>
+      </div>
+      <p class="guard-map">Tamper-evident, cryptographically chained audit logs capturing every agent action, tool call, input, and reasoning chain — with 6-month+ retention and export in auditor-ready formats</p>
+    </div>
+
+    <div class="article-card" id="art13">
+      <div class="ac-label">Article 13</div>
+      <h3>Transparency &amp; Information Provision</h3>
+      <p>High-risk AI systems must be sufficiently transparent so that deployers can understand, interpret, and use the system appropriately. This includes instructions for use and information about capabilities and limitations.</p>
+      <div class="req-box">
+        <strong>What this means for agents</strong>
+        <ul>
+          <li>Document what the agent can and cannot do — its declared scope</li>
+          <li>Provide human-readable documentation of the agent's decision-making logic</li>
+          <li>Disclose when an AI agent is making or influencing a decision (to affected persons)</li>
+          <li>Maintain up-to-date technical documentation as the agent evolves</li>
+        </ul>
+      </div>
+      <p class="guard-map">Policy-as-code provides human-readable agent scope documentation; audit dashboard makes agent behaviour interpretable to deployers and reviewers</p>
+    </div>
+
+    <div class="article-card" id="art14">
+      <div class="ac-label">Article 14</div>
+      <h3>Human Oversight</h3>
+      <p>High-risk AI systems must be designed and developed to be effectively overseen by natural persons. This means deployers must be able to understand, monitor, and intervene in agent operations.</p>
+      <div class="req-box">
+        <strong>What this means for agents</strong>
+        <ul>
+          <li>Ability to immediately halt agent operations (kill switch requirement)</li>
+          <li>Human review gates for high-risk actions before execution</li>
+          <li>Real-time monitoring so operators can identify and act on anomalies</li>
+          <li>Evidence that human oversight is not just possible but actually practiced</li>
+          <li>"Automation bias" mitigation — humans must be genuinely informed, not rubber-stamping</li>
+        </ul>
+      </div>
+      <p class="guard-map">Kill switch with &lt;500ms response time; configurable human-in-the-loop gates for high-risk actions; real-time risk scoring dashboard; HITL approval logs for evidence</p>
+    </div>
+
+    <div class="article-card" id="art15">
+      <div class="ac-label">Article 15</div>
+      <h3>Accuracy, Robustness &amp; Cybersecurity</h3>
+      <p>High-risk AI systems must achieve appropriate levels of accuracy and be resilient to errors, faults, and adversarial inputs — including prompt injection and data poisoning attacks.</p>
+      <div class="req-box">
+        <strong>What this means for agents</strong>
+        <ul>
+          <li>Documented performance metrics and accuracy baselines</li>
+          <li>Adversarial testing — evidence that the agent has been tested against known attacks</li>
+          <li>Resilience to prompt injection and data poisoning (explicitly cited in guidance)</li>
+          <li>Incident response procedures for when the agent is compromised</li>
+          <li>Continuous performance monitoring, not just pre-deployment testing</li>
+        </ul>
+      </div>
+      <p class="guard-map">Runtime anomaly detection for adversarial inputs; prompt injection prevention; continuous performance monitoring; incident response playbooks; forensic replay capability</p>
+    </div>
+
+    <h2 id="requirements">Specific Compliance Requirements Agents Create</h2>
+    <p>
+      Beyond the specific articles, deploying AI agents creates several compliance requirements that traditional IT systems don't generate. These are the gaps most companies discover only when the auditor arrives.
+    </p>
+
+    <h3>The "Reasoning Chain" Problem</h3>
+    <p>
+      Traditional IT systems log what they did. AI agents need to log <em>why</em> they did it. Regulators — and courts — are beginning to require that organisations explain AI-assisted decisions at a granular level. An agent's chain-of-thought is the only evidence of this reasoning.
+    </p>
+    <p>
+      Most logging infrastructure captures API calls and responses. It does not capture what was in the agent's context window at decision time — which retrieved documents it was referencing, which prior steps influenced the current decision, or what internal "reasoning" the model produced. Without chain-of-thought logging, you cannot reconstruct why an agent did what it did.
+    </p>
+
+    <h3>Multi-Agent Attribution</h3>
+    <p>
+      When multiple agents collaborate — an orchestrator delegates to sub-agents, which use tools and pass results back — it becomes very difficult to attribute responsibility for a specific outcome. Under Article 12's logging requirements, you need to be able to trace any action back to the specific agent, context, and decision point that initiated it, even in complex multi-agent pipelines.
+    </p>
+
+    <h3>The "High-Risk Action" Definition Problem</h3>
+    <p>
+      Article 14 requires human oversight for high-risk actions — but most organisations haven't formally defined which agent actions constitute "high-risk." This needs to be a documented, version-controlled definition, not an informal understanding. Auditors will ask for it.
+    </p>
+
+    <div class="warning-box">
+      <div class="wl">⚠ Common Compliance Gap</div>
+      <p>We consistently find in discovery interviews that companies can produce logs of <em>what</em> their agents did, but not <em>why</em>, <em>who approved it</em>, or <em>what data was in scope</em> at decision time. Auditors are specifically trained to look for these gaps. The organisations that pass audits have this evidence before the auditor asks for it.</p>
+    </div>
+
+    <h2 id="auditors">What Auditors Will Ask For</h2>
+    <p>
+      Based on EU AI Act conformity assessment guidance and regulatory audit frameworks across GDPR, DORA, and NIS2 (which provide the audit methodology template), here is what auditors will request when evaluating your agentic AI deployment:
     </p>
 
     <table class="req-table">
       <thead>
-        <tr>
-          <th>Sector</th>
-          <th>High-Risk Agent Use Cases</th>
-        </tr>
+        <tr><th>Area</th><th>What Auditors Will Request</th><th>Most Companies Have</th></tr>
       </thead>
       <tbody>
         <tr>
-          <td>Financial Services</td>
-          <td>Credit assessment, fraud detection, trading, customer onboarding, KYC/AML</td>
+          <td>Risk Documentation</td>
+          <td>Formal risk assessment per agent deployment, dated and version-controlled</td>
+          <td>Informal notes, if anything</td>
         </tr>
         <tr>
-          <td>Healthcare</td>
-          <td>Clinical decision support, patient triage, medical record analysis, drug interactions</td>
+          <td>Logging</td>
+          <td>Tamper-evident logs of every agent action, 6+ months, searchable by agent ID, date, and action type</td>
+          <td>Application logs in CloudWatch / Splunk that capture API calls but not reasoning</td>
         </tr>
         <tr>
-          <td>HR &amp; Employment</td>
-          <td>CV screening, candidate ranking, employee monitoring, performance evaluation</td>
+          <td>Human Oversight Evidence</td>
+          <td>Records of human approval for high-risk actions; logs showing the kill switch has been tested</td>
+          <td>A system prompt saying "ask before doing X"</td>
         </tr>
         <tr>
-          <td>Law Enforcement</td>
-          <td>Risk assessment, predictive tools, evidence analysis</td>
+          <td>Policy Documentation</td>
+          <td>Written policy defining what each agent can and cannot do, signed off by a responsible person</td>
+          <td>System prompts and informal developer assumptions</td>
         </tr>
         <tr>
-          <td>Critical Infrastructure</td>
-          <td>Energy grid management, water systems, transport operations</td>
+          <td>Incident History</td>
+          <td>Log of all policy violations, anomalies, and incidents — and what was done about them</td>
+          <td>Bug tickets, if escalated</td>
         </tr>
         <tr>
-          <td>Education</td>
-          <td>Student assessment, admission decisions, learning path determination</td>
+          <td>Adversarial Testing</td>
+          <td>Evidence that the system was tested against prompt injection and other attack vectors</td>
+          <td>Functional testing only</td>
         </tr>
         <tr>
-          <td>Public Services</td>
-          <td>Benefits eligibility
+          <td>Change Management</td>
+          <td>History of changes to agent scope, tools, model version — with impact assessment</td>
+          <td>Git commit history (incomplete)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info-box">
+      <div class="il">💡 The Audit Principle</div>
+      <p>Auditors don't expect perfection. They expect evidence of a functioning system. The organisations that fail audits are those that have no evidence — not those whose evidence reveals manageable gaps. Build the evidence trail now, even if the controls are not yet perfect.</p>
+    </div>
+
+    <h2 id="timeline">Timeline: What Needs to Be Done by When</h2>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-left">
+          <div class="tl-dot past"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">August 2024</div>
+          <div class="tl-title">EU AI Act Entered Into Force</div>
+          <p class="tl-desc">The Act became legally binding. Prohibition on unacceptable-risk AI systems (Art. 5) immediately applicable.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-left">
+          <div class="tl-dot past"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">February 2025</div>
+          <div class="tl-title">Prohibited Practices Enforced</div>
+          <p class="tl-desc">Articles 5 and 50 (prohibited AI practices) became enforceable. AI literacy obligations for staff began.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-left">
+          <div class="tl-dot past"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">August 2025</div>
+          <div class="tl-title">GPAI Model Obligations Active</div>
+          <p class="tl-desc">General-Purpose AI (GPAI) model obligations including transparency and copyright rules became applicable. If you use foundation models to power agents, your providers' compliance status now matters for your risk posture.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-left">
+          <div class="tl-dot urgent"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">August 2026 ← YOU ARE HERE</div>
+          <div class="tl-title">Full High-Risk AI System Compliance Required</div>
+          <p class="tl-desc">All obligations for high-risk AI systems (Art. 9–15, 17–20) become applicable. This is the deadline for complete technical compliance — risk management systems, logging, human oversight controls, conformity assessment documentation. Penalties: up to €30M or 6% of global annual turnover.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-left">
+          <div class="tl-dot"></div>
+          <div class="tl-line"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">August 2027</div>
+          <div class="tl-title">Annex I High-Risk Systems Compliance</div>
+          <p class="tl-desc">AI systems in safety components of products under existing EU product safety legislation (medical devices, machinery, aviation) become subject to full obligations.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-left">
+          <div class="tl-dot"></div>
+        </div>
+        <div class="tl-content">
+          <div class="tl-date">Ongoing</div>
+          <div class="tl-title">Continuous Compliance Monitoring Required</div>
+          <p class="tl-desc">EU AI Act compliance is not a one-time certification — it requires continuous monitoring, incident reporting (within 15 business days of discovering a serious incident), and annual reporting to national competent authorities.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>What Your Action Plan Should Look Like Right Now</h3>
+    <ul>
+      <li><strong>Q1 2026 (Now):</strong> Complete AI system inventory — document every agent deployment and assess high-risk classification for each</li>
+      <li><strong>Q1 2026:</strong> Implement logging infrastructure that captures agent reasoning chains, not just API calls</li>
+      <li><strong>Q2 2026:</strong> Formalise and document risk management systems per Art. 9 — this is the most documentation-heavy requirement</li>
+      <li><strong>Q2 2026:</strong> Implement human oversight controls and kill switch capability per Art. 14 — and document that they work</li>
+      <li><strong>Q3 2026:</strong> Complete adversarial testing against your agents and document the results (Art. 15)</li>
+      <li><strong>By August 2026:</strong> Full conformity documentation package ready — risk assessments, policy docs, audit logs, testing evidence</li>
+    </ul>
+
+    <h2 id="mapping">How AgentGuard Maps to Each Requirement</h2>
+    <p>
+      AgentGuard was designed from the ground up with EU AI Act compliance as a core requirement, not an afterthought. Here is the direct mapping from regulatory requirement to platform capability:
+    </p>
+
+    <table class="req-table">
+      <thead>
+        <tr><th>Article</th><th>Requirement</th><th>AgentGuard Capability</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Art. 9</td>
+          <td>Risk management system, documented and maintained</td>
+          <td>Policy-as-code (YAML) creates a version-controlled, auditable risk management document. Risk scoring dashboard tracks residual risk continuously.</td>
+        </tr>
+        <tr>
+          <td>Art. 12</td>
+          <td>Tamper-evident logging of all agent operations, 6+ months</td>
+          <td>Cryptographically chained, append-only audit logs capturing every action, tool call, context window state, and reasoning chain. Exportable in auditor-ready formats.</td>
+        </tr>
+        <tr>
+          <td>Art. 13</td>
+          <td>Transparency — deployers can understand the system</td>
+          <td>Human-readable policy documentation per agent. Dashboard shows declared scope vs. actual behaviour. Anomaly reports surface deviations in plain language.</td>
+        </tr>
+        <tr>
+          <td>Art. 14</td>
+          <td>Human oversight — ability to monitor and intervene</td>
+          <td>Kill switch (&lt;500ms). Configurable HITL gates for high-risk actions. Real-time monitoring dashboard. HITL approval records included in audit trail.</td>
+        </tr>
+        <tr>
+          <td>Art. 15</td>
+          <td>Robustness and cybersecurity — adversarial resilience</td>
+          <td>Runtime prompt injection detection. Anomaly detection for adversarial inputs. Agent-specific IR playbooks. Continuous performance monitoring vs. established baselines.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="success-box">
+      <div class="sl">✓ Compliance-First Architecture</div>
+      <p>AgentGuard pre-builds compliance reports for EU AI Act, ISO 42001, DORA, SOC 2, and HIPAA — generated automatically from the same monitoring data you collect for security. The same system that protects your agents also produces the evidence package your auditor needs.</p>
+    </div>
+
+    <hr>
+
+    <h2 id="checklist">EU AI Act Agent Compliance Checklist</h2>
+    <p>Use this checklist to assess your current compliance posture. This is the minimum bar — your legal team should validate your specific situation.</p>
+
+    <div class="checklist-wrap">
+      <h3>EU AI Act Agent Compliance Checklist</h3>
+
+      <div class="cl-section">
+        <h4>📋 Article 9 — Risk Management</h4>
+        <div class="cl-item"><div class="cl-box"></div><span>Inventory of all AI agent deployments, with use case documentation</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>High-risk classification assessment for each agent (completed, dated, signed)</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Formal risk assessment per high-risk agent, with mitigation measures documented</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Written policy defining what each agent can and cannot do (version-controlled)</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Process for updating risk assessment when agent scope or tools change</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Testing procedures documented and evidence of execution</span></div>
+      </div>
+
+      <div class="cl-section">
+        <h4>📝 Article 12 — Logging &amp; Record-Keeping</h4>
+        <div class="cl-item"><div class="cl-box"></div><span>Every agent action logged with timestamp, agent ID, action type, input, and output</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Reasoning chain / chain-of-thought captured (not just API calls)</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Logs are tamper-evident (cryptographic integrity checking)</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Log retention policy: minimum 6 months, longer where required by sector regulation</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Logs are searchable and exportable in auditor-ready formats</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Multi-agent pipelines: attribution chain traceable per action to initiating agent</span></div>
+      </div>
+
+      <div class="cl-section">
+        <h4>👁 Article 13 — Transparency</h4>
+        <div class="cl-item"><div class="cl-box"></div><span>Technical documentation per agent: capabilities, limitations, intended use</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Instructions for use documentation available to deployers</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Disclosure mechanism: affected persons informed when AI makes/influences decisions</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Documentation kept current as agent evolves (change management process exists)</span></div>
+      </div>
+
+      <div class="cl-section">
+        <h4>🛑 Article 14 — Human Oversight</h4>
+        <div class="cl-item"><div class="cl-box"></div><span>Kill switch capability tested and documented (response time measured)</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Formal definition of "high-risk actions" requiring human approval</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Human-in-the-loop approval gates implemented for high-risk actions</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>HITL approval decisions logged (who approved, when, what information they had)</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Real-time monitoring dashboard: operators can see what agents are doing</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Evidence that human oversight is practiced — not just possible</span></div>
+      </div>
+
+      <div class="cl-section">
+        <h4>🔒 Article 15 — Robustness &amp; Cybersecurity</h4>
+        <div class="cl-item"><div class="cl-box"></div><span>Adversarial testing conducted: prompt injection, data poisoning, goal drift</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Testing results documented (including failures and mitigations applied)</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Continuous performance monitoring vs. established baselines</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Incident response procedures for agent compromise or anomalous behaviour</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Supply chain security: model provider and framework versions tracked</span></div>
+      </div>
+
+      <div class="cl-section">
+        <h4>📁 General Compliance Infrastructure</h4>
+        <div class="cl-item"><div class="cl-box"></div><span>Responsible AI Officer or equivalent designated</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Incident reporting process: serious incidents reportable within 15 business days</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Staff AI literacy training documented (Art. 4)</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Conformity assessment documentation package prepared</span></div>
+        <div class="cl-item"><div class="cl-box"></div><span>Data governance: personal data used for AI training/operation under GDPR Article 22 provisions assessed</span></div>
+      </div>
+    </div>
+
+    <p>
+      If you've worked through this checklist and found gaps — particularly around logging, human oversight evidence, and adversarial testing — you're not alone. These are exactly the gaps we find in most enterprise agent deployments. The organisations that will pass the August 2026 compliance cycle are the ones building this infrastructure in Q1 and Q2 2026.
+    </p>
+    <p>
+      <strong>AgentGuard handles the technical implementation of Articles 9, 12, 13, 14, and 15.</strong> You focus on the governance and documentation layer. We handle the runtime controls and evidence generation.
+    </p>
+
+    <div class="cta-section" id="cta">
+      <h2>Get Your EU AI Act Compliance Assessment</h2>
+      <p>We're working with GRC teams and CISOs to map their agent deployments to EU AI Act requirements and identify compliance gaps before the August 2026 deadline. Early access includes a free compliance gap analysis.</p>
+      <form class="cta-form" onsubmit="handleSubmit(event)">
+        <input type="email" placeholder="compliance@yourcompany.com" required>
+        <button type="submit">Request Assessment</button>
+      </form>
+      <p class="cta-note">We'll reach out within 48 hours. No sales pressure — just a practical conversation about your situation.</p>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <p>&copy; 2026 AgentGuard. Runtime security for the agentic era. &nbsp;·&nbsp; <a href="../index.html">Home</a> &nbsp;·&nbsp; <a href="index.html">Blog</a></p>
+</footer>
+
+<script>
+  function handleSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const email = form.querySelector('input[type="email"]').value;
+    form.innerHTML = '<p style="color: #10b981; font-weight: 600; font-size: 1rem;">✓ Request received. We\'ll be in touch within 48 hours.</p>';
+    console.log('Captured email:', email);
+  }
+</script>
+
+</body>
+</html>

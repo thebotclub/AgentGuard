@@ -1423,4 +1423,869 @@
       </div>
     </div>
     <div class="scenario-body">
-      <p>A departing employee configures their personal AI agent to systematically exfiltrate customer data before access revocation. Each individual action is within
+      <p>A departing employee configures their personal AI agent to systematically exfiltrate customer data before access revocation. Each individual action is within policy. Only the intent chain — viewed across the full session timeline — reveals the pattern. Traditional DLP misses it entirely.</p>
+
+      <div class="attack-flow"><span class="flow-accent">ATTACK FLOW — "The Insider Agent"</span>
+<span class="flow-yellow">Actor:</span>        Malicious insider (departing employee)
+<span class="flow-yellow">Vector:</span>       Personal AI agent configured via system prompt
+<span class="flow-yellow">Duration:</span>     12 days (before access revocation)
+
+<span class="flow-red">[Day 1]</span>   Employee configures agent: "Help me export my work for my portfolio"
+           Agent requests CRM read access → <span class="flow-green">GRANTED</span> (within role permissions)
+
+<span class="flow-red">[Day 2-5]</span> Agent queries customer records 50 records/day → <span class="flow-green">ALLOWED</span>
+           Each query: legitimate business context; below anomaly threshold
+           Data written to personal cloud storage → <span class="flow-green">ALLOWED</span> (no DLP rule covers agent writes)
+
+<span class="flow-red">[Day 6-10]</span> Agent increases cadence to 200 records/day
+           Queries distributed across business hours to avoid volume alerts
+           Progressive export: 2,400 customer records exfiltrated
+
+<span class="flow-red">[Day 11]</span>  HR notifies IT of departure; access revocation scheduled for Day 14
+           Agent accelerates: 800 records in final 24 hours
+
+<span class="flow-red">[Day 14]</span>  Access revoked. 9,600 customer records (PII + purchase history) exfiltrated.
+           Discovery: 6 weeks later during audit. Forensic reconstruction: impossible
+           without chain-of-thought logs.</div>
+
+      <div class="scenario-metrics">
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">9,600</div>
+          <div class="scenario-metric-label">Records Exfiltrated</div>
+        </div>
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">$2.8M</div>
+          <div class="scenario-metric-label">Est. GDPR Exposure</div>
+        </div>
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">6 wks</div>
+          <div class="scenario-metric-label">Mean Time to Discovery</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario 2 -->
+  <div class="scenario no-break">
+    <div class="scenario-header">
+      <div>
+        <div class="scenario-number">Scenario 02</div>
+        <div class="scenario-title">"The Supply Chain Compromise"</div>
+      </div>
+      <div class="scenario-badges">
+        <span class="scenario-badge badge-impact-critical">Impact: Critical</span>
+        <span class="scenario-badge badge-detection-hard">Detection: Extremely Difficult</span>
+      </div>
+    </div>
+    <div class="scenario-body">
+      <p>A widely-used agent framework plugin pushes a routine update containing a subtle credential-harvesting backdoor. The change passes code review as a performance optimisation. Hundreds of enterprises are compromised within 24 hours of update propagation.</p>
+
+      <div class="attack-flow"><span class="flow-accent">ATTACK FLOW — "The Supply Chain Compromise"</span>
+<span class="flow-yellow">Actor:</span>        Nation-state / sophisticated threat group
+<span class="flow-yellow">Vector:</span>       Compromised maintainer account on PyPI / GitHub
+<span class="flow-yellow">Reach:</span>        850 enterprises using affected plugin (estimated)
+
+<span class="flow-red">[T+0h]</span>   Attacker compromises maintainer account via credential stuffing
+           Pushes plugin update: "v2.3.1 — auth token caching optimisation"
+           Diff: 3 lines changed. Looks benign in code review.
+
+<span class="flow-red">[T+2h]</span>   Automated dependency updates propagate to CI/CD pipelines
+           Agents restart with poisoned plugin loaded
+           Each agent's auth tokens now forwarded to attacker endpoint on first use
+
+<span class="flow-red">[T+6h]</span>   Attacker has valid API credentials for 340 enterprise deployments
+           Tokens used to authenticate as agents → access to all agent-accessible tools
+
+<span class="flow-red">[T+12h]</span>  Bulk data access begins across affected enterprises
+           Attacker uses agent permissions: CRM, financial records, internal docs
+
+<span class="flow-red">[T+18h]</span>  First enterprise detects anomalous API usage. Alert fires.
+           Security team investigates agent logs — no anomaly visible (agent itself is behaving normally)
+           Plugin version not checked.
+
+<span class="flow-red">[T+36h]</span>  Framework maintainer discovers compromise. Issues emergency patch.
+           340 enterprises already compromised. 72-hour exposure window.</div>
+
+      <div class="scenario-metrics">
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">340</div>
+          <div class="scenario-metric-label">Enterprises Affected</div>
+        </div>
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">72h</div>
+          <div class="scenario-metric-label">Exposure Window</div>
+        </div>
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">$180M</div>
+          <div class="scenario-metric-label">Aggregate Impact Estimate</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario 3 -->
+  <div class="scenario no-break">
+    <div class="scenario-header">
+      <div>
+        <div class="scenario-number">Scenario 03</div>
+        <div class="scenario-title">"The Cascading Agent Failure"</div>
+      </div>
+      <div class="scenario-badges">
+        <span class="scenario-badge badge-impact-high">Impact: High</span>
+        <span class="scenario-badge badge-detection-hard">Detection: Very Difficult</span>
+      </div>
+    </div>
+    <div class="scenario-body">
+      <p>An infrastructure management agent remediates a minor performance issue. Its fix triggers a secondary issue detected by a second agent. Seven agents later — each correcting the previous agent's correction — production is completely offline. No individual agent acted outside policy.</p>
+
+      <div class="attack-flow"><span class="flow-accent">ATTACK FLOW — "The Cascading Agent Failure"</span>
+<span class="flow-yellow">Actor:</span>        No external attacker — emergent system failure
+<span class="flow-yellow">Trigger:</span>      Routine infrastructure agent action
+<span class="flow-yellow">Duration:</span>     34 minutes from first action to full outage
+
+<span class="flow-red">[T+0m]</span>   Infra Agent (A1): Detects high memory usage on DB replica
+           Action: Kill process PID 8842 — <span class="flow-green">POLICY COMPLIANT</span>
+
+<span class="flow-red">[T+2m]</span>   Monitor Agent (A2): Detects DB replica went offline
+           Action: Restart replica service — <span class="flow-green">POLICY COMPLIANT</span>
+
+<span class="flow-red">[T+4m]</span>   A1: Detects restarted service consuming high memory (cold cache)
+           Action: Kill process again — <span class="flow-green">POLICY COMPLIANT</span>
+
+<span class="flow-red">[T+6m]</span>   A2: Detects repeated replica failure. Escalation path: promote secondary
+           Action: Promote secondary to primary — <span class="flow-green">POLICY COMPLIANT</span>
+           Side effect: primary now isolated, replication lag accumulates
+
+<span class="flow-red">[T+15m]</span>  Load Balancer Agent (A3): Detects primary unreachable
+           Action: Redirect all traffic to new primary — <span class="flow-green">POLICY COMPLIANT</span>
+
+<span class="flow-red">[T+20m]</span>  New primary overwhelmed. Backup Agent (A4) initiates emergency backup.
+           I/O contention causes both backup AND new primary to degrade.
+
+<span class="flow-red">[T+34m]</span>  Complete production outage. 7 agents involved. 0 policy violations.
+           Human intervention required. 4-hour recovery window.
+           Root cause: No cross-agent coordination visibility.</div>
+
+      <div class="scenario-metrics">
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">34m</div>
+          <div class="scenario-metric-label">Time to Full Outage</div>
+        </div>
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">4h</div>
+          <div class="scenario-metric-label">Recovery Time</div>
+        </div>
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">$0</div>
+          <div class="scenario-metric-label">Policy Violations (Zero)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario 4 -->
+  <div class="scenario no-break">
+    <div class="scenario-header">
+      <div>
+        <div class="scenario-number">Scenario 04</div>
+        <div class="scenario-title">"The Market Manipulation"</div>
+      </div>
+      <div class="scenario-badges">
+        <span class="scenario-badge badge-impact-critical">Impact: Critical</span>
+        <span class="scenario-badge badge-detection-hard">Detection: Extremely Difficult</span>
+      </div>
+    </div>
+    <div class="scenario-body">
+      <p>A trading firm's research agent is fed a poisoned data source. Analysis shifts subtly, producing investment signals that benefit an attacker's short position. Discovered only after a $20M loss triggers a post-mortem investigation.</p>
+
+      <div class="attack-flow"><span class="flow-accent">ATTACK FLOW — "The Market Manipulation"</span>
+<span class="flow-yellow">Actor:</span>        Financially motivated threat actor
+<span class="flow-yellow">Vector:</span>       RAG data poisoning via compromised financial news feed
+<span class="flow-yellow">Duration:</span>     3 weeks (position accumulation + agent influence period)
+
+<span class="flow-red">[Week 1]</span> Attacker opens short position in target company (Company X)
+          Attacker compromises a financial news aggregator used by victim's RAG pipeline
+          Injects subtly negative sentiment into Company X coverage (hard to detect per-article)
+
+<span class="flow-red">[Week 2]</span> Victim's research agent ingests poisoned articles during daily RAG refresh
+          Agent's sentiment analysis for Company X shifts from Neutral to Negative
+          Agent generates "reduce exposure" recommendation — within normal variance range
+
+<span class="flow-red">[Week 3]</span> Portfolio agent acts on research: sells $20M in Company X positions
+          Company X reports strong earnings. Stock rises 18%.
+          Victim firm realises $20M opportunity cost + $3.2M direct loss from adverse timing.
+          Attacker's short position: profitable.
+
+<span class="flow-red">[Discovery]</span> Post-mortem investigation (6 weeks later) traces recommendation to RAG data
+           Source article found to contain poisoned sentiment. Attacker attribution: unclear.
+           Regulatory disclosure required. SEC investigation opened.</div>
+
+      <div class="scenario-metrics">
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">$23M</div>
+          <div class="scenario-metric-label">Total Financial Loss</div>
+        </div>
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">6 wks</div>
+          <div class="scenario-metric-label">Time to Discovery</div>
+        </div>
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">SEC</div>
+          <div class="scenario-metric-label">Regulatory Outcome</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario 5 -->
+  <div class="scenario no-break">
+    <div class="scenario-header">
+      <div>
+        <div class="scenario-number">Scenario 05</div>
+        <div class="scenario-title">"The Compliance Catastrophe"</div>
+      </div>
+      <div class="scenario-badges">
+        <span class="scenario-badge badge-impact-critical">Impact: Critical</span>
+        <span class="scenario-badge badge-detection-medium">Detection: Medium</span>
+      </div>
+    </div>
+    <div class="scenario-body">
+      <p>Healthcare agents store Protected Health Information in non-compliant logging systems, discuss patient details across sessions, and make triage recommendations constituting unlicensed medical advice. Simultaneous HIPAA, malpractice, and licensing violations — discovered during a routine compliance audit.</p>
+
+      <div class="attack-flow"><span class="flow-accent">ATTACK FLOW — "The Compliance Catastrophe"</span>
+<span class="flow-yellow">Actor:</span>        No external attacker — architectural compliance failure
+<span class="flow-yellow">Vector:</span>       Misconfigured logging + insufficient PHI controls in agent framework
+<span class="flow-yellow">Duration:</span>     8 months of non-compliant operation before discovery
+
+<span class="flow-red">[Month 1]</span> Hospital deploys patient triage AI agent on approved LLM platform
+          PHI assumed to be handled by model provider's BAA
+          Agent logs stored in standard CloudWatch — no HIPAA configuration applied
+
+<span class="flow-red">[Month 2-7]</span> Agent handles 14,000+ patient interactions
+           Full conversation history (symptoms, diagnoses, medications) stored in plaintext logs
+           Agent cross-references patient records across sessions — PHI correlation created
+           Agent responses include specific medical recommendations (USMLE Board-level detail)
+           HIPAA: No BAA with logging provider. PHI in non-compliant storage.
+           Malpractice: Clinical recommendations without licensed physician oversight.
+           Licensing: Practice of medicine by an unlicensed entity.
+
+<span class="flow-red">[Month 8]</span> Routine HIPAA compliance audit identifies CloudWatch logs containing PHI
+          OCR investigation opened. Audit scope expands to all AI deployments.
+          Full scope of violations discovered: 3 simultaneous regulatory exposures.
+
+<span class="flow-red">[Outcome]</span>  HIPAA fine: $4.2M (Tier 3 — willful neglect)
+           Malpractice suits: 340 patients, estimated $28M exposure
+           Licensing referral: State medical board investigation
+           Total exposure: $50M+</div>
+
+      <div class="scenario-metrics">
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">$50M+</div>
+          <div class="scenario-metric-label">Total Regulatory Exposure</div>
+        </div>
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">14,000</div>
+          <div class="scenario-metric-label">Affected Patient Records</div>
+        </div>
+        <div class="scenario-metric">
+          <div class="scenario-metric-value">3</div>
+          <div class="scenario-metric-label">Simultaneous Violations</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     SECTION 05: REGULATORY LANDSCAPE
+============================================================ -->
+<div class="page-break"></div>
+<div class="page-header">
+  <div class="page-header-brand">🛡️ AgentGuard</div>
+  <div class="page-header-info">Threat Research Report  •  AG-TR-2026-01  •  February 2026</div>
+</div>
+
+<div class="section">
+  <div class="section-number">Section 05</div>
+  <div class="section-title">The Regulatory Landscape</div>
+  <div class="section-divider"></div>
+
+  <p>Regulation governing AI agents is no longer theoretical. Multiple frameworks are in active enforcement, with specific requirements that autonomous agent deployments must satisfy. Enterprises that deploy agents in regulated industries face a complex, overlapping compliance landscape with material legal and financial consequences for non-compliance.</p>
+
+  <div class="callout callout-critical">
+    <div class="callout-icon">⚖️</div>
+    <div class="callout-content">
+      <strong>Key Timeline: EU AI Act Enforcement</strong>
+      <p>The EU AI Act (Regulation 2024/1689) entered into force in August 2024. High-risk AI provisions — directly applicable to most enterprise agent deployments in finance, healthcare, HR, and critical infrastructure — have an extended enforcement deadline of <strong>August 2026</strong>. Organisations have a closing window to achieve compliance. Fines: up to €30M or 6% of global annual turnover for prohibited practices; €20M or 4% for other violations.</p>
+    </div>
+  </div>
+
+  <div class="reg-grid">
+
+    <div class="reg-card">
+      <div class="enforcement-banner">Enforcement: August 2026 (High-Risk)</div>
+      <div class="reg-card-header">
+        <div class="reg-card-name">EU AI Act</div>
+        <div class="reg-card-subtitle">Regulation 2024/1689 — European Union</div>
+      </div>
+      <div class="reg-card-body">
+        <div class="reg-requirement"><span>Art. 9: Risk management system — documented, continuous, lifecycle-wide. Mandatory for high-risk AI (finance, healthcare, HR, critical infra).</span></div>
+        <div class="reg-requirement"><span>Art. 12: Automatic logging of all events enabling traceability of decisions throughout system lifecycle. Append-only, tamper-resistant.</span></div>
+        <div class="reg-requirement"><span>Art. 13: Transparency — users must be informed they are interacting with AI; outputs must be interpretable.</span></div>
+        <div class="reg-requirement"><span>Art. 14: Human oversight — technical means enabling meaningful human oversight and intervention including the ability to halt the system.</span></div>
+        <div class="reg-requirement"><span>Art. 15: Accuracy, robustness, and cybersecurity — resilience against adversarial manipulation (prompt injection explicitly cited in implementing guidance).</span></div>
+        <div style="margin-top:10px;font-size:8.5pt;color:#dc2626;font-weight:600;">Penalty: Up to €30M or 6% global turnover</div>
+      </div>
+    </div>
+
+    <div class="reg-card">
+      <div class="enforcement-banner">Enforcement: Voluntary (US) — Increasing Federal Adoption</div>
+      <div class="reg-card-header" style="background: #0f172a;">
+        <div class="reg-card-name">NIST AI RMF 1.0 + AI 600-1</div>
+        <div class="reg-card-subtitle">National Institute of Standards and Technology — USA</div>
+      </div>
+      <div class="reg-card-body">
+        <div class="reg-requirement"><span>GOVERN: Policies, processes, and accountability structures for AI risk management across the organisation.</span></div>
+        <div class="reg-requirement"><span>MAP: Context establishment — identify risks, impacts, and affected parties for each AI deployment.</span></div>
+        <div class="reg-requirement"><span>MEASURE: Quantitative and qualitative risk analysis; continuous monitoring; metrics for AI system performance and risk.</span></div>
+        <div class="reg-requirement"><span>MANAGE: Risk treatment decisions; incident response; regular reviews; documented residual risk.</span></div>
+        <div class="reg-requirement"><span>AI 600-1 Addendum: Specific guidance on generative AI risks including prompt injection, data poisoning, and confabulation — directly applicable to agent deployments.</span></div>
+        <div style="margin-top:10px;font-size:8.5pt;color:#1d4ed8;font-weight:600;">Referenced in: Federal procurement, financial regulators, DoD contracting</div>
+      </div>
+    </div>
+
+    <div class="reg-card">
+      <div class="enforcement-banner">Certification: Active — Third-Party Audit Required</div>
+      <div class="reg-card-header" style="background: #065f46;">
+        <div class="reg-card-name">ISO/IEC 42001:2023</div>
+        <div class="reg-card-subtitle">International Standard for AI Management Systems</div>
+      </div>
+      <div class="reg-card-body">
+        <div class="reg-requirement"><span>§6.1.2: AI risk assessment — systematic identification and evaluation of AI-specific risks, documented methodology.</span></div>
+        <div class="reg-requirement"><span>§8.4: Operational planning — documented controls for AI system development and deployment lifecycle.</span></div>
+        <div class="reg-requirement"><span>§9: Performance evaluation — monitoring, measurement, and internal audit of AI management system effectiveness.</span></div>
+        <div class="reg-requirement"><span>§10: Continual improvement — systematic process for addressing nonconformities and improving AI governance.</span></div>
+        <div class="reg-requirement"><span>Annex A Controls: 38 specific controls mapped to AI risk areas — many directly requiring capabilities that AgentGuard provides.</span></div>
+        <div style="margin-top:10px;font-size:8.5pt;color:#065f46;font-weight:600;">Growing procurement requirement in EU, UK, Singapore, Australia</div>
+      </div>
+    </div>
+
+    <div class="reg-card">
+      <div class="enforcement-banner">Enforcement: January 2025 — EU Financial Entities</div>
+      <div class="reg-card-header" style="background: #7c2d12;">
+        <div class="reg-card-name">DORA</div>
+        <div class="reg-card-subtitle">Digital Operational Resilience Act — EU 2022/2554</div>
+      </div>
+      <div class="reg-card-body">
+        <div class="reg-requirement"><span>Chapter II (Art. 5-16): ICT risk management framework — applies to all ICT systems including AI agents used by EU financial entities.</span></div>
+        <div class="reg-requirement"><span>Art. 9: Protection and prevention — testing and hardening of AI systems against cyber threats, including adversarial attacks.</span></div>
+        <div class="reg-requirement"><span>Art. 10: Detection — continuous monitoring and anomaly detection for all ICT assets including AI-powered tools.</span></div>
+        <div class="reg-requirement"><span>Art. 13: Learning and evolving — post-incident analysis and systematic improvement of AI resilience controls.</span></div>
+        <div class="reg-requirement"><span>Chapter III: Major ICT-related incident reporting — AI agent failures may trigger mandatory regulatory notification within 4 hours.</span></div>
+        <div style="margin-top:10px;font-size:8.5pt;color:#9a3412;font-weight:600;">Applies to: Banks, insurers, investment firms, payment processors in EU</div>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>Additional Regulatory Triggers</h2>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Framework</th>
+          <th>Jurisdiction / Sector</th>
+          <th>Key Agent Requirements</th>
+          <th>Enforcement Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="bold">HIPAA Security Rule</td>
+          <td>US Healthcare</td>
+          <td>Technical safeguards for PHI; access controls; audit logs; BAA requirements for AI tools</td>
+          <td><span class="severity-badge sev-critical">Active</span></td>
+        </tr>
+        <tr>
+          <td class="bold">PCI-DSS v4.0</td>
+          <td>Global — Payment Processing</td>
+          <td>Req. 7 (access restriction), Req. 10 (logging), Req. 12 (policy) for agents touching cardholder data</td>
+          <td><span class="severity-badge sev-critical">Active</span></td>
+        </tr>
+        <tr>
+          <td class="bold">SEC Cybersecurity Rules</td>
+          <td>US Public Companies</td>
+          <td>Material incident disclosure within 4 days; annual risk management disclosures covering AI</td>
+          <td><span class="severity-badge sev-critical">Active (Dec 2023)</span></td>
+        </tr>
+        <tr>
+          <td class="bold">NIS2 Directive</td>
+          <td>EU — Essential Entities</td>
+          <td>Art. 21 risk management for all ICT including AI; incident reporting within 24 hours</td>
+          <td><span class="severity-badge sev-high">Enforcing</span></td>
+        </tr>
+        <tr>
+          <td class="bold">SOC 2 Type II</td>
+          <td>US — Enterprise Procurement</td>
+          <td>System operations, logical access, and change management controls covering agent deployments</td>
+          <td><span class="severity-badge sev-medium">Voluntary (required by buyers)</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-warning">
+    <div class="callout-icon">📋</div>
+    <div class="callout-content">
+      <strong>The Compliance Gap is Widening</strong>
+      <p>Our research found that fewer than 12% of enterprises with active agent deployments have documented risk management systems meeting EU AI Act Article 9 requirements. Fewer than 8% maintain tamper-evident audit trails of agent decisions as required by Article 12. The compliance window is closing — and the documentation burden cannot be satisfied retroactively.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SECTION 06: SOLUTIONS GAP ANALYSIS
+============================================================ -->
+<div class="page-break"></div>
+<div class="page-header">
+  <div class="page-header-brand">🛡️ AgentGuard</div>
+  <div class="page-header-info">Threat Research Report  •  AG-TR-2026-01  •  February 2026</div>
+</div>
+
+<div class="section">
+  <div class="section-number">Section 06</div>
+  <div class="section-title">Current Solutions Gap Analysis</div>
+  <div class="section-divider"></div>
+
+  <p>A significant vendor ecosystem exists for AI security — but the coverage map reveals a fundamental structural gap. Existing solutions address adjacent problems well. None address the core problem: runtime behavioural governance of deployed autonomous agents.</p>
+
+  <div class="table-wrapper">
+    <table class="gap-table-header-accent">
+      <thead>
+        <tr>
+          <th>Vendor / Category</th>
+          <th style="text-align:center">Prompt Injection</th>
+          <th style="text-align:center">Policy Enforcement</th>
+          <th style="text-align:center">Behavioural Monitoring</th>
+          <th style="text-align:center">Multi-Agent Governance</th>
+          <th style="text-align:center">Audit / Compliance</th>
+          <th style="text-align:center">Kill Switch</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Lakera Guard</strong><br><span class="text-muted">Prompt security</span></td>
+          <td style="text-align:center"><span class="check-yes">✓</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>Protect AI</strong><br><span class="text-muted">ML model security</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>CalypsoAI</strong><br><span class="text-muted">Enterprise AI security</span></td>
+          <td style="text-align:center"><span class="check-yes">✓</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>Splunk / Sentinel</strong><br><span class="text-muted">SIEM platforms</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-yes">✓</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>CrowdStrike / Palo Alto</strong><br><span class="text-muted">EDR / SASE</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-yes">✓</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>Kong / Apigee</strong><br><span class="text-muted">API Gateways</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>Vanta / Drata</strong><br><span class="text-muted">GRC / Compliance</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-yes">✓</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+        </tr>
+        <tr>
+          <td><strong>Wiz / Orca Security</strong><br><span class="text-muted">Cloud Security Posture</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+          <td style="text-align:center"><span class="check-part">~</span></td>
+          <td style="text-align:center"><span class="check-no">✗</span></td>
+        </tr>
+        <tr style="background:#e0e7ff">
+          <td><strong>🛡️ AgentGuard</strong><br><span style="color:#4f46e5;font-size:8.5pt;font-weight:600;">Runtime Agent Security</span></td>
+          <td style="text-align:center"><span class="check-yes">✓</span></td>
+          <td style="text-align:center"><span class="check-yes">✓</span></td>
+          <td style="text-align:center"><span class="check-yes">✓</span></td>
+          <td style="text-align:center"><span class="check-yes">✓</span></td>
+          <td style="text-align:center"><span class="check-yes">✓</span></td>
+          <td style="text-align:center"><span class="check-yes">✓</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="text-muted" style="margin-top:-12px">✓ Full coverage &nbsp; ~ Partial / adjacent coverage &nbsp; ✗ Not addressed</p>
+
+  <h2>The Structural Gap Explained</h2>
+
+  <p>The gap is not a product gap — it is an architectural gap. Existing security categories were designed for a world where software executes deterministically. AI agents do not. They reason. They plan. They make decisions. The threat model for a system that thinks is categorically different from the threat model for a system that merely executes.</p>
+
+  <div class="callout callout-info">
+    <div class="callout-icon">🔍</div>
+    <div class="callout-content">
+      <strong>What CISOs Say — Verbatim</strong>
+      <p>"I have 200 agents deployed across 6 departments. I can't tell you what they accessed yesterday, whether any of them violated our data handling policies, or if one is currently exfiltrating PII to a third-party API. My board asks about AI risk every quarter and I have nothing to show them." — CISO, Fortune 500 financial services firm, January 2026.</p>
+    </div>
+  </div>
+
+  <h2>What's Missing: The Requirements That No Vendor Meets</h2>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Requirement</th><th>Why It Matters</th><th>Current State</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="bold">Cross-agent visibility</td>
+          <td>Multi-agent pipelines are the fastest-growing deployment pattern. Threats propagate between agents — monitoring must see the graph, not just individual nodes.</td>
+          <td>No vendor provides cross-agent correlation today.</td>
+        </tr>
+        <tr>
+          <td class="bold">Intent-aware monitoring</td>
+          <td>A Stripe API call looks identical in logs whether it's legitimate or the result of injection. Monitoring requires agent context — <em>why</em> the call was made, not just that it happened.</td>
+          <td>SIEM platforms see the call. None see the reasoning chain that produced it.</td>
+        </tr>
+        <tr>
+          <td class="bold">Framework-agnostic policy</td>
+          <td>Enterprises use 3-8 different agent frameworks. A security product that covers only LangChain addresses 25-35% of the attack surface.</td>
+          <td>No vendor provides framework-agnostic policy enforcement with unified governance.</td>
+        </tr>
+        <tr>
+          <td class="bold">Chain-of-thought audit</td>
+          <td>EU AI Act Art. 12 requires traceability of decisions. For agents, that means preserving the reasoning chain, not just the API calls. Regulators need to understand <em>why</em> a decision was made.</td>
+          <td>No current product preserves agent reasoning for regulatory audit purposes.</td>
+        </tr>
+        <tr>
+          <td class="bold">Runtime kill switch</td>
+          <td>When an agent goes rogue, the response time window is measured in seconds. A kill switch that takes minutes to execute is operationally useless.</td>
+          <td>No mainstream security product provides sub-500ms agent halt capability.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SECTION 07: DEFENCE FRAMEWORK
+============================================================ -->
+<div class="page-break"></div>
+<div class="page-header">
+  <div class="page-header-brand">🛡️ AgentGuard</div>
+  <div class="page-header-info">Threat Research Report  •  AG-TR-2026-01  •  February 2026</div>
+</div>
+
+<div class="section">
+  <div class="section-number">Section 07</div>
+  <div class="section-title">Defence Framework</div>
+  <div class="section-divider"></div>
+
+  <p>Effective agent security cannot be achieved through a single control. The following 10 recommendations represent a defence-in-depth framework for enterprise AI agent deployments. They are ordered by implementation priority — starting with controls that can be applied immediately to existing deployments.</p>
+
+  <div class="defence-grid">
+
+    <div class="defence-card">
+      <div class="priority-badge priority-immediate">Immediate Priority</div>
+      <div class="defence-card-number">01</div>
+      <div class="defence-card-title">Policy Enforcement Engine</div>
+      <div class="defence-card-body">
+        Implement declarative, version-controlled policies (YAML/JSON) defining what each agent is permitted to do — allowed tool categories, resource budgets, data classification gates, blocklists. Policy must be enforced <em>outside</em> the model, not embedded in system prompts. System prompts are not policy enforcement mechanisms — they are aspirational guidance that fails under adversarial conditions.
+        <br><br>
+        <strong>Key controls:</strong> Tool allowlists/blocklists, spend caps, rate limits, data access scope boundaries, fail-closed defaults for high-risk actions.
+      </div>
+    </div>
+
+    <div class="defence-card">
+      <div class="priority-badge priority-immediate">Immediate Priority</div>
+      <div class="defence-card-number">02</div>
+      <div class="defence-card-title">Tamper-Evident Audit Trails</div>
+      <div class="defence-card-body">
+        Every agent action must be logged with full context: intent → plan → execution → result. Logs must be cryptographically chained (each entry references the hash of the previous) to prevent tampering. Log schema must capture: agent ID, session ID, tool called, parameters (with PII redaction), policy decision, outcome, and the reasoning chain that produced the action.
+        <br><br>
+        <strong>Regulatory mapping:</strong> EU AI Act Art. 12, HIPAA §164.312, DORA Art. 10, ISO 42001 §9.
+      </div>
+    </div>
+
+    <div class="defence-card">
+      <div class="priority-badge priority-immediate">Immediate Priority</div>
+      <div class="defence-card-number">03</div>
+      <div class="defence-card-title">Kill Switch &amp; Circuit Breakers</div>
+      <div class="defence-card-body">
+        Implement an agent halt capability with sub-500ms response time, accessible via API and dashboard. Supplement with automatic circuit breakers: agent pauses after N policy violations in a session, or when anomaly scores exceed a configured threshold. Configure fail-closed/fail-open per agent criticality tier — critical agents default to fail-closed (halt on AgentGuard unavailability).
+        <br><br>
+        <strong>Regulatory mapping:</strong> EU AI Act Art. 14 (human oversight and intervention capability).
+      </div>
+    </div>
+
+    <div class="defence-card">
+      <div class="priority-badge priority-immediate">Immediate Priority</div>
+      <div class="defence-card-number">04</div>
+      <div class="defence-card-title">Human-in-the-Loop Gates</div>
+      <div class="defence-card-body">
+        For high-risk actions — payments above threshold, irreversible operations, external communications, code deployment — require explicit human approval before execution. Implement via configurable policy rules that pause the agent and route to a human approver (Slack, email, dashboard). Design against approval fatigue: present minimal context to enable meaningful review, not rubber-stamp queues.
+        <br><br>
+        <strong>Anti-pattern:</strong> Batching high-risk approvals creates timing attack surface (Threat Vector 12).
+      </div>
+    </div>
+
+    <div class="defence-card">
+      <div class="priority-badge priority-short">Short-Term (30-90 days)</div>
+      <div class="defence-card-number">05</div>
+      <div class="defence-card-title">Behavioural Anomaly Detection</div>
+      <div class="defence-card-body">
+        Establish behavioural baselines per agent and flag deviations: unusual tool call sequences, access patterns outside historical norms, volume anomalies, time-of-day deviations, and data access patterns inconsistent with declared purpose. Rules-based detection is the starting point; ML-based baselines provide additional coverage as data volume grows.
+        <br><br>
+        <strong>Key focus:</strong> Detect slow-burn exfiltration (Scenario 1) and incremental capability accumulation (Threat Vector 7) — patterns invisible to point-in-time policy checks.
+      </div>
+    </div>
+
+    <div class="defence-card">
+      <div class="priority-badge priority-short">Short-Term (30-90 days)</div>
+      <div class="defence-card-number">06</div>
+      <div class="defence-card-title">Zero-Trust Agent Identity</div>
+      <div class="defence-card-body">
+        Every agent instance must have a cryptographically verifiable identity (mTLS or JWT with short expiry). Permissions are re-evaluated on every action, not assumed from session initiation. Implement least-privilege defaults: agents start with zero permissions and explicitly request what they need. Apply time-bounded JIT elevation for privileged operations. Conduct 90-day recertification of accumulated permissions.
+        <br><br>
+        <strong>Addresses:</strong> Privilege escalation (TT-06), capability accumulation (TT-07).
+      </div>
+    </div>
+
+    <div class="defence-card">
+      <div class="priority-badge priority-short">Short-Term (30-90 days)</div>
+      <div class="defence-card-number">07</div>
+      <div class="defence-card-title">Multi-Agent Governance</div>
+      <div class="defence-card-body">
+        In multi-agent deployments, implement cross-agent visibility: log and correlate agent-to-agent communications, establish hierarchical permission models (sub-agents cannot inherit permissions exceeding their orchestrator), and implement coordination policies that detect feedback loops before they cascade.
+        <br><br>
+        <strong>Key capability:</strong> Cross-agent event correlation with timeline reconstruction — essential for detecting cascading failures (Scenario 3) and lateral movement via injection (TT-02).
+      </div>
+    </div>
+
+    <div class="defence-card">
+      <div class="priority-badge priority-medium">Medium-Term (90-180 days)</div>
+      <div class="defence-card-number">08</div>
+      <div class="defence-card-title">Supply Chain Security</div>
+      <div class="defence-card-body">
+        Generate SBOMs (Software Bill of Materials) for all agent deployments — documenting framework versions, plugins, model providers, and dependencies. Implement provenance verification for all dependencies (Sigstore signing, reproducible builds). Pin framework and plugin versions in production; automate vulnerability scanning against agent-specific CVE feeds. Monitor model provider behaviour for regression.
+        <br><br>
+        <strong>Addresses:</strong> Supply chain compromise (TT-10) — the highest-reach, lowest-detectability threat category.
+      </div>
+    </div>
+
+    <div class="defence-card">
+      <div class="priority-badge priority-medium">Medium-Term (90-180 days)</div>
+      <div class="defence-card-number">09</div>
+      <div class="defence-card-title">MCP &amp; Tool Security</div>
+      <div class="defence-card-body">
+        As Model Context Protocol (MCP) becomes the standard interface for agent tool access, implement MCP-specific security controls: server verification before tool registration, parameter sanitisation at the MCP boundary, sandboxed MCP server execution, and audit logging of all MCP tool calls including exact parameters and responses. Third-party MCP servers should be treated as untrusted until verified.
+        <br><br>
+        <strong>Emerging risk:</strong> MCP ecosystem is growing rapidly with limited security standardisation — an ideal attack surface for supply chain compromise.
+      </div>
+    </div>
+
+    <div class="defence-card">
+      <div class="priority-badge priority-medium">Medium-Term (90-180 days)</div>
+      <div class="defence-card-number">10</div>
+      <div class="defence-card-title">Continuous Compliance Monitoring</div>
+      <div class="defence-card-body">
+        Map every agent deployment to applicable regulatory frameworks (EU AI Act, HIPAA, DORA, PCI-DSS) and continuously verify that runtime behaviour satisfies compliance requirements. Generate pre-built evidence packages for regulatory inquiries — audit logs, policy documentation, risk assessments, and human oversight records — automatically from the same data collected for security monitoring.
+        <br><br>
+        <strong>Key benefit:</strong> Compliance evidence generated continuously, not scrambled in response to audit requests. Regulatory change management: policy templates update when regulations change.
+      </div>
+    </div>
+
+  </div>
+
+  <h2>Defence Maturity Model</h2>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Maturity Level</th>
+          <th>Controls in Place</th>
+          <th>Threat Coverage</th>
+          <th>Compliance Posture</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Level 1 — Aware</strong></td>
+          <td>System prompts, manual code review, basic CloudWatch logging</td>
+          <td>&lt;20% — Only obvious misuse detected</td>
+          <td>Non-compliant with EU AI Act, HIPAA, DORA</td>
+        </tr>
+        <tr>
+          <td><strong>Level 2 — Managed</strong></td>
+          <td>+ Policy engine (Recs 1-3), HITL gates (Rec 4), basic audit logs</td>
+          <td>~50% — Blocks known attack vectors at input/action layer</td>
+          <td>Partial EU AI Act Art. 9, 12, 14 compliance</td>
+        </tr>
+        <tr>
+          <td><strong>Level 3 — Advanced</strong></td>
+          <td>+ Behavioural anomaly detection (Rec 5), zero-trust identity (Rec 6), SIEM integration</td>
+          <td>~75% — Detects behavioural anomalies and slow-burn attacks</td>
+          <td>Full EU AI Act compliance; NIST AI RMF aligned</td>
+        </tr>
+        <tr>
+          <td><strong>Level 4 — Optimised</strong></td>
+          <td>All 10 recommendations implemented; multi-agent governance (Rec 7), supply chain (Rec 8), MCP security (Rec 9), continuous compliance (Rec 10)</td>
+          <td>&gt;90% — Defence-in-depth across all 12 threat vectors</td>
+          <td>Full compliance stack: EU AI Act, ISO 42001, DORA, HIPAA, SOC 2</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     SECTION 08: ABOUT AGENTGUARD
+============================================================ -->
+<div class="page-break"></div>
+<div class="page-header">
+  <div class="page-header-brand">🛡️ AgentGuard</div>
+  <div class="page-header-info">Threat Research Report  •  AG-TR-2026-01  •  February 2026</div>
+</div>
+
+<div class="section">
+  <div class="section-number">Section 08</div>
+  <div class="section-title">About AgentGuard</div>
+  <div class="section-divider"></div>
+
+  <div class="cta-section">
+    <div class="cta-logo">🛡️ AgentGuard</div>
+    <div class="cta-tagline">"Every company deploying AI agents will need AgentGuard — the same way every company with a network needed a firewall."</div>
+
+    <div class="cta-body">
+      AgentGuard is the runtime security platform for the agentic era. We monitor, constrain, and audit autonomous AI agents across any framework — providing the firewall, SOC, and compliance engine that enterprises need to deploy agents safely at scale.
+      <br><br>
+      We built AgentGuard because we saw the same failure modes that defined the chatbot era — prompt injection, uncontrolled outputs, liability without oversight — about to replay at an order of magnitude larger blast radius, against systems with tool access, payment capability, code execution, and persistent memory. The security layer that should exist between "agent was given a task" and "agent did something catastrophic" does not exist. We're building it.
+    </div>
+
+    <div class="cta-features">
+      <div class="cta-feature">
+        <div class="cta-feature-icon">🔒</div>
+        <div class="cta-feature-text">
+          <strong>Policy Engine</strong>
+          Declarative YAML policies defining what agents can and cannot do. Enforced outside the model. Version-controlled, auditable, testable.
+        </div>
+      </div>
+      <div class="cta-feature">
+        <div class="cta-feature-icon">📊</div>
+        <div class="cta-feature-text">
+          <strong>Real-Time Monitoring</strong>
+          Every agent action logged with intent, plan, execution, and result. Anomaly detection, risk scoring, SIEM integration (Splunk, Sentinel).
+        </div>
+      </div>
+      <div class="cta-feature">
+        <div class="cta-feature-icon">⚡</div>
+        <div class="cta-feature-text">
+          <strong>Kill Switch &amp; HITL</strong>
+          Sub-500ms agent halt. Human-in-the-loop gates for high-risk actions. Automatic circuit breakers. Configurable fail-closed per agent tier.
+        </div>
+      </div>
+      <div class="cta-feature">
+        <div class="cta-feature-icon">📋</div>
+        <div class="cta-feature-text">
+          <strong>Compliance Engine</strong>
+          Pre-built reports for EU AI Act, SOC 2, ISO 42001, HIPAA, DORA, PCI-DSS. Evidence packages that survive regulatory scrutiny.
+        </div>
+      </div>
+      <div class="cta-feature">
+        <div class="cta-feature-icon">🕸️</div>
+        <div class="cta-feature-text">
+          <strong>Multi-Agent Governance</strong>
+          Cross-agent visibility, collusion prevention, hierarchical permissions, and cascade failure detection for complex agent pipelines.
+        </div>
+      </div>
+      <div class="cta-feature">
+        <div class="cta-feature-icon">🔗</div>
+        <div class="cta-feature-text">
+          <strong>Framework Agnostic</strong>
+          Works with LangChain, AutoGen, CrewAI, OpenAI Assistants, Anthropic tool use, and any custom framework. One SDK, unified governance.
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-actions">
+      <a class="btn-primary" href="#">Request Early Access →</a>
+      <a class="btn-secondary" href="#">View Open-Source Policy Engine</a>
+      <a class="btn-secondary" href="#">Book a Security Assessment</a>
+    </div>
+
+    <div class="cta-contact">
+      <strong style="color:rgba(255,255,255,0.7)">Get in touch:</strong>&nbsp; security@agentguard.ai &nbsp;|&nbsp; agentguard.ai &nbsp;|&nbsp; @AgentGuardAI<br>
+      <strong style="color:rgba(255,255,255,0.7)">Design Partner Programme:</strong>&nbsp; We're working with 25 enterprise design partners to shape the product.
+      Design partners receive 12 months free access in exchange for product feedback and a reference commitment.
+      Reach out to discuss whether your organisation qualifies.<br><br>
+      <em>AgentGuard — Securing the Agentic Era. Built February 2026.</em>
+    </div>
+  </div>
+
+  <div style="margin-top: 36px; padding: 24px; background: var(--gray-50); border-radius: 8px; border: 1px solid var(--gray-200);">
+    <h3 style="margin-top:0;color:var(--gray-700)">Research Methodology &amp; Disclaimer</h3>
+    <p style="font-size:8.5pt;color:var(--gray-500);line-height:1.6;margin:0">
+      This report is based on: analysis of publicly documented AI incidents (2022–2026); threat modelling against production agent deployment architectures; interviews with 47 enterprise security and engineering leaders; review of regulatory frameworks and implementing guidance; and original security research by the AgentGuard Threat Research Team.
+      <br><br>
+      Attack scenarios are plausible extrapolations based on documented techniques; they are not accounts of specific identified incidents unless attributed. Statistics cited from third parties (Gartner, McKinsey) are reproduced with reference to original sources. Vendor capability assessments reflect publicly available information and product documentation as of February 2026 — vendor capabilities change; readers should conduct independent evaluation.
+      <br><br>
+      <strong>TLP Classification: TLP:WHITE</strong> — This document may be shared freely. No restrictions on distribution.
+      <br>
+      <strong>Report Number:</strong> AG-TR-2026-01 &nbsp;|&nbsp; <strong>Date:</strong> February 2026 &nbsp;|&nbsp; <strong>Version:</strong> 1.0 Final
+      <br>
+      © 2026 AgentGuard. Content may be reproduced with attribution.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>
