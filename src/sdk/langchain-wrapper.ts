@@ -2,18 +2,20 @@
  * AgentGuard LangChain Wrapper
  *
  * Intercepts LangChain tool calls before execution, enforcing the agent's
- * policy.  Wrap any LangChain StructuredTool (or compatible interface) and
- * the wrapper transparently enforces:
+ * policy per ARCHITECTURE.md §4.2 and the evaluation algorithm from
+ * POLICY_ENGINE.md §4.
  *
- *   ALLOW  → runs the tool, logs result
- *   DENY   → throws PolicyError.denied, logs attempt
- *   HITL   → emits 'approval-required', awaits human response, logs outcome
+ * Decisions:
+ *   ALLOW           → runs the tool, logs result
+ *   BLOCK           → throws PolicyError.denied, logs attempt
+ *   REQUIRE_APPROVAL → emits 'approval-required', blocks until resolution
+ *   MONITOR         → runs the tool, logs with elevated risk flag
  *
  * Usage:
- *   const guardedSearch = AgentGuardToolWrapper.wrap(searchTool, {
+ *   const guarded = AgentGuardToolWrapper.wrap(searchTool, {
  *     ctx, policyEngine, policyId, auditLogger, killSwitch,
  *   });
- *   // Use `guardedSearch` anywhere you'd use `searchTool`
+ *   // Use `guarded` anywhere you'd use `searchTool`
  */
 import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
@@ -24,14 +26,16 @@ import { KillSwitch } from '@/core/kill-switch.js';
 import { PolicyEngine } from '@/core/policy-engine.js';
 import type {
   AgentContext,
-  Action,
+  ActionRequest,
   ApprovalRequest,
   ApprovalStatus,
+  PolicyDecision,
 } from '@/core/types.js';
 
-// ─── LangChain-compatible tool interface ──────────────────────────────────────
-// We define a minimal interface so this wrapper doesn't require @langchain/core
-// as a hard dependency.  It's structurally compatible with StructuredTool.
+// ─── LangChain-compatible Tool Interface ─────────────────────────────────────
+//
+// Structurally compatible with LangChain's StructuredTool.
+// We define a minimal interface to avoid requiring @langchain/core as a hard dep.
 
 export interface LangChainTool {
   name: string;
@@ -40,7 +44,7 @@ export interface LangChainTool {
   invoke(input: Record<string, unknown>): Promise<unknown>;
 }
 
-// ─── Wrapper options ──────────────────────────────────────────────────────────
+// ─── Wrapper Options ──────────────────────────────────────────────────────────
 
 export interface WrapperOptions {
   /** Agent context (agentId, sessionId, policyVersion) */
@@ -57,16 +61,22 @@ export interface WrapperOptions {
    * Event bus for HITL notifications.
    * The wrapper emits 'approval-required' with an ApprovalRequest;
    * your approval UI should call approvalBus.emit('resolved', resolvedRequest).
+   *
+   * If not provided, require_approval decisions fail-closed (block).
    */
   approvalBus?: ApprovalEventBus;
   /**
-   * Estimated cost per tool call in USD.
+   * Estimated cost per tool call in cents (to match DATA_MODEL.md which uses cents).
    * Can be a flat number or a per-tool map.
    */
-  estimatedCostUsd?: number | Record<string, number>;
+  estimatedCostCents?: number | Record<string, number>;
+  /**
+   * Data classification labels to attach to requests from this wrapper.
+   */
+  inputDataLabels?: string[];
 }
 
-// ─── Approval event bus ───────────────────────────────────────────────────────
+// ─── Approval Event Bus ───────────────────────────────────────────────────────
 
 export interface ApprovalEvents {
   'approval-required': ApprovalRequest;
@@ -84,7 +94,7 @@ export class ApprovalEventBus extends EventEmitter {
 
   /**
    * Resolve an approval request (approve or deny).
-   * This unblocks any `awaitApproval` calls waiting on the same ID.
+   * This unblocks any `awaitResolution` calls waiting on the same ID.
    */
   resolve(
     requestId: string,
@@ -109,14 +119,14 @@ export class ApprovalEventBus extends EventEmitter {
   awaitResolution(requestId: string, timeoutMs: number): Promise<ApprovalRequest> {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
-        this.removeListener('resolved', handler);
+        this.off('resolved', handler);
         reject(PolicyError.approvalTimeout(requestId));
       }, timeoutMs);
 
-      const handler = (req: ApprovalRequest) => {
+      const handler = (req: ApprovalRequest): void => {
         if (req.id !== requestId) return;
         clearTimeout(timer);
-        this.removeListener('resolved', handler);
+        this.off('resolved', handler);
         resolve(req);
       };
 
@@ -128,7 +138,7 @@ export class ApprovalEventBus extends EventEmitter {
     event: K,
     listener: (data: ApprovalEvents[K]) => void,
   ): this {
-    return super.on(event, listener);
+    return super.on(event, listener as (...args: unknown[]) => void);
   }
 
   override emit<K extends keyof ApprovalEvents>(
@@ -157,78 +167,80 @@ export class GuardedTool implements LangChainTool {
 
   /**
    * Intercept a tool invocation:
-   * 1. Assert agent is not halted
-   * 2. Evaluate action against policy
-   * 3. If DENY → throw PolicyError (logged)
-   * 4. If HITL → emit approval event, await resolution (logged)
-   * 5. If ALLOW → invoke inner tool, log result
+   * 1. Assert agent is not halted (kill switch check)
+   * 2. Build ActionRequest
+   * 3. Evaluate against policy
+   * 4. Handle decision (block → throw, require_approval → HITL, monitor/allow → execute)
+   * 5. Log the audit event
    */
   async invoke(input: Record<string, unknown>): Promise<unknown> {
     const { ctx, policyEngine, policyId, auditLogger, killSwitch, approvalBus } = this.opts;
 
-    // ── Kill switch check ─────────────────────────────────────────────────────
+    // ── Step 1: Kill Switch Check ─────────────────────────────────────────
     killSwitch.assertNotHalted(ctx.agentId);
 
-    // ── Build action ──────────────────────────────────────────────────────────
-    const action: Action = {
+    // ── Step 2: Build ActionRequest ───────────────────────────────────────
+    const request: ActionRequest = {
       id: randomUUID(),
       agentId: ctx.agentId,
       tool: this.inner.name,
-      parameters: input,
-      estimatedCostUsd: this._costFor(this.inner.name),
+      params: input,
+      inputDataLabels: this.opts.inputDataLabels ?? [],
       timestamp: new Date().toISOString(),
     };
 
-    // ── Policy evaluation ─────────────────────────────────────────────────────
-    const evaluation = policyEngine.evaluate(action, ctx, policyId);
+    // ── Step 3: Policy Evaluation ─────────────────────────────────────────
+    const decision: PolicyDecision = policyEngine.evaluate(request, ctx, policyId);
 
-    // ── Handle DENY ───────────────────────────────────────────────────────────
-    if (evaluation.verdict === 'deny') {
-      auditLogger.log({ action, ctx, evaluation });
-      throw PolicyError.denied(evaluation.reason, {
-        tool: action.tool,
+    // ── Step 4: Handle Decision ───────────────────────────────────────────
+
+    if (decision.result === 'block') {
+      auditLogger.log({ request, ctx, decision });
+      throw PolicyError.denied(decision.reason ?? `Tool "${request.tool}" blocked by policy`, {
+        tool: request.tool,
         agentId: ctx.agentId,
-        matchedRule: evaluation.matchedRule,
-        context: evaluation.context,
+        matchedRuleId: decision.matchedRuleId ?? undefined,
       });
     }
 
-    // ── Handle HITL ───────────────────────────────────────────────────────────
-    if (evaluation.verdict === 'require-approval') {
+    if (decision.result === 'require_approval') {
       if (!approvalBus) {
-        // No approval bus configured — fail closed
-        auditLogger.log({ action, ctx, evaluation });
-        throw PolicyError.requiresApproval(
-          `${evaluation.reason} — no approval bus configured, failing closed`,
-          { tool: action.tool, agentId: ctx.agentId },
+        // No approval bus — fail closed
+        auditLogger.log({ request, ctx, decision });
+        throw PolicyError.denied(
+          `${decision.reason ?? 'Action requires approval'} — no approval bus configured, failing closed`,
+          { tool: request.tool, agentId: ctx.agentId },
         );
       }
 
-      const timeoutSeconds =
-        (evaluation.context?.['timeoutSeconds'] as number | undefined) ?? 300;
+      const timeoutSec = decision.gateTimeoutSec ?? 300;
+      const gateId = decision.gateId ?? randomUUID();
 
       const approvalReq: ApprovalRequest = {
-        id: randomUUID(),
-        action,
+        id: gateId,
+        action: request,
+        agentId: ctx.agentId,
+        sessionId: ctx.sessionId,
+        matchedRuleId: decision.matchedRuleId ?? 'unknown',
+        approvers: [],
         status: 'pending',
         createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + timeoutSeconds * 1000).toISOString(),
+        expiresAt: new Date(Date.now() + timeoutSec * 1000).toISOString(),
       };
 
-      auditLogger.log({ action, ctx, evaluation });
+      auditLogger.log({ request, ctx, decision });
       approvalBus.request(approvalReq);
 
       let resolved: ApprovalRequest;
       try {
-        resolved = await approvalBus.awaitResolution(approvalReq.id, timeoutSeconds * 1000);
+        resolved = await approvalBus.awaitResolution(gateId, timeoutSec * 1000);
       } catch (err) {
-        // Timeout
-        throw err;
+        throw err; // Propagate PolicyError.approvalTimeout
       }
 
       if (resolved.status === 'denied') {
-        throw PolicyError.approvalDenied(approvalReq.id, resolved.resolveReason, {
-          tool: action.tool,
+        throw PolicyError.approvalDenied(gateId, resolved.resolveReason, {
+          tool: request.tool,
           agentId: ctx.agentId,
         });
       }
@@ -236,7 +248,7 @@ export class GuardedTool implements LangChainTool {
       // Approved — fall through to execution
     }
 
-    // ── Execute the tool ──────────────────────────────────────────────────────
+    // ── Execute Tool (allow or monitor decision) ──────────────────────────
     let result: unknown;
     let toolError: Error | undefined;
     try {
@@ -245,35 +257,39 @@ export class GuardedTool implements LangChainTool {
       toolError = err instanceof Error ? err : new Error(String(err));
     }
 
-    auditLogger.log({ action, ctx, evaluation, result, error: toolError });
+    // ── Step 5: Log ───────────────────────────────────────────────────────
+    auditLogger.log({ request, ctx, decision, result, error: toolError });
 
     if (toolError) throw toolError;
     return result;
   }
 
   private _costFor(toolName: string): number | undefined {
-    const c = this.opts.estimatedCostUsd;
+    const c = this.opts.estimatedCostCents;
     if (c === undefined) return undefined;
     if (typeof c === 'number') return c;
     return c[toolName];
   }
 }
 
-// ─── Static factory ───────────────────────────────────────────────────────────
+// ─── Static Factory ───────────────────────────────────────────────────────────
 
 /**
  * Wrap a LangChain-compatible tool with AgentGuard policy enforcement.
  *
  * @example
- * const guarded = AgentGuardToolWrapper.wrap(myTool, { ctx, policyEngine, ... });
+ * const guarded = AgentGuardToolWrapper.wrap(myTool, {
+ *   ctx, policyEngine, policyId, auditLogger, killSwitch,
+ * });
  * const result = await guarded.invoke({ query: 'Q3 revenue' });
  */
 export const AgentGuardToolWrapper = {
+  /** Wrap a single tool with AgentGuard policy enforcement. */
   wrap(tool: LangChainTool, opts: WrapperOptions): GuardedTool {
     return new GuardedTool(tool, opts);
   },
 
-  /** Wrap multiple tools at once */
+  /** Wrap multiple tools at once (shared options). */
   wrapAll(tools: LangChainTool[], opts: WrapperOptions): GuardedTool[] {
     return tools.map((t) => new GuardedTool(t, opts));
   },

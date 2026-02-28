@@ -1,69 +1,113 @@
-# AgentGuard Policy: Customer Support Agent
-# Scope: Customer lookups, ticket management. No PII export. $500 spend cap.
-# Compliance: GDPR, CCPA — PII access logged, no bulk export
+# AgentGuard Policy: Customer Service / Support Agent
+# Implements: POLICY_ENGINE.md Policy 1 (Customer Service Agent — Restrictive)
+# DSL version: POLICY_ENGINE.md §2
 
-id: support-agent-v1
-version: 1.0.0
+id:          "pol_support_agent"
+name:        "Support Agent — Customer Service"
 description: >
-  Customer support agent. May look up customer records, read and update
-  tickets, and send internal notes. Explicitly denied from exporting PII
-  in bulk or accessing payment data. $500 total spend cap per session.
-  Refund issuance above $100 requires human approval.
+  Customer-facing support agent. Read-only customer data access. Small refunds
+  auto-approved. Mid-range refunds require human approval. No PII writes,
+  no external comms, no account modifications.
+version:     "1.0.0"
 
-tools:
-  allow:
-    - customer:lookup
-    - customer:read_profile
-    - customer:read_orders
-    - ticket:read
-    - ticket:create
-    - ticket:update
-    - ticket:add_note
-    - ticket:close
-    - knowledge:search
-    - search:internal
-    - send_email          # Customer-facing emails allowed (not HITL by default)
-    - notify:internal
-    - refund:issue        # Covered by HITL rules below
-  deny:
-    - customer:bulk_export
-    - customer:delete
-    - customer:modify_id
-    - payment:charge
-    - payment:read_card
-    - db:raw_query        # No direct SQL — prevents data exfiltration
-    - db:export
-    - admin:*             # Glob: no admin actions
+default: block
 
-dataAccess:
-  allowedClassifications:
-    - public
-    - customer-service
-    - internal
-  deniedDatasets:
-    - raw-payment-data
-    - bulk-pii-export
-    - internal-hr
-  allowExport: false
-  allowPII: true          # Agents CAN read PII for lookups, but cannot export
+budgets:
+  maxActionsPerMinute:  30
+  maxTokensPerSession:  50000
+  maxActionsPerSession: 300
 
-rateLimits:
-  globalCallsPerMinute: 90
-  perTool:
-    customer:lookup: 30
-    customer:read_profile: 20
-    send_email: 10         # Throttle emails to prevent spam
+rules:
 
-spending:
-  maxTotalUsd: 500.00
-  maxPerActionUsd: 150.00  # Single refund cap before HITL
-  currency: USD
+  - id:          "cs_001"
+    description: "Allow customer record lookups (read-only)"
+    priority:    10
+    action:      allow
+    when:
+      - tool:    { in: ["customer:lookup", "get_customer", "get_order", "list_orders", "get_product", "ticket:read", "knowledge:search"] }
 
-humanInTheLoop:
-  requireApprovalFor:
-    - refund:issue         # Any refund needs human sign-off
-    - ticket:escalate
-    - customer:unsubscribe # Permanent actions need review
-  timeoutSeconds: 180
+  - id:          "cs_002"
+    description: "Allow small refunds automatically (≤$25 = 2500 cents)"
+    priority:    20
+    action:      allow
+    when:
+      - tool:    { in: ["issue_refund", "refund:issue"] }
+      - params:
+          amount_cents: { lte: 2500 }
 
-defaultAction: deny
+  - id:          "cs_003"
+    description: "Require human approval for refunds $25–$200"
+    priority:    25
+    action:      require_approval
+    approvers:
+      - "role:operator"
+    timeoutSec:  180
+    on_timeout:  block
+    when:
+      - tool:    { in: ["issue_refund", "refund:issue"] }
+      - params:
+          amount_cents: { gt: 2500, lte: 20000 }
+
+  - id:          "cs_004"
+    description: "Block refunds over $200 (20000 cents)"
+    priority:    30
+    action:      block
+    when:
+      - tool:    { in: ["issue_refund", "refund:issue"] }
+      - params:
+          amount_cents: { gt: 20000 }
+    severity:    high
+
+  - id:          "cs_005"
+    description: "Block all external email/messaging (non-internal domains)"
+    priority:    10
+    action:      block
+    when:
+      - tool:    { in: ["send_email", "send_sms", "send_message"] }
+      - params:
+          to:    { domain_not_in: ["acme.com", "support.acme.com"] }
+    severity:    high
+
+  - id:          "cs_006"
+    description: "Block any account modification operations"
+    priority:    10
+    action:      block
+    when:
+      - tool:    { matches: ["update_*", "delete_*", "modify_*", "cancel_*", "customer:bulk_export", "db:raw_query"] }
+    severity:    high
+
+  - id:          "cs_007"
+    description: "Block admin glob pattern (prevent privilege escalation)"
+    priority:    5
+    action:      block
+    when:
+      - tool:    { matches: ["admin:*"] }
+    severity:    critical
+
+  - id:          "cs_008"
+    description: "Block PII field access in database queries"
+    priority:    8
+    action:      block
+    when:
+      - tool:    { matches: ["db_*", "query_*"] }
+      - params:
+          fields: { contains_any: ["ssn", "dob", "credit_card", "bank_account"] }
+    severity:    critical
+
+  - id:          "cs_009"
+    description: "Monitor ticket creation (track agent spending)"
+    priority:    50
+    action:      monitor
+    riskBoost:   10
+    when:
+      - tool:    { in: ["ticket:create"] }
+
+  - id:          "cs_010"
+    description: "Block high per-action costs (>$150 = 15000 cents)"
+    priority:    5
+    action:      block
+    when:
+      - tool:    { matches: ["*"] }
+      - params:
+          amount_cents: { gt: 15000 }
+    severity:    high

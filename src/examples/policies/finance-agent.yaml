@@ -1,60 +1,108 @@
-# AgentGuard Policy: Finance Agent
-# Scope: Read-only access to financial data. No fund transfers. HITL for emails.
-# Compliance: SOC 2, PCI-DSS (no cardholder data write access)
+# AgentGuard Policy: Finance Agent (Strict Compliance)
+# Implements: POLICY_ENGINE.md Policy 3 (Finance Agent — SOC 2 Compliant)
+# DSL version: POLICY_ENGINE.md §2
 
-id: finance-agent-v1
-version: 1.0.0
+id:          "pol_finance_agent_strict"
+name:        "Finance Agent — SOC 2 Compliant"
 description: >
-  Read-only financial data agent. May query balances, transactions, and
-  reports. Cannot initiate transfers or payments. Sending emails requires
-  human approval (prevents accidental disclosure of financial data).
+  Strict financial data agent. All payment operations require approval.
+  No production credentials. Read-only access to transaction history.
+  After-hours operations blocked.
+version:     "1.0.0"
 
-tools:
-  allow:
-    - finance:read_balance
-    - finance:read_transactions
-    - finance:generate_report
-    - search:web
-    - calendar:read
-    - data:query
-  deny:
-    - finance:transfer
-    - finance:payment
-    - finance:wire
-    - finance:withdraw
-    - db:write
-    - db:delete
-    - file:delete
+default: block
 
-dataAccess:
-  allowedClassifications:
-    - public
-    - internal
-    - financial-readonly
-  deniedDatasets:
-    - raw-pii
-    - cardholder-data
-    - credentials
-  allowExport: false
-  allowPII: false
+budgets:
+  maxApiSpendCentsPerDay:  100000    # $1000/day hard cap
+  maxActionsPerMinute:     20
+  maxActionsPerSession:    200
 
-rateLimits:
-  globalCallsPerMinute: 60
-  perTool:
-    finance:read_transactions: 20
-    data:query: 30
+rules:
 
-spending:
-  maxTotalUsd: 50.00
-  maxPerActionUsd: 5.00
-  currency: USD
+  - id:          "fin_001"
+    description: "Require approval for ALL payment operations"
+    priority:    5
+    action:      require_approval
+    approvers:
+      - "role:operator"
+      - "team:finance-ops"
+    timeoutSec:  600
+    on_timeout:  block
+    when:
+      - tool:    { matches: ["pay*", "transfer*", "wire*", "ach*", "stripe*"] }
+    severity:    critical
 
-humanInTheLoop:
-  requireApprovalFor:
-    - send_email
-    - email:send
-    - notify:external
-    - finance:generate_report   # Reports containing sensitive data need sign-off
-  timeoutSeconds: 120
+  - id:          "fin_002"
+    description: "Block access to production payment credentials"
+    priority:    1
+    action:      block
+    when:
+      - tool:   { in: ["get_secret", "read_env", "get_credential"] }
+      - params:
+          key:  { regex: ".*(prod|production).*(key|secret|token|password).*" }
+    severity:    critical
 
-defaultAction: deny
+  - id:          "fin_003"
+    description: "Allow read access to transaction history"
+    priority:    20
+    action:      allow
+    when:
+      - tool:    { in: ["list_transactions", "get_transaction", "get_balance", "finance:read_balance", "finance:read_transactions"] }
+
+  - id:          "fin_004"
+    description: "Allow web search and calendar reads"
+    priority:    25
+    action:      allow
+    when:
+      - tool:    { in: ["search:web", "calendar:read", "data:query"] }
+
+  - id:          "fin_005"
+    description: "Monitor all data exports (elevated risk)"
+    priority:    30
+    action:      monitor
+    riskBoost:   100
+    when:
+      - tool:    { matches: ["export_*", "download_*", "generate_report", "finance:generate_report"] }
+
+  - id:          "fin_006"
+    description: "Require approval for financial reports (sensitive data)"
+    priority:    15
+    action:      require_approval
+    approvers:
+      - "role:operator"
+    timeoutSec:  300
+    on_timeout:  block
+    when:
+      - tool:    { in: ["finance:generate_report", "send_email", "email:send", "notify:external"] }
+    severity:    high
+
+  - id:          "fin_007"
+    description: "Block after-hours operations (Mon-Fri 07:00-20:00 ET only)"
+    priority:    10
+    action:      block
+    when:
+      - timeWindow:
+          outside:
+            days:  ["monday", "tuesday", "wednesday", "thursday", "friday"]
+            hours: { start: "07:00", end: "20:00", tz: "America/New_York" }
+    severity:    medium
+
+  - id:          "fin_008"
+    description: "Rate limit data queries to prevent bulk exfiltration"
+    priority:    60
+    action:      block
+    rateLimit:
+      maxCalls:      30
+      windowSeconds: 60
+      keyBy:         session
+    when:
+      - tool:    { in: ["data:query", "finance:read_transactions"] }
+    severity:    low
+
+  - id:          "fin_009"
+    description: "Block database write/delete operations"
+    priority:    5
+    action:      block
+    when:
+      - tool:    { matches: ["db:write", "db:delete", "db:update", "db:drop"] }
+    severity:    critical

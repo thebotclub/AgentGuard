@@ -1,23 +1,27 @@
 /**
  * AgentGuard Audit Logger
  *
- * Writes a tamper-evident, hash-chained JSON-lines log of every agent action.
- * Each entry carries:
- *   - A SHA-256 hash of its own content fields
- *   - The hash of the previous entry (chain link)
+ * Tamper-evident, hash-chained, append-only JSON-lines log.
+ * Implements DATA_MODEL.md §8 Audit Log Integrity — Hash Chain.
  *
- * To detect tampering: re-hash each entry's content and verify the stored
- * `hash` matches; then verify each entry's `chainHash` equals the previous
- * entry's `hash`.  Any modification breaks the chain.
+ * Chain: each event records:
+ *   - previousHash: the eventHash of the preceding event
+ *   - eventHash: SHA-256(previousHash | canonicalPayload)
+ *
+ * The GENESIS_HASH ('0'.repeat(64)) is used as previousHash for the first event.
+ *
+ * Tampering detection: re-compute the chain from GENESIS_HASH; any modification
+ * or deletion produces a broken chain detectable at verification time.
  */
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
-import type {
-  AuditEvent,
-  AgentContext,
-  Action,
-  EvaluationResult,
+import {
+  type AuditEvent,
+  type AgentContext,
+  type ActionRequest,
+  type PolicyDecision,
+  GENESIS_HASH,
 } from '@/core/types.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -26,20 +30,43 @@ export interface AuditLoggerOptions {
   /** Absolute or relative path to the .jsonl log file */
   filePath: string;
   /**
-   * Field names whose values should be redacted (replaced with "[REDACTED]")
-   * in the stored parameters.  E.g. ["password", "ssn", "credit_card"]
+   * Field names (in params) that should be redacted.
+   * E.g. ["password", "ssn", "credit_card", "token"]
    */
   redactFields?: string[];
 }
 
 export interface LogActionInput {
-  action: Action;
+  request: ActionRequest;
   ctx: AgentContext;
-  evaluation: EvaluationResult;
+  decision: PolicyDecision;
   /** Raw result returned by the tool (only present if allowed + ran) */
   result?: unknown;
-  /** Error thrown by the tool (only present if allowed + threw) */
+  /** Error thrown by the tool (only present if it threw) */
   error?: Error;
+}
+
+export interface HashablePayload {
+  eventId: string;
+  agentId: string;
+  tenantId: string;
+  occurredAt: string;
+  actionType: string;
+  toolName: string;
+  decision: string;
+  riskScore: number;
+}
+
+export interface VerificationResult {
+  valid: boolean;
+  entryCount: number;
+  firstBrokenAt?: {
+    seq: number;
+    eventId?: string;
+    expected: string;
+    actual: string;
+  };
+  errors: string[];
 }
 
 // ─── Audit Logger ─────────────────────────────────────────────────────────────
@@ -48,7 +75,7 @@ export class AuditLogger {
   private readonly filePath: string;
   private readonly redactFields: Set<string>;
   private seq = 0;
-  private lastHash = 'GENESIS';
+  private lastHash: string = GENESIS_HASH;
 
   constructor(options: AuditLoggerOptions) {
     this.filePath = options.filePath;
@@ -61,31 +88,55 @@ export class AuditLogger {
   // ─── Public API ─────────────────────────────────────────────────────────────
 
   /**
-   * Log a completed action (evaluation result + optional tool output / error).
+   * Log a completed action (policy decision + optional tool output / error).
    * Returns the AuditEvent that was written.
+   *
+   * This is the only write path — events are never updated or deleted.
    */
   log(input: LogActionInput): AuditEvent {
-    const { action, ctx, evaluation, result, error } = input;
+    const { request, ctx, decision, result, error } = input;
 
-    const event: AuditEvent = {
+    const previousHash = this.lastHash;
+
+    const partial: Omit<AuditEvent, 'eventHash' | 'previousHash'> = {
       seq: this.seq++,
       timestamp: new Date().toISOString(),
       agentId: ctx.agentId,
       sessionId: ctx.sessionId,
+      tenantId: ctx.tenantId,
       policyVersion: ctx.policyVersion,
-      tool: action.tool,
-      parameters: this._redact(action.parameters),
-      verdict: evaluation.verdict,
-      reason: evaluation.reason,
-      latencyMs: evaluation.latencyMs,
+      tool: request.tool,
+      params: this._redact(request.params),
+      decision: decision.result,
+      matchedRuleId: decision.matchedRuleId,
+      monitorRuleIds: decision.monitorRuleIds,
+      riskScore: decision.riskScore,
+      reason: decision.reason ?? '',
+      durationMs: decision.durationMs,
       ...(result !== undefined ? { result } : {}),
       ...(error !== undefined ? { error: error.message } : {}),
-      hash: '', // filled below
-      chainHash: this.lastHash,
     };
 
-    event.hash = this._hashEvent(event);
-    this.lastHash = event.hash;
+    // Compute hash chain per DATA_MODEL.md §8.1
+    const payload: HashablePayload = {
+      eventId: `${partial.seq}:${partial.timestamp}`,
+      agentId: partial.agentId,
+      tenantId: partial.tenantId ?? '',
+      occurredAt: partial.timestamp,
+      actionType: 'TOOL_CALL',
+      toolName: partial.tool,
+      decision: partial.decision,
+      riskScore: partial.riskScore,
+    };
+
+    const eventHash = computeEventHash(previousHash, payload);
+    this.lastHash = eventHash;
+
+    const event: AuditEvent = {
+      ...partial,
+      eventHash,
+      previousHash,
+    };
 
     this._write(event);
     return event;
@@ -105,7 +156,8 @@ export class AuditLogger {
       .filter(Boolean);
 
     const errors: string[] = [];
-    let prevHash = 'GENESIS';
+    let prevHash = GENESIS_HASH;
+    let firstBrokenAt: VerificationResult['firstBrokenAt'];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -119,34 +171,57 @@ export class AuditLogger {
         continue;
       }
 
-      // Verify chain link
-      if (event.chainHash !== prevHash) {
-        errors.push(
-          `Entry seq=${event.seq}: chainHash mismatch — expected "${prevHash}", got "${event.chainHash}"`,
-        );
+      // Verify chain link (previousHash must equal previous event's eventHash)
+      if (event.previousHash !== prevHash) {
+        const msg = `Entry seq=${event.seq}: previousHash mismatch — expected "${prevHash.slice(0, 16)}…", got "${event.previousHash.slice(0, 16)}…"`;
+        errors.push(msg);
+        if (!firstBrokenAt) {
+          firstBrokenAt = {
+            seq: event.seq,
+            expected: prevHash,
+            actual: event.previousHash,
+          };
+        }
       }
 
       // Verify content hash
-      const expectedHash = this._hashEvent({ ...event, hash: '' });
-      if (event.hash !== expectedHash) {
-        errors.push(
-          `Entry seq=${event.seq}: content hash mismatch — log may have been tampered with`,
-        );
+      const payload: HashablePayload = {
+        eventId: `${event.seq}:${event.timestamp}`,
+        agentId: event.agentId,
+        tenantId: event.tenantId ?? '',
+        occurredAt: event.timestamp,
+        actionType: 'TOOL_CALL',
+        toolName: event.tool,
+        decision: event.decision,
+        riskScore: event.riskScore,
+      };
+      const expectedHash = computeEventHash(event.previousHash, payload);
+
+      if (event.eventHash !== expectedHash) {
+        const msg = `Entry seq=${event.seq}: eventHash mismatch — content may have been tampered with`;
+        errors.push(msg);
+        if (!firstBrokenAt) {
+          firstBrokenAt = {
+            seq: event.seq,
+            expected: expectedHash,
+            actual: event.eventHash,
+          };
+        }
       }
 
-      prevHash = event.hash;
+      prevHash = event.eventHash;
     }
 
     return {
       valid: errors.length === 0,
       entryCount: lines.filter(Boolean).length,
+      firstBrokenAt,
       errors,
     };
   }
 
   /**
    * Read all entries from the log file and return them as an array.
-   * Useful for reporting and demo output.
    */
   readAll(): AuditEvent[] {
     if (!existsSync(this.filePath)) return [];
@@ -156,38 +231,14 @@ export class AuditLogger {
       .map((line) => JSON.parse(line) as AuditEvent);
   }
 
-  // ─── Private helpers ─────────────────────────────────────────────────────────
+  // ─── Private helpers ──────────────────────────────────────────────────────
 
-  /**
-   * Compute the SHA-256 hash of the stable content fields of an event.
-   * The `hash` field itself is excluded (set to '' before hashing).
-   */
-  private _hashEvent(event: AuditEvent): string {
-    const content = [
-      event.seq,
-      event.timestamp,
-      event.agentId,
-      event.sessionId,
-      event.policyVersion,
-      event.tool,
-      event.verdict,
-      event.reason,
-      event.latencyMs,
-      event.chainHash,
-      // Parameters are included (after redaction) so tampering with them is detectable
-      JSON.stringify(event.parameters ?? null),
-    ].join('|');
-
-    return createHash('sha256').update(content).digest('hex');
-  }
-
-  /** Append a single event to the JSONL file. */
   private _write(event: AuditEvent): void {
     appendFileSync(this.filePath, JSON.stringify(event) + '\n', 'utf-8');
   }
 
   /**
-   * On startup, read the last entry from an existing log so we can continue
+   * On startup, read the last entry from an existing log to continue
    * the hash chain correctly across process restarts.
    */
   private _restoreChainState(): void {
@@ -202,16 +253,17 @@ export class AuditLogger {
     try {
       const last = JSON.parse(lastLine) as AuditEvent;
       this.seq = last.seq + 1;
-      this.lastHash = last.hash;
+      this.lastHash = last.eventHash;
     } catch {
-      // Corrupted last line — start fresh chain but preserve seq
+      // Corrupted last line — start fresh chain but preserve sequence count
       this.seq = lines.length;
+      this.lastHash = GENESIS_HASH;
     }
   }
 
   /**
-   * Redact sensitive field values from a parameters object.
-   * Any key matching a redact field (case-insensitive) is replaced.
+   * Redact sensitive field values from a params object.
+   * Any key matching a redactField (case-insensitive) is replaced with "[REDACTED]".
    */
   private _redact(
     params: Record<string, unknown> | undefined,
@@ -226,10 +278,77 @@ export class AuditLogger {
   }
 }
 
-// ─── Verification result ──────────────────────────────────────────────────────
+// ─── Hash Chain Functions (exported for verification endpoint) ─────────────────
 
-export interface VerificationResult {
-  valid: boolean;
-  entryCount: number;
-  errors: string[];
+/**
+ * Compute the event hash for a given payload.
+ * Implements DATA_MODEL.md §8.1:
+ *   SHA-256(previousHash + "|" + canonicalJSON(payload))
+ */
+export function computeEventHash(previousHash: string, payload: HashablePayload): string {
+  // Canonical JSON: keys sorted alphabetically for determinism
+  const canonical = JSON.stringify(
+    Object.fromEntries(
+      Object.entries(payload).sort(([a], [b]) => a.localeCompare(b)),
+    ),
+  );
+  return createHash('sha256')
+    .update(`${previousHash}|${canonical}`)
+    .digest('hex');
+}
+
+/**
+ * Verify a chain of events (utility function for the control plane endpoint).
+ * Returns the first broken link if found.
+ */
+export function verifyEventChain(events: AuditEvent[]): {
+  chainValid: boolean;
+  eventCount: number;
+  firstBrokenAt?: { eventId: string; position: number; expected: string; actual: string };
+} {
+  let previousHash = GENESIS_HASH;
+
+  for (const [i, event] of events.entries()) {
+    if (event.previousHash !== previousHash) {
+      return {
+        chainValid: false,
+        eventCount: events.length,
+        firstBrokenAt: {
+          eventId: `seq:${event.seq}`,
+          position: i,
+          expected: previousHash,
+          actual: event.previousHash,
+        },
+      };
+    }
+
+    const payload: HashablePayload = {
+      eventId: `${event.seq}:${event.timestamp}`,
+      agentId: event.agentId,
+      tenantId: event.tenantId ?? '',
+      occurredAt: event.timestamp,
+      actionType: 'TOOL_CALL',
+      toolName: event.tool,
+      decision: event.decision,
+      riskScore: event.riskScore,
+    };
+
+    const expected = computeEventHash(previousHash, payload);
+    if (event.eventHash !== expected) {
+      return {
+        chainValid: false,
+        eventCount: events.length,
+        firstBrokenAt: {
+          eventId: `seq:${event.seq}`,
+          position: i,
+          expected,
+          actual: event.eventHash,
+        },
+      };
+    }
+
+    previousHash = event.eventHash;
+  }
+
+  return { chainValid: true, eventCount: events.length };
 }

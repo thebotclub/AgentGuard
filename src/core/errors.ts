@@ -1,151 +1,25 @@
 /**
- * AgentGuard PolicyError
+ * AgentGuard Error Hierarchy
  *
- * Typed error class with factory methods for every policy-enforcement
- * outcome. Callers catch a single error type and can switch on `code`.
+ * ServiceError/PolicyError factory pattern per ARCHITECTURE.md §3.3.
+ * Typed error classes with factory methods for every policy-enforcement outcome.
+ * Callers catch a single error type and can switch on `code`.
  */
-import type { PolicyVerdict } from '@/core/types.js';
 
-export type PolicyErrorCode =
-  | 'DENIED'
-  | 'RATE_LIMITED'
-  | 'REQUIRES_APPROVAL'
-  | 'SPEND_CAP_EXCEEDED'
-  | 'AGENT_HALTED'
-  | 'GLOBAL_HALT'
-  | 'POLICY_NOT_FOUND'
-  | 'APPROVAL_TIMEOUT'
-  | 'APPROVAL_DENIED';
+// ─── ServiceError Base ────────────────────────────────────────────────────────
 
-export interface PolicyErrorMeta {
-  /** Tool name that triggered the error */
-  tool?: string;
-  /** Agent ID the error applies to */
-  agentId?: string;
-  /** Policy verdict that led to the error, if applicable */
-  verdict?: PolicyVerdict;
-  /** Matched rule identifier */
-  matchedRule?: string;
-  /** Arbitrary key-value context (spend amounts, limits, etc.) */
-  context?: Record<string, unknown>;
-}
+export class ServiceError extends Error {
+  public readonly code: string;
+  public readonly httpStatus: number;
+  public readonly details: unknown;
 
-export class PolicyError extends Error {
-  public readonly code: PolicyErrorCode;
-  public readonly meta: PolicyErrorMeta;
-
-  private constructor(code: PolicyErrorCode, message: string, meta: PolicyErrorMeta = {}) {
+  constructor(code: string, message: string, httpStatus: number, details?: unknown) {
     super(message);
-    this.name = 'PolicyError';
+    this.name = 'ServiceError';
     this.code = code;
-    this.meta = meta;
-    // Maintains proper prototype chain in transpiled code
+    this.httpStatus = httpStatus;
+    this.details = details;
     Object.setPrototypeOf(this, new.target.prototype);
-  }
-
-  // ─── Factory Methods ───────────────────────────────────────────────────────
-
-  /**
-   * Action was explicitly denied by policy.
-   * @example PolicyError.denied('tool not in allow list', { tool: 'send_email' })
-   */
-  static denied(message: string, meta?: PolicyErrorMeta): PolicyError {
-    return new PolicyError('DENIED', message, { ...meta, verdict: 'deny' });
-  }
-
-  /**
-   * Action was blocked because the agent has exceeded its rate limit.
-   * @example PolicyError.rateLimited('exceeded 100 calls/min', { tool: 'search', context: { limit: 100 } })
-   */
-  static rateLimited(message: string, meta?: PolicyErrorMeta): PolicyError {
-    return new PolicyError('RATE_LIMITED', message, meta);
-  }
-
-  /**
-   * Action requires human approval before it can proceed.
-   * @example PolicyError.requiresApproval('send_email requires HITL review', { tool: 'send_email' })
-   */
-  static requiresApproval(message: string, meta?: PolicyErrorMeta): PolicyError {
-    return new PolicyError('REQUIRES_APPROVAL', message, { ...meta, verdict: 'require-approval' });
-  }
-
-  /**
-   * Action would exceed the agent's cumulative or per-action spending cap.
-   * @example PolicyError.spendCapExceeded('would exceed $500 session cap', { context: { currentUsd: 490, limitUsd: 500 } })
-   */
-  static spendCapExceeded(message: string, meta?: PolicyErrorMeta): PolicyError {
-    return new PolicyError('SPEND_CAP_EXCEEDED', message, meta);
-  }
-
-  /**
-   * This specific agent has been individually halted via the kill switch.
-   */
-  static agentHalted(agentId: string, meta?: PolicyErrorMeta): PolicyError {
-    return new PolicyError(
-      'AGENT_HALTED',
-      `Agent "${agentId}" has been halted by the kill switch`,
-      { ...meta, agentId },
-    );
-  }
-
-  /**
-   * The global kill switch is active — no agents may proceed.
-   */
-  static globalHalt(reason?: string, meta?: PolicyErrorMeta): PolicyError {
-    const msg = reason
-      ? `Global halt active: ${reason}`
-      : 'Global halt active — all agents have been stopped';
-    return new PolicyError('GLOBAL_HALT', msg, meta);
-  }
-
-  /**
-   * No policy could be found for the requested policy ID.
-   */
-  static policyNotFound(policyId: string, meta?: PolicyErrorMeta): PolicyError {
-    return new PolicyError(
-      'POLICY_NOT_FOUND',
-      `Policy "${policyId}" not found`,
-      meta,
-    );
-  }
-
-  /**
-   * A HITL approval request expired before a human responded.
-   */
-  static approvalTimeout(approvalId: string, meta?: PolicyErrorMeta): PolicyError {
-    return new PolicyError(
-      'APPROVAL_TIMEOUT',
-      `Approval request "${approvalId}" timed out waiting for human response`,
-      meta,
-    );
-  }
-
-  /**
-   * A human explicitly denied a HITL approval request.
-   */
-  static approvalDenied(approvalId: string, reason?: string, meta?: PolicyErrorMeta): PolicyError {
-    const msg = reason
-      ? `Approval request "${approvalId}" denied: ${reason}`
-      : `Approval request "${approvalId}" was denied by reviewer`;
-    return new PolicyError('APPROVAL_DENIED', msg, meta);
-  }
-
-  // ─── Helpers ───────────────────────────────────────────────────────────────
-
-  /** Returns true if the error represents a temporary block (caller may retry). */
-  isRetryable(): boolean {
-    return this.code === 'RATE_LIMITED' || this.code === 'APPROVAL_TIMEOUT';
-  }
-
-  /** Returns true if the error represents a hard security block. */
-  isSecurityBlock(): boolean {
-    return (
-      this.code === 'DENIED' ||
-      this.code === 'AGENT_HALTED' ||
-      this.code === 'GLOBAL_HALT' ||
-      this.code === 'SPEND_CAP_EXCEEDED' ||
-      this.code === 'APPROVAL_DENIED'
-    );
   }
 
   toJSON(): Record<string, unknown> {
@@ -153,7 +27,211 @@ export class PolicyError extends Error {
       name: this.name,
       code: this.code,
       message: this.message,
-      meta: this.meta,
+      httpStatus: this.httpStatus,
+      details: this.details,
+    };
+  }
+}
+
+// ─── NotFoundError ────────────────────────────────────────────────────────────
+
+export class NotFoundError extends ServiceError {
+  constructor(resource: string, id: string) {
+    super('NOT_FOUND', `${resource} '${id}' not found`, 404);
+    this.name = 'NotFoundError';
+  }
+}
+
+// ─── ValidationError ──────────────────────────────────────────────────────────
+
+export class ValidationError extends ServiceError {
+  constructor(issues: unknown) {
+    super('VALIDATION_ERROR', 'Request validation failed', 400, issues);
+    this.name = 'ValidationError';
+  }
+}
+
+// ─── PolicyError ──────────────────────────────────────────────────────────────
+
+export type PolicyErrorCode =
+  | 'POLICY_DENIED'
+  | 'RATE_LIMITED'
+  | 'REQUIRES_APPROVAL'
+  | 'SPEND_CAP_EXCEEDED'
+  | 'BUDGET_EXCEEDED'
+  | 'AGENT_HALTED'
+  | 'GLOBAL_HALT'
+  | 'POLICY_NOT_FOUND'
+  | 'APPROVAL_TIMEOUT'
+  | 'APPROVAL_DENIED'
+  | 'POLICY_ERROR';
+
+export interface PolicyErrorDetails {
+  /** Tool name that triggered the error */
+  tool?: string;
+  /** Agent ID the error applies to */
+  agentId?: string;
+  /** Matched rule identifier */
+  matchedRuleId?: string;
+  /** Retry after this many milliseconds (rate limited) */
+  retryAfterMs?: number;
+  /** HITL gate identifier (requires approval) */
+  gateId?: string;
+  /** Gate timeout in seconds */
+  timeoutMs?: number;
+  /** Arbitrary key-value context */
+  context?: Record<string, unknown>;
+}
+
+/**
+ * PolicyError — thrown by the policy engine and SDK wrappers.
+ *
+ * Factory pattern from ARCHITECTURE.md §3.3:
+ *   PolicyError.denied()
+ *   PolicyError.rateLimited()
+ *   PolicyError.requiresApproval()
+ */
+export class PolicyError extends ServiceError {
+  public readonly policyCode: PolicyErrorCode;
+  public readonly policyDetails: PolicyErrorDetails;
+
+  constructor(
+    code: PolicyErrorCode,
+    message: string,
+    httpStatus: number,
+    details: PolicyErrorDetails = {},
+  ) {
+    super(code, message, httpStatus, details);
+    this.name = 'PolicyError';
+    this.policyCode = code;
+    this.policyDetails = details;
+    Object.setPrototypeOf(this, PolicyError.prototype);
+  }
+
+  // ─── Factory Methods (from ARCHITECTURE.md §3.3) ──────────────────────────
+
+  /**
+   * Action was explicitly denied by policy.
+   */
+  static denied(message: string, details?: PolicyErrorDetails): PolicyError {
+    return new PolicyError('POLICY_DENIED', message, 403, details);
+  }
+
+  /**
+   * Action blocked because the agent exceeded a rate limit.
+   * @param retryAfterMs - milliseconds until rate window resets
+   */
+  static rateLimited(retryAfterMs: number, details?: PolicyErrorDetails): PolicyError {
+    return new PolicyError('RATE_LIMITED', 'Rate limit exceeded', 429, {
+      ...details,
+      retryAfterMs,
+    });
+  }
+
+  /**
+   * Action requires human approval before it can proceed.
+   * @param gateId - HITL gate identifier to poll for resolution
+   * @param timeoutMs - gate timeout in milliseconds
+   */
+  static requiresApproval(gateId: string, timeoutMs: number, details?: PolicyErrorDetails): PolicyError {
+    return new PolicyError('REQUIRES_APPROVAL', 'Action requires human approval', 202, {
+      ...details,
+      gateId,
+      timeoutMs,
+    });
+  }
+
+  /**
+   * Action would exceed a budget constraint (session action count, API spend, etc.)
+   */
+  static budgetExceeded(message: string, details?: PolicyErrorDetails): PolicyError {
+    return new PolicyError('BUDGET_EXCEEDED', message, 429, details);
+  }
+
+  /**
+   * This specific agent has been individually halted via the kill switch.
+   */
+  static agentHalted(agentId: string, details?: PolicyErrorDetails): PolicyError {
+    return new PolicyError(
+      'AGENT_HALTED',
+      `Agent "${agentId}" has been halted by the kill switch`,
+      503,
+      { ...details, agentId },
+    );
+  }
+
+  /**
+   * The global kill switch is active — no agents may proceed.
+   */
+  static globalHalt(reason?: string, details?: PolicyErrorDetails): PolicyError {
+    const msg = reason
+      ? `Global halt active: ${reason}`
+      : 'Global halt active — all agents have been stopped';
+    return new PolicyError('GLOBAL_HALT', msg, 503, details);
+  }
+
+  /**
+   * No policy could be found for the requested policy ID.
+   */
+  static policyNotFound(policyId: string, details?: PolicyErrorDetails): PolicyError {
+    return new PolicyError(
+      'POLICY_NOT_FOUND',
+      `Policy "${policyId}" not found`,
+      404,
+      details,
+    );
+  }
+
+  /**
+   * A HITL approval request expired before a human responded.
+   */
+  static approvalTimeout(approvalId: string, details?: PolicyErrorDetails): PolicyError {
+    return new PolicyError(
+      'APPROVAL_TIMEOUT',
+      `Approval request "${approvalId}" timed out waiting for human response`,
+      408,
+      details,
+    );
+  }
+
+  /**
+   * A human explicitly denied a HITL approval request.
+   */
+  static approvalDenied(approvalId: string, reason?: string, details?: PolicyErrorDetails): PolicyError {
+    const msg = reason
+      ? `Approval request "${approvalId}" denied: ${reason}`
+      : `Approval request "${approvalId}" was denied by reviewer`;
+    return new PolicyError('APPROVAL_DENIED', msg, 403, details);
+  }
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  /** Returns true if the error represents a temporary block (caller may retry). */
+  isRetryable(): boolean {
+    return (
+      this.policyCode === 'RATE_LIMITED' ||
+      this.policyCode === 'BUDGET_EXCEEDED'
+    );
+  }
+
+  /** Returns true if the error represents a hard security block. */
+  isSecurityBlock(): boolean {
+    return (
+      this.policyCode === 'POLICY_DENIED' ||
+      this.policyCode === 'AGENT_HALTED' ||
+      this.policyCode === 'GLOBAL_HALT' ||
+      this.policyCode === 'SPEND_CAP_EXCEEDED' ||
+      this.policyCode === 'APPROVAL_DENIED'
+    );
+  }
+
+  override toJSON(): Record<string, unknown> {
+    return {
+      name: this.name,
+      code: this.policyCode,
+      message: this.message,
+      httpStatus: this.httpStatus,
+      details: this.policyDetails,
     };
   }
 }
