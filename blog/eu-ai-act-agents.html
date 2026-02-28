@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EU AI Act and AI Agents: What You Need to Know Before August 2026 | AgentGuard</title>
+  <meta name="description" content="A practical compliance guide for GRC teams and CISOs: which EU AI Act articles apply to agentic AI, what auditors will ask for, and how to build the evidence trail before the deadline.">
+  <meta name="keywords" content="EU AI Act AI agents, EU AI Act compliance, AI agent regulation, EU AI Act Article 9 12 14, high-risk AI system agents">
+  <meta property="og:title" content="EU AI Act and AI Agents: What You Need to Know Before August 2026">
+  <meta property="og:description" content="Practical EU AI Act compliance guide for GRC teams deploying AI agents — which articles apply, what auditors want, and the compliance checklist.">
+  <meta property="og:type" content="article">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a1a;
+      --bg-card: #111128;
+      --bg-code: #0d0d24;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --accent-dim: rgba(99, 102, 241, 0.15);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --border: rgba(99, 102, 241, 0.2);
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.75;
+      font-size: 17px;
+    }
+
+    nav {
+      background: rgba(10, 10, 26, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .nav-brand {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--accent-light);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+    .nav-brand span { color: var(--text-muted); font-weight: 400; }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent);
+      color: #fff !important;
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      font-weight: 600 !important;
+    }
+    .nav-cta:hover { background: var(--accent-light) !important; }
+
+    .hero {
+      padding: 5rem 2rem 3rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .tag {
+      display: inline-block;
+      background: var(--accent-dim);
+      color: var(--accent-light);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+    }
+    h1 {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin-bottom: 1.25rem;
+    }
+    h1 em { color: var(--accent-light); font-style: normal; }
+    .hero-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .hero-meta .dot { opacity: 0.4; }
+
+    .article-wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 2rem 6rem;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      margin: 3rem 0 1rem;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent-light);
+      margin: 2rem 0 0.75rem;
+      letter-spacing: -0.01em;
+    }
+    p { margin-bottom: 1.25rem; }
+    a { color: var(--accent-light); text-decoration: underline; text-underline-offset: 3px; }
+    a:hover { color: #fff; }
+    strong { color: #fff; font-weight: 600; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+    li { margin-bottom: 0.5rem; }
+
+    /* ARTICLE CARD */
+    .article-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+    .article-box .article-tag {
+      display: inline-block;
+      background: rgba(99,102,241,0.2);
+      color: var(--accent-light);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    .article-box h3 { margin-top: 0; font-size: 1.15rem; }
+    .article-box p { color: var(--text-muted); margin-bottom: 0.75rem; font-size: 0.95rem; }
+    .article-box p:last-child { margin-bottom: 0; }
+
+    /* REQUIREMENT ROW */
+    .req-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+    .req-table th {
+      background: rgba(99,102,241,0.15);
+      color: var(--accent-light);
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .req-table td {
+      border-bottom: 1px solid rgba(99,102,241,0.1);
+      padding: 0.875rem 1rem;
+      color: var(--text-muted);
+      vertical-align: top;
+    }
+    .req-table tr:last-child td { border-bottom: none; }
+    .req-table td:first-child { color: var(--accent-light); font-weight: 600; white-space: nowrap; }
+
+    /* TIMELINE */
+    .timeline { margin: 2rem 0; }
+    .timeline-item {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .timeline-marker {
+      flex-shrink: 0;
+      width: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .timeline-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--bg);
+      box-shadow: 0 0 0 2px var(--accent);
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .timeline-dot.past { background: var(--text-dim); box-shadow: 0 0 0 2px var(--text-dim); }
+    .timeline-dot.urgent { background: var(--danger); box-shadow: 0 0 0 2px var(--danger); }
+    .timeline-line {
+      width: 2px;
+      flex: 1;
+      background: var(--border);
+      margin: 4px auto 0;
+    }
+    .timeline-content { flex: 1; padding-bottom: 0.5rem; }
+    .timeline-date { font-size: 0.8rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .timeline-title { font-weight: 700; color: #fff; margin-bottom: 0.35rem; }
+    .timeline-desc { font-size: 0.9rem; color: var(--text-muted); }
+
+    /* WARNING BOX */
+    .warning-box {
+      background: rgba(239,68,68,0.07);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-left: 4px solid var(--danger);
+      border-radius: 6px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .warning-box .wl { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--danger); margin-bottom: 0.5rem; }
+    .warning-box p { margin: 0; font-size: 0.95rem; color: var(--text-muted); }
+
+    /* INFO BOX */
+    .info-box {
+      background: rgba(99,102,241,0.07);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .info-box .il { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-light); margin-bottom: 0.5rem; }
+    .info-box p { margin: 0; font-size: 0.95rem; color: var(--text-muted); }
+
+    /* CHECKLIST */
+    .checklist {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+    .checklist h3 { margin-top: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); }
+    .checklist-section { margin-top: 1.5rem; }
+    .checklist-section h4 { font-size: 0.9rem; font-weight: 700; color: var(--accent-light); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(99,102,241,0.07);
+    }
+    .check-item:last-child { border-bottom: none; }
+    .check-box {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 3px;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+    .check-item span { font-size: 0.9rem; color: var(--text-muted); }
+
+    /* AGENTGUARD MAPPING */
+    .mapping-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+    }
+    .mapping-card .mc-article { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-light); margin-bottom: 0.4rem; }
+    .mapping-card .mc-title { font-weight: 700; color: #fff; margin-bottom: 0.5rem; font-size: 1rem; }
+    .mapping-card .mc-req { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.75rem; border-left: 3px solid var(--accent); padding-left: 0.75rem; }
+    .mapping-card .mc-solution { font-size: 0.875rem; color: #10b981; }
+    .mapping-card .mc-solution::before { content: "AgentGuard → "; font-weight: 700; }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+
+    .cta-section {
+      background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0.04) 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 3rem 2.5rem;
+      margin-top: 4rem;
+      text-align: center;
+    }
+    .cta-section h2 { font-size: 1.75rem; margin: 0 0 0.75rem; color: #fff; }
+    .cta-section p { color: var(--text-muted); max-width: 500px; margin: 0 auto 2rem; font-size: 1rem; }
+    .cta-form {
+      display: flex;
+      gap: 0.75rem;
+      max-width: 460px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+    }
+    .cta-form input[type="email"] {
+      flex: 1;
+      min-width: 220px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .cta-form input[type="email"]:focus { border-color: var(--accent); }
+    .cta-form input[type="email"]::placeholder { color: var(--text-dim); }
+    .cta-form button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .cta-form button:hover { background: var(--accent-light); }
+    .cta-note { font-size: 0.8rem; color: var(--text-dim); margin-top: 1rem; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+    footer a { color: var(--text-muted); }
+
+    .toc {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 2rem 0 3rem;
+    }
+    .toc h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin: 0 0 1rem; }
+    .toc ol { padding-left: 1.25rem; }
+    .toc li { margin-bottom: 0.4rem; }
+    .toc a { color: var(--text-muted); text-decoration: none; font-size: 0.925rem; }
+    .toc a:hover { color: var(--accent-light); }
+
+    @media (max-width: 640px) {
+      .hero { padding: 3rem 1.25rem 2rem; }
+      .article-wrap { padding: 0 1.25rem 4rem; }
+      .cta-section { padding: 2rem 1.25rem; }
+      nav { padding: 0 1.25rem; }
+      .req-table { font-size: 0.8rem; }
+      .req-table th, .req-table td { padding: 0.6rem 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="nav-brand">Agent<span>Guard</span></a>
+  <div class="nav-links">
+    <a href="index.html">Blog</a>
+    <a href="../index.html">Product</a>
+    <a href="#cta" class="nav-cta">Get Early Access</a>
+  </div>
+</nav>
+
+<article>
+  <div class="hero">
+    <div class="tag">Compliance &amp; Regulation</div>
+    <h1>EU AI Act and AI Agents:<br><em>What You Need to Know Before August 2026</em></h1>
+    <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: 0.5rem;">
+      The EU AI Act is not a future problem. High-risk AI system provisions are actively enforced. If your organisation is deploying AI agents — systems that take autonomous actions on behalf of users — you are almost certainly in scope. Here is the practical compliance guide for GRC teams who need to get ahead of this.
+    </p>
+    <div class="hero-meta">
+      <span>AgentGuard Compliance Team</span>
+      <span class="dot">·</span>
+      <span>February 2026</span>
+      <span class="dot">·</span>
+      <span>14 min read</span>
+      <span class="dot">·</span>
+      <span>GRC / CISO</span>
+    </div>
+  </div>
+
+  <div class="article-wrap">
+    <div class="toc">
+      <h3>In this article</h3>
+      <ol>
+        <li><a href="#scope">Are Your Agents In Scope?</a></li>
+        <li><a href="#articles">The Five Articles That Matter Most</a></li>
+        <li><a href="#requirements">Specific Compliance Requirements Agents Create</a></li>
+        <li><a href="#auditors">What Auditors Will Ask For</a></li>
+        <li><a href="#timeline">Timeline: What Needs to Be Done by When</a></li>
+        <li><a href="#mapping">How AgentGuard Maps to Each Requirement</a></li>
+        <li><a href="#checklist">Compliance Checklist</a></li>
+      </ol>
+    </div>
+
+    <div class="warning-box">
+      <div class="wl">⏱ Compliance Deadline</div>
+      <p>EU AI Act obligations for high-risk AI systems are actively enforced. GPAI model provisions entered force in August 2025. August 2026 is the hard deadline for full technical compliance documentation for high-risk AI systems — including agentic AI deployed in regulated sectors. The evidence trail needs to exist <em>before</em> the deadline, not during the audit.</p>
+    </div>
+
+    <h2 id="scope">Are Your Agents In Scope?</h2>
+    <p>
+      The first question GRC teams ask is: "Does the EU AI Act apply to us?" The answer, if you're deploying AI agents in or affecting EU citizens, is almost certainly yes — and the relevant provisions are broader than most compliance teams initially assume.
+    </p>
+    <p>
+      The EU AI Act applies to any AI system that is:
+    </p>
+    <ul>
+      <li><strong>Placed on the EU market</strong> — even if you're a US or UK company, if EU users interact with your AI system, the Act applies</li>
+      <li><strong>Used in the EU</strong> — including internal enterprise deployments where EU employees interact with AI agents</li>
+      <li><strong>Deployed as a "high-risk AI system"</strong> — determined by the sector and use case, not the technology type</li>
+    </ul>
+
+    <h3>What Makes an AI Agent "High-Risk"?</h3>
+    <p>
+      The EU AI Act's Annex III defines high-risk AI systems by sector and use case. AI agents are most likely to be classified as high-risk when they operate in:
+    </p>
+
+    <table class="req-table">
+      <thead>
+        <tr>
+          <th>Sector</th>
+          <th>High-Risk Agent Use Cases</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Financial Services</td>
+          <td>Credit assessment, fraud detection, trading, customer onboarding, KYC/AML</td>
+        </tr>
+        <tr>
+          <td>Healthcare</td>
+          <td>Clinical decision support, patient triage, medical record analysis, drug interactions</td>
+        </tr>
+        <tr>
+          <td>HR &amp; Employment</td>
+          <td>CV screening, candidate ranking, employee monitoring, performance evaluation</td>
+        </tr>
+        <tr>
+          <td>Law Enforcement</td>
+          <td>Risk assessment, predictive tools, evidence analysis</td>
+        </tr>
+        <tr>
+          <td>Critical Infrastructure</td>
+          <td>Energy grid management, water systems, transport operations</td>
+        </tr>
+        <tr>
+          <td>Education</td>
+          <td>Student assessment, admission decisions, learning path determination</td>
+        </tr>
+        <tr>
+          <td>Public Services</td>
+          <td>Benefits eligibility
