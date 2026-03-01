@@ -14,3 +14,5 @@ export type {
   WrapperOptions,
   ApprovalEvents,
 } from './langchain-wrapper.js';
+
+export { AgentGuard } from './client.js';

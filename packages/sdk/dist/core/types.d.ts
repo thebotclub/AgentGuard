@@ -22,26 +22,26 @@ export declare const StringConstraintSchema: z.ZodObject<{
     exists: z.ZodOptional<z.ZodBoolean>;
     is_null: z.ZodOptional<z.ZodBoolean>;
 }, "strict", z.ZodTypeAny, {
-    in?: (string | number)[] | undefined;
-    not_in?: (string | number)[] | undefined;
-    regex?: string | undefined;
     eq?: string | number | boolean | undefined;
     not_eq?: string | number | boolean | undefined;
+    in?: (string | number)[] | undefined;
+    not_in?: (string | number)[] | undefined;
     contains?: string | undefined;
     contains_any?: string[] | undefined;
     pattern?: string | undefined;
+    regex?: string | undefined;
     domain_not_in?: string[] | undefined;
     exists?: boolean | undefined;
     is_null?: boolean | undefined;
 }, {
-    in?: (string | number)[] | undefined;
-    not_in?: (string | number)[] | undefined;
-    regex?: string | undefined;
     eq?: string | number | boolean | undefined;
     not_eq?: string | number | boolean | undefined;
+    in?: (string | number)[] | undefined;
+    not_in?: (string | number)[] | undefined;
     contains?: string | undefined;
     contains_any?: string[] | undefined;
     pattern?: string | undefined;
+    regex?: string | undefined;
     domain_not_in?: string[] | undefined;
     exists?: boolean | undefined;
     is_null?: boolean | undefined;
@@ -57,18 +57,18 @@ export declare const NumericConstraintSchema: z.ZodObject<{
     in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
     exists: z.ZodOptional<z.ZodBoolean>;
 }, "strict", z.ZodTypeAny, {
-    in?: number[] | undefined;
     eq?: number | boolean | undefined;
     not_eq?: number | boolean | undefined;
+    in?: number[] | undefined;
     exists?: boolean | undefined;
     gt?: number | undefined;
     gte?: number | undefined;
     lt?: number | undefined;
     lte?: number | undefined;
 }, {
-    in?: number[] | undefined;
     eq?: number | boolean | undefined;
     not_eq?: number | boolean | undefined;
+    in?: number[] | undefined;
     exists?: boolean | undefined;
     gt?: number | undefined;
     gte?: number | undefined;
@@ -89,26 +89,26 @@ export declare const ValueConstraintSchema: z.ZodUnion<[z.ZodObject<{
     exists: z.ZodOptional<z.ZodBoolean>;
     is_null: z.ZodOptional<z.ZodBoolean>;
 }, "strict", z.ZodTypeAny, {
-    in?: (string | number)[] | undefined;
-    not_in?: (string | number)[] | undefined;
-    regex?: string | undefined;
     eq?: string | number | boolean | undefined;
     not_eq?: string | number | boolean | undefined;
+    in?: (string | number)[] | undefined;
+    not_in?: (string | number)[] | undefined;
     contains?: string | undefined;
     contains_any?: string[] | undefined;
     pattern?: string | undefined;
+    regex?: string | undefined;
     domain_not_in?: string[] | undefined;
     exists?: boolean | undefined;
     is_null?: boolean | undefined;
 }, {
-    in?: (string | number)[] | undefined;
-    not_in?: (string | number)[] | undefined;
-    regex?: string | undefined;
     eq?: string | number | boolean | undefined;
     not_eq?: string | number | boolean | undefined;
+    in?: (string | number)[] | undefined;
+    not_in?: (string | number)[] | undefined;
     contains?: string | undefined;
     contains_any?: string[] | undefined;
     pattern?: string | undefined;
+    regex?: string | undefined;
     domain_not_in?: string[] | undefined;
     exists?: boolean | undefined;
     is_null?: boolean | undefined;
@@ -122,18 +122,18 @@ export declare const ValueConstraintSchema: z.ZodUnion<[z.ZodObject<{
     in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
     exists: z.ZodOptional<z.ZodBoolean>;
 }, "strict", z.ZodTypeAny, {
-    in?: number[] | undefined;
     eq?: number | boolean | undefined;
     not_eq?: number | boolean | undefined;
+    in?: number[] | undefined;
     exists?: boolean | undefined;
     gt?: number | undefined;
     gte?: number | undefined;
     lt?: number | undefined;
     lte?: number | undefined;
 }, {
-    in?: number[] | undefined;
     eq?: number | boolean | undefined;
     not_eq?: number | boolean | undefined;
+    in?: number[] | undefined;
     exists?: boolean | undefined;
     gt?: number | undefined;
     gte?: number | undefined;
@@ -149,13 +149,13 @@ export declare const ToolConditionSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     in?: string[] | undefined;
     not_in?: string[] | undefined;
-    matches?: string[] | undefined;
     regex?: string | undefined;
+    matches?: string[] | undefined;
 }, {
     in?: string[] | undefined;
     not_in?: string[] | undefined;
-    matches?: string[] | undefined;
     regex?: string | undefined;
+    matches?: string[] | undefined;
 }>;
 export type ToolCondition = z.infer<typeof ToolConditionSchema>;
 export declare const DayOfWeekSchema: z.ZodEnum<["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]>;
@@ -297,27 +297,27 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
     }, "strict", z.ZodTypeAny, {
         in?: string[] | undefined;
         not_in?: string[] | undefined;
-        matches?: string[] | undefined;
         regex?: string | undefined;
+        matches?: string[] | undefined;
     }, {
         in?: string[] | undefined;
         not_in?: string[] | undefined;
-        matches?: string[] | undefined;
         regex?: string | undefined;
+        matches?: string[] | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
     tool: {
         in?: string[] | undefined;
         not_in?: string[] | undefined;
-        matches?: string[] | undefined;
         regex?: string | undefined;
+        matches?: string[] | undefined;
     };
 }, {
     tool: {
         in?: string[] | undefined;
         not_in?: string[] | undefined;
-        matches?: string[] | undefined;
         regex?: string | undefined;
+        matches?: string[] | undefined;
     };
 }>, z.ZodObject<{
     params: z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
@@ -333,26 +333,26 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
         exists: z.ZodOptional<z.ZodBoolean>;
         is_null: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     }, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
@@ -366,18 +366,18 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
         in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
         exists: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
         lt?: number | undefined;
         lte?: number | undefined;
     }, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -386,21 +386,21 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
     }>]>>;
 }, "strip", z.ZodTypeAny, {
     params: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -409,21 +409,21 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
     }>;
 }, {
     params: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -444,26 +444,26 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
         exists: z.ZodOptional<z.ZodBoolean>;
         is_null: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     }, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
@@ -477,18 +477,18 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
         in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
         exists: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
         lt?: number | undefined;
         lte?: number | undefined;
     }, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -497,21 +497,21 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
     }>]>>;
 }, "strip", z.ZodTypeAny, {
     context: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -520,21 +520,21 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
     }>;
 }, {
     context: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -555,26 +555,26 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
         exists: z.ZodOptional<z.ZodBoolean>;
         is_null: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     }, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
@@ -588,18 +588,18 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
         in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
         exists: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
         lt?: number | undefined;
         lte?: number | undefined;
     }, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -608,21 +608,21 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
     }>]>>;
 }, "strip", z.ZodTypeAny, {
     dataClass: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -631,21 +631,21 @@ export declare const WhenConditionSchema: z.ZodUnion<[z.ZodObject<{
     }>;
 }, {
     dataClass: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -819,27 +819,27 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         }, "strict", z.ZodTypeAny, {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         }, {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         }>;
     }, "strip", z.ZodTypeAny, {
         tool: {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         };
     }, {
         tool: {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         };
     }>, z.ZodObject<{
         params: z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
@@ -855,26 +855,26 @@ export declare const PolicyRuleSchema: z.ZodObject<{
             exists: z.ZodOptional<z.ZodBoolean>;
             is_null: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         }, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
@@ -888,18 +888,18 @@ export declare const PolicyRuleSchema: z.ZodObject<{
             in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
             exists: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
             lt?: number | undefined;
             lte?: number | undefined;
         }, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -908,21 +908,21 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         }>]>>;
     }, "strip", z.ZodTypeAny, {
         params: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -931,21 +931,21 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         }>;
     }, {
         params: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -966,26 +966,26 @@ export declare const PolicyRuleSchema: z.ZodObject<{
             exists: z.ZodOptional<z.ZodBoolean>;
             is_null: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         }, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
@@ -999,18 +999,18 @@ export declare const PolicyRuleSchema: z.ZodObject<{
             in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
             exists: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
             lt?: number | undefined;
             lte?: number | undefined;
         }, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1019,21 +1019,21 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         }>]>>;
     }, "strip", z.ZodTypeAny, {
         context: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1042,21 +1042,21 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         }>;
     }, {
         context: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1077,26 +1077,26 @@ export declare const PolicyRuleSchema: z.ZodObject<{
             exists: z.ZodOptional<z.ZodBoolean>;
             is_null: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         }, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
@@ -1110,18 +1110,18 @@ export declare const PolicyRuleSchema: z.ZodObject<{
             in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
             exists: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
             lt?: number | undefined;
             lte?: number | undefined;
         }, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1130,21 +1130,21 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         }>]>>;
     }, "strip", z.ZodTypeAny, {
         dataClass: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1153,21 +1153,21 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         }>;
     }, {
         dataClass: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1338,26 +1338,26 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         tool: {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         };
     } | {
         params: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1366,21 +1366,21 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         }>;
     } | {
         context: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1389,21 +1389,21 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         }>;
     } | {
         dataClass: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1450,26 +1450,26 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         tool: {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         };
     } | {
         params: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1478,21 +1478,21 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         }>;
     } | {
         context: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1501,21 +1501,21 @@ export declare const PolicyRuleSchema: z.ZodObject<{
         }>;
     } | {
         dataClass: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -1639,27 +1639,27 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }, "strict", z.ZodTypeAny, {
                 in?: string[] | undefined;
                 not_in?: string[] | undefined;
-                matches?: string[] | undefined;
                 regex?: string | undefined;
+                matches?: string[] | undefined;
             }, {
                 in?: string[] | undefined;
                 not_in?: string[] | undefined;
-                matches?: string[] | undefined;
                 regex?: string | undefined;
+                matches?: string[] | undefined;
             }>;
         }, "strip", z.ZodTypeAny, {
             tool: {
                 in?: string[] | undefined;
                 not_in?: string[] | undefined;
-                matches?: string[] | undefined;
                 regex?: string | undefined;
+                matches?: string[] | undefined;
             };
         }, {
             tool: {
                 in?: string[] | undefined;
                 not_in?: string[] | undefined;
-                matches?: string[] | undefined;
                 regex?: string | undefined;
+                matches?: string[] | undefined;
             };
         }>, z.ZodObject<{
             params: z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
@@ -1675,26 +1675,26 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
                 exists: z.ZodOptional<z.ZodBoolean>;
                 is_null: z.ZodOptional<z.ZodBoolean>;
             }, "strict", z.ZodTypeAny, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             }, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
@@ -1708,18 +1708,18 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
                 in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
                 exists: z.ZodOptional<z.ZodBoolean>;
             }, "strict", z.ZodTypeAny, {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
                 lt?: number | undefined;
                 lte?: number | undefined;
             }, {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -1728,21 +1728,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>]>>;
         }, "strip", z.ZodTypeAny, {
             params: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -1751,21 +1751,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>;
         }, {
             params: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -1786,26 +1786,26 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
                 exists: z.ZodOptional<z.ZodBoolean>;
                 is_null: z.ZodOptional<z.ZodBoolean>;
             }, "strict", z.ZodTypeAny, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             }, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
@@ -1819,18 +1819,18 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
                 in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
                 exists: z.ZodOptional<z.ZodBoolean>;
             }, "strict", z.ZodTypeAny, {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
                 lt?: number | undefined;
                 lte?: number | undefined;
             }, {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -1839,21 +1839,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>]>>;
         }, "strip", z.ZodTypeAny, {
             context: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -1862,21 +1862,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>;
         }, {
             context: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -1897,26 +1897,26 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
                 exists: z.ZodOptional<z.ZodBoolean>;
                 is_null: z.ZodOptional<z.ZodBoolean>;
             }, "strict", z.ZodTypeAny, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             }, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
@@ -1930,18 +1930,18 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
                 in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
                 exists: z.ZodOptional<z.ZodBoolean>;
             }, "strict", z.ZodTypeAny, {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
                 lt?: number | undefined;
                 lte?: number | undefined;
             }, {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -1950,21 +1950,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>]>>;
         }, "strip", z.ZodTypeAny, {
             dataClass: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -1973,21 +1973,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>;
         }, {
             dataClass: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2158,26 +2158,26 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             tool: {
                 in?: string[] | undefined;
                 not_in?: string[] | undefined;
-                matches?: string[] | undefined;
                 regex?: string | undefined;
+                matches?: string[] | undefined;
             };
         } | {
             params: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2186,21 +2186,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>;
         } | {
             context: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2209,21 +2209,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>;
         } | {
             dataClass: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2270,26 +2270,26 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             tool: {
                 in?: string[] | undefined;
                 not_in?: string[] | undefined;
-                matches?: string[] | undefined;
                 regex?: string | undefined;
+                matches?: string[] | undefined;
             };
         } | {
             params: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2298,21 +2298,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>;
         } | {
             context: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2321,21 +2321,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>;
         } | {
             dataClass: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2390,26 +2390,26 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             tool: {
                 in?: string[] | undefined;
                 not_in?: string[] | undefined;
-                matches?: string[] | undefined;
                 regex?: string | undefined;
+                matches?: string[] | undefined;
             };
         } | {
             params: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2418,21 +2418,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>;
         } | {
             context: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2441,21 +2441,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>;
         } | {
             dataClass: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2520,26 +2520,26 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             tool: {
                 in?: string[] | undefined;
                 not_in?: string[] | undefined;
-                matches?: string[] | undefined;
                 regex?: string | undefined;
+                matches?: string[] | undefined;
             };
         } | {
             params: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2548,21 +2548,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>;
         } | {
             context: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2571,21 +2571,21 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
             }>;
         } | {
             dataClass: Record<string, {
-                in?: (string | number)[] | undefined;
-                not_in?: (string | number)[] | undefined;
-                regex?: string | undefined;
                 eq?: string | number | boolean | undefined;
                 not_eq?: string | number | boolean | undefined;
+                in?: (string | number)[] | undefined;
+                not_in?: (string | number)[] | undefined;
                 contains?: string | undefined;
                 contains_any?: string[] | undefined;
                 pattern?: string | undefined;
+                regex?: string | undefined;
                 domain_not_in?: string[] | undefined;
                 exists?: boolean | undefined;
                 is_null?: boolean | undefined;
             } | {
-                in?: number[] | undefined;
                 eq?: number | boolean | undefined;
                 not_eq?: number | boolean | undefined;
+                in?: number[] | undefined;
                 exists?: boolean | undefined;
                 gt?: number | undefined;
                 gte?: number | undefined;
@@ -2655,13 +2655,13 @@ export declare const CompiledRuleSchema: z.ZodObject<{
     }, "strict", z.ZodTypeAny, {
         in?: string[] | undefined;
         not_in?: string[] | undefined;
-        matches?: string[] | undefined;
         regex?: string | undefined;
+        matches?: string[] | undefined;
     }, {
         in?: string[] | undefined;
         not_in?: string[] | undefined;
-        matches?: string[] | undefined;
         regex?: string | undefined;
+        matches?: string[] | undefined;
     }>>;
     paramConditions: z.ZodDefault<z.ZodArray<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
         eq: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber, z.ZodBoolean]>>;
@@ -2676,26 +2676,26 @@ export declare const CompiledRuleSchema: z.ZodObject<{
         exists: z.ZodOptional<z.ZodBoolean>;
         is_null: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     }, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
@@ -2709,18 +2709,18 @@ export declare const CompiledRuleSchema: z.ZodObject<{
         in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
         exists: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
         lt?: number | undefined;
         lte?: number | undefined;
     }, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -2740,26 +2740,26 @@ export declare const CompiledRuleSchema: z.ZodObject<{
         exists: z.ZodOptional<z.ZodBoolean>;
         is_null: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     }, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
@@ -2773,18 +2773,18 @@ export declare const CompiledRuleSchema: z.ZodObject<{
         in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
         exists: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
         lt?: number | undefined;
         lte?: number | undefined;
     }, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -2804,26 +2804,26 @@ export declare const CompiledRuleSchema: z.ZodObject<{
         exists: z.ZodOptional<z.ZodBoolean>;
         is_null: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     }, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
@@ -2837,18 +2837,18 @@ export declare const CompiledRuleSchema: z.ZodObject<{
         in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
         exists: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
         lt?: number | undefined;
         lte?: number | undefined;
     }, {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -2978,21 +2978,21 @@ export declare const CompiledRuleSchema: z.ZodObject<{
     tags: string[];
     riskBoost: number;
     paramConditions: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -3000,21 +3000,21 @@ export declare const CompiledRuleSchema: z.ZodObject<{
         lte?: number | undefined;
     }>[];
     contextConditions: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -3022,21 +3022,21 @@ export declare const CompiledRuleSchema: z.ZodObject<{
         lte?: number | undefined;
     }>[];
     dataClassConditions: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -3072,8 +3072,8 @@ export declare const CompiledRuleSchema: z.ZodObject<{
     toolCondition?: {
         in?: string[] | undefined;
         not_in?: string[] | undefined;
-        matches?: string[] | undefined;
         regex?: string | undefined;
+        matches?: string[] | undefined;
     } | undefined;
 }, {
     id: string;
@@ -3093,25 +3093,25 @@ export declare const CompiledRuleSchema: z.ZodObject<{
     toolCondition?: {
         in?: string[] | undefined;
         not_in?: string[] | undefined;
-        matches?: string[] | undefined;
         regex?: string | undefined;
+        matches?: string[] | undefined;
     } | undefined;
     paramConditions?: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -3119,21 +3119,21 @@ export declare const CompiledRuleSchema: z.ZodObject<{
         lte?: number | undefined;
     }>[] | undefined;
     contextConditions?: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -3141,21 +3141,21 @@ export declare const CompiledRuleSchema: z.ZodObject<{
         lte?: number | undefined;
     }>[] | undefined;
     dataClassConditions?: Record<string, {
-        in?: (string | number)[] | undefined;
-        not_in?: (string | number)[] | undefined;
-        regex?: string | undefined;
         eq?: string | number | boolean | undefined;
         not_eq?: string | number | boolean | undefined;
+        in?: (string | number)[] | undefined;
+        not_in?: (string | number)[] | undefined;
         contains?: string | undefined;
         contains_any?: string[] | undefined;
         pattern?: string | undefined;
+        regex?: string | undefined;
         domain_not_in?: string[] | undefined;
         exists?: boolean | undefined;
         is_null?: boolean | undefined;
     } | {
-        in?: number[] | undefined;
         eq?: number | boolean | undefined;
         not_eq?: number | boolean | undefined;
+        in?: number[] | undefined;
         exists?: boolean | undefined;
         gt?: number | undefined;
         gte?: number | undefined;
@@ -3219,13 +3219,13 @@ export declare const PolicyBundleSchema: z.ZodObject<{
         }, "strict", z.ZodTypeAny, {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         }, {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         }>>;
         paramConditions: z.ZodDefault<z.ZodArray<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
             eq: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodNumber, z.ZodBoolean]>>;
@@ -3240,26 +3240,26 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             exists: z.ZodOptional<z.ZodBoolean>;
             is_null: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         }, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
@@ -3273,18 +3273,18 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
             exists: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
             lt?: number | undefined;
             lte?: number | undefined;
         }, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3304,26 +3304,26 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             exists: z.ZodOptional<z.ZodBoolean>;
             is_null: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         }, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
@@ -3337,18 +3337,18 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
             exists: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
             lt?: number | undefined;
             lte?: number | undefined;
         }, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3368,26 +3368,26 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             exists: z.ZodOptional<z.ZodBoolean>;
             is_null: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         }, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
@@ -3401,18 +3401,18 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             in: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
             exists: z.ZodOptional<z.ZodBoolean>;
         }, "strict", z.ZodTypeAny, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
             lt?: number | undefined;
             lte?: number | undefined;
         }, {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3542,21 +3542,21 @@ export declare const PolicyBundleSchema: z.ZodObject<{
         tags: string[];
         riskBoost: number;
         paramConditions: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3564,21 +3564,21 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             lte?: number | undefined;
         }>[];
         contextConditions: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3586,21 +3586,21 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             lte?: number | undefined;
         }>[];
         dataClassConditions: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3636,8 +3636,8 @@ export declare const PolicyBundleSchema: z.ZodObject<{
         toolCondition?: {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         } | undefined;
     }, {
         id: string;
@@ -3657,25 +3657,25 @@ export declare const PolicyBundleSchema: z.ZodObject<{
         toolCondition?: {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         } | undefined;
         paramConditions?: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3683,21 +3683,21 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             lte?: number | undefined;
         }>[] | undefined;
         contextConditions?: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3705,21 +3705,21 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             lte?: number | undefined;
         }>[] | undefined;
         dataClassConditions?: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3758,21 +3758,21 @@ export declare const PolicyBundleSchema: z.ZodObject<{
         tags: string[];
         riskBoost: number;
         paramConditions: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3780,21 +3780,21 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             lte?: number | undefined;
         }>[];
         contextConditions: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3802,21 +3802,21 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             lte?: number | undefined;
         }>[];
         dataClassConditions: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3852,8 +3852,8 @@ export declare const PolicyBundleSchema: z.ZodObject<{
         toolCondition?: {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         } | undefined;
     }[];
     policyId: string;
@@ -3890,25 +3890,25 @@ export declare const PolicyBundleSchema: z.ZodObject<{
         toolCondition?: {
             in?: string[] | undefined;
             not_in?: string[] | undefined;
-            matches?: string[] | undefined;
             regex?: string | undefined;
+            matches?: string[] | undefined;
         } | undefined;
         paramConditions?: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3916,21 +3916,21 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             lte?: number | undefined;
         }>[] | undefined;
         contextConditions?: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -3938,21 +3938,21 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             lte?: number | undefined;
         }>[] | undefined;
         dataClassConditions?: Record<string, {
-            in?: (string | number)[] | undefined;
-            not_in?: (string | number)[] | undefined;
-            regex?: string | undefined;
             eq?: string | number | boolean | undefined;
             not_eq?: string | number | boolean | undefined;
+            in?: (string | number)[] | undefined;
+            not_in?: (string | number)[] | undefined;
             contains?: string | undefined;
             contains_any?: string[] | undefined;
             pattern?: string | undefined;
+            regex?: string | undefined;
             domain_not_in?: string[] | undefined;
             exists?: boolean | undefined;
             is_null?: boolean | undefined;
         } | {
-            in?: number[] | undefined;
             eq?: number | boolean | undefined;
             not_eq?: number | boolean | undefined;
+            in?: number[] | undefined;
             exists?: boolean | undefined;
             gt?: number | undefined;
             gte?: number | undefined;
@@ -4038,15 +4038,15 @@ export declare const ActionRequestSchema: z.ZodObject<{
     /** ISO 8601 timestamp of when the action was initiated */
     timestamp: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    id: string;
     params: Record<string, unknown>;
     tool: string;
+    id: string;
     agentId: string;
     inputDataLabels: string[];
     timestamp: string;
 }, {
-    id: string;
     tool: string;
+    id: string;
     agentId: string;
     timestamp: string;
     params?: Record<string, unknown> | undefined;
@@ -4147,8 +4147,8 @@ export declare const AuditEventSchema: z.ZodObject<{
     decision: "allow" | "block" | "monitor" | "require_approval";
     eventHash: string;
     previousHash: string;
-    tenantId?: string | undefined;
     params?: Record<string, unknown> | undefined;
+    tenantId?: string | undefined;
     result?: unknown;
     error?: string | undefined;
 }, {
@@ -4166,8 +4166,8 @@ export declare const AuditEventSchema: z.ZodObject<{
     decision: "allow" | "block" | "monitor" | "require_approval";
     eventHash: string;
     previousHash: string;
-    tenantId?: string | undefined;
     params?: Record<string, unknown> | undefined;
+    tenantId?: string | undefined;
     result?: unknown;
     error?: string | undefined;
 }>;
@@ -4213,15 +4213,15 @@ export declare const ApprovalRequestSchema: z.ZodObject<{
         /** ISO 8601 timestamp of when the action was initiated */
         timestamp: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        id: string;
         params: Record<string, unknown>;
         tool: string;
+        id: string;
         agentId: string;
         inputDataLabels: string[];
         timestamp: string;
     }, {
-        id: string;
         tool: string;
+        id: string;
         agentId: string;
         timestamp: string;
         params?: Record<string, unknown> | undefined;
@@ -4245,12 +4245,12 @@ export declare const ApprovalRequestSchema: z.ZodObject<{
     /** Reason the human provided when approving or denying */
     resolveReason: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    id: string;
     status: "pending" | "approved" | "denied" | "timeout";
+    id: string;
     action: {
-        id: string;
         params: Record<string, unknown>;
         tool: string;
+        id: string;
         agentId: string;
         inputDataLabels: string[];
         timestamp: string;
@@ -4265,11 +4265,11 @@ export declare const ApprovalRequestSchema: z.ZodObject<{
     resolvedAt?: string | undefined;
     resolveReason?: string | undefined;
 }, {
-    id: string;
     status: "pending" | "approved" | "denied" | "timeout";
+    id: string;
     action: {
-        id: string;
         tool: string;
+        id: string;
         agentId: string;
         timestamp: string;
         params?: Record<string, unknown> | undefined;

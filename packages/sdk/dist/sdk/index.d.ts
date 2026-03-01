@@ -5,4 +5,5 @@
  */
 export { AgentGuardToolWrapper, GuardedTool, ApprovalEventBus, } from './langchain-wrapper.js';
 export type { LangChainTool, WrapperOptions, ApprovalEvents, } from './langchain-wrapper.js';
+export { AgentGuard } from './client.js';
 //# sourceMappingURL=index.d.ts.map
