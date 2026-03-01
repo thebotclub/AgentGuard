@@ -1,46 +1,36 @@
 {
-  "name": "@agentguard/core",
+  "name": "agentguard",
   "version": "0.1.0",
-  "description": "Runtime security layer for AI agents — policy engine, audit trail, kill switch, and framework integrations",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    },
-    "./core": {
-      "import": "./dist/core/index.js",
-      "types": "./dist/core/index.d.ts"
-    },
-    "./sdk": {
-      "import": "./dist/sdk/index.js",
-      "types": "./dist/sdk/index.d.ts"
-    }
-  },
+  "private": true,
+  "description": "AgentGuard — Runtime security platform for AI agents",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "demo": "tsx src/examples/demo.ts",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "clean": "rm -rf dist"
-  },
-  "dependencies": {
-    "js-yaml": "^4.1.0",
-    "micromatch": "^4.0.8",
-    "zod": "^3.23.8"
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.9",
-    "@types/micromatch": "^4.0.9",
-    "@types/node": "^22.0.0",
-    "chalk": "^5.3.0",
-    "tsx": "^4.19.1",
-    "typescript": "^5.5.0",
-    "vite": "^5.4.0",
-    "vitest": "^2.1.0"
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.9.4",
+  "dependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.6.2",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
   }
 }
