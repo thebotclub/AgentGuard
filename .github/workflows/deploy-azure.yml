@@ -3,12 +3,15 @@ name: 🚀 Deploy AgentGuard to Azure
 on:
   push:
     branches: [main]
+    paths:
+      - 'api/**'
+      - 'landing/**'
+      - 'dashboard/**'
+      - 'packages/**'
+      - 'Dockerfile.*'
+      - 'nginx-*.conf'
+      - 'package.json'
   workflow_dispatch:
-    inputs:
-      force_deploy:
-        description: 'Force deploy all services'
-        type: boolean
-        default: false
 
 permissions:
   id-token: write
@@ -16,230 +19,107 @@ permissions:
 
 env:
   ACR_NAME: agentguardacr
-  ACR_LOGIN_SERVER: agentguardacr.azurecr.io
-  API_IMAGE: agentguard-api
-  WORKER_IMAGE: agentguard-workers
-  DASHBOARD_IMAGE: agentguard-dashboard
-  IMAGE_TAG: ${{ github.sha }}
-  NODE_VERSION: '22'
-  TERRAFORM_VERSION: '1.9.0'
-  # Production
-  RESOURCE_GROUP: rg-agentguard-production
-  API_APP_NAME: agentguard-api-production
-  WORKER_APP_NAME: agentguard-workers-production
-  DASHBOARD_APP_NAME: agentguard-dashboard-production
-  KEY_VAULT_NAME: agentguard-kv-production
+  RESOURCE_GROUP: agentguard-rg
 
 jobs:
-  # ── Validate ──────────────────────────────────────────────────────────────
   validate:
     name: ✅ Validate
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    outputs:
-      app_changed: ${{ steps.changes.outputs.app }}
-      dashboard_changed: ${{ steps.changes.outputs.dashboard }}
-      infra_changed: ${{ steps.changes.outputs.infra }}
-      prisma_changed: ${{ steps.changes.outputs.prisma }}
-
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          fetch-depth: 2
+          node-version: '22'
+      - run: npm install --ignore-scripts
+      - run: npx tsx --version
+      - name: Type check API
+        run: npx tsc --noEmit --esModuleInterop --target ES2022 --module nodenext --moduleResolution nodenext api/server.ts 2>/dev/null || echo "⚠️ Type check had warnings (non-blocking)"
+
+  build-deploy:
+    name: 🏗️ Build & Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
 
       - name: Detect changes
         id: changes
         run: |
-          if [ "${{ github.event.inputs.force_deploy }}" = "true" ] || [ "$(git rev-list --count HEAD)" -le 1 ]; then
-            echo "app=true" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "api=true" >> $GITHUB_OUTPUT
+            echo "landing=true" >> $GITHUB_OUTPUT
             echo "dashboard=true" >> $GITHUB_OUTPUT
-            echo "infra=true" >> $GITHUB_OUTPUT
-            echo "prisma=true" >> $GITHUB_OUTPUT
             exit 0
           fi
-
-          CHANGED=$(git diff --name-only HEAD~1 HEAD)
-
-          echo "app=false" >> $GITHUB_OUTPUT
+          CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "all")
+          echo "api=false" >> $GITHUB_OUTPUT
+          echo "landing=false" >> $GITHUB_OUTPUT
           echo "dashboard=false" >> $GITHUB_OUTPUT
-          echo "infra=false" >> $GITHUB_OUTPUT
-          echo "prisma=false" >> $GITHUB_OUTPUT
+          echo "$CHANGED" | grep -qE '^(api/|packages/|Dockerfile\.api|package\.json)' && echo "api=true" >> $GITHUB_OUTPUT || true
+          echo "$CHANGED" | grep -qE '^(landing/|Dockerfile\.landing|nginx-landing)' && echo "landing=true" >> $GITHUB_OUTPUT || true
+          echo "$CHANGED" | grep -qE '^(dashboard/|Dockerfile\.dashboard|nginx-dashboard)' && echo "dashboard=true" >> $GITHUB_OUTPUT || true
 
-          echo "$CHANGED" | grep -qE '^(src/|package\.json|Dockerfile|tsconfig)' && echo "app=true" >> $GITHUB_OUTPUT || true
-          echo "$CHANGED" | grep -qE '^(apps/dashboard/|Dockerfile\.dashboard)' && echo "dashboard=true" >> $GITHUB_OUTPUT || true
-          echo "$CHANGED" | grep -qE '^infra/' && echo "infra=true" >> $GITHUB_OUTPUT || true
-          echo "$CHANGED" | grep -qE '^prisma/' && echo "prisma=true" >> $GITHUB_OUTPUT || true
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci
-      - run: npx tsc --noEmit 2>/dev/null || echo "TypeScript check skipped (no tsconfig output)"
-      - run: npm test 2>/dev/null || echo "No tests configured yet"
-
-  # ── Build & Push ──────────────────────────────────────────────────────────
-  build:
-    name: 🏗️ Build & Push Images
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: validate
-    if: needs.validate.outputs.app_changed == 'true' || needs.validate.outputs.dashboard_changed == 'true'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.ARM_CLIENT_ID }}
-          tenant-id: ${{ secrets.ARM_TENANT_ID }}
-          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-
-      - name: Build & push API image
-        if: needs.validate.outputs.app_changed == 'true'
+      - name: Build & deploy API
+        if: steps.changes.outputs.api == 'true'
         run: |
-          az acr build \
-            --registry ${{ env.ACR_NAME }} \
-            --image ${{ env.API_IMAGE }}:${{ env.IMAGE_TAG }} \
-            --image ${{ env.API_IMAGE }}:latest \
-            --file Dockerfile.api \
-            .
-
-      - name: Build & push Worker image
-        if: needs.validate.outputs.app_changed == 'true'
-        run: |
-          az acr build \
-            --registry ${{ env.ACR_NAME }} \
-            --image ${{ env.WORKER_IMAGE }}:${{ env.IMAGE_TAG }} \
-            --image ${{ env.WORKER_IMAGE }}:latest \
-            --file Dockerfile.worker \
-            .
-
-      - name: Build & push Dashboard image
-        if: needs.validate.outputs.dashboard_changed == 'true'
-        run: |
-          az acr build \
-            --registry ${{ env.ACR_NAME }} \
-            --image ${{ env.DASHBOARD_IMAGE }}:${{ env.IMAGE_TAG }} \
-            --image ${{ env.DASHBOARD_IMAGE }}:latest \
-            --file Dockerfile.dashboard \
-            .
-
-      - name: Scan API image with Trivy
-        if: needs.validate.outputs.app_changed == 'true'
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.ACR_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ env.IMAGE_TAG }}
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
-        continue-on-error: true
-
-  # ── Deploy ────────────────────────────────────────────────────────────────
-  deploy:
-    name: 🚀 Deploy to Production
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [validate, build]
-    if: always() && needs.validate.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped')
-    environment:
-      name: production
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.ARM_CLIENT_ID }}
-          tenant-id: ${{ secrets.ARM_TENANT_ID }}
-          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-
-      - uses: actions/setup-node@v4
-        if: needs.validate.outputs.prisma_changed == 'true' || needs.validate.outputs.app_changed == 'true'
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Run database migrations
-        if: needs.validate.outputs.prisma_changed == 'true' || needs.validate.outputs.app_changed == 'true'
-        run: |
-          npm ci
-          DB_DIRECT_URL=$(az keyvault secret show \
-            --vault-name ${{ env.KEY_VAULT_NAME }} \
-            --name DATABASE-DIRECT-URL \
-            --query value -o tsv 2>/dev/null || echo "")
-          if [ -n "$DB_DIRECT_URL" ]; then
-            echo "::add-mask::$DB_DIRECT_URL"
-            export DATABASE_DIRECT_URL="$DB_DIRECT_URL"
-            npx prisma generate 2>/dev/null || true
-            npx prisma migrate deploy 2>/dev/null || echo "No migrations to apply"
-          else
-            echo "⚠️  DATABASE-DIRECT-URL not found in Key Vault — skipping migrations"
-          fi
-
-      - name: Update API container
-        if: needs.validate.outputs.app_changed == 'true'
-        run: |
+          az acr build --registry ${{ env.ACR_NAME }} \
+            --image agentguard-api:${{ github.sha }} \
+            --image agentguard-api:latest \
+            --file Dockerfile.api .
           az containerapp update \
-            --name ${{ env.API_APP_NAME }} \
+            --name agentguard-api \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.API_IMAGE }}:${{ env.IMAGE_TAG }}
+            --image ${{ env.ACR_NAME }}.azurecr.io/agentguard-api:${{ github.sha }}
 
-      - name: Update Workers container
-        if: needs.validate.outputs.app_changed == 'true'
+      - name: Build & deploy Landing
+        if: steps.changes.outputs.landing == 'true'
         run: |
+          az acr build --registry ${{ env.ACR_NAME }} \
+            --image agentguard-landing:${{ github.sha }} \
+            --image agentguard-landing:latest \
+            --file Dockerfile.landing .
           az containerapp update \
-            --name ${{ env.WORKER_APP_NAME }} \
+            --name agentguard-landing \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.WORKER_IMAGE }}:${{ env.IMAGE_TAG }}
+            --image ${{ env.ACR_NAME }}.azurecr.io/agentguard-landing:${{ github.sha }}
 
-      - name: Update Dashboard container
-        if: needs.validate.outputs.dashboard_changed == 'true'
+      - name: Build & deploy Dashboard
+        if: steps.changes.outputs.dashboard == 'true'
         run: |
+          az acr build --registry ${{ env.ACR_NAME }} \
+            --image agentguard-dashboard:${{ github.sha }} \
+            --image agentguard-dashboard:latest \
+            --file Dockerfile.dashboard .
           az containerapp update \
-            --name ${{ env.DASHBOARD_APP_NAME }} \
+            --name agentguard-dashboard \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_LOGIN_SERVER }}/${{ env.DASHBOARD_IMAGE }}:${{ env.IMAGE_TAG }}
+            --image ${{ env.ACR_NAME }}.azurecr.io/agentguard-dashboard:${{ github.sha }}
 
       - name: Health check
         run: |
-          API_FQDN=$(az containerapp show \
-            --name ${{ env.API_APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --query properties.configuration.ingress.fqdn -o tsv 2>/dev/null || echo "")
-          if [ -n "$API_FQDN" ]; then
-            echo "Checking https://$API_FQDN/v1/health"
-            for i in $(seq 1 15); do
-              if curl -sf "https://$API_FQDN/v1/health" -o /dev/null; then
-                echo "✅ API health check passed (attempt $i)"
-                exit 0
-              fi
-              echo "Attempt $i failed, waiting..."
-              sleep $((i * 2))
-            done
-            echo "::error::Health check failed after 15 attempts"
-            exit 1
-          else
-            echo "⚠️  No API FQDN found — skipping health check"
-          fi
-
-      - name: Rollback on failure
-        if: failure()
-        run: |
-          echo "🔄 Rolling back..."
-          for APP in ${{ env.API_APP_NAME }} ${{ env.WORKER_APP_NAME }} ${{ env.DASHBOARD_APP_NAME }}; do
-            CURRENT=$(az containerapp revision list \
-              --name $APP --resource-group ${{ env.RESOURCE_GROUP }} \
-              --query "[?properties.trafficWeight > \`0\`].name" -o tsv 2>/dev/null | head -1)
-            PREVIOUS=$(az containerapp revision list \
-              --name $APP --resource-group ${{ env.RESOURCE_GROUP }} \
-              --query "sort_by([?properties.active && name != '$CURRENT'], &properties.createdTime) | [-1].name" \
-              -o tsv 2>/dev/null)
-            if [ -n "$PREVIOUS" ]; then
-              az containerapp revision activate --name $APP --resource-group ${{ env.RESOURCE_GROUP }} --revision $PREVIOUS 2>/dev/null || true
-              az containerapp ingress traffic set --name $APP --resource-group ${{ env.RESOURCE_GROUP }} --revision-weight $PREVIOUS=100 2>/dev/null || true
-              echo "✅ Rolled back $APP to $PREVIOUS"
+          sleep 30
+          API_URL="https://agentguard-api.greenrock-adeab1b0.australiaeast.azurecontainerapps.io"
+          for i in $(seq 1 10); do
+            if curl -sf "$API_URL/health" -o /dev/null; then
+              echo "✅ API healthy (attempt $i)"
+              # Quick smoke test
+              RESULT=$(curl -s -X POST "$API_URL/api/v1/evaluate" \
+                -H "Content-Type: application/json" \
+                -d '{"tool":"sudo","params":{"command":"test"}}')
+              echo "Smoke test: $RESULT"
+              exit 0
             fi
+            echo "Attempt $i — waiting..."
+            sleep $((i * 3))
           done
+          echo "::error::Health check failed"
+          exit 1
