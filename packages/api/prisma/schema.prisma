@@ -1,0 +1,491 @@
+// AgentGuard — Prisma Schema
+// Phase 1 MVP Data Model — aligned with DATA_MODEL.md
+// All models: tenantId on every table, composite indexes (tenantId, id)
+// PostgreSQL Row-Level Security enabled on all tables (see migration SQL)
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_DIRECT_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// TENANT
+// ─────────────────────────────────────────────────────────────────────
+
+model Tenant {
+  id                  String       @id @default(cuid())
+  name                String
+  slug                String       @unique
+  plan                TenantPlan   @default(FREE)
+  dataResidencyRegion String       @default("us-east-1")
+  failBehaviorDefault FailBehavior @default(CLOSED)
+  maxAgents           Int          @default(3)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  deletedAt           DateTime?
+
+  // Relations
+  users           User[]
+  agents          Agent[]
+  policies        Policy[]
+  auditEvents     AuditEvent[]
+  siemConfigs     SIEMIntegration[]
+  webhooks        AlertWebhook[]
+
+  @@index([slug])
+}
+
+enum TenantPlan {
+  FREE
+  TEAM
+  BUSINESS
+  ENTERPRISE
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  tenantId     String
+  email        String
+  name         String?
+  role         UserRole  @default(ANALYST)
+  passwordHash String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  // Relations
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  killSwitchCommands KillSwitchCommand[]
+  hitlDecisions      HITLGate[]          @relation("HITLDecidedBy")
+
+  @@unique([tenantId, email])
+  @@index([tenantId, id])
+  @@index([tenantId, email])
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  ANALYST
+  OPERATOR
+  AUDITOR
+  AGENT
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// API KEY
+// ─────────────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  tenantId    String
+  userId      String?
+  name        String
+  keyHash     String    @unique
+  keyPrefix   String
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+
+  @@index([tenantId, id])
+  @@index([keyHash])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// AGENT
+// ─────────────────────────────────────────────────────────────────────
+
+model Agent {
+  id               String         @id @default(cuid())
+  tenantId         String
+  name             String
+  description      String?
+  status           AgentStatus    @default(ACTIVE)
+  riskTier         RiskTier       @default(MEDIUM)
+  failBehavior     FailBehavior   @default(CLOSED)
+  framework        AgentFramework?
+  frameworkVersion String?
+  tags             String[]       @default([])
+
+  policyId         String?
+  policyVersion    String?
+
+  apiKeyHash       String         @unique
+  apiKeyPrefix     String
+  apiKeyExpiresAt  DateTime?
+
+  metadata         Json?          @db.JsonB
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?
+  lastSeenAt       DateTime?
+
+  // Relations
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  policy             Policy?             @relation(fields: [policyId], references: [id])
+  auditEvents        AuditEvent[]
+  sessions           AgentSession[]
+  killSwitchCommands KillSwitchCommand[]
+  hitlGates          HITLGate[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, id])
+  @@index([tenantId, status])
+  @@index([tenantId, policyId])
+  @@index([apiKeyHash])
+}
+
+enum AgentStatus {
+  ACTIVE
+  KILLED
+  QUARANTINED
+  INACTIVE
+}
+
+enum RiskTier {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FailBehavior {
+  CLOSED
+  OPEN
+}
+
+enum AgentFramework {
+  LANGCHAIN
+  OPENAI_SDK
+  CREWAI
+  AUTOGEN
+  LLAMAINDEX
+  CUSTOM
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// AGENT SESSION
+// ─────────────────────────────────────────────────────────────────────
+
+model AgentSession {
+  id           String        @id @default(cuid())
+  tenantId     String
+  agentId      String
+  startedAt    DateTime      @default(now())
+  endedAt      DateTime?
+  actionCount  Int           @default(0)
+  blockCount   Int           @default(0)
+  tokensUsed   Int           @default(0)
+  spendCents   Int           @default(0)
+  riskScoreMax Int           @default(0)
+  status       SessionStatus @default(ACTIVE)
+  metadata     Json?         @db.JsonB
+
+  // Relations
+  agent       Agent        @relation(fields: [agentId], references: [id])
+  auditEvents AuditEvent[]
+  hitlGates   HITLGate[]
+
+  @@index([tenantId, id])
+  @@index([tenantId, agentId, startedAt(sort: Desc)])
+  @@index([tenantId, startedAt(sort: Desc)])
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  KILLED
+  ERROR
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// POLICY
+// ─────────────────────────────────────────────────────────────────────
+
+model Policy {
+  id            String    @id @default(cuid())
+  tenantId      String
+  name          String
+  description   String?
+  activeVersion String?
+  defaultAction String    @default("block")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  tenant   Tenant          @relation(fields: [tenantId], references: [id])
+  versions PolicyVersion[]
+  agents   Agent[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, id])
+  @@index([tenantId, deletedAt])
+}
+
+model PolicyVersion {
+  id              String   @id @default(cuid())
+  tenantId        String
+  policyId        String
+  version         String
+  yamlContent     String   @db.Text
+  compiledBundle  Json     @db.JsonB
+  bundleChecksum  String
+  ruleCount       Int
+  createdAt       DateTime @default(now())
+  createdByUserId String?
+  changelog       String?  @db.Text
+
+  // Relations
+  policy Policy @relation(fields: [policyId], references: [id])
+
+  @@unique([policyId, version])
+  @@index([tenantId, policyId, version])
+  @@index([tenantId, policyId, createdAt(sort: Desc)])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// AUDIT EVENT
+// Append-only — NO UPDATE or DELETE ever applied after insert.
+// ─────────────────────────────────────────────────────────────────────
+
+model AuditEvent {
+  id             String         @id @default(cuid())
+  tenantId       String
+  agentId        String
+  sessionId      String
+
+  occurredAt     DateTime       @default(now())
+  processingMs   Int
+
+  actionType     ActionType
+  toolName       String?
+  toolTarget     String?
+  actionParams   Json?          @db.JsonB
+  actionResult   Json?          @db.JsonB
+  executionMs    Int?
+
+  policyDecision PolicyDecision
+  policyId       String?
+  policyVersion  String?
+  matchedRuleId  String?
+  matchedRuleIds String[]       @default([])
+  blockReason    String?
+
+  riskScore      Int            @default(0)
+  riskTier       RiskTier       @default(LOW)
+  anomalyFlags   String[]       @default([])
+
+  inputDataLabels  String[]     @default([])
+  outputDataLabels String[]     @default([])
+
+  planningTraceSummary String?
+  ragSourceIds         String[] @default([])
+  priorEventIds        String[] @default([])
+
+  // Tamper-evident hash chain
+  previousHash String
+  eventHash    String
+
+  // Relations
+  tenant  Tenant       @relation(fields: [tenantId], references: [id])
+  agent   Agent        @relation(fields: [agentId], references: [id])
+  session AgentSession @relation(fields: [sessionId], references: [id])
+  hitlGate HITLGate?
+
+  @@index([tenantId, id])
+  @@index([tenantId, agentId, occurredAt(sort: Desc)])
+  @@index([tenantId, sessionId, occurredAt(sort: Asc)])
+  @@index([tenantId, occurredAt(sort: Desc)])
+  @@index([tenantId, policyDecision, occurredAt(sort: Desc)])
+  @@index([tenantId, riskTier, occurredAt(sort: Desc)])
+}
+
+enum ActionType {
+  TOOL_CALL
+  LLM_INFERENCE
+  MEMORY_READ
+  MEMORY_WRITE
+  AGENT_START
+  AGENT_END
+  KILL_SWITCH
+  POLICY_CHECK
+}
+
+enum PolicyDecision {
+  ALLOW
+  BLOCK
+  MONITOR
+  HITL_PENDING
+  HITL_APPROVED
+  HITL_REJECTED
+  HITL_TIMEOUT
+  KILLED
+  ERROR
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// ANOMALY SCORE
+// Rule-based in Phase 1; ML-enriched in Phase 2.
+// ─────────────────────────────────────────────────────────────────────
+
+model AnomalyScore {
+  id           String        @id @default(cuid())
+  tenantId     String
+  agentId      String
+  auditEventId String        @unique
+  sessionId    String
+
+  score        Int
+  tier         RiskTier
+  method       ScoringMethod @default(RULE_BASED)
+  flags        String[]      @default([])
+  details      Json?         @db.JsonB
+
+  scoredAt     DateTime      @default(now())
+
+  @@index([tenantId, agentId, scoredAt(sort: Desc)])
+  @@index([tenantId, tier, scoredAt(sort: Desc)])
+  @@index([tenantId, auditEventId])
+}
+
+enum ScoringMethod {
+  RULE_BASED
+  ML_IFOREST
+  COMPOSITE
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// KILL SWITCH COMMAND
+// ─────────────────────────────────────────────────────────────────────
+
+model KillSwitchCommand {
+  id             String         @id @default(cuid())
+  tenantId       String
+  agentId        String
+  tier           KillSwitchTier
+  reason         String?
+  issuedByUserId String?
+  issuedAt       DateTime       @default(now())
+  acknowledgedAt DateTime?
+  resumedAt      DateTime?
+
+  // Relations
+  agent    Agent @relation(fields: [agentId], references: [id])
+  issuedBy User? @relation(fields: [issuedByUserId], references: [id])
+
+  @@index([tenantId, agentId, issuedAt(sort: Desc)])
+  @@index([tenantId, issuedAt(sort: Desc)])
+}
+
+enum KillSwitchTier {
+  SOFT
+  HARD
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// HITL GATE
+// ─────────────────────────────────────────────────────────────────────
+
+model HITLGate {
+  id             String     @id @default(cuid())
+  tenantId       String
+  agentId        String
+  sessionId      String
+  auditEventId   String?    @unique
+
+  toolName       String?
+  toolParams     Json?      @db.JsonB
+  matchedRuleId  String
+
+  status         HITLStatus @default(PENDING)
+  timeoutAt      DateTime
+  onTimeout      String     @default("block")
+
+  decidedAt       DateTime?
+  decidedByUserId String?
+  decisionNote    String?
+
+  createdAt      DateTime   @default(now())
+
+  notifiedViaSlack Boolean  @default(false)
+  notifiedViaEmail Boolean  @default(false)
+
+  // Relations
+  agent      Agent        @relation(fields: [agentId], references: [id])
+  session    AgentSession @relation(fields: [sessionId], references: [id])
+  decidedBy  User?        @relation("HITLDecidedBy", fields: [decidedByUserId], references: [id])
+  auditEvent AuditEvent?  @relation(fields: [auditEventId], references: [id])
+
+  @@index([tenantId, status, createdAt(sort: Asc)])
+  @@index([tenantId, agentId, createdAt(sort: Desc)])
+  @@index([tenantId, id])
+}
+
+enum HITLStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  TIMED_OUT
+  CANCELLED
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// SIEM INTEGRATION
+// ─────────────────────────────────────────────────────────────────────
+
+model SIEMIntegration {
+  id             String       @id @default(cuid())
+  tenantId       String
+  name           String
+  provider       SIEMProvider
+  enabled        Boolean      @default(true)
+  config         Json         @db.JsonB
+  minSeverity    RiskTier     @default(HIGH)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  lastPushAt     DateTime?
+  lastPushStatus String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, id])
+  @@index([tenantId, provider])
+}
+
+enum SIEMProvider {
+  SPLUNK
+  SENTINEL
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// ALERT WEBHOOK
+// ─────────────────────────────────────────────────────────────────────
+
+model AlertWebhook {
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  url           String
+  signingSecret String
+  events        String[] @default([])
+  enabled       Boolean  @default(true)
+  minSeverity   RiskTier @default(MEDIUM)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, id])
+}

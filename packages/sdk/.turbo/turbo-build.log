@@ -1,0 +1,4 @@
+
+> @agentguard/sdk@0.1.0 build
+> tsc --build
+

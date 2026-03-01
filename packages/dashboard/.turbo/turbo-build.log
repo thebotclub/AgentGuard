@@ -1,0 +1,57 @@
+
+> @agentguard/dashboard@0.1.0 build
+> next build
+
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /home/vector/.openclaw/workspace/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /home/vector/.openclaw/workspace/agentguard-project/package-lock.json
+
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+(node:613) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/vector/.openclaw/workspace/agentguard-project/packages/dashboard/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/vector/.openclaw/workspace/agentguard-project/packages/dashboard/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+   ▲ Next.js 15.5.12
+
+   Creating an optimized production build ...
+(node:637) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/vector/.openclaw/workspace/agentguard-project/packages/dashboard/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/vector/.openclaw/workspace/agentguard-project/packages/dashboard/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:652) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/vector/.openclaw/workspace/agentguard-project/packages/dashboard/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/vector/.openclaw/workspace/agentguard-project/packages/dashboard/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:666) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/vector/.openclaw/workspace/agentguard-project/packages/dashboard/next.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/vector/.openclaw/workspace/agentguard-project/packages/dashboard/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ Compiled successfully in 19.9s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/4) ...
+   Generating static pages (1/4) 
+   Generating static pages (2/4) 
+   Generating static pages (3/4) 
+ ✓ Generating static pages (4/4)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      126 B         102 kB
+└ ○ /_not-found                            988 B         103 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/18-b339bcfc88586b9e.js          46 kB
+  ├ chunks/87c73c54-24122e7b92478d00.js  54.2 kB
+  └ other shared chunks (total)          1.88 kB
+
+
+○  (Static)  prerendered as static content
+

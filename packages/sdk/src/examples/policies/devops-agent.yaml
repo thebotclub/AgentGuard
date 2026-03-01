@@ -1,0 +1,100 @@
+# AgentGuard Policy: DevOps / Infrastructure Agent
+# Implements: POLICY_ENGINE.md Policy 5 (Infrastructure Agent — Change Management)
+# DSL version: POLICY_ENGINE.md §2
+
+id:          "pol_devops_agent"
+name:        "DevOps Agent — Change Management"
+description: >
+  Infrastructure management agent. All production changes require approval.
+  Read operations allowed. Staging deploys monitored. Destructive operations blocked.
+version:     "1.0.0"
+
+default: block
+
+budgets:
+  maxActionsPerMinute:  30
+  maxActionsPerSession: 500
+
+rules:
+
+  - id:          "infra_001"
+    description: "Block ALL production changes without explicit approval"
+    priority:    1
+    action:      require_approval
+    approvers:
+      - "role:admin"
+      - "team:platform-oncall"
+    timeoutSec:  900
+    on_timeout:  block
+    when:
+      - tool:   { matches: ["*"] }
+      - params:
+          environment: { in: ["production", "prod", "prd"] }
+    severity:    critical
+
+  - id:          "infra_002"
+    description: "Allow read operations in all environments"
+    priority:    10
+    action:      allow
+    when:
+      - tool:    { matches: ["describe_*", "list_*", "get_*", "status_*", "check_*", "infra:read_status", "k8s:get", "monitoring:query"] }
+
+  - id:          "infra_003"
+    description: "Block destructive database operations"
+    priority:    5
+    action:      block
+    when:
+      - tool:    { matches: ["db_*", "sql_*", "postgres_*", "mysql_*"] }
+      - params:
+          operation: { in: ["DROP", "TRUNCATE", "DELETE", "UPDATE"] }
+    severity:    critical
+
+  - id:          "infra_004"
+    description: "Block glob-matched destroy/delete tools"
+    priority:    5
+    action:      block
+    when:
+      - tool:    { matches: ["*.delete", "*.destroy", "*.remove", "k8s:delete", "resource.delete", "cluster.destroy"] }
+    severity:    critical
+
+  - id:          "infra_005"
+    description: "Monitor staging deploys (allowed but flagged)"
+    priority:    20
+    action:      monitor
+    riskBoost:   50
+    when:
+      - tool:    { matches: ["deploy_*", "update_service", "rollout_*", "ci:deploy_staging"] }
+      - params:
+          environment: { in: ["staging", "stg", "uat"] }
+
+  - id:          "infra_006"
+    description: "Require approval for production deploys"
+    priority:    8
+    action:      require_approval
+    approvers:
+      - "role:admin"
+      - "team:platform-oncall"
+    timeoutSec:  600
+    on_timeout:  block
+    when:
+      - tool:    { in: ["ci:deploy_production", "ci:deploy_prod"] }
+    severity:    critical
+
+  - id:          "infra_007"
+    description: "Rate limit CI build triggers"
+    priority:    40
+    action:      block
+    rateLimit:
+      maxCalls:      10
+      windowSeconds: 60
+      keyBy:         session
+    when:
+      - tool:    { in: ["ci:trigger_build", "build:trigger"] }
+    severity:    low
+
+  - id:          "infra_008"
+    description: "Allow safe CI/CD read operations"
+    priority:    15
+    action:      allow
+    when:
+      - tool:    { in: ["ci:trigger_build", "ci:get_build_status", "ci:list_pipelines"] }

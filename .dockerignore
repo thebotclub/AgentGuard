@@ -4,16 +4,9 @@ node_modules
 .env
 .env.*
 !.env.example
-*.md
 docs/
 deploy/
 design/
 marketing/
-reports/
-landing/
-blog/
 *.pdf
-*.html
-dist/
-.next/
-coverage/
+package-lock.json
