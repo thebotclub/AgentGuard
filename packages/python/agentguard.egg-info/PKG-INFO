@@ -1,0 +1,245 @@
+Metadata-Version: 2.4
+Name: agentguard
+Version: 0.1.0
+Summary: Runtime security for AI agents — policy engine, audit trail, and kill switch
+Author-email: AgentGuard <hello@agentguard.tech>
+License: MIT
+Project-URL: Homepage, https://agentguard.tech
+Project-URL: Documentation, https://agentguard.tech
+Project-URL: Repository, https://github.com/koshaji/agentguard
+Project-URL: Demo, https://demo.agentguard.tech
+Keywords: ai,agents,security,governance,policy,langchain,openai
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Security
+Classifier: Topic :: Software Development :: Libraries
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: license-file
+
+# agentguard
+
+**Runtime security for AI agents** — policy engine, audit trail, and kill switch.
+
+[![PyPI version](https://img.shields.io/pypi/v/agentguard)](https://pypi.org/project/agentguard/)
+[![Python versions](https://img.shields.io/pypi/pyversions/agentguard)](https://pypi.org/project/agentguard/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+## Overview
+
+AgentGuard gives AI agents production-grade guardrails:
+
+- 🛡️ **Policy evaluation** — check every tool call before execution
+- 📋 **Audit trail** — tamper-evident hash chain of every action
+- 🔴 **Kill switch** — instantly halt all agents
+- 🔍 **Audit verification** — cryptographically verify the audit chain
+- ⚡ **Zero dependencies** — pure Python stdlib, works anywhere
+
+---
+
+## Installation
+
+```bash
+pip install agentguard
+```
+
+Requires Python 3.8+. No external dependencies.
+
+---
+
+## Quick Start
+
+```python
+from agentguard import AgentGuard
+
+guard = AgentGuard(api_key="ag_your_api_key")
+
+# Evaluate an agent action before executing it
+decision = guard.evaluate(
+    tool="send_email",
+    params={"to": "user@example.com", "subject": "Hello"}
+)
+
+if decision["result"] == "allow":
+    print("Action allowed, risk score:", decision["riskScore"])
+    # proceed with tool execution
+elif decision["result"] == "block":
+    print("Action blocked:", decision["reason"])
+elif decision["result"] == "require_approval":
+    print("Waiting for human approval...")
+elif decision["result"] == "monitor":
+    print("Action monitored (allowed but logged):", decision["reason"])
+```
+
+---
+
+## API Reference
+
+### `AgentGuard(api_key, base_url=...)`
+
+Create a client instance.
+
+```python
+guard = AgentGuard(
+    api_key="ag_your_api_key",
+    base_url="https://api.agentguard.tech"  # optional, default shown
+)
+```
+
+---
+
+### `evaluate(tool, params=None) → dict`
+
+Evaluate a tool call against your policy. Call this **before** every tool execution.
+
+```python
+decision = guard.evaluate("read_file", {"path": "/data/report.csv"})
+# Returns:
+# {
+#   "result": "allow",          # allow | block | monitor | require_approval
+#   "riskScore": 5,             # 0-1000
+#   "reason": "Matched allow-read rule",
+#   "durationMs": 1.2,
+#   "matchedRuleId": "allow-read"  # optional
+# }
+```
+
+**Integration pattern:**
+
+```python
+def safe_tool_call(tool_name, tool_func, **params):
+    decision = guard.evaluate(tool_name, params)
+    if decision["result"] in ("allow", "monitor"):
+        return tool_func(**params)
+    elif decision["result"] == "block":
+        raise PermissionError(f"Blocked by policy: {decision['reason']}")
+    elif decision["result"] == "require_approval":
+        raise PermissionError("Awaiting human approval")
+```
+
+---
+
+### `get_usage() → dict`
+
+Get usage statistics for your tenant.
+
+```python
+usage = guard.get_usage()
+print(usage)
+# {
+#   "requestsToday": 142,
+#   "requestsThisMonth": 3891,
+#   "plan": "pro",
+#   "limits": { "requestsPerDay": 10000 }
+# }
+```
+
+---
+
+### `get_audit(limit=50, offset=0) → dict`
+
+Get audit trail events with pagination.
+
+```python
+audit = guard.get_audit(limit=100, offset=0)
+for event in audit["events"]:
+    print(f"{event['timestamp']} | {event['tool']} | {event['decision']}")
+```
+
+---
+
+### `kill_switch(active) → dict`
+
+Activate or deactivate the global kill switch.
+
+```python
+# Emergency halt — stop all agents immediately
+guard.kill_switch(True)
+
+# Resume operations
+guard.kill_switch(False)
+```
+
+---
+
+### `verify_audit() → dict`
+
+Verify the cryptographic integrity of the audit hash chain.
+
+```python
+result = guard.verify_audit()
+if result["valid"]:
+    print("Audit chain is intact")
+else:
+    print(f"Chain broken at event index: {result['invalidAt']}")
+```
+
+---
+
+## Complete Example — LangChain-style Agent
+
+```python
+from agentguard import AgentGuard
+
+guard = AgentGuard(api_key="ag_your_api_key")
+
+def run_tool(name: str, func, **params):
+    """Execute a tool with AgentGuard policy enforcement."""
+    decision = guard.evaluate(name, params)
+    
+    result = decision["result"]
+    if result == "block":
+        raise PermissionError(f"Policy blocked {name}: {decision['reason']}")
+    if result == "require_approval":
+        raise PermissionError(f"Human approval required for {name}")
+    
+    # "allow" or "monitor" — proceed
+    return func(**params)
+
+
+# Your tools
+def send_email(to: str, subject: str, body: str) -> str:
+    # ... send the email
+    return f"Email sent to {to}"
+
+def read_file(path: str) -> str:
+    with open(path) as f:
+        return f.read()
+
+
+# Use with policy enforcement
+content = run_tool("read_file", read_file, path="/data/report.csv")
+run_tool("send_email", send_email, to="boss@company.com", subject="Report", body=content)
+```
+
+---
+
+## Error Handling
+
+```python
+from agentguard import AgentGuard
+
+guard = AgentGuard(api_key="ag_your_key")
+
+try:
+    decision = guard.evaluate("dangerous_tool", {"target": "production_db"})
+except RuntimeError as e:
+    print(f"API error: {e}")
+    # RuntimeError: AgentGuard API error: 401 Unauthorized
+```
+
+---
+
+## Links
+
+- 🌐 [agentguard.tech](https://agentguard.tech)
+- 🎮 [Live Demo](https://demo.agentguard.tech)
+- 📦 [GitHub](https://github.com/koshaji/agentguard)
+- 📘 [npm SDK](https://www.npmjs.com/package/@agentguard/sdk)
+
+## License
+
+MIT
