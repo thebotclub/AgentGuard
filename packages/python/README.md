@@ -1,9 +1,9 @@
-# agentguard
+# agentguard-tech
 
 **Runtime security for AI agents** — policy engine, audit trail, and kill switch.
 
-[![PyPI version](https://img.shields.io/pypi/v/agentguard)](https://pypi.org/project/agentguard/)
-[![Python versions](https://img.shields.io/pypi/pyversions/agentguard)](https://pypi.org/project/agentguard/)
+[![PyPI version](https://img.shields.io/pypi/v/agentguard-tech)](https://pypi.org/project/agentguard-tech/)
+[![Python versions](https://img.shields.io/pypi/pyversions/agentguard-tech)](https://pypi.org/project/agentguard-tech/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
@@ -21,7 +21,7 @@ AgentGuard gives AI agents production-grade guardrails:
 ## Installation
 
 ```bash
-pip install agentguard
+pip install agentguard-tech
 ```
 
 Requires Python 3.8+. No external dependencies.
