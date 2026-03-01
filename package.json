@@ -1,17 +1,18 @@
 {
   "name": "agentguard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "AgentGuard — Runtime security platform for AI agents",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
+    "dev": "npx tsx api/server.ts",
+    "test": "npx tsx --test tests/unit.test.ts",
+    "test:e2e": "npx tsx --test tests/e2e.test.ts",
+    "test:all": "npx tsx --test tests/*.test.ts",
+    "lint": "npx tsc --noEmit",
     "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

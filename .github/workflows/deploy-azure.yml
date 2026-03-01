@@ -32,6 +32,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --ignore-scripts
+      - run: npm run test
       - run: npx tsx --version
       - name: Type check API
         run: npx tsc --noEmit --esModuleInterop --target ES2022 --module nodenext --moduleResolution nodenext api/server.ts 2>/dev/null || echo "⚠️ Type check had warnings (non-blocking)"
