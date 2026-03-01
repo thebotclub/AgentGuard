@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="innerGrad" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#a5b4fc"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Shield body -->
+  <path d="M256 28 L460 120 C460 120 470 320 256 484 C42 320 52 120 52 120 Z" 
+        fill="url(#shieldGrad)" opacity="0.15" stroke="url(#shieldGrad)" stroke-width="3"/>
+  <path d="M256 52 L436 134 C436 134 445 310 256 458 C67 310 76 134 76 134 Z" 
+        fill="url(#shieldGrad)" opacity="0.08"/>
+  <!-- Shield outline -->
+  <path d="M256 28 L460 120 C460 120 470 320 256 484 C42 320 52 120 52 120 Z" 
+        fill="none" stroke="url(#shieldGrad)" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Inner shield -->
+  <path d="M256 80 L410 152 C410 152 418 306 256 434 C94 306 102 152 102 152 Z" 
+        fill="none" stroke="url(#innerGrad)" stroke-width="2" opacity="0.5"/>
+  <!-- Checkmark / lock icon -->
+  <g filter="url(#glow)">
+    <!-- Lock body -->
+    <rect x="212" y="230" width="88" height="72" rx="12" fill="none" stroke="url(#innerGrad)" stroke-width="4"/>
+    <!-- Lock shackle -->
+    <path d="M224 230 V200 C224 172 256 148 256 148 C256 148 288 172 288 200 V230" 
+          fill="none" stroke="url(#innerGrad)" stroke-width="4" stroke-linecap="round"/>
+    <!-- Keyhole -->
+    <circle cx="256" cy="260" r="10" fill="url(#innerGrad)"/>
+    <rect x="253" y="262" width="6" height="18" rx="3" fill="url(#innerGrad)"/>
+  </g>
+  <!-- Corner accents -->
+  <circle cx="256" cy="28" r="4" fill="#818cf8" opacity="0.6"/>
+  <circle cx="460" cy="120" r="3" fill="#818cf8" opacity="0.4"/>
+  <circle cx="52" cy="120" r="3" fill="#818cf8" opacity="0.4"/>
+</svg>
