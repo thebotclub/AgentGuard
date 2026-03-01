@@ -1,0 +1,140 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+@page{size:A4;margin:1.8cm;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1a1a2e;line-height:1.55;font-size:10.5pt;max-width:100%;}
+h1{font-size:24pt;color:#0f3460;margin:0 0 4px;letter-spacing:-0.5px;}
+h2{font-size:14pt;color:#0f3460;border-bottom:2px solid #6366f1;padding-bottom:3px;margin-top:22px;page-break-after:avoid;}
+h3{font-size:11pt;color:#16213e;margin-top:14px;}
+table{width:100%;border-collapse:collapse;margin:8px 0;font-size:9.5pt;}
+th{background:#0f3460;color:white;padding:6px 8px;text-align:left;font-size:9pt;}
+td{padding:5px 8px;border-bottom:1px solid #ddd;}
+tr:nth-child(even) td{background:#f8f9fc;}
+.cover{text-align:center;padding:80px 30px 40px;page-break-after:always;}
+.cover .emoji{font-size:48pt;}
+.cover h1{font-size:32pt;margin:12px 0 6px;}
+.cover .sub{font-size:16pt;color:#6366f1;margin-bottom:20px;}
+.cover .meta{font-size:10pt;color:#666;margin-top:30px;}
+.callout{background:#f0f4ff;border-left:4px solid #6366f1;padding:10px 14px;margin:10px 0;font-size:9.5pt;}
+.callout.red{background:#fff5f5;border-left-color:#ef4444;}
+.callout.green{background:#f0fff4;border-left-color:#22c55e;}
+.stat-row{display:flex;gap:12px;margin:10px 0;}
+.stat-box{flex:1;background:#0f3460;color:white;border-radius:8px;padding:12px;text-align:center;}
+.stat-box .num{font-size:20pt;font-weight:bold;}
+.stat-box .label{font-size:8pt;opacity:0.85;}
+ul{padding-left:16px;margin:6px 0;}li{margin-bottom:3px;font-size:10pt;}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:8pt;font-weight:bold;}
+.done{background:#dcfce7;color:#166534;}
+.wip{background:#fef3c7;color:#92400e;}
+.next{background:#e0e7ff;color:#3730a3;}
+.page-break{page-break-before:always;}
+</style></head><body>
+
+<div class="cover">
+<div class="emoji">🛡️</div>
+<h1>AgentGuard</h1>
+<div class="sub">Board Update — Executive Summary</div>
+<p style="font-size:12pt;color:#333;max-width:460px;margin:0 auto 20px;">Cybersecurity for the Agentic Era</p>
+<div class="meta">28 February 2026 | Confidential<br>Prepared by Vector 🎯 | For: Hani & Jo</div>
+</div>
+
+<h2>Status at a Glance</h2>
+<div class="stat-row">
+<div class="stat-box"><div class="num">11</div><div class="label">Deliverables Complete</div></div>
+<div class="stat-box"><div class="num">3,548</div><div class="label">Lines of Code</div></div>
+<div class="stat-box"><div class="num">45/45</div><div class="label">Tests Passing</div></div>
+<div class="stat-box"><div class="num">5</div><div class="label">Marketing Assets</div></div>
+<div class="stat-box"><div class="num">1</div><div class="label">Day Elapsed</div></div>
+</div>
+
+<table>
+<tr><th>Workstream</th><th>Status</th><th>Deliverable</th><th>Key Detail</th></tr>
+<tr><td>Vision & Scope</td><td><span class="tag done">✅ DONE</span></td><td>VISION_AND_SCOPE.md</td><td>4 personas, MVP scope, 5 success criteria</td></tr>
+<tr><td>Architecture</td><td><span class="tag done">✅ DONE</span></td><td>3 design docs (166KB)</td><td>TS monolith, Prisma, PostgreSQL, &lt;50ms p99</td></tr>
+<tr><td>Roadmap</td><td><span class="tag done">✅ DONE</span></td><td>ROADMAP.md v2</td><td>6 sprints, critical path, security checklist</td></tr>
+<tr><td>SDK Prototype</td><td><span class="tag done">✅ DONE</span></td><td>src/ (3,548 lines)</td><td>Policy engine, audit logger, kill switch, LangChain</td></tr>
+<tr><td>GTM Plan</td><td><span class="tag done">✅ DONE</span></td><td>GO_TO_MARKET.md</td><td>Week 1 playbook, DM templates, sales process</td></tr>
+<tr><td>Landing Page</td><td><span class="tag done">✅ DONE</span></td><td>landing/index.html</td><td>Email capture, conversion-optimised, deployed</td></tr>
+<tr><td>Blog Content</td><td><span class="tag done">✅ DONE</span></td><td>3 SEO blog posts</td><td>Agent risks, EU AI Act, LangChain security</td></tr>
+<tr><td>Lead Magnet</td><td><span class="tag done">✅ DONE</span></td><td>Threat report PDF</td><td>521KB, 8-page research report</td></tr>
+<tr><td>Social Content</td><td><span class="tag done">✅ DONE</span></td><td>47KB calendar</td><td>10 LinkedIn, 3 Twitter threads, 5 DM templates</td></tr>
+<tr><td>Market Intel</td><td><span class="tag done">✅ DONE</span></td><td>market-intelligence.md</td><td>Leads, events, competitors, CVEs</td></tr>
+<tr><td>Azure Deploy</td><td><span class="tag next">⏳ NEXT</span></td><td>CI/CD + Terraform</td><td>Adapting metrics repo pipeline</td></tr>
+</table>
+
+<h2>Architecture Decisions</h2>
+<table>
+<tr><th>Decision</th><th>Choice</th><th>Rationale</th></tr>
+<tr><td>Phase 1 topology</td><td>TypeScript monolith</td><td>Speed to market; microservices Phase 2</td></tr>
+<tr><td>Policy evaluation</td><td>In-process (SDK-side)</td><td>&lt;50ms p99 without network hop</td></tr>
+<tr><td>Database</td><td>PostgreSQL + Prisma</td><td>Team standard; multi-tenant via tenantId</td></tr>
+<tr><td>Validation</td><td>Zod schemas</td><td>Runtime + static types in sync</td></tr>
+<tr><td>Real-time</td><td>Redis + BullMQ</td><td>Phase 1 simplicity; NATS deferred</td></tr>
+<tr><td>Audit integrity</td><td>SHA-256 hash chain</td><td>Tamper-evident, court-admissible</td></tr>
+<tr><td>SDK pattern</td><td>Middleware wrapper</td><td>5-min integration; LangChain + OpenAI first</td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<h2>Market Position</h2>
+<div class="stat-row">
+<div class="stat-box"><div class="num">$6.34B</div><div class="label">AI Security Funding 2025</div></div>
+<div class="stat-box"><div class="num">3×</div><div class="label">YoY Growth</div></div>
+<div class="stat-box"><div class="num">183</div><div class="label">Days to EU AI Act</div></div>
+<div class="stat-box"><div class="num">0</div><div class="label">Category Leaders</div></div>
+</div>
+
+<table>
+<tr><th>Competitor</th><th>Funding</th><th>Their Gap (Our Opportunity)</th></tr>
+<tr><td>Lakera</td><td>Series A+</td><td>Prompt security only — no agent lifecycle or governance</td></tr>
+<tr><td>CalypsoAI</td><td>Series B</td><td>Closest — weaker on policy engine, HITL, multi-agent</td></tr>
+<tr><td>WitnessAI</td><td>$58M</td><td>Governance focus — less runtime enforcement</td></tr>
+<tr><td>7AI</td><td>$130M</td><td>Identity only — no action policies or compliance</td></tr>
+<tr><td>Invariant → Snyk</td><td>Acquired</td><td>Validates category — locked in Snyk ecosystem</td></tr>
+<tr><td>Noma Security</td><td>$132M</td><td>Supply chain — not runtime agent monitoring</td></tr>
+</table>
+
+<div class="callout green"><strong>Snyk acquiring Invariant Labs proves the category.</strong> No one owns the independent, framework-agnostic position. That's us.</div>
+
+<h2>Time-Sensitive Opportunities</h2>
+<div class="callout red">
+<strong>🚨 OWASP GenAI Security Summit @ RSAC — March 25</strong> (3-4 weeks). Highest-density buyer gathering.<br>
+<strong>AI Agent Security Summit — May 27, SF.</strong> Speaker submissions open NOW.<br>
+<strong>Recent CVEs to use as content:</strong> LangGrinch (CVSS 9.3), Salesforce Agentforce ForcedLeak (CVSS 9.4), Superhuman AI exfil (Jan 2026).
+</div>
+
+<h2>What You Need to Do</h2>
+<table>
+<tr><th>Priority</th><th>Action</th><th>Owner</th><th>When</th></tr>
+<tr><td style="color:#ef4444;font-weight:bold;">P0</td><td>Set up Formspree endpoint for landing page</td><td>Either</td><td>Today</td></tr>
+<tr><td style="color:#ef4444;font-weight:bold;">P0</td><td>Start posting LinkedIn content (calendar ready)</td><td>Both</td><td>This week</td></tr>
+<tr><td style="color:#ef4444;font-weight:bold;">P0</td><td>Book 5 discovery calls with CISOs/VPs</td><td>Both</td><td>Week 1-2</td></tr>
+<tr><td style="color:#f59e0b;font-weight:bold;">P1</td><td>Register for OWASP @ RSAC (March 25)</td><td>Either</td><td>This week</td></tr>
+<tr><td style="color:#f59e0b;font-weight:bold;">P1</td><td>Submit talk to AI Agent Security Summit</td><td>Jo</td><td>Next week</td></tr>
+<tr><td style="color:#f59e0b;font-weight:bold;">P1</td><td>Send cold DMs to 20 targets</td><td>Both</td><td>Week 1-2</td></tr>
+<tr><td style="color:#22c55e;font-weight:bold;">P2</td><td>Review architecture docs for sign-off</td><td>Both</td><td>Week 1</td></tr>
+</table>
+
+<h2>Financial Summary</h2>
+<div class="stat-row">
+<div class="stat-box"><div class="num">$5-8M</div><div class="label">Seed Ask</div></div>
+<div class="stat-box"><div class="num">20mo</div><div class="label">Runway</div></div>
+<div class="stat-box"><div class="num">$8.5M</div><div class="label">Year 3 ARR (Base)</div></div>
+<div class="stat-box"><div class="num">0.6×</div><div class="label">Year 3 Burn Multiple</div></div>
+</div>
+
+<h2>Repository</h2>
+<p><strong>GitHub:</strong> github.com/koshaji/agentguard (private)</p>
+<table>
+<tr><th>Path</th><th>Contents</th></tr>
+<tr><td>docs/</td><td>Business case, vision, roadmap, GTM (464KB)</td></tr>
+<tr><td>design/</td><td>Architecture, policy engine, data model (166KB)</td></tr>
+<tr><td>src/</td><td>SDK prototype — 3,548 lines, 45 tests passing</td></tr>
+<tr><td>landing/</td><td>Conversion page + thank you page</td></tr>
+<tr><td>blog/</td><td>3 SEO posts + index</td></tr>
+<tr><td>reports/</td><td>Threat research report (PDF lead magnet)</td></tr>
+<tr><td>marketing/</td><td>Social calendar + market intelligence</td></tr>
+</table>
+
+<hr>
+<p style="text-align:center;color:#999;font-size:8pt;margin-top:16px;">AgentGuard Board Update — 28 Feb 2026 — Confidential — All produced in &lt;24 hours</p>
+</body></html>
