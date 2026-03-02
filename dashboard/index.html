@@ -150,6 +150,9 @@ tr:hover td { background:rgba(99,102,241,0.04); }
   .stats-grid { grid-template-columns:repeat(2,1fr); }
   .mobile-header { display:flex; }
   .main { padding:20px 16px; }
+  .charts-row { grid-template-columns:1fr !important; }
+  .charts-row > .card:last-child { display:flex; flex-direction:row; align-items:center; gap:16px; }
+  .charts-row > .card:last-child .card-body { flex-direction:row !important; align-items:center; justify-content:center; gap:20px; }
 }
 </style>
 </head>
@@ -255,6 +258,38 @@ tr:hover td { background:rgba(99,102,241,0.04); }
           <div class="label">Avg Latency</div>
           <div class="value" id="stat-latency">—</div>
           <div class="sub">engine eval time</div>
+        </div>
+      </div>
+
+      <!-- ── CHARTS ROW ───────────────────────────────── -->
+      <div class="charts-row" id="charts-row" style="display:none;grid-template-columns:1fr 280px;gap:20px;margin-bottom:20px">
+        <!-- Bar chart: evaluations by hour -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header">
+            <h2>Evaluations — Last 24 Hours</h2>
+            <span id="chart-bar-meta" style="font-family:var(--mono);font-size:0.75rem;color:var(--text-dim)"></span>
+          </div>
+          <div class="card-body" style="padding:16px 20px 12px">
+            <div style="position:relative;width:100%;height:160px">
+              <svg id="chart-bar-svg" width="100%" height="160" viewBox="0 0 800 160" preserveAspectRatio="none" aria-label="Bar chart of evaluations by hour" role="img">
+                <text x="400" y="80" fill="var(--text-dim)" font-size="13" text-anchor="middle" dominant-baseline="middle">Loading…</text>
+              </svg>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;margin-top:8px;font-size:0.75rem;color:var(--text-dim)">
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--green);margin-right:4px"></span>Allowed</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--red);margin-right:4px"></span>Blocked</span>
+            </div>
+          </div>
+        </div>
+        <!-- Donut chart: allow vs block ratio -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><h2>Allow / Block Ratio</h2></div>
+          <div class="card-body" style="display:flex;flex-direction:column;align-items:center;padding:16px 20px">
+            <svg id="chart-donut-svg" width="140" height="140" viewBox="0 0 140 140" aria-label="Donut chart of allow vs block ratio" role="img">
+              <text x="70" y="70" fill="var(--text-dim)" font-size="11" text-anchor="middle" dominant-baseline="middle">Loading…</text>
+            </svg>
+            <div id="chart-donut-legend" style="display:flex;flex-direction:column;gap:6px;margin-top:12px;font-size:0.8rem;width:100%"></div>
+          </div>
         </div>
       </div>
 
@@ -1030,7 +1065,149 @@ async function loadDashboardStats() {
     // Update sidebar engine info
     var info = document.getElementById('sidebar-engine-info');
     if (info) info.innerHTML = 'Agents: ' + (data.activeAgents24h || 0) + ' active<br>Block rate: ' + (data.blockRatePercent || 0) + '%';
+    // Render charts
+    renderCharts(data);
   } catch {}
+}
+
+// ── Charts ───────────────────────────────────────────────
+function renderCharts(data) {
+  var hours = data.evaluationsByHour || [];
+  if (!hours.length) return;
+
+  // Show the charts row
+  var row = document.getElementById('charts-row');
+  row.style.display = 'grid';
+
+  // ── Bar Chart ────────────────────────────────────────
+  var svg = document.getElementById('chart-bar-svg');
+  var W = 800, H = 160, pad = { top: 12, bottom: 28, left: 6, right: 6 };
+  var innerW = W - pad.left - pad.right;
+  var innerH = H - pad.top - pad.bottom;
+
+  // Ensure we have 24 buckets (fill gaps with zeros)
+  var nowHour = new Date().getUTCHours();
+  var buckets = [];
+  for (var i = 0; i < 24; i++) {
+    var h = (nowHour - 23 + i + 24) % 24;
+    var found = null;
+    for (var j = 0; j < hours.length; j++) {
+      if ((hours[j].hour % 24) === h) { found = hours[j]; break; }
+    }
+    buckets.push(found || { hour: h, total: 0, allowed: 0, blocked: 0, monitored: 0 });
+  }
+
+  var maxVal = 1;
+  for (var i = 0; i < buckets.length; i++) {
+    var t = (buckets[i].allowed || 0) + (buckets[i].blocked || 0) + (buckets[i].monitored || 0);
+    if (t > maxVal) maxVal = t;
+  }
+
+  var n = buckets.length;
+  var gap = 3;
+  var barW = Math.max(2, (innerW - (n - 1) * gap) / n);
+  var svgParts = [];
+
+  // Grid lines
+  var gridSteps = 3;
+  for (var g = 0; g <= gridSteps; g++) {
+    var gy = pad.top + innerH - Math.round((g / gridSteps) * innerH);
+    svgParts.push('<line x1="' + pad.left + '" y1="' + gy + '" x2="' + (W - pad.right) + '" y2="' + gy +
+      '" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>');
+  }
+
+  for (var i = 0; i < n; i++) {
+    var b = buckets[i];
+    var x = pad.left + i * (barW + gap);
+    var allowed = b.allowed || 0;
+    var blocked = b.blocked || 0;
+    var total = allowed + blocked + (b.monitored || 0);
+    var totalH = Math.round((total / maxVal) * innerH);
+    var allowedH = total > 0 ? Math.round((allowed / total) * totalH) : 0;
+    var blockedH = totalH - allowedH;
+    var baseY = pad.top + innerH;
+
+    // Stacked bar: allowed (green) on bottom, blocked (red) on top
+    if (allowedH > 0) {
+      svgParts.push('<rect x="' + x.toFixed(1) + '" y="' + (baseY - allowedH) + '" width="' + barW.toFixed(1) + '" height="' + allowedH +
+        '" fill="#22c55e" rx="1" opacity="0.85"/>');
+    }
+    if (blockedH > 0) {
+      svgParts.push('<rect x="' + x.toFixed(1) + '" y="' + (baseY - allowedH - blockedH) + '" width="' + barW.toFixed(1) + '" height="' + blockedH +
+        '" fill="#ef4444" rx="1" opacity="0.85"/>');
+    }
+
+    // Hour label every 4 bars
+    if (i % 4 === 0) {
+      var label = String(b.hour).padStart(2, '0') + 'h';
+      svgParts.push('<text x="' + (x + barW / 2).toFixed(1) + '" y="' + (H - 6) + '" fill="rgba(148,163,184,0.7)" font-size="9" text-anchor="middle">' + label + '</text>');
+    }
+  }
+
+  svg.innerHTML = svgParts.join('');
+
+  // Update meta
+  var totalAllowed = 0, totalBlocked = 0;
+  for (var i = 0; i < buckets.length; i++) { totalAllowed += (buckets[i].allowed || 0); totalBlocked += (buckets[i].blocked || 0); }
+  var meta = document.getElementById('chart-bar-meta');
+  if (meta) meta.textContent = (totalAllowed + totalBlocked) + ' total · peak ' + maxVal;
+
+  // ── Donut Chart ──────────────────────────────────────
+  var dSvg = document.getElementById('chart-donut-svg');
+  var monitored = 0;
+  for (var i = 0; i < buckets.length; i++) { monitored += (buckets[i].monitored || 0); }
+  var grandTotal = totalAllowed + totalBlocked + monitored;
+
+  if (grandTotal === 0) {
+    dSvg.innerHTML = '<text x="70" y="70" fill="var(--text-dim)" font-size="11" text-anchor="middle" dominant-baseline="middle">No data</text>';
+    document.getElementById('chart-donut-legend').innerHTML = '';
+    return;
+  }
+
+  var cx = 70, cy = 70, r = 52, strokeW = 18;
+  var circumference = 2 * Math.PI * r;
+  var segments = [
+    { label: 'Allowed', value: totalAllowed, color: '#22c55e' },
+    { label: 'Blocked', value: totalBlocked, color: '#ef4444' },
+    { label: 'Monitored', value: monitored, color: '#818cf8' }
+  ].filter(function(s) { return s.value > 0; });
+
+  var dParts = [];
+  // Background circle
+  dParts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="' + strokeW + '"/>');
+
+  var offset = 0; // start at top: rotate -90deg via transform
+  for (var i = 0; i < segments.length; i++) {
+    var frac = segments[i].value / grandTotal;
+    var dash = frac * circumference;
+    var gap2 = circumference - dash;
+    dParts.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + segments[i].color +
+      '" stroke-width="' + strokeW + '" stroke-dasharray="' + dash.toFixed(2) + ' ' + gap2.toFixed(2) +
+      '" stroke-dashoffset="' + (-offset).toFixed(2) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')" opacity="0.9"/>');
+    offset += dash;
+  }
+
+  // Centre label: biggest segment %
+  var bigSeg = segments[0];
+  for (var i = 1; i < segments.length; i++) { if (segments[i].value > bigSeg.value) bigSeg = segments[i]; }
+  var bigPct = Math.round((bigSeg.value / grandTotal) * 100);
+  dParts.push('<text x="' + cx + '" y="' + (cy - 7) + '" fill="' + bigSeg.color + '" font-size="20" font-weight="700" text-anchor="middle" dominant-baseline="middle">' + bigPct + '%</text>');
+  dParts.push('<text x="' + cx + '" y="' + (cy + 12) + '" fill="rgba(148,163,184,0.8)" font-size="9" text-anchor="middle">' + bigSeg.label + '</text>');
+
+  dSvg.innerHTML = dParts.join('');
+
+  // Legend
+  var legend = document.getElementById('chart-donut-legend');
+  legend.innerHTML = segments.map(function(s) {
+    var pct = Math.round((s.value / grandTotal) * 100);
+    return '<div style="display:flex;align-items:center;justify-content:space-between">' +
+      '<span style="display:flex;align-items:center;gap:6px">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:' + s.color + ';flex-shrink:0"></span>' +
+        '<span style="color:var(--text-dim)">' + s.label + '</span>' +
+      '</span>' +
+      '<span style="font-family:var(--mono);font-size:0.78rem;color:var(--text-bright)">' + pct + '%</span>' +
+    '</div>';
+  }).join('');
 }
 
 async function loadDashboardFeed() {
