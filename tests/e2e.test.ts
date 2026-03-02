@@ -72,7 +72,8 @@ before(async () => {
     'npx', ['tsx', 'api/server.ts'],
     {
       cwd: '/home/vector/.openclaw/workspace/agentguard-project',
-      env: { ...process.env, PORT: '3001', NODE_ENV: 'test', ADMIN_KEY: 'e2e-admin-key-test' },
+      // AG_DB_PATH=:memory: ensures every test run starts with a clean DB — no state bleed between runs
+      env: { ...process.env, PORT: '3001', NODE_ENV: 'test', ADMIN_KEY: 'e2e-admin-key-test', AG_DB_PATH: ':memory:' },
       stdio: ['ignore', 'pipe', 'pipe'],
     },
   );

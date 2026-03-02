@@ -18,6 +18,15 @@ import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
 // ── SQLite Setup ───────────────────────────────────────────────────────────
 function openDatabase(): Database.Database {
+  // AG_DB_PATH env allows tests to pass ':memory:' or a temp path for isolation
+  if (process.env['AG_DB_PATH']) {
+    const dbPath = process.env['AG_DB_PATH'];
+    console.log(`[db] opening SQLite at ${dbPath} (from AG_DB_PATH)`);
+    const db = new Database(dbPath === ':memory:' ? ':memory:' : dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+    return db;
+  }
   // Try /data first (Docker volume), fall back to local
   let dbPath = './agentguard.db';
   try {
@@ -286,13 +295,24 @@ const app = express();
 // ── CORS — restrict to known origins ──────────────────────────────────────
 const ALLOWED_ORIGINS = [
   'https://agentguard.tech',
+  'https://www.agentguard.tech',
   'https://app.agentguard.tech',
-  'https://agentguard-landing.greenrock-adeab1b0.australiaeast.azurecontainerapps.io',
-  'https://agentguard-dashboard.greenrock-adeab1b0.australiaeast.azurecontainerapps.io',
+  'https://demo.agentguard.tech',
+  'https://docs.agentguard.tech',
 ];
+// Extra origins from env (e.g. CORS_ORIGINS=https://staging.example.com,https://other.com)
+if (process.env['CORS_ORIGINS']) {
+  ALLOWED_ORIGINS.push(...process.env['CORS_ORIGINS'].split(',').map(o => o.trim()).filter(Boolean));
+}
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || ALLOWED_ORIGINS.includes(origin) || /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+    const isAllowed =
+      !origin ||
+      ALLOWED_ORIGINS.includes(origin) ||
+      /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
+      // Allow any Azure Container Apps subdomain for agentguard — handles redeployment hostname changes
+      /^https:\/\/agentguard-[^.]+\.australiaeast\.azurecontainerapps\.io$/.test(origin);
+    if (isAllowed) {
       callback(null, true);
     } else {
       callback(new Error('CORS: origin not allowed'));
@@ -322,7 +342,8 @@ const MAX_SESSIONS = 1000;
 const MAX_AUDIT_EVENTS = 500;
 
 // Signup rate limit: 5 per IP per hour
-const SIGNUP_MAX = 5;
+// In test mode allow more signups so e2e tests don't hit rate limits
+const SIGNUP_MAX = process.env['NODE_ENV'] === 'test' ? 100 : 5;
 const SIGNUP_WINDOW_MS = 60 * 60 * 1000;
 
 interface RateLimitBucket {
@@ -795,13 +816,27 @@ app.get('/', (_req: Request, res: Response) => {
 
 app.get('/health', (_req: Request, res: Response) => {
   const ks = getGlobalKillSwitch();
-  res.json({
-    status: 'ok',
+  // Quick DB check
+  let dbOk = false;
+  try { db.prepare('SELECT 1').get(); dbOk = true; } catch { /* db down */ }
+  // Count tenants and agents as a sanity check
+  let tenantCount = 0;
+  let agentCount = 0;
+  try {
+    tenantCount = (db.prepare('SELECT COUNT(*) as n FROM tenants').get() as { n: number }).n;
+    agentCount = (db.prepare('SELECT COUNT(*) as n FROM agents WHERE active = 1').get() as { n: number }).n;
+  } catch { /* tables may not exist yet */ }
+  const status = dbOk ? 'ok' : 'degraded';
+  res.status(dbOk ? 200 : 503).json({
+    status,
     engine: 'agentguard',
     version: '0.2.0',
-    uptime: process.uptime(),
+    uptime: Math.floor(process.uptime()),
     killSwitch: ks.active,
-    db: 'sqlite',
+    db: dbOk ? 'sqlite' : 'error',
+    templates: templateCache.size,
+    tenants: tenantCount,
+    activeAgents: agentCount,
   });
 });
 
@@ -1593,6 +1628,10 @@ app.delete('/api/v1/agents/:id', requireTenantAuth, (req: Request, res: Response
 
 // ── Global Error Handler ───────────────────────────────────────────────────
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  // Handle JSON body parse errors (malformed request bodies)
+  if (err instanceof SyntaxError && 'status' in err && (err as { status: number }).status === 400) {
+    return res.status(400).json({ error: 'Invalid JSON in request body' });
+  }
   console.error('[error]', err instanceof Error ? err.message : err);
   res.status(500).json({ error: 'Internal server error' });
 });
