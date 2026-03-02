@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgentGuard — Dashboard</title>
 <!-- Favicon: shield emoji SVG data URI -->
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -155,7 +157,7 @@ tr:hover td { background:rgba(99,102,241,0.04); }
 
 <!-- Mobile Header (visible on small screens) -->
 <div class="mobile-header">
-  <div class="mobile-logo"><span>🛡</span> AgentGuard</div>
+  <div class="mobile-logo"><img src="/agentguard-logo.svg" alt="" style="height:28px;width:28px;vertical-align:middle;margin-right:6px"> AgentGuard</div>
   <button class="hamburger" onclick="openMobileNav()" aria-label="Open navigation menu">☰</button>
 </div>
 
@@ -163,7 +165,7 @@ tr:hover td { background:rgba(99,102,241,0.04); }
 <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
 <div class="mobile-nav-drawer" id="mobile-nav-drawer" role="navigation" aria-label="Mobile navigation">
   <button class="mobile-nav-close" onclick="closeMobileNav()" aria-label="Close navigation">✕</button>
-  <div class="sidebar-logo"><span>🛡</span> AgentGuard</div>
+  <div class="sidebar-logo"><img src="/agentguard-logo.svg" alt="" style="height:28px;width:28px;vertical-align:middle;margin-right:6px"> AgentGuard</div>
   <button class="nav-item" onclick="showPage('overview', event)">📊 Overview</button>
   <button class="nav-item" onclick="showPage('live', event)">⚡ Live Feed</button>
   <button class="nav-item" onclick="showPage('evaluate', event)">🔍 Evaluate</button>
@@ -179,7 +181,7 @@ tr:hover td { background:rgba(99,102,241,0.04); }
 <div class="app">
   <!-- Desktop Sidebar -->
   <nav class="sidebar" aria-label="Main navigation">
-    <div class="sidebar-logo"><span>🛡</span> AgentGuard</div>
+    <div class="sidebar-logo"><img src="/agentguard-logo.svg" alt="" style="height:28px;width:28px;vertical-align:middle;margin-right:6px"> AgentGuard</div>
     <button class="nav-item active" onclick="showPage('overview', event)">📊 Overview</button>
     <button class="nav-item" onclick="showPage('live', event)">⚡ Live Feed</button>
     <button class="nav-item" onclick="showPage('evaluate', event)">🔍 Evaluate</button>
