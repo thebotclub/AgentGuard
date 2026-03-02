@@ -1000,15 +1000,19 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
     return res.status(401).json({ error: 'Invalid or inactive agent key' });
   }
 
-  // Check custom rate limits (Phase 2)
+  // Check custom rate limits (Phase 2) — gracefully skip if tables don't exist yet
   if (tenantId !== 'demo') {
-    const rateLimitResult = checkPhase2RateLimit(db, tenantId, req.agent?.id);
-    if (!rateLimitResult.allowed) {
-      return res.status(429).json({
-        error: 'Rate limit exceeded',
-        remaining: 0,
-        resetAt: rateLimitResult.resetAt,
-      });
+    try {
+      const rateLimitResult = checkPhase2RateLimit(db, tenantId, req.agent?.id);
+      if (!rateLimitResult.allowed) {
+        return res.status(429).json({
+          error: 'Rate limit exceeded',
+          remaining: 0,
+          resetAt: rateLimitResult.resetAt,
+        });
+      }
+    } catch {
+      // Phase 2 tables may not exist yet — skip rate limiting
     }
   }
 
@@ -1084,7 +1088,7 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
 
   // Increment custom rate limit counter after successful evaluation
   if (tenantId !== 'demo') {
-    incrementRateCounter(db, tenantId, req.agent?.id);
+    try { incrementRateCounter(db, tenantId, req.agent?.id); } catch { /* Phase 2 tables may not exist */ }
   }
 
   // Fire webhooks async for block/killswitch events
