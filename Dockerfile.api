@@ -9,7 +9,7 @@ COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/shared/package.json ./packages/shared/
 
 # Install dependencies including better-sqlite3
-RUN npm install express cors better-sqlite3 2>/dev/null; \
+RUN npm install express cors better-sqlite3 js-yaml 2>/dev/null; \
     npm install --save-dev @types/better-sqlite3 2>/dev/null; \
     cd packages/sdk && npm install 2>/dev/null; \
     cd /app
