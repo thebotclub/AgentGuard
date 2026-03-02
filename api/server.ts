@@ -1096,9 +1096,9 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
   }
 
   // Fire webhooks async for block/killswitch events
-  if ((decision.result === 'block' || decision.result === 'hitl_required') && tenantId !== 'demo') {
-    fireWebhooksAsync(tenantId, decision.result === 'hitl_required' ? 'hitl' : 'block', {
-      event_type: decision.result === 'hitl_required' ? 'hitl' : 'block',
+  if ((decision.result === 'block' || decision.result === 'require_approval') && tenantId !== 'demo') {
+    fireWebhooksAsync(tenantId, decision.result === 'require_approval' ? 'hitl' : 'block', {
+      event_type: decision.result === 'require_approval' ? 'hitl' : 'block',
       tenant_id: tenantId,
       agent_id: agentId,
       data: {
@@ -1373,7 +1373,7 @@ app.post('/api/v1/playground/evaluate', optionalTenantAuth, (req: Request, res: 
 
 // Get playground audit trail (in-memory)
 app.get('/api/v1/playground/audit/:sessionId', (req: Request, res: Response) => {
-  const sid = req.params['sessionId'];
+  const sid = req.params["sessionId"] as string;
   if (!sid || typeof sid !== 'string' || sid.length > 100) {
     return res.status(400).json({ error: 'Invalid session ID' });
   }
@@ -1494,7 +1494,7 @@ app.get('/api/v1/webhooks', requireTenantAuth, (req: Request, res: Response) => 
 // DELETE /api/v1/webhooks/:id — deactivate a webhook
 app.delete('/api/v1/webhooks/:id', requireTenantAuth, (req: Request, res: Response) => {
   const tenantId = req.tenantId!;
-  const webhookId = req.params['id'];
+  const webhookId = req.params["id"] as string;
 
   if (!webhookId || typeof webhookId !== 'string') {
     return res.status(400).json({ error: 'Invalid webhook id' });
@@ -1527,7 +1527,7 @@ app.get('/api/v1/templates', (_req: Request, res: Response) => {
 
 // GET /api/v1/templates/:name — get template detail with rules
 app.get('/api/v1/templates/:name', (req: Request, res: Response) => {
-  const name = req.params['name'];
+  const name = req.params["name"] as string;
   const template = templateCache.get(name);
   if (!template) {
     return res.status(404).json({ error: `Template '${name}' not found` });
@@ -1537,7 +1537,7 @@ app.get('/api/v1/templates/:name', (req: Request, res: Response) => {
 
 // POST /api/v1/templates/:name/apply — apply template to tenant (creates policies in audit log as acknowledgement)
 app.post('/api/v1/templates/:name/apply', requireTenantAuth, (req: Request, res: Response) => {
-  const name = req.params['name'];
+  const name = req.params["name"] as string;
   const template = templateCache.get(name);
   if (!template) {
     return res.status(404).json({ error: `Template '${name}' not found` });
@@ -1636,7 +1636,7 @@ app.get('/api/v1/agents', requireTenantAuth, (req: Request, res: Response) => {
 // DELETE /api/v1/agents/:id — deactivate an agent
 app.delete('/api/v1/agents/:id', requireTenantAuth, (req: Request, res: Response) => {
   const tenantId = req.tenantId!;
-  const agentRowId = req.params['id'];
+  const agentRowId = req.params["id"] as string;
 
   if (!agentRowId || typeof agentRowId !== 'string') {
     return res.status(400).json({ error: 'Invalid agent id' });
