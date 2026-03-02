@@ -4,13 +4,12 @@ WORKDIR /app
 # Install build tools needed for better-sqlite3 native module
 RUN apk add --no-cache python3 make g++
 
-COPY package.json ./
+COPY package.json package-lock.json ./
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/shared/package.json ./packages/shared/
 
 # Install dependencies including better-sqlite3
-RUN npm install express cors better-sqlite3 js-yaml 2>/dev/null; \
-    npm install --save-dev @types/better-sqlite3 2>/dev/null; \
+RUN npm ci --omit=dev 2>/dev/null || npm install --omit=dev; \
     cd packages/sdk && npm install 2>/dev/null; \
     cd /app
 

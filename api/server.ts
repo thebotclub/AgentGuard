@@ -318,7 +318,7 @@ app.use(cors({
       callback(new Error('CORS: origin not allowed'));
     }
   },
-  methods: ['GET', 'POST', 'OPTIONS'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'X-API-Key'],
   credentials: false,
 }));
@@ -1000,6 +1000,18 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
     return res.status(401).json({ error: 'Invalid or inactive agent key' });
   }
 
+  // Check custom rate limits (Phase 2)
+  if (tenantId !== 'demo') {
+    const rateLimitResult = checkPhase2RateLimit(db, tenantId, req.agent?.id);
+    if (!rateLimitResult.allowed) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        remaining: 0,
+        resetAt: rateLimitResult.resetAt,
+      });
+    }
+  }
+
   // Check global kill switch
   if (ks.active) {
     storeAuditEvent(tenantId, null, req.body?.tool ?? 'unknown', 'block', 'KILL_SWITCH', 1000, 'Global kill switch active', 0, getLastHash(tenantId), agentId);
@@ -1069,6 +1081,11 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
     decision.riskScore, decision.reason ?? null,
     ms, prevHash, agentId,
   );
+
+  // Increment custom rate limit counter after successful evaluation
+  if (tenantId !== 'demo') {
+    incrementRateCounter(db, tenantId, req.agent?.id);
+  }
 
   // Fire webhooks async for block/killswitch events
   if ((decision.result === 'block' || decision.result === 'hitl_required') && tenantId !== 'demo') {
@@ -1626,6 +1643,9 @@ app.delete('/api/v1/agents/:id', requireTenantAuth, (req: Request, res: Response
   res.json({ id: agentRowId, deactivated: true });
 });
 
+// ── Phase 2 Routes (Rate Limiting, Cost Attribution, Dashboard) ────────────
+app.use(createPhase2Routes(db));
+
 // ── Global Error Handler ───────────────────────────────────────────────────
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   // Handle JSON body parse errors (malformed request bodies)
@@ -1635,9 +1655,6 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   console.error('[error]', err instanceof Error ? err.message : err);
   res.status(500).json({ error: 'Internal server error' });
 });
-
-// ── Phase 2 Routes (Rate Limiting, Cost Attribution, Dashboard) ────────────
-app.use(createPhase2Routes(db));
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

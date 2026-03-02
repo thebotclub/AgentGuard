@@ -1298,7 +1298,7 @@ The proxy itself is not an HTTP API endpoint but a separate server process (port
 
 *TypeScript:*
 ```typescript
-import { createMCPProxy } from '@thebotclub/agentguard/mcp'
+import { createMCPProxy } from '@the-bot-club/agentguard/mcp'
 
 const proxy = createMCPProxy({
   apiKey: 'ag_agent_xxx',

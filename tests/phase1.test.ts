@@ -50,7 +50,7 @@ async function waitForServer(retries = 25, delayMs = 300): Promise<void> {
 before(async () => {
   serverProcess = spawn('npx', ['tsx', 'api/server.ts'], {
     cwd: '/home/vector/.openclaw/workspace/agentguard-project',
-    env: { ...process.env, PORT: '3002', NODE_ENV: 'test', ADMIN_KEY: 'phase1-admin-key' },
+    env: { ...process.env, PORT: '3002', NODE_ENV: 'test', ADMIN_KEY: 'phase1-admin-key', AG_DB_PATH: ':memory:' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 

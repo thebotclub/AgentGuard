@@ -117,19 +117,19 @@ class AgentGuard:
 
     # ── Agents ──────────────────────────────────────────────────────────────────
 
-    def create_agent(self, name: str, policy_scope: dict = None) -> dict:
+    def create_agent(self, name: str, policy_scope: list = None) -> dict:
         """Register a new agent with AgentGuard.
 
         Args:
             name: Human-readable name for the agent
-            policy_scope: Optional dict of policy scope overrides for this agent
+            policy_scope: Optional list of policy scope rules for this agent
 
         Returns:
             dict with the created agent details including id
         """
         body = {"name": name}
         if policy_scope is not None:
-            body["policyScope"] = policy_scope
+            body["policy_scope"] = policy_scope
         return self._request("POST", "/api/v1/agents", body)
 
     def list_agents(self) -> dict:
@@ -244,7 +244,7 @@ class AgentGuard:
         if group_by is not None:
             parts.append(f"groupBy={group_by}")
         qs = ("?" + "&".join(parts)) if parts else ""
-        return self._request("GET", f"/api/v1/cost/summary{qs}")
+        return self._request("GET", f"/api/v1/costs/summary{qs}")
 
     def get_agent_costs(self) -> dict:
         """Get per-agent cost breakdown for your tenant.
@@ -252,7 +252,25 @@ class AgentGuard:
         Returns:
             dict with costs listed per agent
         """
-        return self._request("GET", "/api/v1/cost/agents")
+        return self._request("GET", "/api/v1/costs/agents")
+
+    def track_cost(self, tool: str, agent_id: str = None, estimated_cost_cents: int = None) -> dict:
+        """Track a cost event for a tool call.
+
+        Args:
+            tool: Name of the tool being tracked
+            agent_id: Optional agent ID to associate the cost with
+            estimated_cost_cents: Optional estimated cost in cents
+
+        Returns:
+            dict with the recorded cost event details
+        """
+        body: dict = {"tool": tool}
+        if agent_id is not None:
+            body["agentId"] = agent_id
+        if estimated_cost_cents is not None:
+            body["estimatedCostCents"] = estimated_cost_cents
+        return self._request("POST", "/api/v1/costs/track", body)
 
     # ── Dashboard ───────────────────────────────────────────────────────────────
 
@@ -282,4 +300,4 @@ class AgentGuard:
         Returns:
             dict with activity breakdown per agent
         """
-        return self._request("GET", "/api/v1/dashboard/activity")
+        return self._request("GET", "/api/v1/dashboard/agents")

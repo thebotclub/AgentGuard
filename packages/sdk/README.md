@@ -1,8 +1,8 @@
-# @thebotclub/agentguard
+# @the-bot-club/agentguard
 
 **Runtime security for AI agents** — policy engine, audit trail, kill switch, and cloud API client.
 
-[![npm version](https://img.shields.io/npm/v/@thebotclub/agentguard)](https://www.npmjs.com/package/@thebotclub/agentguard)
+[![npm version](https://img.shields.io/npm/v/@the-bot-club/agentguard)](https://www.npmjs.com/package/@the-bot-club/agentguard)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
@@ -20,7 +20,7 @@ AgentGuard gives you production-grade guardrails for AI agents:
 ## Installation
 
 ```bash
-npm install @thebotclub/agentguard
+npm install @the-bot-club/agentguard
 ```
 
 Requires Node.js 18+ (uses native `fetch`).
@@ -30,7 +30,7 @@ Requires Node.js 18+ (uses native `fetch`).
 ## Quick Start — Cloud API Client
 
 ```typescript
-import { AgentGuard } from '@thebotclub/agentguard';
+import { AgentGuard } from '@the-bot-club/agentguard';
 
 const guard = new AgentGuard({ apiKey: 'ag_your_api_key' });
 
@@ -192,7 +192,7 @@ const activity = await guard.getAgentActivity();
 For zero-latency, in-process policy evaluation without a network call:
 
 ```typescript
-import { PolicyEngine, PolicyBundle } from '@thebotclub/agentguard';
+import { PolicyEngine, PolicyBundle } from '@the-bot-club/agentguard';
 
 // Load your compiled policy bundle (from AgentGuard Control Plane or local YAML)
 const bundle: PolicyBundle = {
@@ -255,7 +255,7 @@ console.log(decision.riskScore); // 0
 ## AuditLogger
 
 ```typescript
-import { AuditLogger } from '@thebotclub/agentguard';
+import { AuditLogger } from '@the-bot-club/agentguard';
 
 const logger = new AuditLogger();
 
@@ -284,7 +284,7 @@ console.log('Chain valid:', valid); // true
 ## KillSwitch
 
 ```typescript
-import { KillSwitch } from '@thebotclub/agentguard';
+import { KillSwitch } from '@the-bot-club/agentguard';
 
 const ks = new KillSwitch();
 
@@ -310,7 +310,7 @@ ks.haltAgent('agent-1', 'Exceeded rate limit');
 ## LangChain Integration
 
 ```typescript
-import { AgentGuardToolWrapper } from '@thebotclub/agentguard';
+import { AgentGuardToolWrapper } from '@the-bot-club/agentguard';
 import { DynamicTool } from 'langchain/tools';
 
 // Your existing LangChain tool

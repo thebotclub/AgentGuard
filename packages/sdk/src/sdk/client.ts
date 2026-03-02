@@ -101,14 +101,16 @@ export class AgentGuard {
 
   // ── Agents ──────────────────────────────────────────────────────────────────
 
-  async createAgent(config: { name: string; policyScope?: Record<string, any> }): Promise<any> {
+  async createAgent(config: { name: string; policyScope?: string[] }): Promise<any> {
+    const payload: { name: string; policy_scope?: string[] } = { name: config.name };
+    if (config.policyScope !== undefined) payload.policy_scope = config.policyScope;
     const res = await fetch(`${this.baseUrl}/api/v1/agents`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': this.apiKey,
       },
-      body: JSON.stringify(config),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -201,7 +203,7 @@ export class AgentGuard {
     if (options?.from) params.set('from', options.from);
     if (options?.to) params.set('to', options.to);
     if (options?.groupBy) params.set('groupBy', options.groupBy);
-    const res = await fetch(`${this.baseUrl}/api/v1/cost/summary?${params}`, {
+    const res = await fetch(`${this.baseUrl}/api/v1/costs/summary?${params}`, {
       headers: { 'X-API-Key': this.apiKey },
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
@@ -209,8 +211,21 @@ export class AgentGuard {
   }
 
   async getAgentCosts(): Promise<any> {
-    const res = await fetch(`${this.baseUrl}/api/v1/cost/agents`, {
+    const res = await fetch(`${this.baseUrl}/api/v1/costs/agents`, {
       headers: { 'X-API-Key': this.apiKey },
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
+    return res.json();
+  }
+
+  async trackCost(data: { tool: string; agentId?: string; estimatedCostCents?: number }): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/api/v1/costs/track`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+      body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -237,7 +252,7 @@ export class AgentGuard {
   }
 
   async getAgentActivity(): Promise<any> {
-    const res = await fetch(`${this.baseUrl}/api/v1/dashboard/activity`, {
+    const res = await fetch(`${this.baseUrl}/api/v1/dashboard/agents`, {
       headers: { 'X-API-Key': this.apiKey },
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);

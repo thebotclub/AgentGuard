@@ -262,33 +262,33 @@ Copy `.env.example` to `.env` and configure:
 | `PORT` | `3000` | API listen port |
 | `NODE_ENV` | `development` | Environment |
 | `ADMIN_KEY` | _(unset)_ | Admin key for global kill switch |
-| `RATE_LIMIT_PER_MIN` | `100` | Max requests per IP per minute |
-| `SIGNUP_RATE_LIMIT_PER_HOUR` | `5` | Max signups per IP per hour |
+| `AG_DB_PATH` | `/data/agentguard.db` | SQLite database path (use `:memory:` for tests) |
+| `CORS_ORIGINS` | _(unset)_ | Comma-separated extra CORS origins to allow |
 
 ## Project Structure
 
 ```
 agentguard/
 ├── api/
-│   └── server.ts              # Express API server (SQLite, auth, routes)
+│   ├── server.ts              # Express API server (SQLite, auth, routes)
+│   ├── phase2-routes.ts       # Phase 2 routes (rate limits, costs, dashboard)
+│   └── templates/             # YAML policy templates
 ├── packages/
-│   ├── sdk/                   # Policy engine core (TypeScript)
-│   │   └── src/core/
-│   │       ├── policy-engine.ts   # Evaluation algorithm
-│   │       ├── types.ts           # Zod schemas + inferred types
-│   │       ├── errors.ts          # PolicyError factory
-│   │       └── audit-logger.ts    # Audit chain helpers
-│   ├── api/                   # REST route handlers (Prisma-based, legacy)
-│   ├── dashboard/             # Next.js admin dashboard
+│   ├── sdk/                   # Policy engine + API client (TypeScript)
+│   │   └── src/
+│   │       ├── core/          # Policy engine, types, audit logger
+│   │       └── sdk/           # AgentGuard API client
+│   ├── python/                # Python SDK (agentguard-tech on PyPI)
 │   └── shared/                # Shared schemas and types
 ├── tests/
 │   ├── unit.test.ts           # Policy engine unit tests
-│   └── e2e.test.ts            # End-to-end API tests
+│   ├── e2e.test.ts            # End-to-end API tests
+│   └── phase1.test.ts         # Phase 1 feature tests (webhooks, templates, agents)
 ├── landing/                   # Marketing landing page
-├── dashboard/                 # Static dashboard HTML
+├── dashboard/                 # Static dashboard SPA
+├── demo/                      # Interactive demo / playground UI
 ├── design/                    # Architecture docs
 ├── docs/                      # Supplementary docs and reports
-│   └── reviews/               # Code review documents
 ├── infra/                     # Azure Bicep / Terraform configs
 ├── .github/workflows/         # CI/CD pipelines
 ├── Dockerfile.api             # API Docker image
