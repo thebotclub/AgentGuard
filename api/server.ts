@@ -12,6 +12,7 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 import { createPhase2Routes, checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from './phase2-routes.js';
+import { createMcpRoutes } from './mcp-routes.js';
 import { PolicyEngine } from '../packages/sdk/src/core/policy-engine.js';
 import type { PolicyDocument, ActionRequest, AgentContext, PolicyDecision } from '../packages/sdk/src/core/types.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
@@ -808,6 +809,10 @@ app.get('/', (_req: Request, res: Response) => {
       'GET  /api/v1/dashboard/stats': 'Aggregated evaluation statistics (requires API key)',
       'GET  /api/v1/dashboard/feed': 'Real-time decision feed (requires API key)',
       'GET  /api/v1/dashboard/agents': 'Agent activity summary (requires API key)',
+      'POST /api/v1/mcp/evaluate': 'Evaluate an MCP tool call against the policy engine',
+      'GET  /api/v1/mcp/config': 'List MCP proxy configurations (requires API key)',
+      'PUT  /api/v1/mcp/config': 'Create or update an MCP proxy configuration (requires API key)',
+      'GET  /api/v1/mcp/sessions': 'List active MCP sessions (requires API key)',
     },
     docs: 'https://agentguard.tech',
     dashboard: 'https://app.agentguard.tech',
@@ -1649,6 +1654,9 @@ app.delete('/api/v1/agents/:id', requireTenantAuth, (req: Request, res: Response
 
 // ── Phase 2 Routes (Rate Limiting, Cost Attribution, Dashboard) ────────────
 app.use(createPhase2Routes(db));
+
+// ── Phase 3: MCP (Model Context Protocol) Middleware Routes ───────────────
+app.use(createMcpRoutes(db));
 
 // ── Global Error Handler ───────────────────────────────────────────────────
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

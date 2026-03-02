@@ -258,4 +258,172 @@ export class AgentGuard {
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
   }
+
+  // ── MCP (Model Context Protocol) ────────────────────────────────────────
+
+  /**
+   * Evaluate an MCP tool call against the AgentGuard policy engine.
+   *
+   * Use this to intercept MCP `tools/call` requests before forwarding them
+   * to the actual MCP tool server. If `blocked` is true, do not forward.
+   *
+   * @param toolName  The MCP tool name (e.g. "write_file", "execute_command")
+   * @param options   Optional evaluation parameters
+   * @returns         Decision object including blocked flag and optional MCP error response
+   *
+   * @example
+   * const result = await client.evaluateMcp('write_file', {
+   *   arguments: { path: '/etc/passwd', content: '...' },
+   *   actionMapping: { write_file: 'file:write' },
+   * });
+   * if (result.blocked) {
+   *   // Return result.mcpErrorResponse to the MCP client
+   *   return result.mcpErrorResponse;
+   * }
+   * // Otherwise forward to the upstream MCP tool server
+   */
+  async evaluateMcp(
+    toolName: string,
+    options?: {
+      arguments?: Record<string, unknown>;
+      sessionId?: string;
+      agentId?: string;
+      actionMapping?: Record<string, string>;
+      /** Raw MCP JSON-RPC message (alternative to toolName + arguments) */
+      mcpMessage?: {
+        jsonrpc: '2.0';
+        id?: string | number | null;
+        method: 'tools/call';
+        params: { name: string; arguments?: Record<string, unknown> };
+      };
+    },
+  ): Promise<{
+    decision: 'allow' | 'block' | 'monitor' | 'require_approval';
+    blocked: boolean;
+    matchedRuleId?: string;
+    riskScore: number;
+    reason?: string;
+    durationMs: number;
+    sessionId: string;
+    mcpErrorResponse?: {
+      jsonrpc: '2.0';
+      id: string | number | null;
+      error: { code: number; message: string; data?: unknown };
+    };
+  }> {
+    const body: Record<string, unknown> = { toolName };
+    if (options?.arguments) body['arguments'] = options.arguments;
+    if (options?.sessionId) body['sessionId'] = options.sessionId;
+    if (options?.agentId) body['agentId'] = options.agentId;
+    if (options?.actionMapping) body['actionMapping'] = options.actionMapping;
+    if (options?.mcpMessage) body['mcpMessage'] = options.mcpMessage;
+
+    const res = await fetch(`${this.baseUrl}/api/v1/mcp/evaluate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{
+      decision: 'allow' | 'block' | 'monitor' | 'require_approval';
+      blocked: boolean;
+      matchedRuleId?: string;
+      riskScore: number;
+      reason?: string;
+      durationMs: number;
+      sessionId: string;
+      mcpErrorResponse?: {
+        jsonrpc: '2.0';
+        id: string | number | null;
+        error: { code: number; message: string; data?: unknown };
+      };
+    }>;
+  }
+
+  /**
+   * Get MCP proxy configuration(s) for the tenant.
+   *
+   * @param configId  Optional config ID to retrieve a specific config
+   * @returns         Single config (if ID provided) or list of all configs
+   *
+   * @example
+   * // List all configs
+   * const { configs } = await client.getMcpConfig();
+   *
+   * // Get specific config
+   * const { config } = await client.getMcpConfig('cfg-abc123');
+   */
+  async getMcpConfig(configId?: string): Promise<any> {
+    const url = configId
+      ? `${this.baseUrl}/api/v1/mcp/config?id=${encodeURIComponent(configId)}`
+      : `${this.baseUrl}/api/v1/mcp/config`;
+    const res = await fetch(url, {
+      headers: { 'X-API-Key': this.apiKey },
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json();
+  }
+
+  /**
+   * Create or update an MCP proxy configuration.
+   *
+   * When `id` is provided, updates the existing config.
+   * When `id` is omitted, creates a new config.
+   *
+   * @param config  Configuration object
+   * @returns       The created or updated config
+   *
+   * @example
+   * // Create new config
+   * const { config } = await client.setMcpConfig({
+   *   name: 'filesystem-guarded',
+   *   upstreamUrl: 'http://localhost:4000/mcp',
+   *   transport: 'sse',
+   *   actionMapping: { write_file: 'file:write', read_file: 'file:read' },
+   * });
+   *
+   * // Update existing
+   * await client.setMcpConfig({ id: config.id, enabled: false });
+   */
+  async setMcpConfig(config: {
+    id?: string;
+    name?: string;
+    upstreamUrl?: string | null;
+    transport?: 'sse' | 'stdio';
+    agentId?: string | null;
+    actionMapping?: Record<string, string>;
+    defaultAction?: 'allow' | 'block';
+    enabled?: boolean;
+  }): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/api/v1/mcp/config`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+      body: JSON.stringify(config),
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json();
+  }
+
+  /**
+   * List active MCP sessions for the tenant.
+   *
+   * @returns  List of active MCP sessions with call counts
+   *
+   * @example
+   * const { sessions } = await client.listMcpSessions();
+   * console.log(`${sessions.length} active MCP sessions`);
+   */
+  async listMcpSessions(): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/api/v1/mcp/sessions`, {
+      headers: { 'X-API-Key': this.apiKey },
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json();
+  }
 }

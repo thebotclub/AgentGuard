@@ -301,3 +301,185 @@ class AgentGuard:
             dict with activity breakdown per agent
         """
         return self._request("GET", "/api/v1/dashboard/agents")
+
+    # ── MCP (Model Context Protocol) ─────────────────────────────────────────
+
+    def evaluate_mcp(
+        self,
+        tool_name: str,
+        arguments: dict = None,
+        session_id: str = None,
+        agent_id: str = None,
+        action_mapping: dict = None,
+        mcp_message: dict = None,
+    ) -> dict:
+        """Evaluate an MCP tool call against the AgentGuard policy engine.
+
+        Use this to intercept MCP ``tools/call`` requests before forwarding them
+        to the actual MCP tool server. If the returned ``blocked`` field is True,
+        do not forward the call — return ``mcp_error_response`` to the MCP client
+        instead.
+
+        Args:
+            tool_name: The MCP tool name (e.g. "write_file", "execute_command")
+            arguments: Optional dict of tool arguments
+            session_id: Optional existing MCP session ID to continue a session
+            agent_id: Optional AgentGuard agent ID for scoped evaluation
+            action_mapping: Optional dict mapping tool names to AgentGuard action names
+                            (e.g. {"write_file": "file:write"})
+            mcp_message: Optional raw MCP JSON-RPC message dict (alternative to
+                         tool_name + arguments)
+
+        Returns:
+            dict with keys:
+                - decision: "allow" | "block" | "monitor" | "require_approval"
+                - blocked: bool — True if the tool call should be stopped
+                - risk_score: int
+                - duration_ms: float
+                - session_id: str — use in subsequent calls to continue the session
+                - matched_rule_id: str (optional)
+                - reason: str (optional)
+                - mcp_error_response: dict (optional) — ready-to-send MCP error
+
+        Example::
+
+            result = client.evaluate_mcp(
+                "write_file",
+                arguments={"path": "/etc/passwd", "content": "..."},
+                action_mapping={"write_file": "file:write"},
+            )
+            if result["blocked"]:
+                # Return result["mcp_error_response"] to the MCP client
+                return result["mcp_error_response"]
+            # Otherwise forward to the upstream MCP tool server
+        """
+        body: dict = {"toolName": tool_name}
+        if arguments is not None:
+            body["arguments"] = arguments
+        if session_id is not None:
+            body["sessionId"] = session_id
+        if agent_id is not None:
+            body["agentId"] = agent_id
+        if action_mapping is not None:
+            body["actionMapping"] = action_mapping
+        if mcp_message is not None:
+            body["mcpMessage"] = mcp_message
+        return self._request("POST", "/api/v1/mcp/evaluate", body)
+
+    def get_mcp_config(self, config_id: str = None) -> dict:
+        """Get MCP proxy configuration(s) for the tenant.
+
+        Args:
+            config_id: Optional config ID to retrieve a specific config.
+                       If omitted, returns all configs.
+
+        Returns:
+            dict with either:
+                - ``config``: single McpConfig (when config_id is provided)
+                - ``configs``: list of McpConfig + ``count`` (when no ID)
+
+        Example::
+
+            # List all configs
+            result = client.get_mcp_config()
+            for cfg in result["configs"]:
+                print(cfg["name"])
+
+            # Get specific config
+            result = client.get_mcp_config("cfg-abc123")
+            print(result["config"]["upstreamUrl"])
+        """
+        path = "/api/v1/mcp/config"
+        if config_id is not None:
+            path += f"?id={config_id}"
+        return self._request("GET", path)
+
+    def set_mcp_config(
+        self,
+        name: str = None,
+        upstream_url: str = None,
+        transport: str = "sse",
+        agent_id: str = None,
+        action_mapping: dict = None,
+        default_action: str = "allow",
+        enabled: bool = True,
+        config_id: str = None,
+    ) -> dict:
+        """Create or update an MCP proxy configuration.
+
+        When ``config_id`` is provided, updates the existing config.
+        When ``config_id`` is omitted, creates a new config (``name`` required).
+
+        Args:
+            name: Human-readable name for this proxy config (required for create)
+            upstream_url: URL of the actual MCP tool server (e.g. "http://localhost:4000/mcp")
+            transport: Transport type — "sse" (HTTP+SSE) or "stdio" (default: "sse")
+            agent_id: Optional AgentGuard agent ID to scope this proxy config
+            action_mapping: Optional dict mapping MCP tool names to AgentGuard action names
+                            (e.g. {"write_file": "file:write", "read_file": "file:read"})
+            default_action: Default decision when no rule matches — "allow" or "block"
+                            (default: "allow")
+            enabled: Whether this config is active (default: True)
+            config_id: Existing config ID to update (omit to create new)
+
+        Returns:
+            dict with keys:
+                - ``config``: the created or updated McpConfig
+                - ``created``: True (on create)
+                - ``updated``: True (on update)
+
+        Example::
+
+            # Create new config
+            result = client.set_mcp_config(
+                name="filesystem-guarded",
+                upstream_url="http://localhost:4000/mcp",
+                transport="sse",
+                action_mapping={"write_file": "file:write"},
+            )
+            config_id = result["config"]["id"]
+
+            # Disable it later
+            client.set_mcp_config(config_id=config_id, enabled=False)
+        """
+        body: dict = {}
+        if config_id is not None:
+            body["id"] = config_id
+        if name is not None:
+            body["name"] = name
+        if upstream_url is not None:
+            body["upstreamUrl"] = upstream_url
+        if transport is not None:
+            body["transport"] = transport
+        if agent_id is not None:
+            body["agentId"] = agent_id
+        if action_mapping is not None:
+            body["actionMapping"] = action_mapping
+        if default_action is not None:
+            body["defaultAction"] = default_action
+        if enabled is not None:
+            body["enabled"] = enabled
+        return self._request("PUT", "/api/v1/mcp/config", body)
+
+    def list_mcp_sessions(self) -> dict:
+        """List active MCP sessions for the tenant.
+
+        Returns:
+            dict with keys:
+                - ``sessions``: list of MCP session objects
+                - ``count``: number of sessions
+
+        Each session includes:
+            - id, tenant_id, agent_id, config_id
+            - transport, upstream_url
+            - tool_call_count, blocked_count
+            - created_at, last_activity_at
+
+        Example::
+
+            result = client.list_mcp_sessions()
+            print(f"{result['count']} active MCP sessions")
+            for session in result["sessions"]:
+                print(f"  {session['id']}: {session['tool_call_count']} calls")
+        """
+        return self._request("GET", "/api/v1/mcp/sessions")
