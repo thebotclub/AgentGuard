@@ -4,12 +4,12 @@ WORKDIR /app
 # Install build tools needed for better-sqlite3 native module
 RUN apk add --no-cache python3 make g++
 
-COPY package.json package-lock.json ./
+COPY package.json package-lock.jso* ./
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/shared/package.json ./packages/shared/
 
-# Install dependencies including better-sqlite3
-RUN npm ci --omit=dev 2>/dev/null || npm install --omit=dev; \
+# Install dependencies — use lockfile if available, fallback to install
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install express cors better-sqlite3 js-yaml zod; fi && \
     cd packages/sdk && npm install 2>/dev/null; \
     cd /app
 
