@@ -351,7 +351,7 @@ export class McpMiddleware {
     actionMapping?: Record<string, string>;
     defaultAction?: 'allow' | 'block';
   }): McpConfig {
-    const row = this.db.prepare<[string, string, string | null, string, string | null, string, string, string]>(
+    const row = this.db.prepare<[string, string, string | null, string, string | null, string, string]>(
       `INSERT INTO mcp_configs
        (tenant_id, name, upstream_url, transport, agent_id, action_mapping, default_action, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
