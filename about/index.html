@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About — AgentGuard | Built by Security Engineers</title>
+<meta name="description" content="AgentGuard was built by security engineers who saw the gap between AI capability and enterprise-grade controls firsthand. Meet the team, our mission, and why agent security is the defining challenge of 2026.">
+<meta name="keywords" content="AgentGuard team, AI security founders, agent security company, EU AI Act compliance, OWASP Agentic Top 10, AI agent governance">
+<meta name="author" content="Hani Kashi — Founder, AgentGuard">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://agentguard.tech/about">
+
+<!-- OG / Twitter meta tags -->
+<meta property="og:title" content="About AgentGuard — Built by Security Engineers">
+<meta property="og:description" content="AgentGuard was built by security engineers who saw the gap between AI capability and enterprise-grade controls firsthand. Runtime security for the agentic era.">
+<meta property="og:site_name" content="AgentGuard">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://agentguard.tech/about">
+<meta property="og:image" content="https://agentguard.tech/social-512.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="About AgentGuard — Built by Security Engineers">
+<meta name="twitter:description" content="Runtime security for AI agents. Meet the team behind AgentGuard.">
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  "name": "About AgentGuard",
+  "url": "https://agentguard.tech/about",
+  "description": "AgentGuard was built by security engineers who saw the gap between AI agent capability and enterprise-grade controls. Runtime policy engine, tamper-proof audit trail, EU AI Act compliance.",
+  "author": {
+    "@type": "Person",
+    "name": "Hani Kashi",
+    "jobTitle": "Founder & CEO",
+    "url": "https://linkedin.com/in/hanikashi"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "AgentGuard",
+    "url": "https://agentguard.tech",
+    "sameAs": ["https://github.com/AgentGuard-tech", "https://linkedin.com/company/agentguard"]
+  }
+}
+</script>
+
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+:root{
+  --bg:#0a0a1a;--bg-card:#111128;--bg-card2:#13132e;
+  --accent:#5254d4;--accent-dim:rgba(82,84,212,0.15);--accent-glow:rgba(82,84,212,0.25);--accent-hi:#818cf8;
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+  --text:#e2e8f0;--text-dim:#94a3b8;--text-bright:#f8fafc;
+  --border:rgba(99,102,241,0.18);--border-dim:rgba(255,255,255,0.06);
+  --radius:12px;--radius-lg:18px;
+}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-weight:700;color:var(--text-bright);line-height:1.2}
+h1{font-size:clamp(2.2rem,5vw,3.4rem);letter-spacing:-0.03em}
+h2{font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-0.02em}
+h3{font-size:1.1rem}
+p{color:var(--text-dim)}
+a{color:var(--accent-hi);text-decoration:none}
+.container{max-width:1000px;margin:0 auto;padding:0 24px}
+section{padding:80px 0}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(10,10,26,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-dim)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;max-width:1100px;margin:0 auto}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.1rem;color:var(--text-bright);text-decoration:none}
+.nav-links{display:flex;align-items:center;gap:20px}
+.nav-link{color:var(--text-dim);font-weight:500;font-size:.9rem;transition:color .15s;text-decoration:none}
+.nav-link:hover{color:var(--text-bright)}
+.nav-link.active{color:var(--accent-hi)}
+.nav-cta{background:var(--accent);color:#fff;padding:8px 20px;border-radius:8px;font-weight:600;font-size:.9rem;transition:background .15s;text-decoration:none}
+.nav-cta:hover{background:#4f52c8;color:#fff}
+
+/* GRADIENT TEXT */
+.gradient-text{background:linear-gradient(135deg,#818cf8,#6366f1,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* HERO */
+#hero{padding:100px 0 80px;position:relative;overflow:hidden}
+#hero::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse at center,rgba(99,102,241,0.1) 0%,transparent 68%);pointer-events:none}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:var(--accent-dim);border:1px solid var(--border);border-radius:100px;padding:6px 16px;font-size:.78rem;font-weight:600;color:var(--accent-hi);margin-bottom:24px;letter-spacing:.04em;text-transform:uppercase}
+.hero-headline{margin-bottom:24px}
+.hero-sub{font-size:1.15rem;color:var(--text-dim);max-width:640px;line-height:1.75;margin-bottom:40px}
+
+/* SECTION HEADERS */
+.section-eyebrow{font-size:.73rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--accent-hi);margin-bottom:10px}
+.section-head{margin-bottom:14px}
+.section-sub{font-size:1.02rem;color:var(--text-dim);max-width:580px;margin-bottom:48px;line-height:1.7}
+
+/* DIVIDER */
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:0}
+
+/* STATS BAND */
+#stats-band{padding:48px 0;background:rgba(17,17,40,0.6);border-top:1px solid var(--border-dim);border-bottom:1px solid var(--border-dim)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.stat-item{text-align:center;padding:8px 16px;position:relative}
+.stat-item+.stat-item::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);height:40px;width:1px;background:var(--border-dim)}
+.stat-number{font-size:2.2rem;font-weight:800;color:var(--text-bright);letter-spacing:-0.03em;line-height:1;margin-bottom:6px}
+.stat-number span{color:var(--accent-hi)}
+.stat-label{font-size:.82rem;color:var(--text-dim);font-weight:500}
+
+/* VISION */
+#vision{background:var(--bg)}
+.vision-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:48px}
+.vision-card{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:32px 26px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.vision-card:hover{border-color:var(--accent);box-shadow:0 0 28px var(--accent-glow)}
+.vision-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.vision-card.regulatory::before{background:linear-gradient(90deg,#f59e0b,#ef4444)}
+.vision-card.framework::before{background:linear-gradient(90deg,#6366f1,#8b5cf6)}
+.vision-card.market::before{background:linear-gradient(90deg,#22c55e,#059669)}
+.vision-icon{font-size:2rem;margin-bottom:16px}
+.vision-card h3{font-size:1rem;margin-bottom:10px;font-weight:700}
+.vision-card p{font-size:.88rem;line-height:1.65;color:var(--text-dim)}
+.vision-tag{display:inline-block;margin-top:16px;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;padding:3px 10px;border-radius:4px}
+.vision-card.regulatory .vision-tag{color:#fcd34d;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2)}
+.vision-card.framework .vision-tag{color:var(--accent-hi);background:var(--accent-dim);border:1px solid var(--border)}
+.vision-card.market .vision-tag{color:#86efac;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2)}
+
+/* FOUNDER */
+#founder{background:var(--bg-card2)}
+.founder-layout{display:grid;grid-template-columns:1fr 2fr;gap:64px;align-items:start}
+.founder-portrait{position:relative}
+.founder-portrait-inner{width:160px;height:160px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:3.5rem;font-weight:800;color:#fff;letter-spacing:-0.02em;border:3px solid var(--border);box-shadow:0 0 48px var(--accent-glow)}
+.founder-linkedin{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding:8px 16px;background:rgba(10,102,194,0.15);border:1px solid rgba(10,102,194,0.3);border-radius:8px;font-size:.82rem;font-weight:600;color:#7eb3d8;text-decoration:none;transition:background .15s,border-color .15s}
+.founder-linkedin:hover{background:rgba(10,102,194,0.25);border-color:rgba(10,102,194,0.5);color:#a8d0e9}
+.founder-linkedin svg{width:16px;height:16px;fill:currentColor}
+.founder-name{font-size:1.5rem;font-weight:800;color:var(--text-bright);margin-bottom:4px;letter-spacing:-0.01em}
+.founder-title{font-size:.88rem;font-weight:600;color:var(--accent-hi);margin-bottom:24px;text-transform:uppercase;letter-spacing:.06em}
+.founder-bio{font-size:.97rem;color:var(--text-dim);line-height:1.8;margin-bottom:20px}
+.founder-bio strong{color:var(--text);font-weight:600}
+.founder-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.founder-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:var(--accent-dim);border:1px solid var(--border);border-radius:6px;font-size:.78rem;font-weight:600;color:var(--accent-hi)}
+
+/* TIMELINE */
+#timeline{background:var(--bg)}
+.timeline-track{position:relative;padding-left:28px;margin-top:48px}
+.timeline-track::before{content:'';position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,var(--accent),rgba(99,102,241,0.1))}
+.timeline-item{position:relative;margin-bottom:40px}
+.timeline-item:last-child{margin-bottom:0}
+.timeline-dot{position:absolute;left:-28px;top:4px;width:16px;height:16px;border-radius:50%;background:var(--accent);border:3px solid var(--bg);box-shadow:0 0 12px var(--accent-glow)}
+.timeline-item.done .timeline-dot{background:var(--green);box-shadow:0 0 12px rgba(34,197,94,0.35)}
+.timeline-item.upcoming .timeline-dot{background:var(--bg-card2);border-color:var(--accent);border-width:2px}
+.timeline-date{font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:500;color:var(--accent-hi);margin-bottom:6px;letter-spacing:.04em}
+.timeline-title{font-size:1.05rem;font-weight:700;color:var(--text-bright);margin-bottom:6px}
+.timeline-desc{font-size:.9rem;color:var(--text-dim);line-height:1.65;max-width:560px}
+.timeline-badge{display:inline-block;margin-top:10px;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:4px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#86efac}
+.timeline-item.upcoming .timeline-badge{background:var(--accent-dim);border-color:var(--border);color:var(--accent-hi)}
+
+/* ADVISORS */
+#advisors{background:var(--bg-card2)}
+.advisors-placeholder{display:flex;align-items:center;justify-content:center;min-height:180px;border:2px dashed var(--border);border-radius:var(--radius-lg);text-align:center;flex-direction:column;gap:12px;padding:40px}
+.advisors-placeholder p{font-size:1rem;color:var(--text-dim);max-width:440px;line-height:1.6}
+.advisors-placeholder .forming-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent-hi);background:var(--accent-dim);border:1px solid var(--border);padding:4px 12px;border-radius:100px}
+.advisors-criteria{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+.criteria-item{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:20px;text-align:center}
+.criteria-item .criteria-icon{font-size:1.5rem;margin-bottom:8px}
+.criteria-item h4{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.criteria-item p{font-size:.8rem;color:var(--text-dim);line-height:1.5}
+
+/* CTA */
+#cta{background:var(--bg);padding:100px 0}
+.cta-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:64px 48px;text-align:center;position:relative;overflow:hidden}
+.cta-card::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:600px;height:400px;background:radial-gradient(ellipse at center,rgba(99,102,241,0.12) 0%,transparent 70%);pointer-events:none}
+.cta-card h2{font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:16px;position:relative}
+.cta-card p{font-size:1.05rem;color:var(--text-dim);max-width:520px;margin:0 auto 36px;position:relative}
+.cta-actions{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;position:relative}
+.btn-cta-primary{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:#fff;padding:14px 28px;border-radius:10px;font-weight:700;font-size:1rem;transition:background .15s,transform .1s;text-decoration:none;letter-spacing:.01em}
+.btn-cta-primary:hover{background:#4042b0;color:#fff;transform:translateY(-1px)}
+.btn-cta-secondary{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text);padding:14px 28px;border-radius:10px;font-weight:600;font-size:1rem;border:1px solid var(--border);transition:border-color .15s,color .15s;text-decoration:none}
+.btn-cta-secondary:hover{border-color:var(--accent-hi);color:var(--text-bright)}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border-dim);padding:32px 0}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-copy{font-size:.82rem;color:#6b7280}
+.footer-links{display:flex;gap:24px}
+.footer-links a{font-size:.82rem;color:#6b7280;transition:color .15s;text-decoration:none}
+.footer-links a:hover{color:var(--accent-hi)}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .founder-layout{grid-template-columns:1fr}
+  .founder-portrait-inner{width:120px;height:120px;font-size:2.5rem}
+  .vision-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .stat-item:nth-child(3)::before{display:none}
+  .stat-item:nth-child(2)::before{display:block}
+  .advisors-criteria{grid-template-columns:1fr}
+  .nav-link{display:none}
+  .cta-card{padding:40px 24px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="/" class="logo">
+      <img src="/agentguard-logo.svg" alt="AgentGuard" style="height:32px;width:32px;vertical-align:middle;margin-right:8px">
+      AgentGuard
+    </a>
+    <div class="nav-links">
+      <a href="/#how-it-works" class="nav-link">How It Works</a>
+      <a href="/#pricing" class="nav-link">Pricing</a>
+      <a href="/#demo" class="nav-link">Demo</a>
+      <a href="/about/" class="nav-link active">About</a>
+      <a href="/#hero-form" class="nav-cta">Get Started Free →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-eyebrow">Our Story</div>
+    <h1 class="hero-headline">Built by security engineers<br>who saw the problem <span class="gradient-text">firsthand</span></h1>
+    <p class="hero-sub">
+      We spent years inside enterprise security teams — watching AI agents get deployed into production with no governance, no audit trail, and no kill switch. We built AgentGuard because the tools we needed didn't exist.
+    </p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <a href="mailto:hello@agentguard.tech" class="btn-cta-primary">Talk to Us →</a>
+      <a href="/" class="btn-cta-secondary">See the Platform</a>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- STATS BAND -->
+<div id="stats-band">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-number">50<span>K+</span></div>
+        <div class="stat-label">Policy evaluations run</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">5</div>
+        <div class="stat-label">Compliance templates shipped</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">&lt;1<span>ms</span></div>
+        <div class="stat-label">Median evaluation latency</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">3</div>
+        <div class="stat-label">Agent frameworks supported</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- VISION -->
+<section id="vision">
+  <div class="container">
+    <div class="section-eyebrow">Why Now</div>
+    <h2 class="section-head">The agentic era demands<br>a new security discipline</h2>
+    <p class="section-sub">Autonomous AI agents are crossing from experiment into production infrastructure. The regulatory, technical, and market forces converging in 2026 make this the defining window.</p>
+
+    <div class="vision-grid">
+      <!-- Regulatory -->
+      <div class="vision-card regulatory">
+        <div class="vision-icon">⚖️</div>
+        <h3>EU AI Act — August 2026</h3>
+        <p>Article 9 mandates risk management systems for high-risk AI. Article 17 requires human oversight mechanisms. Non-compliance carries fines up to 3% of global annual turnover. Enforcement begins August 2026 with no grace extension expected.</p>
+        <span class="vision-tag">Mandatory Compliance</span>
+      </div>
+
+      <!-- Framework -->
+      <div class="vision-card framework">
+        <div class="vision-icon">🛡️</div>
+        <h3>OWASP Agentic Top 10</h3>
+        <p>OWASP's first framework for agentic AI — covering prompt injection, excessive agency, insecure tool execution, and inadequate audit trails — has become the de facto security checklist for enterprise AI procurement. AgentGuard maps to all ten categories.</p>
+        <span class="vision-tag">Industry Standard</span>
+      </div>
+
+      <!-- Market -->
+      <div class="vision-card market">
+        <div class="vision-icon">📈</div>
+        <h3>$6.34B AI Security Market</h3>
+        <p>Global investment in AI security reached $6.34B in 2025, a 3× increase from 2023. Enterprise buyers are actively budgeting for governance tooling as they scale agent deployments — and discovering the incumbent security stack wasn't built for agents.</p>
+        <span class="vision-tag">Market Tailwind</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- FOUNDER -->
+<section id="founder">
+  <div class="container">
+    <div class="section-eyebrow">Founder</div>
+    <div class="founder-layout">
+      <div class="founder-portrait">
+        <div class="founder-portrait-inner">HK</div>
+        <a href="https://linkedin.com/in/hanikashi" target="_blank" rel="noopener" class="founder-linkedin">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          linkedin.com/in/hanikashi
+        </a>
+      </div>
+      <div>
+        <div class="founder-name">Hani Kashi</div>
+        <div class="founder-title">Founder &amp; CEO</div>
+        <p class="founder-bio">
+          <strong>Security is only meaningful when it's invisible to the developer and inescapable to the threat.</strong> That principle drove Hani to build AgentGuard after years working at the intersection of enterprise security architecture and AI systems.
+        </p>
+        <p class="founder-bio">
+          The catalyst was straightforward: watching a production AI agent — deployed inside a financial services firm — execute a series of high-privilege operations that no human had explicitly approved, with no record that it had happened. The tools to prevent or detect that scenario simply didn't exist. So we built them.
+        </p>
+        <p class="founder-bio">
+          AgentGuard is the runtime security layer that should have existed from the moment organisations started deploying autonomous agents. It imposes no opinion on how you build — it enforces the policies you define, logs everything cryptographically, and lets you halt an agent in milliseconds if something goes wrong.
+        </p>
+        <div class="founder-tags">
+          <span class="founder-tag">🔐 Enterprise Security</span>
+          <span class="founder-tag">🤖 AI Governance</span>
+          <span class="founder-tag">⚖️ Regulatory Compliance</span>
+          <span class="founder-tag">🏗️ Developer-First</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- TIMELINE -->
+<section id="timeline">
+  <div class="container">
+    <div class="section-eyebrow">Milestones</div>
+    <h2 class="section-head">From insight to infrastructure</h2>
+    <p class="section-sub">A focused build — no pivots, no feature bloat. Every milestone is a direct response to what enterprise teams asked for.</p>
+
+    <div class="timeline-track">
+
+      <div class="timeline-item done">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">Q4 2025 — Foundation</div>
+        <div class="timeline-title">Open-Source SDK Released</div>
+        <p class="timeline-desc">Python SDK published under MIT licence. Native integrations for LangChain, CrewAI, and AutoGen. Zero-config installation: one decorator wraps any agent tool call. Sub-millisecond policy evaluation via local mode.</p>
+        <span class="timeline-badge">✓ Shipped</span>
+      </div>
+
+      <div class="timeline-item done">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">Q4 2025 — Infrastructure</div>
+        <div class="timeline-title">Policy API &amp; Audit Trail Launch</div>
+        <p class="timeline-desc">Cloud-hosted policy engine deployed. Tamper-proof, hash-chained audit log. REST API with &lt;10ms P99 latency. Developer dashboard for policy authoring in YAML/JSON. Webhook support for real-time alerting.</p>
+        <span class="timeline-badge">✓ Shipped</span>
+      </div>
+
+      <div class="timeline-item done">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">Q1 2026 — Compliance</div>
+        <div class="timeline-title">5 Compliance Templates Shipped</div>
+        <p class="timeline-desc">Pre-built policy bundles covering EU AI Act Article 9 &amp; 17, APRA CPS 234, SOC 2 Type II, OWASP Agentic Top 10, and ISO 42001. Download, customise, and enforce in under ten minutes. Used by teams in financial services, healthcare, and SaaS.</p>
+        <span class="timeline-badge">✓ Shipped</span>
+      </div>
+
+      <div class="timeline-item done">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">Q1 2026 — Scale</div>
+        <div class="timeline-title">50,000+ Policy Evaluations</div>
+        <p class="timeline-desc">Crossed 50,000 cumulative evaluations across early-access users. Zero reported false-negative security incidents. Average integration time: under 30 minutes from SDK install to first policy enforced in production.</p>
+        <span class="timeline-badge">✓ Live</span>
+      </div>
+
+      <div class="timeline-item upcoming">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">Q3 2026 — Ahead of Enforcement</div>
+        <div class="timeline-title">EU AI Act Compliance Suite (GA)</div>
+        <p class="timeline-desc">Full General Availability of the EU AI Act package — automated conformity documentation, Article 13 transparency logs, and one-click audit export. Ready before August 2026 enforcement date.</p>
+        <span class="timeline-badge upcoming">Upcoming</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ADVISORS -->
+<section id="advisors">
+  <div class="container">
+    <div class="section-eyebrow">Advisors</div>
+    <h2 class="section-head">Advisory board forming</h2>
+    <p class="section-sub">We are selectively building an advisory board of practitioners — security leaders, AI engineers, and regulatory experts who have operated at scale.</p>
+
+    <div class="advisors-placeholder">
+      <div class="forming-label">In Formation</div>
+      <p>Introductions welcome. We are looking for advisors with hands-on experience in enterprise AI deployment, security architecture, or regulatory compliance in financial services, healthcare, or critical infrastructure.</p>
+      <a href="mailto:hello@agentguard.tech" style="display:inline-flex;align-items:center;gap:8px;color:var(--accent-hi);font-weight:600;font-size:.9rem;border:1px solid var(--border);padding:10px 20px;border-radius:8px;transition:border-color .15s;text-decoration:none">
+        Introduce yourself →
+      </a>
+    </div>
+
+    <div class="advisors-criteria">
+      <div class="criteria-item">
+        <div class="criteria-icon">🔐</div>
+        <h4>Security Architecture</h4>
+        <p>CISO-level or senior security engineering background at enterprises deploying AI at scale</p>
+      </div>
+      <div class="criteria-item">
+        <div class="criteria-icon">⚖️</div>
+        <h4>Regulatory &amp; Compliance</h4>
+        <p>Deep familiarity with EU AI Act, NIST AI RMF, APRA, or financial sector AI governance</p>
+      </div>
+      <div class="criteria-item">
+        <div class="criteria-icon">🤖</div>
+        <h4>AI / Agentic Systems</h4>
+        <p>Practitioners who have shipped autonomous agents in regulated production environments</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="container">
+    <div class="cta-card">
+      <div class="section-eyebrow" style="margin-bottom:16px">Get in Touch</div>
+      <h2>Talk to us</h2>
+      <p>Whether you're evaluating AgentGuard for a production deployment, exploring a partnership, or considering an investment — we respond to every serious inquiry within one business day.</p>
+      <div class="cta-actions">
+        <a href="mailto:hello@agentguard.tech" class="btn-cta-primary">
+          ✉ hello@agentguard.tech
+        </a>
+        <a href="https://calendly.com/agentguard/intro" target="_blank" rel="noopener" class="btn-cta-secondary">
+          📅 Schedule 30 minutes
+        </a>
+      </div>
+      <p style="margin-top:24px;font-size:.82rem;color:#4a5568;position:relative">
+        Or find us on
+        <a href="https://linkedin.com/in/hanikashi" target="_blank" rel="noopener" style="color:var(--accent-hi)">LinkedIn</a>
+        ·
+        <a href="https://github.com/AgentGuard-tech/agentguard" target="_blank" rel="noopener" style="color:var(--accent-hi)">GitHub</a>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-copy">AgentGuard © 2026 — Built by <a href="https://linkedin.com/in/hanikashi" style="color:var(--accent-hi)">Hani Kashi</a> · Runtime security for the agentic era.</div>
+      <div class="footer-links">
+        <a href="https://github.com/AgentGuard-tech/agentguard" target="_blank">GitHub</a>
+        <a href="https://www.linkedin.com/company/agentguard" target="_blank">LinkedIn</a>
+        <a href="https://linkedin.com/in/hanikashi" target="_blank">Founder</a>
+        <a href="mailto:hello@agentguard.tech">hello@agentguard.tech</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
