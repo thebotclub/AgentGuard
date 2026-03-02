@@ -773,7 +773,7 @@ app.get('/', (_req: Request, res: Response) => {
   const ks = getGlobalKillSwitch();
   res.json({
     name: 'AgentGuard Policy Engine API',
-    version: '0.2.0',
+    version: '0.2.1',
     status: 'online',
     killSwitch: { active: ks.active, activatedAt: ks.at },
     endpoints: {
@@ -835,7 +835,7 @@ app.get('/health', (_req: Request, res: Response) => {
   res.status(dbOk ? 200 : 503).json({
     status,
     engine: 'agentguard',
-    version: '0.2.0',
+    version: '0.2.1',
     uptime: Math.floor(process.uptime()),
     killSwitch: ks.active,
     db: dbOk ? 'sqlite' : 'error',

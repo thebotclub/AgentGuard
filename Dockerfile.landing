@@ -6,3 +6,4 @@ COPY landing/robots.txt /usr/share/nginx/html/robots.txt
 COPY blog/ /usr/share/nginx/html/blog/
 COPY reports/agent-threat-report.html /usr/share/nginx/html/reports/agent-threat-report.html
 COPY nginx-landing.conf /etc/nginx/conf.d/default.conf
+RUN chmod -R 755 /usr/share/nginx/html
