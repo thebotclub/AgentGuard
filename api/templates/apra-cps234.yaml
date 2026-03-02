@@ -1,0 +1,72 @@
+id: apra-cps234
+name: "APRA CPS 234 — Information Security"
+version: "1.0"
+description: "Baseline policies for APRA CPS 234 compliance for Australian financial institutions. Covers information security capability, policy framework, and incident response requirements."
+category: compliance
+tags: [apra, cps234, financial-services, australia, information-security]
+rules:
+  - name: block-unauthorised-network-access
+    description: "Block connections to unapproved external networks — CPS 234 §23 information assets"
+    type: block
+    tool: [http_request, http_post, fetch, curl, tcp_connect, socket_open]
+    params:
+      destination:
+        not_in: [api.internal, db.internal, auth.internal, apigw.internal]
+    decision: block
+
+  - name: block-pii-customer-data
+    description: "Block access to customer personal and financial data without authorisation — CPS 234 §22"
+    type: block
+    tool: [db_query, db_read, sql_execute, data_access]
+    params:
+      table:
+        in: [customers, accounts, transactions, beneficiaries, personal_data, kyc_records]
+    decision: block
+
+  - name: require-approval-financial-transaction
+    description: "Require HITL approval for any financial transaction initiation — CPS 234 §27 resilience"
+    type: hitl
+    tool: [initiate_payment, transfer_funds, create_transaction, approve_payment, bpay_payment]
+    decision: hitl_required
+
+  - name: require-approval-third-party-access
+    description: "Require approval before granting third-party system access — CPS 234 §36 third-party arrangements"
+    type: hitl
+    tool: [grant_access, create_oauth_token, share_credentials, third_party_integration]
+    decision: hitl_required
+
+  - name: block-privileged-account-changes
+    description: "Block changes to privileged accounts — CPS 234 §24 roles and responsibilities"
+    type: block
+    tool: [modify_admin_role, grant_superuser, escalate_privileges, add_to_admin_group]
+    decision: block
+
+  - name: block-security-control-modification
+    description: "Block modification of security controls — CPS 234 §25 information security controls"
+    type: block
+    tool: [disable_firewall, modify_security_policy, bypass_mfa, disable_audit_logging]
+    decision: block
+
+  - name: require-approval-key-management
+    description: "Require approval for cryptographic key operations — CPS 234 §26 cryptographic controls"
+    type: hitl
+    tool: [rotate_encryption_key, generate_master_key, export_private_key, delete_key_material]
+    decision: hitl_required
+
+  - name: monitor-access-to-critical-systems
+    description: "Monitor all access to critical information assets — CPS 234 §23"
+    type: monitor
+    tool: [access_core_banking, access_payment_switch, access_customer_portal, access_reporting_system]
+    decision: monitor
+
+  - name: block-audit-trail-interference
+    description: "Block any interference with audit trails — CPS 234 §27 resilience and testing"
+    type: block
+    tool: [delete_audit_log, modify_transaction_log, purge_security_events, alter_audit_records]
+    decision: block
+
+  - name: monitor-incident-indicators
+    description: "Monitor events that may indicate a security incident — CPS 234 §36 notification obligations"
+    type: monitor
+    tool: [failed_authentication, permission_denied, anomaly_detected, brute_force_attempt]
+    decision: monitor

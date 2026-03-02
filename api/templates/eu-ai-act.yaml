@@ -1,0 +1,66 @@
+id: eu-ai-act
+name: "EU AI Act — Baseline Compliance"
+version: "1.0"
+description: "Baseline policies for EU AI Act compliance. Addresses transparency, human oversight, prohibited practices, and high-risk AI system requirements under Regulation (EU) 2024/1689."
+category: compliance
+tags: [eu-ai-act, gdpr, ai-governance, transparency, high-risk-ai, europe]
+rules:
+  - name: block-prohibited-manipulation
+    description: "Block subliminal manipulation techniques and exploiting vulnerabilities — Article 5 prohibited practices"
+    type: block
+    tool: [subliminal_content, dark_pattern, manipulate_emotion, exploit_vulnerability_social]
+    decision: block
+
+  - name: block-biometric-mass-surveillance
+    description: "Block real-time remote biometric identification in public spaces — Article 5(1)(d)"
+    type: block
+    tool: [realtime_face_recognition, biometric_mass_scan, public_surveillance_ai, bulk_biometric_identify]
+    decision: block
+
+  - name: require-approval-automated-individual-decision
+    description: "Require human review for consequential automated decisions about individuals — Article 14 human oversight"
+    type: hitl
+    tool: [credit_scoring, insurance_pricing, employment_screening, benefits_determination, risk_classification]
+    decision: hitl_required
+
+  - name: require-approval-high-risk-ai-deployment
+    description: "Require human approval before deploying high-risk AI system outputs — Article 14"
+    type: hitl
+    tool: [deploy_hiring_model, deploy_credit_model, deploy_law_enforcement_ai, deploy_medical_ai]
+    decision: hitl_required
+
+  - name: block-social-scoring
+    description: "Block social scoring of natural persons by public authorities — Article 5(1)(c)"
+    type: block
+    tool: [social_score_update, citizen_rating, social_credit_write, behaviour_score_assign]
+    decision: block
+
+  - name: monitor-ai-generated-content
+    description: "Monitor AI-generated content for transparency labelling obligations — Article 50"
+    type: monitor
+    tool: [generate_text, generate_image, generate_video, generate_audio, deepfake_generate]
+    decision: monitor
+
+  - name: block-ai-training-on-protected-data
+    description: "Block training on data lacking legal basis — Article 10 data governance"
+    type: block
+    tool: [train_on_personal_data, fine_tune_without_consent, scrape_personal_profiles, harvest_biometrics]
+    decision: block
+
+  - name: require-approval-emotion-recognition
+    description: "Require human approval for emotion recognition in workplace or education — Article 5(1)(f)"
+    type: hitl
+    tool: [workplace_emotion_scan, student_emotion_monitor, employee_affect_analysis]
+    decision: hitl_required
+
+  - name: monitor-foundation-model-usage
+    description: "Monitor general-purpose AI model usage for systemic risk assessment — Article 55"
+    type: monitor
+    tool: [call_gpt4, call_claude, call_gemini, openai_chat, anthropic_complete, llm_query]
+    decision: monitor
+
+  - name: block-prohibited-inference
+    description: "Block inferring protected characteristics (race, political opinion, religion) from biometrics — Article 10"
+    type: block
+    tool: [infer_ethnicity, infer_political_view, infer_religion_biometric, infer_sexual_orientation_ai]
+    decision: block

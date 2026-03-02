@@ -1,0 +1,69 @@
+id: owasp-agentic
+name: "OWASP Top 10 for Agentic AI Applications"
+version: "1.0"
+description: "Baseline policies addressing the OWASP Top 10 for Agentic AI Applications. Covers prompt injection, excessive agency, tool misuse, and supply chain risks."
+category: security
+tags: [owasp, agentic-ai, prompt-injection, tool-misuse, security-baseline]
+rules:
+  - name: block-prompt-injection-execution
+    description: "Block code/command execution that may result from prompt injection — OWASP A01 Prompt Injection"
+    type: block
+    tool: [shell_exec, system_command, eval_code, exec_python, run_script, subprocess]
+    decision: block
+
+  - name: block-excessive-file-system-access
+    description: "Block broad filesystem access outside approved paths — OWASP A02 Excessive Agency"
+    type: block
+    tool: [file_write, file_delete, rm, rmdir, chmod, chown, create_symlink]
+    decision: block
+
+  - name: block-network-exfiltration
+    description: "Block outbound connections to unapproved destinations — OWASP A02 Excessive Agency / A08 Data Exfiltration"
+    type: block
+    tool: [http_post, http_put, http_request, fetch, curl, wget, ftp_upload]
+    params:
+      destination:
+        not_in: [api.internal.com, auth.internal.com, db.internal.com]
+    decision: block
+
+  - name: block-privilege-escalation
+    description: "Block privilege escalation attempts — OWASP A02 Excessive Agency"
+    type: block
+    tool: [sudo, su, chmod_setuid, add_sudo_rule, modify_sudoers, grant_root]
+    decision: block
+
+  - name: block-sensitive-data-access
+    description: "Block access to credentials, secrets, and PII stores — OWASP A03 Sensitive Information Disclosure"
+    type: block
+    tool: [read_env_file, access_vault, get_credentials, read_private_key, access_secret_manager]
+    decision: block
+
+  - name: require-approval-multi-step-autonomous
+    description: "Require HITL checkpoint for multi-step autonomous task execution — OWASP A04 Insufficient Oversight"
+    type: hitl
+    tool: [begin_autonomous_task, start_multi_step_plan, execute_workflow, run_agent_plan]
+    decision: hitl_required
+
+  - name: block-supply-chain-package-install
+    description: "Block installing untrusted packages at runtime — OWASP A05 Supply Chain Vulnerability"
+    type: block
+    tool: [pip_install, npm_install, apt_install, gem_install, cargo_install, download_execute]
+    decision: block
+
+  - name: block-memory-manipulation
+    description: "Block direct writes to agent memory/context stores — OWASP A06 Context Manipulation"
+    type: block
+    tool: [write_agent_memory, override_system_prompt, inject_context, modify_conversation_history]
+    decision: block
+
+  - name: monitor-tool-call-anomaly
+    description: "Monitor unusual tool call patterns that may indicate tool confusion — OWASP A07 Tool Misuse"
+    type: monitor
+    tool: [call_unexpected_tool, invoke_unregistered_tool, tool_call_loop, repeated_tool_failure]
+    decision: monitor
+
+  - name: block-insecure-output-handling
+    description: "Block forwarding raw LLM output to execution contexts — OWASP A09 Insecure Output Handling"
+    type: block
+    tool: [exec_llm_output, eval_llm_response, run_generated_code, execute_ai_suggestion]
+    decision: block

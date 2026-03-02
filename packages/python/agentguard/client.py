@@ -77,3 +77,209 @@ class AgentGuard:
             dict with 'valid' boolean and optional 'invalidAt' index
         """
         return self._request("GET", "/api/v1/audit/verify")
+
+    # ── Webhooks ────────────────────────────────────────────────────────────────
+
+    def create_webhook(self, url: str, events: list, secret: str = None) -> dict:
+        """Create a new webhook subscription.
+
+        Args:
+            url: The HTTPS endpoint to deliver events to
+            events: List of event types to subscribe to
+            secret: Optional signing secret for payload verification
+
+        Returns:
+            dict with the created webhook details including id
+        """
+        body = {"url": url, "events": events}
+        if secret is not None:
+            body["secret"] = secret
+        return self._request("POST", "/api/v1/webhooks", body)
+
+    def list_webhooks(self) -> dict:
+        """List all webhook subscriptions for your tenant.
+
+        Returns:
+            dict with 'webhooks' list
+        """
+        return self._request("GET", "/api/v1/webhooks")
+
+    def delete_webhook(self, webhook_id: str) -> dict:
+        """Delete a webhook subscription.
+
+        Args:
+            webhook_id: ID of the webhook to delete
+
+        Returns:
+            dict with deletion confirmation
+        """
+        return self._request("DELETE", f"/api/v1/webhooks/{webhook_id}")
+
+    # ── Agents ──────────────────────────────────────────────────────────────────
+
+    def create_agent(self, name: str, policy_scope: dict = None) -> dict:
+        """Register a new agent with AgentGuard.
+
+        Args:
+            name: Human-readable name for the agent
+            policy_scope: Optional dict of policy scope overrides for this agent
+
+        Returns:
+            dict with the created agent details including id
+        """
+        body = {"name": name}
+        if policy_scope is not None:
+            body["policyScope"] = policy_scope
+        return self._request("POST", "/api/v1/agents", body)
+
+    def list_agents(self) -> dict:
+        """List all registered agents for your tenant.
+
+        Returns:
+            dict with 'agents' list
+        """
+        return self._request("GET", "/api/v1/agents")
+
+    def delete_agent(self, agent_id: str) -> dict:
+        """Delete a registered agent.
+
+        Args:
+            agent_id: ID of the agent to delete
+
+        Returns:
+            dict with deletion confirmation
+        """
+        return self._request("DELETE", f"/api/v1/agents/{agent_id}")
+
+    # ── Templates ───────────────────────────────────────────────────────────────
+
+    def list_templates(self) -> dict:
+        """List all available policy templates.
+
+        Returns:
+            dict with 'templates' list
+        """
+        return self._request("GET", "/api/v1/templates")
+
+    def get_template(self, name: str) -> dict:
+        """Get a specific policy template by name.
+
+        Args:
+            name: Template name (e.g. 'strict', 'permissive', 'financial')
+
+        Returns:
+            dict with template details and policy rules
+        """
+        return self._request("GET", f"/api/v1/templates/{name}")
+
+    def apply_template(self, name: str) -> dict:
+        """Apply a policy template to your tenant.
+
+        Args:
+            name: Template name to apply
+
+        Returns:
+            dict with confirmation and applied policy version
+        """
+        return self._request("POST", f"/api/v1/templates/{name}/apply")
+
+    # ── Rate Limits ─────────────────────────────────────────────────────────────
+
+    def set_rate_limit(self, window_seconds: int, max_requests: int, agent_id: str = None) -> dict:
+        """Set a rate limit rule.
+
+        Args:
+            window_seconds: Time window duration in seconds
+            max_requests: Maximum number of requests allowed in the window
+            agent_id: Optional agent ID to scope the limit; omit for tenant-wide
+
+        Returns:
+            dict with the created rate limit details including id
+        """
+        body = {"windowSeconds": window_seconds, "maxRequests": max_requests}
+        if agent_id is not None:
+            body["agentId"] = agent_id
+        return self._request("POST", "/api/v1/rate-limits", body)
+
+    def list_rate_limits(self) -> dict:
+        """List all rate limit rules for your tenant.
+
+        Returns:
+            dict with 'rateLimits' list
+        """
+        return self._request("GET", "/api/v1/rate-limits")
+
+    def delete_rate_limit(self, limit_id: str) -> dict:
+        """Delete a rate limit rule.
+
+        Args:
+            limit_id: ID of the rate limit to delete
+
+        Returns:
+            dict with deletion confirmation
+        """
+        return self._request("DELETE", f"/api/v1/rate-limits/{limit_id}")
+
+    # ── Cost ────────────────────────────────────────────────────────────────────
+
+    def get_cost_summary(self, agent_id: str = None, from_date: str = None, to_date: str = None, group_by: str = None) -> dict:
+        """Get a cost summary for your tenant.
+
+        Args:
+            agent_id: Optional agent ID to filter costs
+            from_date: Optional ISO 8601 start date (e.g. '2024-01-01')
+            to_date: Optional ISO 8601 end date (e.g. '2024-01-31')
+            group_by: Optional grouping field (e.g. 'agent', 'day', 'month')
+
+        Returns:
+            dict with cost breakdown and totals
+        """
+        parts = []
+        if agent_id is not None:
+            parts.append(f"agentId={agent_id}")
+        if from_date is not None:
+            parts.append(f"from={from_date}")
+        if to_date is not None:
+            parts.append(f"to={to_date}")
+        if group_by is not None:
+            parts.append(f"groupBy={group_by}")
+        qs = ("?" + "&".join(parts)) if parts else ""
+        return self._request("GET", f"/api/v1/cost/summary{qs}")
+
+    def get_agent_costs(self) -> dict:
+        """Get per-agent cost breakdown for your tenant.
+
+        Returns:
+            dict with costs listed per agent
+        """
+        return self._request("GET", "/api/v1/cost/agents")
+
+    # ── Dashboard ───────────────────────────────────────────────────────────────
+
+    def get_dashboard_stats(self) -> dict:
+        """Get high-level dashboard statistics.
+
+        Returns:
+            dict with summary stats (requests, blocks, risk scores, etc.)
+        """
+        return self._request("GET", "/api/v1/dashboard/stats")
+
+    def get_dashboard_feed(self, since: str = None) -> dict:
+        """Get the live activity feed for the dashboard.
+
+        Args:
+            since: Optional ISO 8601 timestamp; returns only events after this time
+
+        Returns:
+            dict with 'events' list
+        """
+        qs = f"?since={since}" if since is not None else ""
+        return self._request("GET", f"/api/v1/dashboard/feed{qs}")
+
+    def get_agent_activity(self) -> dict:
+        """Get per-agent activity summary.
+
+        Returns:
+            dict with activity breakdown per agent
+        """
+        return self._request("GET", "/api/v1/dashboard/activity")

@@ -1,0 +1,71 @@
+id: soc2-starter
+name: "SOC 2 Starter"
+version: "1.0"
+description: "Baseline policies for SOC 2 Type II compliance. Covers access control, data protection, audit logging, and change management requirements."
+category: compliance
+tags: [soc2, audit, access-control, data-protection]
+rules:
+  - name: block-pii-external-send
+    description: "Block sending PII data to external systems — addresses CC6.1 logical access"
+    type: block
+    tool: [http_post, http_request, fetch, curl, webhook_send]
+    params:
+      contains_pii: true
+    decision: block
+
+  - name: block-pii-table-access
+    description: "Block unapproved access to PII-containing tables — addresses CC6.3 data classification"
+    type: block
+    tool: [db_query, db_read, sql_execute]
+    params:
+      table:
+        in: [users, customers, employees, payroll, pii_data, personal_data]
+    decision: block
+
+  - name: block-unauthorized-admin
+    description: "Block privilege escalation and admin command execution — addresses CC6.2"
+    type: block
+    tool: [sudo, shell_exec, chmod, chown, system_command, exec]
+    decision: block
+
+  - name: require-approval-data-export
+    description: "Require human approval for bulk data exports — addresses CC6.7 data transmission"
+    type: hitl
+    tool: [export_data, bulk_download, data_dump, backup_create]
+    decision: hitl_required
+
+  - name: require-approval-config-change
+    description: "Require human approval for configuration changes — addresses CC8.1 change management"
+    type: hitl
+    tool: [update_config, deploy, terraform_apply, infrastructure_change]
+    decision: hitl_required
+
+  - name: block-credential-access
+    description: "Block access to secrets, credentials, and key stores — addresses CC6.1"
+    type: block
+    tool: [read_secret, get_credentials, access_vault, read_env_secrets]
+    decision: block
+
+  - name: block-destructive-operations
+    description: "Block delete/drop operations without explicit approval — addresses A1.2 availability"
+    type: block
+    tool: [file_delete, rm, rmdir, drop_table, truncate_table, unlink]
+    decision: block
+
+  - name: monitor-authentication-events
+    description: "Monitor authentication and authorization events — addresses CC7.2 security monitoring"
+    type: monitor
+    tool: [login, authenticate, generate_token, oauth_flow]
+    decision: monitor
+
+  - name: monitor-api-key-usage
+    description: "Monitor API key creation and rotation events — addresses CC6.2"
+    type: monitor
+    tool: [create_api_key, rotate_api_key, revoke_api_key, list_api_keys]
+    decision: monitor
+
+  - name: block-log-tampering
+    description: "Block modification of audit logs — addresses CC7.3 monitoring"
+    type: block
+    tool: [delete_logs, truncate_logs, modify_audit_trail, clear_logs]
+    decision: block

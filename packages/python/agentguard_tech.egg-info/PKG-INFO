@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: agentguard-tech
-Version: 0.1.1
+Version: 0.2.0
 Summary: Runtime security for AI agents — policy engine, audit trail, and kill switch
 Author-email: AgentGuard <hello@agentguard.tech>
 License: MIT
@@ -175,6 +175,220 @@ if result["valid"]:
     print("Audit chain is intact")
 else:
     print(f"Chain broken at event index: {result['invalidAt']}")
+```
+
+---
+
+### `create_webhook(url, events, secret=None) → dict`
+
+Register a webhook endpoint to receive AgentGuard events.
+
+```python
+webhook = guard.create_webhook(
+    url="https://example.com/hooks/agentguard",
+    events=["action.blocked", "killswitch.activated"],
+    secret="my-signing-secret",  # optional
+)
+print("Webhook ID:", webhook["id"])
+```
+
+---
+
+### `list_webhooks() → dict`
+
+List all webhook subscriptions for your tenant.
+
+```python
+result = guard.list_webhooks()
+for wh in result["webhooks"]:
+    print(wh["id"], wh["url"])
+```
+
+---
+
+### `delete_webhook(webhook_id) → dict`
+
+Delete a webhook subscription.
+
+```python
+guard.delete_webhook("wh_abc123")
+```
+
+---
+
+### `create_agent(name, policy_scope=None) → dict`
+
+Register a new agent with AgentGuard.
+
+```python
+agent = guard.create_agent(
+    name="email-agent",
+    policy_scope={"allowedTools": ["send_email", "read_inbox"]},  # optional
+)
+print("Agent ID:", agent["id"])
+```
+
+---
+
+### `list_agents() → dict`
+
+List all registered agents for your tenant.
+
+```python
+result = guard.list_agents()
+for a in result["agents"]:
+    print(a["id"], a["name"])
+```
+
+---
+
+### `delete_agent(agent_id) → dict`
+
+Delete a registered agent.
+
+```python
+guard.delete_agent("ag_abc123")
+```
+
+---
+
+### `list_templates() → dict`
+
+List all available policy templates.
+
+```python
+result = guard.list_templates()
+for t in result["templates"]:
+    print(t["name"], t["description"])
+```
+
+---
+
+### `get_template(name) → dict`
+
+Get a specific policy template by name.
+
+```python
+template = guard.get_template("strict")
+print(template["rules"])
+```
+
+---
+
+### `apply_template(name) → dict`
+
+Apply a policy template to your tenant.
+
+```python
+guard.apply_template("strict")
+```
+
+---
+
+### `set_rate_limit(window_seconds, max_requests, agent_id=None) → dict`
+
+Create a rate limit rule.
+
+```python
+# Tenant-wide: max 100 requests per 60 seconds
+limit = guard.set_rate_limit(window_seconds=60, max_requests=100)
+
+# Scoped to a specific agent
+guard.set_rate_limit(window_seconds=60, max_requests=20, agent_id="ag_abc123")
+```
+
+---
+
+### `list_rate_limits() → dict`
+
+List all rate limit rules for your tenant.
+
+```python
+result = guard.list_rate_limits()
+for rl in result["rateLimits"]:
+    print(rl["id"], rl["windowSeconds"], rl["maxRequests"])
+```
+
+---
+
+### `delete_rate_limit(limit_id) → dict`
+
+Delete a rate limit rule.
+
+```python
+guard.delete_rate_limit("rl_abc123")
+```
+
+---
+
+### `get_cost_summary(agent_id=None, from_date=None, to_date=None, group_by=None) → dict`
+
+Get a cost summary for your tenant with optional filters.
+
+```python
+# Overall summary
+summary = guard.get_cost_summary()
+
+# Filtered by agent and date range
+summary = guard.get_cost_summary(
+    agent_id="ag_abc123",
+    from_date="2024-01-01",
+    to_date="2024-01-31",
+    group_by="day",
+)
+print(summary)
+```
+
+---
+
+### `get_agent_costs() → dict`
+
+Get per-agent cost breakdown for your tenant.
+
+```python
+costs = guard.get_agent_costs()
+for entry in costs["agents"]:
+    print(entry["agentId"], entry["totalCost"])
+```
+
+---
+
+### `get_dashboard_stats() → dict`
+
+Get high-level dashboard statistics.
+
+```python
+stats = guard.get_dashboard_stats()
+print(stats["requestsToday"], stats["blocksToday"])
+```
+
+---
+
+### `get_dashboard_feed(since=None) → dict`
+
+Get the live activity feed for the dashboard.
+
+```python
+# All recent events
+feed = guard.get_dashboard_feed()
+
+# Only events after a specific timestamp
+feed = guard.get_dashboard_feed(since="2024-06-01T00:00:00Z")
+
+for event in feed["events"]:
+    print(event["timestamp"], event["type"])
+```
+
+---
+
+### `get_agent_activity() → dict`
+
+Get per-agent activity summary.
+
+```python
+activity = guard.get_agent_activity()
+for a in activity["agents"]:
+    print(a["agentId"], a["requests"], a["blocks"])
 ```
 
 ---

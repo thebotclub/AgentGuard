@@ -1,0 +1,72 @@
+id: financial-services
+name: "Financial Services Baseline"
+version: "1.0"
+description: "Comprehensive baseline policies for financial services AI deployments. Covers transaction controls, customer data protection, regulatory reporting, and operational risk management."
+category: industry
+tags: [financial-services, banking, payments, trading, aml, kyc, regulatory]
+rules:
+  - name: require-approval-large-transaction
+    description: "Require human approval for transactions exceeding $10,000 — aligns with AML transaction monitoring thresholds"
+    type: hitl
+    tool: [transfer_funds, initiate_payment, wire_transfer, create_transaction, execute_trade]
+    params:
+      amount:
+        gt: 10000
+    decision: hitl_required
+
+  - name: block-transaction-velocity-abuse
+    description: "Block structuring behaviour — multiple transactions designed to avoid reporting thresholds"
+    type: block
+    tool: [bulk_small_transfers, rapid_transaction_sequence, transaction_structuring]
+    decision: block
+
+  - name: block-unauthorised-customer-data-access
+    description: "Block access to customer financial records without authorisation — aligns with privacy and data protection requirements"
+    type: block
+    tool: [db_query, db_read, sql_execute, data_export]
+    params:
+      table:
+        in: [accounts, transactions, customer_financials, credit_files, loan_records, investment_portfolios]
+    decision: block
+
+  - name: require-approval-credit-decision
+    description: "Require human review for credit approval or denial decisions affecting customers"
+    type: hitl
+    tool: [approve_credit, decline_credit, set_credit_limit, modify_loan_terms, credit_score_override]
+    decision: hitl_required
+
+  - name: block-market-data-exfiltration
+    description: "Block exporting proprietary trading data or market intelligence to external systems"
+    type: block
+    tool: [export_trading_data, send_market_positions, exfil_order_book, export_portfolio_data]
+    decision: block
+
+  - name: require-approval-regulatory-report
+    description: "Require human approval before submitting regulatory reports — AUSTRAC, ASIC, APRA submissions"
+    type: hitl
+    tool: [submit_austrac_report, file_regulatory_report, submit_asic_filing, lodge_apra_return]
+    decision: hitl_required
+
+  - name: block-kyc-bypass
+    description: "Block actions that would circumvent KYC/AML identity verification requirements"
+    type: block
+    tool: [skip_kyc_check, bypass_aml_screening, override_identity_verification, whitelist_sanctioned_entity]
+    decision: block
+
+  - name: block-insider-trading-risk
+    description: "Block access to price-sensitive information outside authorised workflows"
+    type: block
+    tool: [access_merger_data, read_unpublished_earnings, access_insider_briefing, export_material_nonpublic]
+    decision: block
+
+  - name: monitor-trading-activity
+    description: "Monitor all algorithmic trading actions for surveillance and best-execution audit"
+    type: monitor
+    tool: [place_order, cancel_order, modify_order, execute_trade, algorithmic_order]
+    decision: monitor
+
+  - name: monitor-fraud-indicators
+    description: "Monitor events matching common fraud patterns for real-time detection"
+    type: monitor
+    tool: [login_new_device, password_reset, beneficiary_add, account_details_change, high_risk_transfer]
+    decision: monitor

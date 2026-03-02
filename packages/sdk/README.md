@@ -76,6 +76,117 @@ await guard.killSwitch(false);
 
 ---
 
+### Webhooks
+
+```typescript
+// Register a webhook endpoint
+const webhook = await guard.createWebhook({
+  url: 'https://example.com/hooks/agentguard',
+  events: ['action.blocked', 'killswitch.activated'],
+  secret: 'my-signing-secret', // optional
+});
+console.log('Webhook ID:', webhook.id);
+
+// List all webhooks
+const { webhooks } = await guard.listWebhooks();
+
+// Remove a webhook
+await guard.deleteWebhook('wh_abc123');
+```
+
+---
+
+### Agents
+
+```typescript
+// Register an agent
+const agent = await guard.createAgent({
+  name: 'email-agent',
+  policyScope: { allowedTools: ['send_email', 'read_inbox'] }, // optional
+});
+console.log('Agent ID:', agent.id);
+
+// List all agents
+const { agents } = await guard.listAgents();
+
+// Remove an agent
+await guard.deleteAgent('ag_abc123');
+```
+
+---
+
+### Templates
+
+```typescript
+// Browse available policy templates
+const { templates } = await guard.listTemplates();
+
+// Inspect a template
+const template = await guard.getTemplate('strict');
+console.log(template.rules);
+
+// Apply a template to your tenant
+await guard.applyTemplate('strict');
+```
+
+---
+
+### Rate Limits
+
+```typescript
+// Set a tenant-wide rate limit: max 100 requests per 60 seconds
+const limit = await guard.setRateLimit({ windowSeconds: 60, maxRequests: 100 });
+
+// Scope to a specific agent
+await guard.setRateLimit({ agentId: 'ag_abc123', windowSeconds: 60, maxRequests: 20 });
+
+// List all rate limits
+const { rateLimits } = await guard.listRateLimits();
+
+// Delete a rate limit
+await guard.deleteRateLimit(limit.id);
+```
+
+---
+
+### Cost
+
+```typescript
+// Get overall cost summary
+const summary = await guard.getCostSummary();
+
+// Filter by agent and date range
+const filtered = await guard.getCostSummary({
+  agentId: 'ag_abc123',
+  from: '2024-01-01',
+  to: '2024-01-31',
+  groupBy: 'day',
+});
+
+// Per-agent cost breakdown
+const agentCosts = await guard.getAgentCosts();
+```
+
+---
+
+### Dashboard
+
+```typescript
+// High-level stats (requests, blocks, risk scores)
+const stats = await guard.getDashboardStats();
+
+// Live activity feed
+const feed = await guard.getDashboardFeed();
+
+// Feed from a specific timestamp onward
+const recent = await guard.getDashboardFeed({ since: '2024-06-01T00:00:00Z' });
+
+// Per-agent activity summary
+const activity = await guard.getAgentActivity();
+```
+
+---
+
 ## PolicyEngine — Local Evaluation
 
 For zero-latency, in-process policy evaluation without a network call:
@@ -232,6 +343,23 @@ const result = await guardedTool.invoke({ input: '{"to":"user@example.com"}' });
 | `getUsage()` | Get usage stats for your tenant |
 | `getAudit(options?)` | Retrieve audit trail events |
 | `killSwitch(active)` | Activate (`true`) or deactivate (`false`) global kill switch |
+| `createWebhook(config)` | Register a new webhook endpoint |
+| `listWebhooks()` | List all webhook subscriptions |
+| `deleteWebhook(id)` | Delete a webhook subscription |
+| `createAgent(config)` | Register a new agent |
+| `listAgents()` | List all registered agents |
+| `deleteAgent(id)` | Delete a registered agent |
+| `listTemplates()` | List available policy templates |
+| `getTemplate(name)` | Get a specific policy template |
+| `applyTemplate(name)` | Apply a template to your tenant |
+| `setRateLimit(config)` | Create a rate limit rule |
+| `listRateLimits()` | List all rate limit rules |
+| `deleteRateLimit(id)` | Delete a rate limit rule |
+| `getCostSummary(options?)` | Get cost summary with optional filters |
+| `getAgentCosts()` | Get per-agent cost breakdown |
+| `getDashboardStats()` | Get high-level dashboard statistics |
+| `getDashboardFeed(options?)` | Get the live activity feed |
+| `getAgentActivity()` | Get per-agent activity summary |
 
 ### `PolicyEngine`
 

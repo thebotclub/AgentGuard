@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentguard-tech"
-version = "0.1.1"
+version = "0.2.0"
 description = "Runtime security for AI agents — policy engine, audit trail, and kill switch"
 readme = "README.md"
 license = {text = "MIT"}

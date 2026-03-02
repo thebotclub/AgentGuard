@@ -10,6 +10,8 @@ import crypto from 'crypto';
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
+import yaml from 'js-yaml';
+import { createPhase2Routes, checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from './phase2-routes.js';
 import { PolicyEngine } from '../packages/sdk/src/core/policy-engine.js';
 import type { PolicyDocument, ActionRequest, AgentContext, PolicyDecision } from '../packages/sdk/src/core/types.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
@@ -81,7 +83,82 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_events(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_audit_session ON audit_events(session_id);
   CREATE INDEX IF NOT EXISTS idx_apikeys_tenant ON api_keys(tenant_id);
+
+  -- Phase 1: Webhook Alerts
+  CREATE TABLE IF NOT EXISTS webhooks (
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+    tenant_id TEXT NOT NULL REFERENCES tenants(id),
+    url TEXT NOT NULL,
+    events TEXT NOT NULL DEFAULT '["block","killswitch"]',
+    secret TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_webhooks_tenant ON webhooks(tenant_id);
+
+  -- Phase 1: Agent Identity & Scoping
+  CREATE TABLE IF NOT EXISTS agents (
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+    tenant_id TEXT NOT NULL REFERENCES tenants(id),
+    name TEXT NOT NULL,
+    api_key TEXT UNIQUE NOT NULL,
+    policy_scope TEXT NOT NULL DEFAULT '[]',
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(tenant_id, name)
+  );
+  CREATE INDEX IF NOT EXISTS idx_agents_tenant ON agents(tenant_id);
+  CREATE INDEX IF NOT EXISTS idx_agents_key ON agents(api_key);
+
+  -- Add agent_id to audit_events (migration-safe: ignore if column exists)
 `);
+
+// Migration: add agent_id to audit_events if not present
+try {
+  db.exec('ALTER TABLE audit_events ADD COLUMN agent_id TEXT');
+} catch {
+  // Column already exists — safe to ignore
+}
+
+// ── Template Cache ─────────────────────────────────────────────────────────
+// Resolve templates dir relative to this file's location (works with tsx and compiled JS)
+const TEMPLATES_DIR = path.resolve(
+  typeof __dirname !== 'undefined' ? __dirname : path.dirname(process.argv[1] ?? '.'),
+  'templates'
+);
+
+interface PolicyTemplate {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  category: string;
+  tags: string[];
+  rules: Array<Record<string, unknown>>;
+}
+
+const templateCache = new Map<string, PolicyTemplate>();
+
+function loadTemplates(): void {
+  try {
+    if (!fs.existsSync(TEMPLATES_DIR)) return;
+    const files = fs.readdirSync(TEMPLATES_DIR).filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
+    for (const file of files) {
+      try {
+        const raw = fs.readFileSync(path.join(TEMPLATES_DIR, file), 'utf-8');
+        const parsed = yaml.load(raw) as PolicyTemplate;
+        if (parsed?.id) templateCache.set(parsed.id, parsed);
+      } catch (e) {
+        console.error(`[templates] failed to load ${file}:`, e instanceof Error ? e.message : e);
+      }
+    }
+    console.log(`[templates] loaded ${templateCache.size} policy templates`);
+  } catch (e) {
+    console.error('[templates] failed to load templates dir:', e instanceof Error ? e.message : e);
+  }
+}
+
+loadTemplates();
 
 // Prepared statements
 const stmtGetTenant = db.prepare<[string]>('SELECT * FROM tenants WHERE id = ?');
@@ -101,10 +178,10 @@ const stmtUpdateApiKeyUsed = db.prepare<[string]>(
   "UPDATE api_keys SET last_used_at = datetime('now') WHERE key = ?"
 );
 
-const stmtInsertAuditEvent = db.prepare<[string | null, string | null, string, string | null, string, string | null, number | null, string | null, number | null, string | null, string | null, string]>(
+const stmtInsertAuditEvent = db.prepare<[string | null, string | null, string, string | null, string, string | null, number | null, string | null, number | null, string | null, string | null, string, string | null]>(
   `INSERT INTO audit_events
-   (tenant_id, session_id, tool, action, result, rule_id, risk_score, reason, duration_ms, previous_hash, hash, created_at)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+   (tenant_id, session_id, tool, action, result, rule_id, risk_score, reason, duration_ms, previous_hash, hash, created_at, agent_id)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
 const stmtGetLastAuditEvent = db.prepare<[string]>(
   'SELECT hash FROM audit_events WHERE tenant_id = ? ORDER BY id DESC LIMIT 1'
@@ -138,6 +215,40 @@ const stmtAvgDuration = db.prepare<[string]>(
 const stmtUpsertSession = db.prepare<[string, string | null]>(
   `INSERT INTO sessions (id, tenant_id, last_activity) VALUES (?, ?, datetime('now'))
    ON CONFLICT(id) DO UPDATE SET last_activity = datetime('now')`
+);
+
+// Webhook statements
+const stmtInsertWebhook = db.prepare<[string, string, string, string | null]>(
+  'INSERT INTO webhooks (tenant_id, url, events, secret) VALUES (?, ?, ?, ?) RETURNING *'
+);
+const stmtGetWebhooksByTenant = db.prepare<[string]>(
+  'SELECT id, tenant_id, url, events, active, created_at FROM webhooks WHERE tenant_id = ? AND active = 1'
+);
+const stmtGetWebhookById = db.prepare<[string, string]>(
+  'SELECT * FROM webhooks WHERE id = ? AND tenant_id = ?'
+);
+const stmtDeleteWebhook = db.prepare<[string, string]>(
+  'UPDATE webhooks SET active = 0 WHERE id = ? AND tenant_id = ?'
+);
+const stmtGetActiveWebhooksForTenant = db.prepare<[string]>(
+  'SELECT * FROM webhooks WHERE tenant_id = ? AND active = 1'
+);
+
+// Agent statements
+const stmtInsertAgent = db.prepare<[string, string, string, string]>(
+  'INSERT INTO agents (tenant_id, name, api_key, policy_scope) VALUES (?, ?, ?, ?) RETURNING id, tenant_id, name, policy_scope, active, created_at'
+);
+const stmtGetAgentsByTenant = db.prepare<[string]>(
+  'SELECT id, tenant_id, name, policy_scope, active, created_at FROM agents WHERE tenant_id = ? AND active = 1'
+);
+const stmtGetAgentByKey = db.prepare<[string]>(
+  'SELECT * FROM agents WHERE api_key = ? AND active = 1'
+);
+const stmtGetAgentById = db.prepare<[string, string]>(
+  'SELECT id, tenant_id, name, policy_scope, active, created_at FROM agents WHERE id = ? AND tenant_id = ?'
+);
+const stmtDeactivateAgent = db.prepare<[string, string]>(
+  'UPDATE agents SET active = 0 WHERE id = ? AND tenant_id = ?'
 );
 
 // Global kill switch persisted in a simple settings table
@@ -299,26 +410,52 @@ function lookupTenant(apiKey: string): TenantRow | null {
 // ── Auth Middleware (optional — public routes skip) ────────────────────────
 const ADMIN_KEY = process.env['ADMIN_KEY'];
 
-// Attach tenant to request if API key present
+interface AgentRow {
+  id: string;
+  tenant_id: string;
+  name: string;
+  api_key: string;
+  policy_scope: string;
+  active: number;
+  created_at: string;
+}
+
+// Attach tenant (and optionally agent) to request if API key present
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       tenant?: TenantRow | null;
       tenantId?: string;
+      agent?: AgentRow | null;
     }
   }
 }
 
 function optionalTenantAuth(req: Request, _res: Response, next: NextFunction) {
   const apiKey = req.headers['x-api-key'] as string | undefined;
-  if (apiKey) {
+  if (apiKey && apiKey.startsWith('ag_agent_')) {
+    // Agent key path
+    const agentRow = stmtGetAgentByKey.get(apiKey) as AgentRow | undefined;
+    if (agentRow) {
+      const tenant = stmtGetTenant.get(agentRow.tenant_id) as TenantRow | undefined;
+      req.agent = agentRow;
+      req.tenant = tenant ?? null;
+      req.tenantId = agentRow.tenant_id;
+    } else {
+      req.agent = null;
+      req.tenant = null;
+      req.tenantId = 'demo';
+    }
+  } else if (apiKey) {
     const tenant = lookupTenant(apiKey);
     req.tenant = tenant;
     req.tenantId = tenant?.id ?? 'demo';
+    req.agent = null;
   } else {
     req.tenant = null;
     req.tenantId = 'demo';
+    req.agent = null;
   }
   next();
 }
@@ -328,12 +465,17 @@ function requireTenantAuth(req: Request, res: Response, next: NextFunction) {
   if (!apiKey) {
     return res.status(401).json({ error: 'X-API-Key header required' });
   }
+  // Agent keys cannot use tenant-admin endpoints
+  if (apiKey.startsWith('ag_agent_')) {
+    return res.status(403).json({ error: 'Agent keys cannot perform tenant admin operations. Use your tenant API key.' });
+  }
   const tenant = lookupTenant(apiKey);
   if (!tenant) {
     return res.status(401).json({ error: 'Invalid or inactive API key' });
   }
   req.tenant = tenant;
   req.tenantId = tenant.id;
+  req.agent = null;
   next();
 }
 
@@ -516,6 +658,7 @@ function storeAuditEvent(
   reason: string | null,
   durationMs: number,
   prevHash: string,
+  agentId?: string | null,
 ): string {
   // Use a single consistent timestamp for both hash and created_at
   const createdAt = new Date().toISOString();
@@ -534,8 +677,72 @@ function storeAuditEvent(
     prevHash,
     hash,
     createdAt,
+    agentId ?? null,
   );
   return hash;
+}
+
+// ── Webhook Delivery ───────────────────────────────────────────────────────
+interface WebhookRow {
+  id: string;
+  tenant_id: string;
+  url: string;
+  events: string;
+  secret: string | null;
+  active: number;
+  created_at: string;
+}
+
+function hmacSignature(body: string, secret: string): string {
+  return 'sha256=' + crypto.createHmac('sha256', secret).update(body).digest('hex');
+}
+
+async function deliverWebhook(webhook: WebhookRow, eventType: string, payload: object): Promise<boolean> {
+  const body = JSON.stringify(payload);
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-AgentGuard-Event': eventType,
+    'X-AgentGuard-Delivery': crypto.randomUUID(),
+  };
+  if (webhook.secret) {
+    headers['X-AgentGuard-Signature'] = hmacSignature(body, webhook.secret);
+  }
+  try {
+    const res = await fetch(webhook.url, {
+      method: 'POST',
+      headers,
+      body,
+      signal: AbortSignal.timeout(5000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function fireWebhooksAsync(tenantId: string, eventType: string, payload: object): void {
+  // Fire async — do not block the hot path
+  setTimeout(async () => {
+    const webhooks = stmtGetActiveWebhooksForTenant.all(tenantId) as WebhookRow[];
+    for (const wh of webhooks) {
+      let eventList: string[] = [];
+      try { eventList = JSON.parse(wh.events) as string[]; } catch { eventList = []; }
+      if (!eventList.includes(eventType) && !eventList.includes('*')) continue;
+
+      const ok = await deliverWebhook(wh, eventType, payload);
+      if (!ok) {
+        // Retry once after 5s
+        setTimeout(async () => {
+          await deliverWebhook(wh, eventType, payload);
+        }, 5000);
+      }
+    }
+  }, 0);
+}
+
+// ── Agent Key Generation ───────────────────────────────────────────────────
+function generateAgentKey(): string {
+  return 'ag_agent_' + crypto.randomBytes(16).toString('hex');
 }
 
 // ── Routes ─────────────────────────────────────────────────────────────────
@@ -562,6 +769,24 @@ app.get('/', (_req: Request, res: Response) => {
       'GET  /api/v1/killswitch': 'Get kill switch status',
       'POST /api/v1/killswitch': 'Toggle your tenant kill switch (requires API key)',
       'POST /api/v1/admin/killswitch': 'Toggle global kill switch (requires ADMIN_KEY)',
+      'POST /api/v1/webhooks': 'Register a webhook (requires API key)',
+      'GET  /api/v1/webhooks': 'List tenant webhooks (requires API key)',
+      'DELETE /api/v1/webhooks/:id': 'Remove a webhook (requires API key)',
+      'GET  /api/v1/templates': 'List available policy templates',
+      'GET  /api/v1/templates/:name': 'Get a policy template by name',
+      'POST /api/v1/templates/:name/apply': 'Apply a policy template (requires API key)',
+      'POST /api/v1/agents': 'Create an agent with scoped API key (requires tenant API key)',
+      'GET  /api/v1/agents': 'List tenant agents (requires tenant API key)',
+      'DELETE /api/v1/agents/:id': 'Deactivate an agent (requires tenant API key)',
+      'POST /api/v1/rate-limits': 'Create a rate limit rule (requires API key)',
+      'GET  /api/v1/rate-limits': 'List tenant rate limits (requires API key)',
+      'DELETE /api/v1/rate-limits/:id': 'Remove a rate limit rule (requires API key)',
+      'POST /api/v1/costs/track': 'Record a cost event (requires API key)',
+      'GET  /api/v1/costs/summary': 'Aggregated cost report (requires API key)',
+      'GET  /api/v1/costs/agents': 'Per-agent cost breakdown (requires API key)',
+      'GET  /api/v1/dashboard/stats': 'Aggregated evaluation statistics (requires API key)',
+      'GET  /api/v1/dashboard/feed': 'Real-time decision feed (requires API key)',
+      'GET  /api/v1/dashboard/agents': 'Agent activity summary (requires API key)',
     },
     docs: 'https://agentguard.tech',
     dashboard: 'https://app.agentguard.tech',
@@ -732,10 +957,20 @@ app.get('/api/v1/evaluate', (_req: Request, res: Response) => {
 app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) => {
   const ks = getGlobalKillSwitch();
   const tenantId = req.tenantId ?? 'demo';
+  const agentId = req.agent?.id ?? null;
+
+  // If agent key used but agent is inactive or unknown, reject
+  const rawKey = req.headers['x-api-key'] as string | undefined;
+  if (rawKey?.startsWith('ag_agent_') && !req.agent) {
+    return res.status(401).json({ error: 'Invalid or inactive agent key' });
+  }
 
   // Check global kill switch
   if (ks.active) {
-    storeAuditEvent(tenantId, null, req.body?.tool ?? 'unknown', 'block', 'KILL_SWITCH', 1000, 'Global kill switch active', 0, getLastHash(tenantId));
+    storeAuditEvent(tenantId, null, req.body?.tool ?? 'unknown', 'block', 'KILL_SWITCH', 1000, 'Global kill switch active', 0, getLastHash(tenantId), agentId);
+    if (tenantId !== 'demo') {
+      fireWebhooksAsync(tenantId, 'killswitch', { event_type: 'killswitch', tenant_id: tenantId, agent_id: agentId, data: { decision: 'block', rule: 'KILL_SWITCH', tool: req.body?.tool ?? 'unknown' }, timestamp: new Date().toISOString() });
+    }
     return res.json({
       result: 'block',
       matchedRuleId: 'KILL_SWITCH',
@@ -748,7 +983,8 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
 
   // Check tenant-level kill switch
   if (req.tenant && req.tenant.kill_switch_active === 1) {
-    storeAuditEvent(tenantId, null, req.body?.tool ?? 'unknown', 'block', 'TENANT_KILL_SWITCH', 1000, 'Tenant kill switch active', 0, getLastHash(tenantId));
+    storeAuditEvent(tenantId, null, req.body?.tool ?? 'unknown', 'block', 'TENANT_KILL_SWITCH', 1000, 'Tenant kill switch active', 0, getLastHash(tenantId), agentId);
+    fireWebhooksAsync(tenantId, 'killswitch', { event_type: 'killswitch', tenant_id: tenantId, agent_id: agentId, data: { decision: 'block', rule: 'TENANT_KILL_SWITCH', tool: req.body?.tool ?? 'unknown' }, timestamp: new Date().toISOString() });
     return res.json({
       result: 'block',
       matchedRuleId: 'TENANT_KILL_SWITCH',
@@ -770,15 +1006,16 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
   const engine = new PolicyEngine();
   engine.registerDocument(DEFAULT_POLICY);
 
+  const resolvedAgentId = req.agent ? req.agent.name : 'quick-eval';
   const actionRequest: ActionRequest = {
     id: uuid(),
-    agentId: 'quick-eval',
+    agentId: resolvedAgentId,
     tool,
     params: (typeof params === 'object' && params !== null) ? params : {},
     inputDataLabels: [],
     timestamp: new Date().toISOString(),
   };
-  const ctx: AgentContext = { agentId: 'quick-eval', sessionId: uuid(), policyVersion: '1.0.0' };
+  const ctx: AgentContext = { agentId: resolvedAgentId, sessionId: uuid(), policyVersion: '1.0.0' };
 
   const start = performance.now();
   let decision: PolicyDecision;
@@ -789,14 +1026,31 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
   }
   const ms = Math.round((performance.now() - start) * 100) / 100;
 
-  // Store persistent audit event
+  // Store persistent audit event (includes agent_id if agent key used)
   const prevHash = getLastHash(tenantId);
   storeAuditEvent(
     tenantId, ctx.sessionId, tool,
     decision.result, decision.matchedRuleId ?? null,
     decision.riskScore, decision.reason ?? null,
-    ms, prevHash,
+    ms, prevHash, agentId,
   );
+
+  // Fire webhooks async for block/killswitch events
+  if ((decision.result === 'block' || decision.result === 'hitl_required') && tenantId !== 'demo') {
+    fireWebhooksAsync(tenantId, decision.result === 'hitl_required' ? 'hitl' : 'block', {
+      event_type: decision.result === 'hitl_required' ? 'hitl' : 'block',
+      tenant_id: tenantId,
+      agent_id: agentId,
+      data: {
+        decision: decision.result,
+        tool,
+        rule_matched: decision.matchedRuleId ?? null,
+        risk_score: decision.riskScore,
+        reason: decision.reason ?? null,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
 
   res.json({
     result: decision.result,
@@ -804,6 +1058,7 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
     riskScore: decision.riskScore,
     reason: decision.reason,
     durationMs: ms,
+    ...(agentId ? { agentId } : {}),
   });
 });
 
@@ -1113,11 +1368,237 @@ app.get('/api/v1/playground/scenarios', (_req: Request, res: Response) => {
   ]});
 });
 
+// ── Webhook Routes ─────────────────────────────────────────────────────────
+
+// POST /api/v1/webhooks — register a webhook
+app.post('/api/v1/webhooks', requireTenantAuth, (req: Request, res: Response) => {
+  const { url, events, secret } = req.body ?? {};
+  const tenantId = req.tenantId!;
+
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'url is required' });
+  }
+  if (!/^https?:\/\/.+/.test(url)) {
+    return res.status(400).json({ error: 'url must be a valid HTTP/HTTPS URL' });
+  }
+  if (url.length > 2000) {
+    return res.status(400).json({ error: 'url too long (max 2000 chars)' });
+  }
+
+  let eventList: string[] = ['block', 'killswitch'];
+  if (Array.isArray(events)) {
+    const valid = ['block', 'killswitch', 'hitl', '*'];
+    eventList = (events as unknown[]).filter(e => typeof e === 'string' && valid.includes(e)) as string[];
+    if (eventList.length === 0) {
+      return res.status(400).json({ error: 'events must be a non-empty array of: block, killswitch, hitl, *' });
+    }
+  }
+
+  try {
+    const row = stmtInsertWebhook.get(
+      tenantId,
+      url,
+      JSON.stringify(eventList),
+      secret && typeof secret === 'string' ? secret : null,
+    ) as { id: string; tenant_id: string; url: string; events: string; active: number; created_at: string };
+
+    res.status(201).json({
+      id: row.id,
+      tenantId: row.tenant_id,
+      url: row.url,
+      events: JSON.parse(row.events) as string[],
+      active: row.active === 1,
+      createdAt: row.created_at,
+    });
+  } catch (e) {
+    console.error('[webhooks] insert error:', e instanceof Error ? e.message : e);
+    res.status(500).json({ error: 'Failed to create webhook' });
+  }
+});
+
+// GET /api/v1/webhooks — list tenant webhooks
+app.get('/api/v1/webhooks', requireTenantAuth, (req: Request, res: Response) => {
+  const tenantId = req.tenantId!;
+  const rows = stmtGetWebhooksByTenant.all(tenantId) as Array<{ id: string; tenant_id: string; url: string; events: string; active: number; created_at: string }>;
+  res.json({
+    webhooks: rows.map(r => ({
+      id: r.id,
+      url: r.url,
+      events: JSON.parse(r.events) as string[],
+      active: r.active === 1,
+      createdAt: r.created_at,
+    })),
+  });
+});
+
+// DELETE /api/v1/webhooks/:id — deactivate a webhook
+app.delete('/api/v1/webhooks/:id', requireTenantAuth, (req: Request, res: Response) => {
+  const tenantId = req.tenantId!;
+  const webhookId = req.params['id'];
+
+  if (!webhookId || typeof webhookId !== 'string') {
+    return res.status(400).json({ error: 'Invalid webhook id' });
+  }
+
+  const existing = stmtGetWebhookById.get(webhookId, tenantId) as WebhookRow | undefined;
+  if (!existing) {
+    return res.status(404).json({ error: 'Webhook not found' });
+  }
+
+  stmtDeleteWebhook.run(webhookId, tenantId);
+  res.json({ id: webhookId, deleted: true });
+});
+
+// ── Template Routes ────────────────────────────────────────────────────────
+
+// GET /api/v1/templates — list all templates
+app.get('/api/v1/templates', (_req: Request, res: Response) => {
+  const templates = Array.from(templateCache.values()).map(t => ({
+    id: t.id,
+    name: t.name,
+    version: t.version,
+    description: t.description,
+    category: t.category,
+    tags: t.tags,
+    ruleCount: Array.isArray(t.rules) ? t.rules.length : 0,
+  }));
+  res.json({ templates });
+});
+
+// GET /api/v1/templates/:name — get template detail with rules
+app.get('/api/v1/templates/:name', (req: Request, res: Response) => {
+  const name = req.params['name'];
+  const template = templateCache.get(name);
+  if (!template) {
+    return res.status(404).json({ error: `Template '${name}' not found` });
+  }
+  res.json({ template });
+});
+
+// POST /api/v1/templates/:name/apply — apply template to tenant (creates policies in audit log as acknowledgement)
+app.post('/api/v1/templates/:name/apply', requireTenantAuth, (req: Request, res: Response) => {
+  const name = req.params['name'];
+  const template = templateCache.get(name);
+  if (!template) {
+    return res.status(404).json({ error: `Template '${name}' not found` });
+  }
+
+  const tenantId = req.tenantId!;
+  const ruleCount = Array.isArray(template.rules) ? template.rules.length : 0;
+
+  // Record the template application in the audit trail
+  const prevHash = getLastHash(tenantId);
+  storeAuditEvent(
+    tenantId,
+    null,
+    'template_apply',
+    'allow',
+    `template:${template.id}`,
+    0,
+    `Applied policy template: ${template.name} (${ruleCount} rules)`,
+    0,
+    prevHash,
+    null,
+  );
+
+  res.json({
+    applied: true,
+    templateId: template.id,
+    templateName: template.name,
+    rulesInTemplate: ruleCount,
+    message: `Template '${template.name}' applied. ${ruleCount} rules available for reference. Integrate rules into your policy engine configuration.`,
+  });
+});
+
+// ── Agent Routes ───────────────────────────────────────────────────────────
+
+// POST /api/v1/agents — create an agent within a tenant
+app.post('/api/v1/agents', requireTenantAuth, (req: Request, res: Response) => {
+  const { name, policy_scope } = req.body ?? {};
+  const tenantId = req.tenantId!;
+
+  if (!name || typeof name !== 'string' || name.trim().length < 1) {
+    return res.status(400).json({ error: 'name is required' });
+  }
+  if (name.length > 200) {
+    return res.status(400).json({ error: 'name too long (max 200 chars)' });
+  }
+
+  let scopeJson = '[]';
+  if (Array.isArray(policy_scope)) {
+    scopeJson = JSON.stringify(policy_scope);
+  }
+
+  const agentKey = generateAgentKey();
+
+  try {
+    const row = stmtInsertAgent.get(tenantId, name.trim(), agentKey, scopeJson) as {
+      id: string; tenant_id: string; name: string; policy_scope: string; active: number; created_at: string;
+    };
+
+    res.status(201).json({
+      id: row.id,
+      tenantId: row.tenant_id,
+      name: row.name,
+      apiKey: agentKey,
+      policyScope: JSON.parse(row.policy_scope) as string[],
+      active: row.active === 1,
+      createdAt: row.created_at,
+      note: 'Store the apiKey securely — it will not be shown again.',
+    });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('UNIQUE')) {
+      return res.status(409).json({ error: 'An agent with this name already exists for your tenant' });
+    }
+    console.error('[agents] insert error:', msg);
+    res.status(500).json({ error: 'Failed to create agent' });
+  }
+});
+
+// GET /api/v1/agents — list tenant's agents
+app.get('/api/v1/agents', requireTenantAuth, (req: Request, res: Response) => {
+  const tenantId = req.tenantId!;
+  const rows = stmtGetAgentsByTenant.all(tenantId) as Array<{
+    id: string; tenant_id: string; name: string; policy_scope: string; active: number; created_at: string;
+  }>;
+  res.json({
+    agents: rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      policyScope: JSON.parse(r.policy_scope) as string[],
+      active: r.active === 1,
+      createdAt: r.created_at,
+    })),
+  });
+});
+
+// DELETE /api/v1/agents/:id — deactivate an agent
+app.delete('/api/v1/agents/:id', requireTenantAuth, (req: Request, res: Response) => {
+  const tenantId = req.tenantId!;
+  const agentRowId = req.params['id'];
+
+  if (!agentRowId || typeof agentRowId !== 'string') {
+    return res.status(400).json({ error: 'Invalid agent id' });
+  }
+
+  const existing = stmtGetAgentById.get(agentRowId, tenantId) as AgentRow | undefined;
+  if (!existing) {
+    return res.status(404).json({ error: 'Agent not found' });
+  }
+
+  stmtDeactivateAgent.run(agentRowId, tenantId);
+  res.json({ id: agentRowId, deactivated: true });
+});
+
 // ── Global Error Handler ───────────────────────────────────────────────────
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   console.error('[error]', err instanceof Error ? err.message : err);
   res.status(500).json({ error: 'Internal server error' });
 });
+
+// ── Phase 2 Routes (Rate Limiting, Cost Attribution, Dashboard) ────────────
+app.use(createPhase2Routes(db));
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

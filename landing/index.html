@@ -441,10 +441,44 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
         <div class="solution-tag">EU AI Act Art. 14</div>
       </div>
     </div>
-    <div style="margin-top:40px;padding:20px 24px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+    <!-- Additional Capabilities -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:40px">
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius)">
+        <div style="font-size:1.2rem;margin-bottom:6px">🔔</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Webhook Alerts</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Slack, Teams, PagerDuty — instant alerts on blocked actions</div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius)">
+        <div style="font-size:1.2rem;margin-bottom:6px">🤖</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Agent Identity</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Per-agent keys, scoped policies, individual audit trails</div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius)">
+        <div style="font-size:1.2rem;margin-bottom:6px">📊</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Compliance Templates</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">SOC 2, APRA CPS 234, EU AI Act, OWASP — pre-built policy packs</div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius)">
+        <div style="font-size:1.2rem;margin-bottom:6px">⏱️</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Rate Limiting</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Per-agent sliding window limits — prevent runaway costs</div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius)">
+        <div style="font-size:1.2rem;margin-bottom:6px">💰</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Cost Attribution</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Track spend per agent, per tool — know where the money goes</div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius)">
+        <div style="font-size:1.2rem;margin-bottom:6px">📈</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Real-Time Dashboard</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Live decision feed, block rates, agent activity — full observability</div>
+      </div>
+    </div>
+    <div style="margin-top:20px;padding:20px 24px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
         <span style="font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--accent-hi)">npm install @thebotclub/agentguard</span>
-        <span style="font-size:.85rem;color:var(--text-dim)">Works with LangChain, AutoGen, CrewAI, OpenAI SDK, and any custom framework.</span>
+        <span style="font-size:.78rem;color:var(--text-dim);margin-left:4px">or</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--accent-hi)">pip install agentguard-tech</span>
       </div>
       <div style="font-size:.78rem;font-weight:600;color:var(--accent);white-space:nowrap">&lt;1ms p99 latency guaranteed</div>
     </div>
@@ -652,10 +686,11 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
         <p class="pricing-desc">Perfect for testing and small projects.</p>
         <ul class="pricing-features">
           <li>10,000 evaluations/month</li>
-          <li>1 API key</li>
+          <li>1 tenant key + 2 agent keys</li>
           <li>Community support</li>
           <li>7-day audit retention</li>
-          <li>Basic policy rules</li>
+          <li>5 compliance templates</li>
+          <li>Basic rate limiting</li>
         </ul>
         <a href="#hero-form" class="pricing-cta primary">Get Started Free</a>
       </div>
@@ -667,12 +702,14 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
         <div class="pricing-price">$299<span>/mo</span></div>
         <p class="pricing-desc">For teams building production agents.</p>
         <ul class="pricing-features">
-          <li>100,000 evaluations/month</li>
-          <li>10 API keys</li>
+          <li>1M evaluations/month</li>
+          <li>Unlimited agent keys</li>
           <li>Email support, SLA 99.9%</li>
           <li>90-day audit retention</li>
-          <li>Multi-agent policies</li>
-          <li>Advanced anomaly detection</li>
+          <li>Webhook alerts (Slack, Teams, PagerDuty)</li>
+          <li>Agent-scoped policies</li>
+          <li>Cost attribution &amp; rate limiting</li>
+          <li>Real-time dashboard</li>
         </ul>
         <a href="#hero-form" class="pricing-cta primary">Start Pro Trial</a>
       </div>
@@ -685,12 +722,14 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
         <p class="pricing-desc">For organizations at scale.</p>
         <ul class="pricing-features">
           <li>Unlimited evaluations</li>
-          <li>Unlimited API keys</li>
+          <li>Unlimited agent keys</li>
           <li>Dedicated support, SLA 99.99%</li>
           <li>Unlimited audit retention</li>
           <li>Custom policies, RBAC, SSO</li>
           <li>On-prem deployment option</li>
-          <li>Compliance reports (SOC2, ISO27001)</li>
+          <li>Compliance reports (SOC 2, APRA, EU AI Act)</li>
+          <li>Custom webhook integrations</li>
+          <li>Priority cost &amp; usage analytics</li>
         </ul>
         <a href="mailto:sales@agentguard.tech?subject=Enterprise%20Inquiry" class="pricing-cta ghost">Contact Sales</a>
       </div>
