@@ -169,9 +169,14 @@ tr:hover td { background:rgba(99,102,241,0.04); }
   <button class="nav-item" onclick="showPage('overview', event)">📊 Overview</button>
   <button class="nav-item" onclick="showPage('live', event)">⚡ Live Feed</button>
   <button class="nav-item" onclick="showPage('evaluate', event)">🔍 Evaluate</button>
-  <div class="nav-section">Configuration</div>
+  <div class="nav-section">Governance</div>
+  <button class="nav-item" onclick="showPage('agents', event)">🤖 Agents</button>
   <button class="nav-item" onclick="showPage('policy', event)">📜 Policies</button>
+  <button class="nav-item" onclick="showPage('webhooks', event)">🔔 Webhooks</button>
+  <button class="nav-item" onclick="showPage('ratelimits', event)">⏱️ Rate Limits</button>
+  <div class="nav-section">Monitoring</div>
   <button class="nav-item" onclick="showPage('audit', event)">📋 Audit Trail</button>
+  <button class="nav-item" onclick="showPage('costs', event)">💰 Costs</button>
   <button class="nav-item" onclick="showPage('killswitch', event)">🔴 Kill Switch</button>
   <div class="nav-section">Integrate</div>
   <button class="nav-item" onclick="showPage('sdk', event)">🔧 SDK / API</button>
@@ -185,17 +190,21 @@ tr:hover td { background:rgba(99,102,241,0.04); }
     <button class="nav-item active" onclick="showPage('overview', event)">📊 Overview</button>
     <button class="nav-item" onclick="showPage('live', event)">⚡ Live Feed</button>
     <button class="nav-item" onclick="showPage('evaluate', event)">🔍 Evaluate</button>
-    <div class="nav-section">Configuration</div>
+    <div class="nav-section">Governance</div>
+    <button class="nav-item" onclick="showPage('agents', event)">🤖 Agents</button>
     <button class="nav-item" onclick="showPage('policy', event)">📜 Policies</button>
+    <button class="nav-item" onclick="showPage('webhooks', event)">🔔 Webhooks</button>
+    <button class="nav-item" onclick="showPage('ratelimits', event)">⏱️ Rate Limits</button>
+    <div class="nav-section">Monitoring</div>
     <button class="nav-item" onclick="showPage('audit', event)">📋 Audit Trail</button>
+    <button class="nav-item" onclick="showPage('costs', event)">💰 Costs</button>
     <button class="nav-item" onclick="showPage('killswitch', event)">🔴 Kill Switch</button>
     <div class="nav-section">Integrate</div>
     <button class="nav-item" onclick="showPage('sdk', event)">🔧 SDK / API</button>
     <div style="flex:1"></div>
     <div style="padding:12px;border-top:1px solid var(--border-dim);font-size:0.78rem;color:var(--text-dim)">
-      <div style="font-weight:600;color:var(--accent-hi)">AgentGuard v0.1.0</div>
-      Engine: 7 rules loaded<br>
-      Default: allow
+      <div style="font-weight:600;color:var(--accent-hi)">AgentGuard v0.2.1</div>
+      <span id="sidebar-engine-info">Engine: 7 rules loaded<br>Default: allow</span>
     </div>
   </nav>
 
@@ -230,7 +239,7 @@ tr:hover td { background:rgba(99,102,241,0.04); }
         <div class="stat-card">
           <div class="label">Total Evaluations</div>
           <div class="value" id="stat-total">0</div>
-          <div class="sub">this session</div>
+          <div class="sub" id="stat-total-sub">last 24 hours</div>
         </div>
         <div class="stat-card">
           <div class="label">Allowed</div>
@@ -365,6 +374,182 @@ tr:hover td { background:rgba(99,102,241,0.04); }
             <thead><tr><th>#</th><th>Time</th><th>Tool</th><th>Decision</th><th>Rule</th><th>Risk</th><th>Latency</th><th>Hash</th></tr></thead>
             <tbody id="audit-tbody">
               <tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">Loading audit data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AGENTS PAGE ─────────────────────────────────── -->
+    <div class="page" id="page-agents" role="main">
+      <div class="main-header">
+        <h1>🤖 Agent Management</h1>
+        <button class="btn btn-primary" onclick="showCreateAgent()">+ Create Agent</button>
+      </div>
+      <div id="create-agent-form" style="display:none;margin-bottom:20px" class="card">
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end">
+            <div>
+              <label style="font-size:0.78rem;color:var(--text-dim);display:block;margin-bottom:4px">Agent Name</label>
+              <input id="agent-name" type="text" placeholder="booking-agent" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--mono);font-size:0.85rem">
+            </div>
+            <div>
+              <label style="font-size:0.78rem;color:var(--text-dim);display:block;margin-bottom:4px">Policy Scope (optional)</label>
+              <input id="agent-scope" type="text" placeholder="read-only" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--mono);font-size:0.85rem">
+            </div>
+            <button class="btn btn-primary" onclick="createAgent()">Create</button>
+          </div>
+          <div id="agent-create-result" style="margin-top:12px"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body no-pad">
+          <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Name</th>
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Scope</th>
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Status</th>
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Created</th>
+              <th style="text-align:right;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Actions</th>
+            </tr></thead>
+            <tbody id="agents-tbody">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px">Loading agents...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── WEBHOOKS PAGE ──────────────────────────────── -->
+    <div class="page" id="page-webhooks" role="main">
+      <div class="main-header">
+        <h1>🔔 Webhooks</h1>
+        <button class="btn btn-primary" onclick="showCreateWebhook()">+ Add Webhook</button>
+      </div>
+      <div id="create-webhook-form" style="display:none;margin-bottom:20px" class="card">
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:12px;align-items:end">
+            <div>
+              <label style="font-size:0.78rem;color:var(--text-dim);display:block;margin-bottom:4px">Webhook URL</label>
+              <input id="webhook-url" type="url" placeholder="https://hooks.slack.com/services/..." style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--mono);font-size:0.85rem">
+            </div>
+            <div>
+              <label style="font-size:0.78rem;color:var(--text-dim);display:block;margin-bottom:4px">Events</label>
+              <select id="webhook-events" multiple style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.85rem">
+                <option value="block" selected>block</option>
+                <option value="hitl">hitl</option>
+                <option value="killswitch">killswitch</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="createWebhook()">Add</button>
+          </div>
+          <div id="webhook-create-result" style="margin-top:12px"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body no-pad">
+          <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">URL</th>
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Events</th>
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Created</th>
+              <th style="text-align:right;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Actions</th>
+            </tr></thead>
+            <tbody id="webhooks-tbody">
+              <tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">Loading webhooks...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RATE LIMITS PAGE ───────────────────────────── -->
+    <div class="page" id="page-ratelimits" role="main">
+      <div class="main-header">
+        <h1>⏱️ Rate Limits</h1>
+        <button class="btn btn-primary" onclick="showCreateRateLimit()">+ Add Limit</button>
+      </div>
+      <div id="create-ratelimit-form" style="display:none;margin-bottom:20px" class="card">
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
+            <div>
+              <label style="font-size:0.78rem;color:var(--text-dim);display:block;margin-bottom:4px">Window (seconds)</label>
+              <input id="rl-window" type="number" value="60" min="1" max="86400" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--mono);font-size:0.85rem">
+            </div>
+            <div>
+              <label style="font-size:0.78rem;color:var(--text-dim);display:block;margin-bottom:4px">Max Requests</label>
+              <input id="rl-max" type="number" value="100" min="1" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--mono);font-size:0.85rem">
+            </div>
+            <div>
+              <label style="font-size:0.78rem;color:var(--text-dim);display:block;margin-bottom:4px">Agent (optional)</label>
+              <input id="rl-agent" type="text" placeholder="all agents" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--mono);font-size:0.85rem">
+            </div>
+            <button class="btn btn-primary" onclick="createRateLimit()">Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body no-pad">
+          <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Window</th>
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Max Requests</th>
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Agent</th>
+              <th style="text-align:right;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Actions</th>
+            </tr></thead>
+            <tbody id="ratelimits-tbody">
+              <tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">Loading rate limits...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COSTS PAGE ─────────────────────────────────── -->
+    <div class="page" id="page-costs" role="main">
+      <div class="main-header">
+        <h1>💰 Cost Attribution</h1>
+        <div style="display:flex;gap:8px">
+          <select id="cost-period" onchange="loadCosts()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.85rem">
+            <option value="24h">Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+          </select>
+          <select id="cost-groupby" onchange="loadCosts()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.85rem">
+            <option value="agent">By Agent</option>
+            <option value="tool">By Tool</option>
+            <option value="day">By Day</option>
+          </select>
+        </div>
+      </div>
+      <div class="stats-grid" id="cost-totals">
+        <div class="stat-card">
+          <div class="label">Total Cost</div>
+          <div class="value" id="cost-total" style="color:var(--accent-hi)">$0.00</div>
+          <div class="sub">selected period</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Events</div>
+          <div class="value" id="cost-events">0</div>
+          <div class="sub">cost events tracked</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Avg per Event</div>
+          <div class="value" id="cost-avg">$0.00</div>
+          <div class="sub">mean cost</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Breakdown</h2></div>
+        <div class="card-body no-pad">
+          <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase" id="cost-col-label">Agent</th>
+              <th style="text-align:right;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Cost</th>
+              <th style="text-align:right;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Events</th>
+            </tr></thead>
+            <tbody id="costs-tbody">
+              <tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">Loading costs...</td></tr>
             </tbody>
           </table>
         </div>
@@ -652,6 +837,217 @@ function closeMobileNav() {
   document.getElementById('mobile-nav-drawer').classList.remove('open');
 }
 
+// ── Agents Management ───────────────────────────────────
+function showCreateAgent() {
+  var el = document.getElementById('create-agent-form');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loadAgents() {
+  if (!storedApiKey) { document.getElementById('agents-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key to manage agents</td></tr>'; return; }
+  try {
+    var r = await fetch(API + '/api/v1/agents', { headers: getApiHeaders(), signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var data = await r.json();
+    var agents = data.agents || [];
+    var tbody = document.getElementById('agents-tbody');
+    if (agents.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px">No agents created yet</td></tr>'; return; }
+    tbody.innerHTML = agents.map(function(a) {
+      return '<tr style="border-bottom:1px solid var(--border-dim)">' +
+        '<td style="padding:12px 16px;font-weight:600;color:var(--text-bright)">' + esc(a.name) + '</td>' +
+        '<td style="padding:12px 16px;font-family:var(--mono);font-size:0.82rem;color:var(--accent-hi)">' + esc(a.policyScope || '—') + '</td>' +
+        '<td style="padding:12px 16px"><span class="badge badge-allow">' + esc(a.status || 'active') + '</span></td>' +
+        '<td style="padding:12px 16px;font-size:0.82rem;color:var(--text-dim)">' + (a.createdAt || '').replace('T', ' ').slice(0, 19) + '</td>' +
+        '<td style="padding:12px 16px;text-align:right"><button class="btn btn-ghost" style="color:var(--red);font-size:0.78rem" onclick="deleteAgent(\'' + esc(a.id) + '\')">Delete</button></td>' +
+        '</tr>';
+    }).join('');
+  } catch (e) { document.getElementById('agents-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--red);padding:24px">Failed to load agents</td></tr>'; }
+}
+
+async function createAgent() {
+  var name = document.getElementById('agent-name').value.trim();
+  var scope = document.getElementById('agent-scope').value.trim();
+  if (!name) { alert('Agent name is required'); return; }
+  try {
+    var r = await fetch(API + '/api/v1/agents', { method: 'POST', headers: getApiHeaders(), body: JSON.stringify({ name: name, policy_scope: scope || undefined }) });
+    var data = await r.json();
+    if (r.ok) {
+      document.getElementById('agent-create-result').innerHTML = '<div style="padding:12px;background:rgba(34,197,94,0.08);border-radius:8px;border:1px solid rgba(34,197,94,0.25)"><strong>Agent created!</strong> Key: <code style="font-family:var(--mono);color:var(--accent-hi);user-select:all">' + esc(data.apiKey) + '</code><br><span style="font-size:0.78rem;color:var(--text-dim)">Save this key — it won\'t be shown again.</span></div>';
+      document.getElementById('agent-name').value = '';
+      document.getElementById('agent-scope').value = '';
+      loadAgents();
+    } else { document.getElementById('agent-create-result').innerHTML = '<div style="color:var(--red)">' + esc(data.error || 'Failed') + '</div>'; }
+  } catch { document.getElementById('agent-create-result').innerHTML = '<div style="color:var(--red)">API error</div>'; }
+}
+
+async function deleteAgent(id) {
+  if (!confirm('Delete this agent? This will revoke its API key immediately.')) return;
+  try {
+    await fetch(API + '/api/v1/agents/' + id, { method: 'DELETE', headers: getApiHeaders() });
+    loadAgents();
+  } catch {}
+}
+
+// ── Webhooks Management ─────────────────────────────────
+function showCreateWebhook() {
+  var el = document.getElementById('create-webhook-form');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loadWebhooks() {
+  if (!storedApiKey) { document.getElementById('webhooks-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key to manage webhooks</td></tr>'; return; }
+  try {
+    var r = await fetch(API + '/api/v1/webhooks', { headers: getApiHeaders(), signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var data = await r.json();
+    var hooks = data.webhooks || [];
+    var tbody = document.getElementById('webhooks-tbody');
+    if (hooks.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">No webhooks configured</td></tr>'; return; }
+    tbody.innerHTML = hooks.map(function(w) {
+      return '<tr style="border-bottom:1px solid var(--border-dim)">' +
+        '<td style="padding:12px 16px;font-family:var(--mono);font-size:0.82rem;max-width:300px;overflow:hidden;text-overflow:ellipsis">' + esc(w.url) + '</td>' +
+        '<td style="padding:12px 16px">' + (w.events || []).map(function(e) { return '<span class="badge badge-block" style="margin:2px">' + esc(e) + '</span>'; }).join('') + '</td>' +
+        '<td style="padding:12px 16px;font-size:0.82rem;color:var(--text-dim)">' + (w.createdAt || '').replace('T', ' ').slice(0, 19) + '</td>' +
+        '<td style="padding:12px 16px;text-align:right"><button class="btn btn-ghost" style="color:var(--red);font-size:0.78rem" onclick="deleteWebhook(\'' + esc(w.id) + '\')">Delete</button></td>' +
+        '</tr>';
+    }).join('');
+  } catch { document.getElementById('webhooks-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red);padding:24px">Failed to load webhooks</td></tr>'; }
+}
+
+async function createWebhook() {
+  var url = document.getElementById('webhook-url').value.trim();
+  var sel = document.getElementById('webhook-events');
+  var events = Array.from(sel.selectedOptions).map(function(o) { return o.value; });
+  if (!url) { alert('Webhook URL is required'); return; }
+  try {
+    var r = await fetch(API + '/api/v1/webhooks', { method: 'POST', headers: getApiHeaders(), body: JSON.stringify({ url: url, events: events }) });
+    var data = await r.json();
+    if (r.ok) {
+      document.getElementById('webhook-create-result').innerHTML = '<div style="color:var(--green)">✓ Webhook added</div>';
+      document.getElementById('webhook-url').value = '';
+      loadWebhooks();
+    } else { document.getElementById('webhook-create-result').innerHTML = '<div style="color:var(--red)">' + esc(data.error || 'Failed') + '</div>'; }
+  } catch { document.getElementById('webhook-create-result').innerHTML = '<div style="color:var(--red)">API error</div>'; }
+}
+
+async function deleteWebhook(id) {
+  if (!confirm('Delete this webhook?')) return;
+  try { await fetch(API + '/api/v1/webhooks/' + id, { method: 'DELETE', headers: getApiHeaders() }); loadWebhooks(); } catch {}
+}
+
+// ── Rate Limits Management ──────────────────────────────
+function showCreateRateLimit() {
+  var el = document.getElementById('create-ratelimit-form');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loadRateLimits() {
+  if (!storedApiKey) { document.getElementById('ratelimits-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key to manage rate limits</td></tr>'; return; }
+  try {
+    var r = await fetch(API + '/api/v1/rate-limits', { headers: getApiHeaders(), signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var data = await r.json();
+    var limits = data.rateLimits || data.rate_limits || [];
+    var tbody = document.getElementById('ratelimits-tbody');
+    if (limits.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:24px">No rate limits configured</td></tr>'; return; }
+    tbody.innerHTML = limits.map(function(l) {
+      var windowStr = l.window_seconds >= 3600 ? (l.window_seconds / 3600) + 'h' : l.window_seconds >= 60 ? (l.window_seconds / 60) + 'min' : l.window_seconds + 's';
+      return '<tr style="border-bottom:1px solid var(--border-dim)">' +
+        '<td style="padding:12px 16px;font-family:var(--mono);font-size:0.85rem">' + windowStr + '</td>' +
+        '<td style="padding:12px 16px;font-family:var(--mono);font-size:0.85rem;color:var(--accent-hi)">' + l.max_requests + '</td>' +
+        '<td style="padding:12px 16px;font-size:0.85rem;color:var(--text-dim)">' + esc(l.agent_id || 'All agents') + '</td>' +
+        '<td style="padding:12px 16px;text-align:right"><button class="btn btn-ghost" style="color:var(--red);font-size:0.78rem" onclick="deleteRateLimit(\'' + esc(l.id) + '\')">Delete</button></td>' +
+        '</tr>';
+    }).join('');
+  } catch { document.getElementById('ratelimits-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red);padding:24px">Failed to load rate limits</td></tr>'; }
+}
+
+async function createRateLimit() {
+  var win = parseInt(document.getElementById('rl-window').value);
+  var max = parseInt(document.getElementById('rl-max').value);
+  var agent = document.getElementById('rl-agent').value.trim();
+  try {
+    var body = { windowSeconds: win, maxRequests: max };
+    if (agent) body.agentId = agent;
+    var r = await fetch(API + '/api/v1/rate-limits', { method: 'POST', headers: getApiHeaders(), body: JSON.stringify(body) });
+    if (r.ok) { loadRateLimits(); document.getElementById('create-ratelimit-form').style.display = 'none'; }
+  } catch {}
+}
+
+async function deleteRateLimit(id) {
+  if (!confirm('Remove this rate limit?')) return;
+  try { await fetch(API + '/api/v1/rate-limits/' + id, { method: 'DELETE', headers: getApiHeaders() }); loadRateLimits(); } catch {}
+}
+
+// ── Cost Attribution ────────────────────────────────────
+async function loadCosts() {
+  if (!storedApiKey) { document.getElementById('costs-tbody').innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key to view costs</td></tr>'; return; }
+  var period = document.getElementById('cost-period').value;
+  var groupBy = document.getElementById('cost-groupby').value;
+  document.getElementById('cost-col-label').textContent = groupBy === 'agent' ? 'Agent' : groupBy === 'tool' ? 'Tool' : 'Date';
+  try {
+    var r = await fetch(API + '/api/v1/costs/summary?period=' + period + '&groupBy=' + groupBy, { headers: getApiHeaders(), signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var data = await r.json();
+    var totals = data.totals || {};
+    document.getElementById('cost-total').textContent = '$' + (totals.totalCost || 0).toFixed(2);
+    document.getElementById('cost-events').textContent = totals.eventCount || 0;
+    document.getElementById('cost-avg').textContent = '$' + ((totals.totalCost || 0) / Math.max(totals.eventCount || 1, 1)).toFixed(4);
+    var breakdown = data.breakdown || [];
+    var tbody = document.getElementById('costs-tbody');
+    if (breakdown.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">No cost data for this period</td></tr>'; return; }
+    tbody.innerHTML = breakdown.map(function(b) {
+      return '<tr style="border-bottom:1px solid var(--border-dim)">' +
+        '<td style="padding:12px 16px;font-weight:600;color:var(--text-bright)">' + esc(b.key || b.agent_id || b.tool || b.date || '—') + '</td>' +
+        '<td style="padding:12px 16px;text-align:right;font-family:var(--mono);color:var(--accent-hi)">$' + (b.total_cost || b.cost || 0).toFixed(4) + '</td>' +
+        '<td style="padding:12px 16px;text-align:right;font-family:var(--mono);color:var(--text-dim)">' + (b.event_count || b.count || 0) + '</td>' +
+        '</tr>';
+    }).join('');
+  } catch { document.getElementById('costs-tbody').innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--red);padding:24px">Failed to load costs</td></tr>'; }
+}
+
+// ── Dashboard Stats (Phase 2) ───────────────────────────
+async function loadDashboardStats() {
+  if (!storedApiKey) return;
+  try {
+    var r = await fetch(API + '/api/v1/dashboard/stats', { headers: getApiHeaders(), signal: AbortSignal.timeout(10000) });
+    if (!r.ok) return;
+    var data = await r.json();
+    var evals = data.evaluations || {};
+    if (evals.last_24h !== undefined) document.getElementById('stat-total').textContent = evals.last_24h;
+    if (evals.allowed !== undefined) document.getElementById('stat-allowed').textContent = evals.allowed;
+    if (evals.blocked !== undefined) document.getElementById('stat-blocked').textContent = evals.blocked;
+    var total = (evals.last_24h || 1);
+    if (evals.allowed !== undefined) document.getElementById('stat-allow-pct').textContent = Math.round((evals.allowed / total) * 100) + '%';
+    if (evals.blocked !== undefined) document.getElementById('stat-block-pct').textContent = Math.round((evals.blocked / total) * 100) + '%';
+  } catch {}
+}
+
+async function loadDashboardFeed() {
+  if (!storedApiKey) return;
+  try {
+    var r = await fetch(API + '/api/v1/dashboard/feed?limit=10', { headers: getApiHeaders(), signal: AbortSignal.timeout(10000) });
+    if (!r.ok) return;
+    var data = await r.json();
+    var events = data.events || [];
+    if (events.length === 0) return;
+    var feed = document.getElementById('recent-feed');
+    feed.innerHTML = '';
+    events.forEach(function(e) {
+      var colors = { allow: 'var(--green)', block: 'var(--red)', monitor: 'var(--accent-hi)' };
+      var c = colors[e.decision || e.result] || 'var(--text-dim)';
+      var time = (e.timestamp || '').replace('T', ' ').slice(11, 19);
+      var div = document.createElement('div');
+      div.className = 'feed-item';
+      div.innerHTML = '<div class="feed-dot" style="background:' + c + '"></div>' +
+        '<div class="feed-time">' + esc(time) + '</div>' +
+        '<div class="feed-content"><div class="feed-tool">' + esc(e.tool || '') + ' → <span style="color:' + c + ';font-weight:600">' + esc((e.decision || e.result || '').toUpperCase()) + '</span></div>' +
+        '<div class="feed-rule">' + esc(e.matchedRuleId || e.rule || 'default') + ' · risk ' + (e.riskScore || 0) + '</div></div>';
+      feed.appendChild(div);
+    });
+  } catch {}
+}
+
 // ── Init ─────────────────────────────────────────────────
 async function init() {
   // Load stored API key
@@ -691,10 +1087,12 @@ async function init() {
     document.getElementById('cold-start-banner').classList.remove('visible');
   }
 
-  // Load real usage stats if API key is available
+  // Load real data if API key is available
   if (storedApiKey) {
-    await loadUsageStats();
-    await loadAuditTrail();
+    loadDashboardStats();
+    loadDashboardFeed();
+    loadUsageStats();
+    loadAuditTrail();
   }
 
   // Create session
@@ -758,7 +1156,7 @@ function showPage(id, evt) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   // Update title
-  const titles = { overview: 'Dashboard', live: 'Live Feed', evaluate: 'Evaluate', policy: 'Policies', audit: 'Audit Trail', killswitch: 'Kill Switch', sdk: 'SDK & API' };
+  const titles = { overview: 'Dashboard', live: 'Live Feed', evaluate: 'Evaluate', policy: 'Policies', audit: 'Audit Trail', killswitch: 'Kill Switch', sdk: 'SDK & API', agents: 'Agents', webhooks: 'Webhooks', ratelimits: 'Rate Limits', costs: 'Costs' };
   document.title = `AgentGuard — ${titles[id] || id}`;
   // Mark active nav item
   if (evt && evt.target) {
@@ -775,12 +1173,12 @@ function showPage(id, evt) {
   closeMobileNav();
   
   // Reload data when switching to certain pages
-  if (id === 'overview' && storedApiKey) {
-    loadUsageStats();
-  }
-  if (id === 'audit' && storedApiKey) {
-    loadAuditTrail();
-  }
+  if (id === 'overview' && storedApiKey) { loadDashboardStats(); loadDashboardFeed(); loadUsageStats(); }
+  if (id === 'audit' && storedApiKey) { loadAuditTrail(); }
+  if (id === 'agents') { loadAgents(); }
+  if (id === 'webhooks') { loadWebhooks(); }
+  if (id === 'ratelimits') { loadRateLimits(); }
+  if (id === 'costs') { loadCosts(); }
 }
 
 // ── Evaluate ────────────────────────────────────────────
