@@ -69,8 +69,23 @@ AgentGuard is live in production. All URLs below serve real traffic from a real 
 | Policy evaluation API | api.agentguard.tech | Live — serving real requests |
 | Investor demo | demo.agentguard.tech | Live — real backend, not a mockup |
 
+**SDKs published:**
+- `npm install @the-bot-club/agentguard` (TypeScript)
+- `pip install agentguard-tech` (Python)
+
+**v0.2.0 capabilities (all live):**
+- Policy engine (7 rule types, declarative YAML, sub-millisecond)
+- SHA-256 hash-chained audit trail (tamper-evident, paginated, verifiable)
+- Per-tenant and per-agent kill switch
+- Webhook alerts (Slack, Teams, PagerDuty integration)
+- Agent identity and scoped policies (per-agent API keys)
+- 5 compliance templates (SOC 2, APRA CPS 234, EU AI Act, OWASP Agentic, Financial Services)
+- Rate limiting (sliding window, per-agent or per-tenant)
+- Cost attribution (per-agent, per-tool spend tracking)
+- Real-time decision dashboard (stats, live feed, agent activity)
+
 **Tech stack:** TypeScript · Azure Container Apps · SQLite · GitHub Actions CI/CD
-**Test coverage:** 63 unit tests, all passing · Full CI pipeline on every commit
+**Test coverage:** 11 e2e test suites, 63 unit tests, all passing · Full CI pipeline on every commit
 **Evaluation latency:** P99 < 1ms
 
 ## Architecture
@@ -201,7 +216,7 @@ We are not pitching a lifestyle business. We are building the governance infrast
 | **Product** | https://agentguard.tech |
 | **Dashboard** | https://app.agentguard.tech |
 | **API** | https://api.agentguard.tech |
-| **GitHub** | https://github.com/koshaji/agentguard *(private — access on request)* |
+| **GitHub** | https://github.com/AgentGuard-tech/agentguard *(private — access on request)* |
 
 ---
 

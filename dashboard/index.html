@@ -468,7 +468,7 @@ const { result, riskScore } = await res.json();</pre>
 // ── Config ──────────────────────────────────────────────
 // Primary: custom domain. Fallback: direct Azure URL.
 const API_PRIMARY = 'https://api.agentguard.tech';
-const API_FALLBACK = 'https://agentguard-api.greenrock-adeab1b0.australiaeast.azurecontainerapps.io';
+const API_FALLBACK = 'https://api.agentguard.tech';
 let API = API_FALLBACK; // Start with fallback; update after health check
 
 let sessionId = null;
