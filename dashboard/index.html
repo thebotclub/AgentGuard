@@ -751,13 +751,14 @@ async function loadAuditTrail() {
         }
         
         tbody.innerHTML = events.map(function(e, idx) {
-          var badgeClass = e.decision === 'allow' ? 'badge-allow' : e.decision === 'block' ? 'badge-block' : 'badge-monitor';
+          var res = e.result || e.decision || '';
+          var badgeClass = res === 'allow' ? 'badge-allow' : res === 'block' ? 'badge-block' : 'badge-monitor';
           return '<tr>' +
             '<td style="font-family:var(--mono);font-size:0.82rem">' + (idx + 1) + '</td>' +
-            '<td style="font-family:var(--mono);font-size:0.82rem;color:var(--text-dim)">' + (e.timestamp || '').replace('T', ' ').slice(0, 19) + '</td>' +
+            '<td style="font-family:var(--mono);font-size:0.82rem;color:var(--text-dim)">' + (e.createdAt || e.timestamp || '').replace('T', ' ').slice(0, 19) + '</td>' +
             '<td style="font-family:var(--mono);font-size:0.82rem">' + esc(e.tool || '') + '</td>' +
-            '<td><span class="badge ' + badgeClass + '">' + esc(e.decision || '') + '</span></td>' +
-            '<td style="font-family:var(--mono);font-size:0.82rem;color:var(--text-dim)">' + esc(e.matchedRuleId || '—') + '</td>' +
+            '<td><span class="badge ' + badgeClass + '">' + esc(res) + '</span></td>' +
+            '<td style="font-family:var(--mono);font-size:0.82rem;color:var(--text-dim)">' + esc(e.ruleId || e.matchedRuleId || '—') + '</td>' +
             '<td style="font-family:var(--mono);font-size:0.82rem;color:' + ((e.riskScore || 0) > 50 ? 'var(--red)' : 'var(--green)') + '">' + (e.riskScore || 0) + '</td>' +
             '<td style="font-family:var(--mono);font-size:0.82rem;color:var(--accent-hi)">' + (e.durationMs || 0) + 'ms</td>' +
             '<td style="font-family:var(--mono);font-size:0.75rem;color:var(--text-dim)">' + (e.hash || '—') + '</td>' +
@@ -1014,12 +1015,21 @@ async function loadDashboardStats() {
     if (!r.ok) return;
     var data = await r.json();
     var evals = data.evaluations || {};
-    if (evals.last_24h !== undefined) document.getElementById('stat-total').textContent = evals.last_24h;
-    if (evals.allowed !== undefined) document.getElementById('stat-allowed').textContent = evals.allowed;
-    if (evals.blocked !== undefined) document.getElementById('stat-blocked').textContent = evals.blocked;
-    var total = (evals.last_24h || 1);
-    if (evals.allowed !== undefined) document.getElementById('stat-allow-pct').textContent = Math.round((evals.allowed / total) * 100) + '%';
-    if (evals.blocked !== undefined) document.getElementById('stat-block-pct').textContent = Math.round((evals.blocked / total) * 100) + '%';
+    var total24h = evals.last24h || evals.last_24h || 0;
+    document.getElementById('stat-total').textContent = total24h;
+    // Sum allowed/blocked from hourly breakdown
+    var hours = data.evaluationsByHour || [];
+    var allowed = 0, blocked = 0;
+    hours.forEach(function(h) { allowed += (h.allowed || 0); blocked += (h.blocked || 0); });
+    document.getElementById('stat-allowed').textContent = allowed;
+    document.getElementById('stat-blocked').textContent = blocked;
+    var denom = Math.max(total24h, 1);
+    document.getElementById('stat-allow-pct').textContent = Math.round((allowed / denom) * 100) + '%';
+    document.getElementById('stat-block-pct').textContent = Math.round((blocked / denom) * 100) + '%';
+    if (data.avgLatencyMs !== undefined) document.getElementById('stat-latency').textContent = data.avgLatencyMs.toFixed(2) + 'ms';
+    // Update sidebar engine info
+    var info = document.getElementById('sidebar-engine-info');
+    if (info) info.innerHTML = 'Agents: ' + (data.activeAgents24h || 0) + ' active<br>Block rate: ' + (data.blockRatePercent || 0) + '%';
   } catch {}
 }
 
@@ -1034,15 +1044,16 @@ async function loadDashboardFeed() {
     var feed = document.getElementById('recent-feed');
     feed.innerHTML = '';
     events.forEach(function(e) {
-      var colors = { allow: 'var(--green)', block: 'var(--red)', monitor: 'var(--accent-hi)' };
-      var c = colors[e.decision || e.result] || 'var(--text-dim)';
-      var time = (e.timestamp || '').replace('T', ' ').slice(11, 19);
+      var colors = { allow: 'var(--green)', block: 'var(--red)', monitor: 'var(--accent-hi)', hitl_required: 'var(--amber)' };
+      var result = e.result || e.decision || '';
+      var c = colors[result] || 'var(--text-dim)';
+      var time = (e.createdAt || e.timestamp || '').replace('T', ' ').slice(11, 19);
       var div = document.createElement('div');
       div.className = 'feed-item';
       div.innerHTML = '<div class="feed-dot" style="background:' + c + '"></div>' +
         '<div class="feed-time">' + esc(time) + '</div>' +
-        '<div class="feed-content"><div class="feed-tool">' + esc(e.tool || '') + ' → <span style="color:' + c + ';font-weight:600">' + esc((e.decision || e.result || '').toUpperCase()) + '</span></div>' +
-        '<div class="feed-rule">' + esc(e.matchedRuleId || e.rule || 'default') + ' · risk ' + (e.riskScore || 0) + '</div></div>';
+        '<div class="feed-content"><div class="feed-tool">' + esc(e.tool || '') + ' → <span style="color:' + c + ';font-weight:600">' + esc(result.toUpperCase()) + '</span></div>' +
+        '<div class="feed-rule">' + esc(e.ruleId || e.matchedRuleId || 'default') + ' · risk ' + (e.riskScore || 0) + ' · ' + (e.durationMs || 0) + 'ms</div></div>';
       feed.appendChild(div);
     });
   } catch {}
