@@ -1,6 +1,6 @@
 {
   "name": "agentguard",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "AgentGuard — Runtime security platform for AI agents",
   "workspaces": [

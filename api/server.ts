@@ -849,23 +849,22 @@ app.get('/health', (_req: Request, res: Response) => {
 app.post('/api/v1/signup', (req: Request, res: Response) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
 
-  if (!signupRateLimit(ip)) {
-    return res.status(429).json({ error: 'Too many signups. Limit: 5 per hour per IP.' });
-  }
-
   const { name, email } = req.body ?? {};
 
+  // Validate inputs BEFORE applying rate limit (prevents limit burn on bad requests)
   if (!name || typeof name !== 'string' || name.trim().length < 1) {
     return res.status(400).json({ error: 'name is required' });
   }
   if (!email || typeof email !== 'string') {
     return res.status(400).json({ error: 'email is required' });
   }
-
-  // Basic email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email.trim())) {
     return res.status(400).json({ error: 'Invalid email format' });
+  }
+
+  if (!signupRateLimit(ip)) {
+    return res.status(429).json({ error: 'Too many signups. Limit: 5 per hour per IP.' });
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -1679,15 +1678,39 @@ app.use((_req: Request, res: Response) => {
 });
 
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
+// ── Seed tenant from API_KEY env var ──────────────────────────────────────
+// If API_KEY is set (e.g. in Azure), ensure it exists as a registered tenant
+// so the dashboard and admin scripts can authenticate from day one.
+const SEED_API_KEY = process.env['API_KEY'];
+if (SEED_API_KEY) {
+  try {
+    const existing = db.prepare('SELECT id FROM api_keys WHERE key = ?').get(SEED_API_KEY);
+    if (!existing) {
+      const seedTenantId = 'seed-' + SEED_API_KEY.slice(-8);
+      const existingTenant = db.prepare('SELECT id FROM tenants WHERE id = ?').get(seedTenantId);
+      if (!existingTenant) {
+        db.prepare('INSERT OR IGNORE INTO tenants (id, name, email, plan, created_at) VALUES (?, ?, ?, ?, ?)')
+          .run(seedTenantId, 'AgentGuard Admin', 'admin@agentguard.tech', 'enterprise', new Date().toISOString());
+      }
+      db.prepare('INSERT OR IGNORE INTO api_keys (key, tenant_id, created_at) VALUES (?, ?, ?)')
+        .run(SEED_API_KEY, seedTenantId, new Date().toISOString());
+      console.log(`[seed] registered API_KEY as tenant ${seedTenantId}`);
+    }
+  } catch (e) {
+    console.error('[seed] failed to register API_KEY:', e);
+  }
+}
+
 app.listen(PORT, '0.0.0.0', () => {
   const ks = getGlobalKillSwitch();
-  console.log(`🛡️  AgentGuard API v0.2.0 running on port ${PORT}`);
+  console.log(`🛡️  AgentGuard API v0.2.1 running on port ${PORT}`);
   console.log(`   ${DEFAULT_POLICY.rules.length} rules loaded | default: ${DEFAULT_POLICY.default}`);
   console.log(`   CORS: ${ALLOWED_ORIGINS.join(', ')}, localhost:*`);
   console.log(`   Rate limit: ${MAX_REQUESTS} req/min per IP`);
   console.log(`   Max sessions: ${MAX_SESSIONS} | Max audit events/session: ${MAX_AUDIT_EVENTS}`);
-  console.log(`   SQLite persistence: enabled`);
+  console.log(`   SQLite persistence: enabled | DB: ${process.env['AG_DB_PATH'] || 'in-memory'}`);
   console.log(`   Global kill switch: ${ks.active ? 'ACTIVE ⚠️' : 'inactive'}`);
   if (ADMIN_KEY) console.log(`   Admin key: configured`);
   else console.log(`   Admin key: NOT SET (set ADMIN_KEY env var)`);
+  if (SEED_API_KEY) console.log(`   Seed API key: registered`);
 });
