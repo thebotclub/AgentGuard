@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentGuard Documentation — API Reference & SDK Guide</title>
+<meta name="description" content="AgentGuard developer documentation. API reference, TypeScript & Python SDK guides, policy engine, compliance templates, webhooks, and integration examples.">
+<meta name="author" content="Hani Kashi — Founder, AgentGuard">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://docs.agentguard.tech">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+:root{
+  --bg:#0a0a1a;--bg-card:#111128;--bg-card2:#0d0d1f;
+  --accent:#5254d4;--accent-hi:#818cf8;--accent-dim:rgba(82,84,212,0.15);
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;--cyan:#06b6d4;
+  --text:#e2e8f0;--text-dim:#94a3b8;--text-bright:#f8fafc;
+  --border:rgba(99,102,241,0.18);--border-dim:rgba(255,255,255,0.06);
+  --radius:10px;
+  --sidebar-w:280px;
+  --mono:'JetBrains Mono',monospace;
+}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+
+/* ─── LAYOUT ─── */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);position:fixed;top:0;left:0;bottom:0;overflow-y:auto;background:var(--bg-card);border-right:1px solid var(--border-dim);padding:24px 0;z-index:100}
+.sidebar-header{padding:0 20px 20px;border-bottom:1px solid var(--border-dim);margin-bottom:16px}
+.sidebar-logo{font-size:1.3rem;font-weight:800;color:var(--text-bright);text-decoration:none;display:flex;align-items:center;gap:8px}
+.sidebar-logo span{font-size:1.5rem}
+.sidebar-version{font-size:.7rem;color:var(--text-dim);margin-top:4px;font-family:var(--mono)}
+.sidebar nav{padding:0 12px}
+.sidebar .nav-group{margin-bottom:20px}
+.sidebar .nav-group-title{font-size:.7rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;padding:0 8px;margin-bottom:6px}
+.sidebar .nav-link{display:block;padding:6px 12px;font-size:.85rem;color:var(--text-dim);text-decoration:none;border-radius:6px;transition:all .15s}
+.sidebar .nav-link:hover{color:var(--text-bright);background:var(--accent-dim)}
+.sidebar .nav-link.active{color:var(--accent-hi);background:var(--accent-dim);font-weight:600}
+.sidebar .nav-link .method{font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 5px;border-radius:3px;margin-right:6px;display:inline-block;min-width:38px;text-align:center}
+.method-get{background:rgba(34,197,94,0.15);color:#22c55e}
+.method-post{background:rgba(59,130,246,0.15);color:#60a5fa}
+.method-delete{background:rgba(239,68,68,0.15);color:#ef4444}
+
+.main{margin-left:var(--sidebar-w);flex:1;max-width:900px;padding:40px 48px 80px}
+
+/* ─── TYPOGRAPHY ─── */
+h1{font-size:2rem;font-weight:800;color:var(--text-bright);margin-bottom:12px;letter-spacing:-0.02em}
+h2{font-size:1.5rem;font-weight:700;color:var(--text-bright);margin:56px 0 16px;padding-top:24px;border-top:1px solid var(--border-dim);letter-spacing:-0.01em}
+h2:first-of-type{margin-top:24px;border-top:none;padding-top:0}
+h3{font-size:1.15rem;font-weight:700;color:var(--text-bright);margin:32px 0 12px}
+h4{font-size:.95rem;font-weight:600;color:var(--accent-hi);margin:24px 0 8px;font-family:var(--mono)}
+p{margin-bottom:16px;color:var(--text-dim)}
+p strong{color:var(--text)}
+a{color:var(--accent-hi)}
+
+/* ─── CODE BLOCKS ─── */
+code{font-family:var(--mono);font-size:.82rem;background:var(--bg-card2);padding:2px 6px;border-radius:4px;color:var(--accent-hi)}
+pre{background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px;overflow-x:auto;margin:12px 0 20px;line-height:1.6}
+pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
+.code-header{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);border:1px solid var(--border-dim);border-bottom:none;border-radius:var(--radius) var(--radius) 0 0;padding:8px 16px;font-size:.75rem;font-family:var(--mono);color:var(--text-dim)}
+.code-header + pre{border-radius:0 0 var(--radius) var(--radius);margin-top:0}
+.copy-btn{background:none;border:1px solid var(--border-dim);color:var(--text-dim);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:.7rem;font-family:var(--mono);transition:all .15s}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent-hi)}
+
+/* ─── ENDPOINT BLOCKS ─── */
+.endpoint{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);margin:16px 0 24px;overflow:hidden}
+.endpoint-header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border-dim);cursor:pointer}
+.endpoint-header .method{font-family:var(--mono);font-size:.75rem;font-weight:700;padding:4px 8px;border-radius:4px}
+.endpoint-header .path{font-family:var(--mono);font-size:.9rem;color:var(--text-bright);font-weight:500}
+.endpoint-header .label{margin-left:auto;font-size:.75rem;color:var(--text-dim)}
+.endpoint-body{padding:20px}
+.endpoint-body p{font-size:.9rem}
+
+/* ─── PARAM TABLE ─── */
+.params{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:.85rem}
+.params th{text-align:left;padding:8px 12px;font-weight:600;color:var(--text-dim);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border)}
+.params td{padding:8px 12px;border-bottom:1px solid var(--border-dim);color:var(--text-dim)}
+.params td:first-child{font-family:var(--mono);color:var(--text);font-weight:500;white-space:nowrap}
+.param-type{font-family:var(--mono);font-size:.75rem;color:var(--cyan)}
+.param-req{font-size:.7rem;font-weight:700;color:var(--red);text-transform:uppercase}
+.param-opt{font-size:.7rem;color:var(--text-dim)}
+
+/* ─── BADGES & TAGS ─── */
+.auth-badge{font-size:.7rem;font-weight:600;padding:3px 8px;border-radius:4px;text-transform:uppercase}
+.auth-required{background:rgba(239,68,68,0.12);color:#fca5a5}
+.auth-optional{background:rgba(245,158,11,0.12);color:#fbbf24}
+.auth-none{background:rgba(34,197,94,0.12);color:#86efac}
+.badge-new{background:rgba(6,182,212,0.15);color:#06b6d4;font-size:.65rem;font-weight:700;padding:2px 6px;border-radius:3px;margin-left:8px;vertical-align:middle}
+
+/* ─── TABS ─── */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border-dim);margin:16px 0 0}
+.tab{padding:8px 16px;font-size:.82rem;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;font-weight:500}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent-hi);border-bottom-color:var(--accent-hi);font-weight:600}
+.tab-panel{display:none;margin-top:0}
+.tab-panel.active{display:block}
+
+/* ─── CALLOUTS ─── */
+.callout{border-radius:var(--radius);padding:16px 20px;margin:16px 0;font-size:.88rem}
+.callout-info{background:rgba(59,130,246,0.08);border-left:3px solid #3b82f6}
+.callout-warn{background:rgba(245,158,11,0.08);border-left:3px solid #f59e0b}
+.callout-tip{background:rgba(34,197,94,0.08);border-left:3px solid #22c55e}
+.callout strong{color:var(--text-bright)}
+
+/* ─── MOBILE ─── */
+.menu-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;background:var(--bg-card);border:1px solid var(--border);padding:8px 12px;border-radius:8px;color:var(--text);cursor:pointer;font-size:1.2rem}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);transition:transform .2s}
+  .sidebar.open{transform:translateX(0)}
+  .menu-toggle{display:block}
+  .main{margin-left:0;padding:60px 20px 80px}
+  pre{font-size:.72rem;padding:12px}
+  h1{font-size:1.6rem}
+}
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<div class="layout">
+
+<!-- ─── SIDEBAR ─── -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <a href="https://agentguard.tech" class="sidebar-logo"><span>🛡️</span> AgentGuard</a>
+    <div class="sidebar-version">v0.2.1 · docs</div>
+  </div>
+  <nav>
+    <div class="nav-group">
+      <div class="nav-group-title">Getting Started</div>
+      <a href="#overview" class="nav-link active">Overview</a>
+      <a href="#quickstart" class="nav-link">Quick Start</a>
+      <a href="#authentication" class="nav-link">Authentication</a>
+      <a href="#sdk" class="nav-link">SDK Installation</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Core API</div>
+      <a href="#signup" class="nav-link"><span class="method method-post">POST</span> Signup</a>
+      <a href="#evaluate" class="nav-link"><span class="method method-post">POST</span> Evaluate</a>
+      <a href="#audit" class="nav-link"><span class="method method-get">GET</span> Audit Trail</a>
+      <a href="#audit-verify" class="nav-link"><span class="method method-get">GET</span> Verify Chain</a>
+      <a href="#killswitch" class="nav-link"><span class="method method-post">POST</span> Kill Switch</a>
+      <a href="#usage" class="nav-link"><span class="method method-get">GET</span> Usage Stats</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Governance</div>
+      <a href="#agents" class="nav-link">Agent Identity</a>
+      <a href="#templates" class="nav-link">Compliance Templates</a>
+      <a href="#webhooks" class="nav-link">Webhook Alerts</a>
+      <a href="#policy-engine" class="nav-link">Policy Engine</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Observability</div>
+      <a href="#rate-limits" class="nav-link">Rate Limiting</a>
+      <a href="#costs" class="nav-link">Cost Attribution</a>
+      <a href="#dashboard-api" class="nav-link">Dashboard API</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Resources</div>
+      <a href="#errors" class="nav-link">Error Handling</a>
+      <a href="#playground" class="nav-link">Playground</a>
+      <a href="https://agentguard.tech" class="nav-link">← Back to site</a>
+    </div>
+  </nav>
+</aside>
+
+<!-- ─── MAIN CONTENT ─── -->
+<main class="main">
+
+<!-- OVERVIEW -->
+<h1 id="overview">🛡️ AgentGuard Documentation</h1>
+<p style="font-size:1.1rem;color:var(--text);margin-bottom:24px">Runtime security platform for AI agents. Evaluate every action before execution — sub-millisecond, tamper-proof, compliance-ready.</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:32px">
+  <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
+    <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">BASE URL</div>
+    <code style="font-size:.9rem">https://api.agentguard.tech</code>
+  </div>
+  <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
+    <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">LATENCY</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--green)">P99 &lt; 1ms</div>
+  </div>
+  <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
+    <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">VERSION</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--accent-hi)">v0.2.1</div>
+  </div>
+</div>
+
+<div class="callout callout-tip"><strong>Open-source SDKs available.</strong> TypeScript and Python clients handle authentication, request formatting, and error handling automatically. <a href="#sdk">Jump to SDK →</a></div>
+
+
+<!-- QUICK START -->
+<h2 id="quickstart">Quick Start</h2>
+<p>Get from zero to a live policy engine in under 5 minutes.</p>
+
+<h3>1. Create an account</h3>
+<div class="code-header"><span>curl</span></div>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/signup \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Acme Corp", "email": "security@acme.com"}'</code></pre>
+<p>Response includes your <code>apiKey</code> (format: <code>ag_live_</code> + 32 hex chars). <strong>Store it securely — it's only shown once.</strong></p>
+
+<h3>2. Install the SDK</h3>
+<div class="tabs" data-tabgroup="install">
+  <div class="tab active" data-tab="ts">TypeScript</div>
+  <div class="tab" data-tab="py">Python</div>
+</div>
+<div class="tab-panel active" data-tab="ts" data-tabgroup="install">
+<pre><code>npm install @the-bot-club/agentguard</code></pre>
+</div>
+<div class="tab-panel" data-tab="py" data-tabgroup="install">
+<pre><code>pip install agentguard-tech</code></pre>
+</div>
+
+<h3>3. Evaluate an action</h3>
+<div class="tabs" data-tabgroup="eval">
+  <div class="tab active" data-tab="ts">TypeScript</div>
+  <div class="tab" data-tab="py">Python</div>
+  <div class="tab" data-tab="curl">cURL</div>
+</div>
+<div class="tab-panel active" data-tab="ts" data-tabgroup="eval">
+<pre><code>import { AgentGuard } from '@the-bot-club/agentguard';
+
+const guard = new AgentGuard({
+  apiKey: 'ag_live_your_key_here',
+  baseUrl: 'https://api.agentguard.tech'
+});
+
+const decision = await guard.evaluate({
+  tool: 'http_post',
+  params: { destination: 'https://api.stripe.com/v1/charges', amount: 4200 }
+});
+
+if (decision.result === 'allow') {
+  // Safe to execute
+  await executeAction();
+} else {
+  console.log(`Blocked: ${decision.reason}`);
+}</code></pre>
+</div>
+<div class="tab-panel" data-tab="py" data-tabgroup="eval">
+<pre><code>from agentguard import AgentGuard
+
+guard = AgentGuard(
+    api_key="ag_live_your_key_here",
+    base_url="https://api.agentguard.tech"
+)
+
+decision = guard.evaluate(
+    tool="http_post",
+    params={"destination": "https://api.stripe.com/v1/charges", "amount": 4200}
+)
+
+if decision["result"] == "allow":
+    execute_action()
+else:
+    print(f"Blocked: {decision['reason']}")</code></pre>
+</div>
+<div class="tab-panel" data-tab="curl" data-tabgroup="eval">
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/evaluate \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{
+    "tool": "http_post",
+    "params": {
+      "destination": "https://api.stripe.com/v1/charges",
+      "amount": 4200
+    }
+  }'</code></pre>
+</div>
+
+<p>That's it. Every action your agent takes now goes through AgentGuard's policy engine before execution.</p>
+
+
+<!-- AUTHENTICATION -->
+<h2 id="authentication">Authentication</h2>
+<p>All authenticated endpoints require the <code>X-API-Key</code> header.</p>
+
+<pre><code>X-API-Key: ag_live_your_key_here</code></pre>
+
+<p>AgentGuard uses two types of API keys:</p>
+<table class="params">
+<tr><th>Key Format</th><th>Type</th><th>Description</th></tr>
+<tr><td>ag_live_*</td><td><span class="param-type">tenant</span></td><td>Tenant-level key. Full access to all endpoints for your account.</td></tr>
+<tr><td>ag_agent_*</td><td><span class="param-type">agent</span></td><td>Agent-scoped key. Restricted to evaluate + audit. Policies scoped to this agent.</td></tr>
+</table>
+
+<div class="callout callout-info"><strong>No API key?</strong> Requests without a key run in <strong>demo mode</strong> — fully functional but data isn't persisted. Great for testing.</div>
+
+
+<!-- SDK -->
+<h2 id="sdk">SDK Installation</h2>
+
+<h3>TypeScript / Node.js</h3>
+<pre><code>npm install @the-bot-club/agentguard</code></pre>
+<pre><code>import { AgentGuard } from '@the-bot-club/agentguard';
+
+const guard = new AgentGuard({
+  apiKey: process.env.AGENTGUARD_API_KEY,
+  baseUrl: 'https://api.agentguard.tech'  // optional, this is the default
+});
+
+// Core methods
+await guard.evaluate({ tool, params });
+await guard.getAudit({ limit, offset });
+await guard.verifyAuditChain();
+await guard.getUsage();
+await guard.setKillSwitch(true);
+
+// Agent management
+await guard.createAgent({ name, policyScope });
+await guard.listAgents();
+await guard.deleteAgent(agentId);
+
+// Webhooks
+await guard.createWebhook({ url, events, secret });
+await guard.listWebhooks();
+await guard.deleteWebhook(webhookId);
+
+// Compliance templates
+await guard.listTemplates();
+await guard.getTemplate(name);
+await guard.applyTemplate(name);
+
+// Rate limiting
+await guard.createRateLimit({ windowSeconds, maxRequests });
+await guard.listRateLimits();
+
+// Cost attribution
+await guard.trackCost({ agentId, tool, estimatedCost, currency, metadata });
+await guard.getCostSummary({ period, groupBy });
+
+// Dashboard
+await guard.getDashboardStats();
+await guard.getDashboardFeed({ limit });
+await guard.getDashboardAgents();</code></pre>
+
+<h3>Python</h3>
+<pre><code>pip install agentguard-tech</code></pre>
+<pre><code>from agentguard import AgentGuard
+
+guard = AgentGuard(
+    api_key=os.environ["AGENTGUARD_API_KEY"],
+    base_url="https://api.agentguard.tech"  # optional, this is the default
+)
+
+# Same methods available — snake_case convention
+guard.evaluate(tool=tool, params=params)
+guard.get_audit(limit=50)
+guard.verify_audit_chain()
+guard.set_kill_switch(True)
+guard.create_agent(name="my-agent", policy_scope="read-only")
+guard.create_webhook(url="https://hooks.slack.com/...", events=["block"])
+guard.list_templates()
+guard.apply_template("soc2-starter")
+guard.create_rate_limit(window_seconds=60, max_requests=100)
+guard.track_cost(agent_id="agent-1", tool="gpt-4", estimated_cost=0.03)
+guard.get_cost_summary(period="24h", group_by="agent")
+guard.get_dashboard_stats()
+guard.get_dashboard_feed(limit=20)
+guard.get_dashboard_agents()</code></pre>
+
+<div class="callout callout-info"><strong>CJS + ESM supported.</strong> The TypeScript SDK works with both <code>require()</code> and <code>import</code>.</div>
+
+
+<!-- ────────────────────────────────────────────────── -->
+<!-- API REFERENCE -->
+<!-- ────────────────────────────────────────────────── -->
+
+<!-- SIGNUP -->
+<h2 id="signup">Signup</h2>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/signup</span>
+    <span class="auth-badge auth-none">Public</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Create a new tenant account and receive your API key.</p>
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>name</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Company or project name</td></tr>
+      <tr><td>email</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Contact email</td></tr>
+    </table>
+    <h4>Response — 201</h4>
+<pre><code>{
+  "tenantId": "a80dd96c-...",
+  "apiKey": "ag_live_bca6b529c4ac09e4...",
+  "dashboard": "https://app.agentguard.tech",
+  "message": "Account created. Store your API key — it won't be shown again."
+}</code></pre>
+    <div class="callout callout-warn"><strong>Save your API key immediately.</strong> It's hashed at rest and cannot be retrieved after this response.</div>
+  </div>
+</div>
+
+
+<!-- EVALUATE -->
+<h2 id="evaluate">Evaluate</h2>
+<p>The core endpoint. Submit an agent action for policy evaluation before execution.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/evaluate</span>
+    <span class="auth-badge auth-optional">Auth Optional</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>tool</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Action being attempted (e.g. <code>file_read</code>, <code>http_post</code>, <code>shell_exec</code>)</td></tr>
+      <tr><td>params</td><td><span class="param-type">object</span></td><td><span class="param-opt">optional</span></td><td>Parameters of the action (e.g. <code>{"path": "/etc/passwd"}</code>)</td></tr>
+      <tr><td>context</td><td><span class="param-type">object</span></td><td><span class="param-opt">optional</span></td><td>Additional context (user, session, environment)</td></tr>
+    </table>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "result": "block",
+  "reason": "Blocked by rule \"block-privilege-escalation\"",
+  "riskScore": 85,
+  "rule": "block-privilege-escalation",
+  "durationMs": 0.06,
+  "sessionId": "demo-abc123",
+  "hashChain": "sha256:a1b2c3..."
+}</code></pre>
+    <h4>Result Values</h4>
+    <table class="params">
+      <tr><th>Value</th><th>Meaning</th></tr>
+      <tr><td style="color:var(--green)">allow</td><td>Action is safe to execute</td></tr>
+      <tr><td style="color:var(--red)">block</td><td>Action violates a policy rule — do not execute</td></tr>
+      <tr><td style="color:var(--amber)">hitl_required</td><td>Human-in-the-loop approval needed before execution</td></tr>
+    </table>
+    <div class="callout callout-tip"><strong>Without an API key</strong>, requests run in demo mode — functional evaluation against default rules, but decisions aren't persisted.</div>
+  </div>
+</div>
+
+
+<!-- AUDIT -->
+<h2 id="audit">Audit Trail</h2>
+<p>Every evaluation decision is recorded in a SHA-256 hash-chained audit log. Each entry includes the hash of the previous entry, making the chain cryptographically tamper-evident.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/audit</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>Query Parameters</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
+      <tr><td>limit</td><td><span class="param-type">number</span></td><td>50</td><td>Max events to return (1–500)</td></tr>
+      <tr><td>offset</td><td><span class="param-type">number</span></td><td>0</td><td>Pagination offset</td></tr>
+    </table>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "events": [
+    {
+      "id": "evt_...",
+      "tool": "shell_exec",
+      "result": "block",
+      "rule": "block-privilege-escalation",
+      "riskScore": 95,
+      "durationMs": 0.04,
+      "hashChain": "sha256:...",
+      "agentId": "agent-1",
+      "timestamp": "2026-03-02T02:15:00.000Z"
+    }
+  ],
+  "count": 1,
+  "total": 42
+}</code></pre>
+  </div>
+</div>
+
+<h3 id="audit-verify">Verify Hash Chain</h3>
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/audit/verify</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Cryptographically verify the integrity of your audit trail. Returns <code>valid: true</code> if no entries have been tampered with.</p>
+<pre><code>{
+  "valid": true,
+  "eventsChecked": 42,
+  "message": "Hash chain verified — all 42 events are intact."
+}</code></pre>
+  </div>
+</div>
+
+
+<!-- KILL SWITCH -->
+<h2 id="killswitch">Kill Switch</h2>
+<p>Instantly block all agent actions for your tenant — no code changes, no redeployment. When active, every evaluation returns <code>block</code> with reason <code>KILL_SWITCH</code>.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/killswitch</span>
+    <span class="auth-badge auth-none">Public</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Check global kill switch status.</p>
+<pre><code>{ "active": false }</code></pre>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/killswitch</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>active</td><td><span class="param-type">boolean</span></td><td><span class="param-req">required</span></td><td><code>true</code> to activate (block all), <code>false</code> to deactivate</td></tr>
+    </table>
+  </div>
+</div>
+
+
+<!-- USAGE -->
+<h2 id="usage">Usage Stats</h2>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/usage</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Get evaluation counts and breakdown for your tenant.</p>
+<pre><code>{
+  "totalEvaluations": 12847,
+  "allowed": 11203,
+  "blocked": 1644,
+  "hitlRequired": 0,
+  "uniqueTools": 18,
+  "uniqueSessions": 45
+}</code></pre>
+  </div>
+</div>
+
+
+<!-- AGENTS -->
+<h2 id="agents">Agent Identity</h2>
+<p>Create scoped API keys for individual agents. Each agent key restricts which policies apply and tracks decisions per-agent in the audit trail.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/agents</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+    <span class="badge-new">NEW</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>name</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Agent identifier (e.g. <code>"booking-agent"</code>)</td></tr>
+      <tr><td>policy_scope</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Policy scope tag — only rules matching this scope apply to this agent</td></tr>
+    </table>
+    <h4>Response — 201</h4>
+<pre><code>{
+  "id": "a1b2c3...",
+  "name": "booking-agent",
+  "apiKey": "ag_agent_98b70bb5a48...",
+  "policyScope": "booking",
+  "createdAt": "2026-03-02T02:15:00.000Z"
+}</code></pre>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/agents</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body"><p>List all agents for your tenant.</p></div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-delete">DELETE</span>
+    <span class="path">/api/v1/agents/:id</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body"><p>Revoke an agent key and remove the agent. Immediately blocks all future evaluations using this key.</p></div>
+</div>
+
+
+<!-- TEMPLATES -->
+<h2 id="templates">Compliance Templates</h2>
+<p>Pre-built policy rulesets mapped to real-world compliance frameworks. Apply a template to instantly load industry-standard rules.</p>
+
+<table class="params" style="margin:20px 0">
+  <tr><th>Template</th><th>Rules</th><th>Framework</th></tr>
+  <tr><td>soc2-starter</td><td>8</td><td>SOC 2 Type II — access control, data handling, audit logging</td></tr>
+  <tr><td>apra-cps234</td><td>10</td><td>APRA CPS 234 — Australian prudential standard for information security</td></tr>
+  <tr><td>eu-ai-act</td><td>12</td><td>EU AI Act Articles 9, 12, 14 — risk management, logging, human oversight</td></tr>
+  <tr><td>owasp-agentic</td><td>10</td><td>OWASP Top 10 for Agentic Applications — prompt injection, privilege escalation</td></tr>
+  <tr><td>financial-services</td><td>11</td><td>Financial services composite — PCI DSS, SOX, Basel III operational risk</td></tr>
+</table>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/templates</span>
+    <span class="auth-badge auth-none">Public</span>
+  </div>
+  <div class="endpoint-body"><p>List all available compliance templates.</p></div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/templates/:name</span>
+    <span class="auth-badge auth-none">Public</span>
+  </div>
+  <div class="endpoint-body"><p>Get full template details including all rules.</p></div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/templates/:name/apply</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body"><p>Apply a compliance template to your tenant. Adds the template's rules to your active policy.</p></div>
+</div>
+
+
+<!-- WEBHOOKS -->
+<h2 id="webhooks">Webhook Alerts</h2>
+<p>Get real-time notifications when actions are blocked, the kill switch activates, or human review is required. Webhooks include HMAC-SHA256 signatures for verification.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/webhooks</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+    <span class="badge-new">NEW</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>url</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>HTTPS endpoint to receive events</td></tr>
+      <tr><td>events</td><td><span class="param-type">string[]</span></td><td><span class="param-req">required</span></td><td>Event types: <code>block</code>, <code>hitl</code>, <code>killswitch</code></td></tr>
+      <tr><td>secret</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>HMAC secret for payload verification</td></tr>
+    </table>
+    <h4>Webhook Payload</h4>
+<pre><code>{
+  "event_type": "block",
+  "tenant_id": "a80dd96c-...",
+  "agent_id": "booking-agent",
+  "data": {
+    "decision": "block",
+    "rule": "block-external-api",
+    "tool": "http_post",
+    "riskScore": 75
+  },
+  "timestamp": "2026-03-02T02:15:00.000Z"
+}</code></pre>
+    <div class="callout callout-info"><strong>HMAC verification:</strong> If you set a <code>secret</code>, every payload includes an <code>X-AgentGuard-Signature</code> header with <code>sha256=HMAC(payload, secret)</code>.</div>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/webhooks</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body"><p>List all webhooks for your tenant.</p></div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-delete">DELETE</span>
+    <span class="path">/api/v1/webhooks/:id</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body"><p>Delete a webhook.</p></div>
+</div>
+
+
+<!-- POLICY ENGINE -->
+<h2 id="policy-engine">Policy Engine</h2>
+<p>The policy engine evaluates 7 rule types against every action, in priority order:</p>
+
+<table class="params">
+  <tr><th>Rule Type</th><th>Description</th><th>Example</th></tr>
+  <tr><td>resource_access</td><td>Block or allow access to specific tools/resources</td><td>Block <code>shell_exec</code>, allow <code>file_read</code></td></tr>
+  <tr><td>rate_limit</td><td>Limit action frequency per time window</td><td>Max 10 API calls per minute</td></tr>
+  <tr><td>scope_restriction</td><td>Restrict parameter values</td><td>Only allow <code>http_post</code> to whitelisted domains</td></tr>
+  <tr><td>hitl_gate</td><td>Require human approval before execution</td><td>Flag any action over $1,000</td></tr>
+  <tr><td>time_window</td><td>Allow/block actions based on time</td><td>No deployments outside business hours</td></tr>
+  <tr><td>environment</td><td>Environment-specific rules</td><td>Block destructive actions in production</td></tr>
+  <tr><td>data_classification</td><td>Protect sensitive data patterns</td><td>Block access to PII-classified resources</td></tr>
+</table>
+
+<p>Rules are evaluated in priority order (lowest number first). The first matching rule determines the result. If no rule matches, the <strong>default action</strong> applies (configurable, defaults to <code>allow</code>).</p>
+
+
+<!-- RATE LIMITS -->
+<h2 id="rate-limits">Rate Limiting</h2>
+<p>Custom rate limits enforce evaluation frequency per tenant or per agent using a sliding window algorithm.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/rate-limits</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+    <span class="badge-new">NEW</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>windowSeconds</td><td><span class="param-type">integer</span></td><td><span class="param-req">required</span></td><td>Window size (1–86400 seconds)</td></tr>
+      <tr><td>maxRequests</td><td><span class="param-type">integer</span></td><td><span class="param-req">required</span></td><td>Max evaluations allowed in window</td></tr>
+      <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Scope to specific agent (omit for tenant-wide)</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/rate-limits</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body"><p>List all rate limits.</p></div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-delete">DELETE</span>
+    <span class="path">/api/v1/rate-limits/:id</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body"><p>Remove a rate limit.</p></div>
+</div>
+
+
+<!-- COSTS -->
+<h2 id="costs">Cost Attribution</h2>
+<p>Track and attribute costs per agent and per tool. Automatically estimates costs based on tool type, or submit exact costs manually.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/costs/track</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+    <span class="badge-new">NEW</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Agent to attribute cost to</td></tr>
+      <tr><td>tool</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Tool or action name</td></tr>
+      <tr><td>estimatedCost</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>Cost in specified currency</td></tr>
+      <tr><td>currency</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Currency code (default: <code>USD</code>)</td></tr>
+      <tr><td>metadata</td><td><span class="param-type">object</span></td><td><span class="param-opt">optional</span></td><td>Additional context (tokens, model, etc.)</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/costs/summary</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>Query Parameters</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
+      <tr><td>period</td><td><span class="param-type">string</span></td><td>24h</td><td><code>1h</code>, <code>24h</code>, <code>7d</code>, <code>30d</code></td></tr>
+      <tr><td>groupBy</td><td><span class="param-type">string</span></td><td>agent</td><td><code>agent</code>, <code>tool</code>, <code>day</code></td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/costs/agents</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body"><p>Get cost breakdown by agent.</p></div>
+</div>
+
+
+<!-- DASHBOARD -->
+<h2 id="dashboard-api">Dashboard API</h2>
+<p>Real-time operational data for building dashboards and monitoring.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/dashboard/stats</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+    <span class="badge-new">NEW</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Aggregated statistics: evaluation counts, block rates, top triggered rules, active agents.</p>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/dashboard/feed</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Real-time event feed. Returns the most recent evaluation decisions.</p>
+    <h4>Query Parameters</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
+      <tr><td>limit</td><td><span class="param-type">number</span></td><td>20</td><td>Number of events (1–100)</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/dashboard/agents</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body"><p>Activity breakdown per agent — evaluations, blocks, last active timestamp.</p></div>
+</div>
+
+
+<!-- ERRORS -->
+<h2 id="errors">Error Handling</h2>
+<p>All errors return JSON with an <code>error</code> field:</p>
+<pre><code>{ "error": "Invalid or missing API key" }</code></pre>
+
+<table class="params">
+  <tr><th>Status</th><th>Meaning</th></tr>
+  <tr><td>400</td><td>Bad request — missing or invalid parameters</td></tr>
+  <tr><td>401</td><td>Unauthorized — invalid or missing API key</td></tr>
+  <tr><td>404</td><td>Not found — endpoint or resource doesn't exist</td></tr>
+  <tr><td>429</td><td>Rate limit exceeded — includes <code>resetAt</code> timestamp</td></tr>
+  <tr><td>500</td><td>Internal server error</td></tr>
+</table>
+
+<h3>Rate Limit Response</h3>
+<pre><code>{
+  "error": "Rate limit exceeded",
+  "remaining": 0,
+  "resetAt": 1709345760
+}</code></pre>
+
+
+<!-- PLAYGROUND -->
+<h2 id="playground">Playground</h2>
+<p>Test the policy engine without signing up. All playground endpoints are public — no API key required.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/playground/session</span>
+    <span class="auth-badge auth-none">Public</span>
+  </div>
+  <div class="endpoint-body"><p>Create a temporary playground session.</p></div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/playground/evaluate</span>
+    <span class="auth-badge auth-none">Public</span>
+  </div>
+  <div class="endpoint-body"><p>Evaluate an action in playground mode. Same request format as <code>/api/v1/evaluate</code>.</p></div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/playground/scenarios</span>
+    <span class="auth-badge auth-none">Public</span>
+  </div>
+  <div class="endpoint-body"><p>Get pre-built test scenarios to try.</p></div>
+</div>
+
+
+<!-- FOOTER -->
+<div style="margin-top:80px;padding-top:32px;border-top:1px solid var(--border-dim);font-size:.82rem;color:#6b7280;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px">
+  <div>AgentGuard © 2026 — Built by <a href="https://linkedin.com/in/hanikashi" style="color:var(--accent-hi)">Hani Kashi</a></div>
+  <div style="display:flex;gap:20px">
+    <a href="https://agentguard.tech" style="color:#6b7280">Home</a>
+    <a href="https://github.com/AgentGuard-tech/agentguard" style="color:#6b7280">GitHub</a>
+    <a href="mailto:hello@agentguard.tech" style="color:#6b7280">Contact</a>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- ─── JAVASCRIPT ─── -->
+<script>
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const group = tab.parentElement.dataset.tabgroup || tab.closest('[data-tabgroup]')?.dataset.tabgroup;
+    const target = tab.dataset.tab;
+    // Deactivate siblings
+    tab.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    // Show matching panels
+    let panels;
+    if (group) {
+      panels = document.querySelectorAll(`.tab-panel[data-tabgroup="${group}"]`);
+    } else {
+      const container = tab.parentElement.parentElement;
+      panels = container.querySelectorAll('.tab-panel');
+    }
+    panels.forEach(p => {
+      p.classList.toggle('active', p.dataset.tab === target);
+    });
+  });
+});
+
+// Active nav link on scroll
+const sections = document.querySelectorAll('h1[id], h2[id], h3[id]');
+const navLinks = document.querySelectorAll('.sidebar .nav-link[href^="#"]');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 100) current = s.id;
+  });
+  navLinks.forEach(link => {
+    link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+  });
+});
+
+// Close mobile sidebar on link click
+document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+  link.addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.remove('open');
+  });
+});
+</script>
+</body>
+</html>
