@@ -1686,7 +1686,7 @@ const PORT = parseInt(process.env['PORT'] || '3000', 10);
 const SEED_API_KEY = process.env['API_KEY'];
 if (SEED_API_KEY) {
   try {
-    const existing = db.prepare('SELECT id FROM api_keys WHERE key = ?').get(SEED_API_KEY);
+    const existing = db.prepare('SELECT key FROM api_keys WHERE key = ?').get(SEED_API_KEY);
     if (!existing) {
       const seedTenantId = 'seed-' + SEED_API_KEY.slice(-8);
       const existingTenant = db.prepare('SELECT id FROM tenants WHERE id = ?').get(seedTenantId);
