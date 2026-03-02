@@ -24,7 +24,8 @@ function openDatabase(): Database.Database {
     const dbPath = process.env['AG_DB_PATH'];
     console.log(`[db] opening SQLite at ${dbPath} (from AG_DB_PATH)`);
     const db = new Database(dbPath === ':memory:' ? ':memory:' : dbPath);
-    db.pragma('journal_mode = WAL');
+    db.pragma('journal_mode = DELETE');
+    db.pragma('busy_timeout = 5000');
     db.pragma('foreign_keys = ON');
     return db;
   }
@@ -39,7 +40,8 @@ function openDatabase(): Database.Database {
   }
   console.log(`[db] opening SQLite at ${dbPath}`);
   const db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
+  db.pragma('journal_mode = DELETE');
+  db.pragma('busy_timeout = 5000');
   db.pragma('foreign_keys = ON');
   return db;
 }
