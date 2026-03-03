@@ -1,0 +1,43 @@
+{
+  "name": "@the-bot-club/agentguard-cli",
+  "version": "0.1.0",
+  "description": "AgentGuard CLI — scan agent source code and validate policy coverage",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "./dist/cli.js",
+  "bin": {
+    "agentguard": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build:clean": "rm -rf dist && tsc --project tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/cli.test.js",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^12.1.0",
+    "glob": "^10.4.5",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "agentguard",
+    "ai-agent",
+    "security",
+    "policy",
+    "cli"
+  ]
+}
