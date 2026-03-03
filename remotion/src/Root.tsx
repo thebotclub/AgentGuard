@@ -1,5 +1,6 @@
 import { Composition } from 'remotion';
 import { Explainer } from './Explainer';
+import { CICDDemo } from './CICDDemo';
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -7,10 +8,18 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="Explainer"
         component={Explainer}
-        durationInFrames={1350} // 45 seconds at 30fps
+        durationInFrames={1350}
         fps={30}
-        width={1920}
-        height={1080}
+        width={1280}
+        height={720}
+      />
+      <Composition
+        id="CICDDemo"
+        component={CICDDemo}
+        durationInFrames={600} // 20 seconds at 30fps
+        fps={30}
+        width={1280}
+        height={720}
       />
     </>
   );
