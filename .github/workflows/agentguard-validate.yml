@@ -3,8 +3,9 @@ name: AgentGuard Policy Coverage
 on:
   pull_request:
     branches: [main, master, develop]
-  push:
-    branches: [main, master]
+  # Disabled on push until AGENTGUARD_API_KEY secret is configured
+  # push:
+  #   branches: [main, master]
 
 jobs:
   agentguard-validate:
