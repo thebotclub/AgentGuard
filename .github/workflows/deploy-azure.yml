@@ -134,8 +134,18 @@ jobs:
               echo "✅ API healthy (attempt $i) — version $VERSION"
               RESULT=$(curl -s --max-time 10 -X POST "$API_URL/api/v1/evaluate" \
                 -H "Content-Type: application/json" \
+                -H "X-API-Key: ${{ secrets.AGENTGUARD_API_KEY }}" \
                 -d '{"tool":"sudo","params":{"command":"test"}}')
               echo "Smoke test: $RESULT"
+              # Also verify unauth is rejected
+              UNAUTH=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 -X POST "$API_URL/api/v1/evaluate" \
+                -H "Content-Type: application/json" \
+                -d '{"tool":"test","params":{}}')
+              if [ "$UNAUTH" = "401" ]; then
+                echo "✅ Auth enforcement verified (unauth → 401)"
+              else
+                echo "⚠️ Unauth evaluate returned $UNAUTH (expected 401)"
+              fi
               exit 0
             fi
             echo "Attempt $i — waiting ${i}0s..."
