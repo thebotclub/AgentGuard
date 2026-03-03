@@ -9,6 +9,8 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import type {
   IDatabase,
   TenantRow,
@@ -17,6 +19,22 @@ import type {
   WebhookRow,
   AgentRow,
 } from './db-interface.js';
+
+// ── Key hashing helpers ────────────────────────────────────────────────────
+
+const BCRYPT_ROUNDS = 10;
+
+export function sha256Hex(key: string): string {
+  return crypto.createHash('sha256').update(key).digest('hex');
+}
+
+export async function hashApiKey(key: string): Promise<string> {
+  return bcrypt.hash(key, BCRYPT_ROUNDS);
+}
+
+export async function verifyApiKey(key: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(key, hash);
+}
 
 // ── Schema (SQLite dialect) ────────────────────────────────────────────────
 
@@ -225,6 +243,31 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         try { db.exec(`ALTER TABLE agents ADD COLUMN ${col.name} ${col.type}`); } catch { /* already exists */ }
       }
 
+      // Migration: bcrypt hashing columns on api_keys
+      const apiKeyCols: Array<{ name: string; type: string }> = [
+        { name: 'key_hash', type: 'TEXT' },
+        { name: 'key_prefix', type: 'TEXT' },
+        { name: 'key_sha256', type: 'TEXT' },
+      ];
+      for (const col of apiKeyCols) {
+        try { db.exec(`ALTER TABLE api_keys ADD COLUMN ${col.name} ${col.type}`); } catch { /* already exists */ }
+      }
+
+      // Back-fill existing plaintext keys with sha256 + prefix (bcrypt hash deferred — keys are live)
+      const unhashedRows = db.prepare(
+        'SELECT key FROM api_keys WHERE key_sha256 IS NULL AND key IS NOT NULL'
+      ).all() as Array<{ key: string }>;
+      for (const row of unhashedRows) {
+        const sha256 = sha256Hex(row.key);
+        const prefix = row.key.substring(0, 12);
+        db.prepare(
+          'UPDATE api_keys SET key_sha256 = ?, key_prefix = ? WHERE key = ?'
+        ).run(sha256, prefix, row.key);
+      }
+      if (unhashedRows.length > 0) {
+        console.log(`[db] migrated ${unhashedRows.length} existing API key(s) to sha256 lookup`);
+      }
+
       // Migration: MCP tables (also created by McpMiddleware but we ensure they exist here)
       db.exec(`
         CREATE TABLE IF NOT EXISTS mcp_configs (
@@ -311,15 +354,36 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
 
     // ── API Keys ──────────────────────────────────────────────────────────────
     async getApiKey(key: string): Promise<ApiKeyRow | undefined> {
+      // Legacy plaintext lookup (backward compat for keys not yet migrated)
       return getSync<ApiKeyRow>('SELECT * FROM api_keys WHERE key = ? AND is_active = 1', [key]);
     },
 
+    async getApiKeyBySha256(sha256: string): Promise<ApiKeyRow | undefined> {
+      return getSync<ApiKeyRow>(
+        'SELECT * FROM api_keys WHERE key_sha256 = ? AND is_active = 1',
+        [sha256]
+      );
+    },
+
     async createApiKey(key: string, tenantId: string, name: string): Promise<void> {
-      db.prepare('INSERT INTO api_keys (key, tenant_id, name) VALUES (?, ?, ?)').run(key, tenantId, name);
+      const keyHash = await hashApiKey(key);
+      const keyPrefix = key.substring(0, 12);
+      const keySha256 = sha256Hex(key);
+      db.prepare(
+        'INSERT INTO api_keys (key, tenant_id, name, key_hash, key_prefix, key_sha256) VALUES (?, ?, ?, ?, ?, ?)'
+      ).run(key, tenantId, name, keyHash, keyPrefix, keySha256);
     },
 
     async touchApiKey(key: string): Promise<void> {
-      db.prepare("UPDATE api_keys SET last_used_at = datetime('now') WHERE key = ?").run(key);
+      // Touch by sha256 (works for both hashed and legacy rows)
+      const sha256 = sha256Hex(key);
+      const updated = db.prepare(
+        "UPDATE api_keys SET last_used_at = datetime('now') WHERE key_sha256 = ?"
+      ).run(sha256);
+      if (updated.changes === 0) {
+        // Fallback for legacy plaintext rows
+        db.prepare("UPDATE api_keys SET last_used_at = datetime('now') WHERE key = ?").run(key);
+      }
     },
 
     // ── Audit Events ──────────────────────────────────────────────────────────

@@ -101,10 +101,15 @@ export function createAuthRoutes(
     const apiKey = req.headers['x-api-key'] as string | undefined;
 
     if (apiKey) {
-      const tenant = await db.getApiKey(apiKey).then(async (keyRow) => {
-        if (!keyRow) return null;
-        return db.getTenant(keyRow.tenant_id);
-      });
+      // Use sha256 lookup for hashed keys, fall back to plaintext for legacy
+      const sha256 = crypto.createHash('sha256').update(apiKey).digest('hex');
+      let keyRow = await db.getApiKeyBySha256(sha256);
+      if (!keyRow) keyRow = await db.getApiKey(apiKey); // legacy fallback
+
+      const tenant = keyRow
+        ? await db.getTenant(keyRow.tenant_id)
+        : null;
+
       if (tenant) {
         return res.json({
           global: { active: ks.active, activatedAt: ks.at },

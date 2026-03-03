@@ -18,6 +18,23 @@ import type {
   AgentRow,
 } from './db-interface.js';
 import { randomUUID } from 'crypto';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+
+// ── Key hashing helpers ────────────────────────────────────────────────────
+
+const BCRYPT_ROUNDS = 10;
+
+function sha256Hex(key: string): string {
+  return crypto.createHash('sha256').update(key).digest('hex');
+}
+
+async function hashApiKey(key: string): Promise<string> {
+  return bcrypt.hash(key, BCRYPT_ROUNDS);
+}
+
+// verifyApiKey is only used in auth middleware directly
+export { sha256Hex };
 
 // ── Schema ─────────────────────────────────────────────────────────────────
 
@@ -144,6 +161,7 @@ const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_events(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_audit_session ON audit_events(session_id);
   CREATE INDEX IF NOT EXISTS idx_apikeys_tenant ON api_keys(tenant_id);
+  CREATE INDEX IF NOT EXISTS idx_apikeys_sha256 ON api_keys(key_sha256);
   CREATE INDEX IF NOT EXISTS idx_webhooks_tenant ON webhooks(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_agents_tenant ON agents(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_agents_key ON agents(api_key);
@@ -240,6 +258,9 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       created_at: ts(row['created_at']) ?? new Date().toISOString(),
       last_used_at: ts(row['last_used_at']),
       is_active: Number(row['is_active'] ?? 1),
+      key_hash: (row['key_hash'] as string | null) ?? null,
+      key_prefix: (row['key_prefix'] as string | null) ?? null,
+      key_sha256: (row['key_sha256'] as string | null) ?? null,
     };
   }
 
@@ -296,6 +317,33 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       console.log('[pg] running schema migration...');
       await pool.query(SCHEMA_SQL);
       await pool.query(SEED_SETTINGS_SQL);
+
+      // Migration: bcrypt hashing columns on api_keys (idempotent)
+      const newCols = [
+        'ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS key_hash TEXT',
+        'ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS key_prefix TEXT',
+        'ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS key_sha256 TEXT',
+      ];
+      for (const sql of newCols) {
+        try { await pool.query(sql); } catch { /* already exists */ }
+      }
+
+      // Back-fill sha256 + prefix for existing plaintext keys
+      const { rows: unhashedRows } = await pool.query<{ key: string }>(
+        'SELECT key FROM api_keys WHERE key_sha256 IS NULL AND key IS NOT NULL'
+      );
+      for (const row of unhashedRows) {
+        const sha256 = sha256Hex(row.key);
+        const prefix = row.key.substring(0, 12);
+        await pool.query(
+          'UPDATE api_keys SET key_sha256 = $1, key_prefix = $2 WHERE key = $3',
+          [sha256, prefix, row.key]
+        );
+      }
+      if (unhashedRows.length > 0) {
+        console.log(`[pg] migrated ${unhashedRows.length} existing API key(s) to sha256 lookup`);
+      }
+
       console.log('[pg] schema ready');
     },
 
@@ -340,24 +388,43 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
 
     // ── API Keys ──────────────────────────────────────────────────────────────
     async getApiKey(key: string): Promise<ApiKeyRow | undefined> {
+      // Legacy plaintext lookup (backward compat for keys not yet migrated)
       const row = await get<Record<string, unknown>>(
         'SELECT * FROM api_keys WHERE key = $1 AND is_active = 1', [key]
       );
       return row ? normApiKey(row) : undefined;
     },
 
+    async getApiKeyBySha256(sha256: string): Promise<ApiKeyRow | undefined> {
+      const row = await get<Record<string, unknown>>(
+        'SELECT * FROM api_keys WHERE key_sha256 = $1 AND is_active = 1', [sha256]
+      );
+      return row ? normApiKey(row) : undefined;
+    },
+
     async createApiKey(key: string, tenantId: string, name: string): Promise<void> {
+      const keyHash = await hashApiKey(key);
+      const keyPrefix = key.substring(0, 12);
+      const keySha256 = sha256Hex(key);
       await pool.query(
-        'INSERT INTO api_keys (key, tenant_id, name) VALUES ($1, $2, $3)',
-        [key, tenantId, name]
+        'INSERT INTO api_keys (key, tenant_id, name, key_hash, key_prefix, key_sha256) VALUES ($1, $2, $3, $4, $5, $6)',
+        [key, tenantId, name, keyHash, keyPrefix, keySha256]
       );
     },
 
     async touchApiKey(key: string): Promise<void> {
-      await pool.query(
-        'UPDATE api_keys SET last_used_at = NOW() WHERE key = $1',
-        [key]
+      const sha256 = sha256Hex(key);
+      const result = await pool.query(
+        'UPDATE api_keys SET last_used_at = NOW() WHERE key_sha256 = $1',
+        [sha256]
       );
+      if (result.rowCount === 0) {
+        // Fallback for legacy plaintext rows
+        await pool.query(
+          'UPDATE api_keys SET last_used_at = NOW() WHERE key = $1',
+          [key]
+        );
+      }
     },
 
     // ── Audit Events ──────────────────────────────────────────────────────────

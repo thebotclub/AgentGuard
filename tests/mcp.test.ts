@@ -125,7 +125,7 @@ describe('McpMiddleware — unit', () => {
   let getMcpMiddlewareFn: typeof import('../api/mcp-middleware.js').getMcpMiddleware;
   let resetFn: typeof import('../api/mcp-middleware.js').resetMcpMiddleware;
   let McpErrorCode: typeof import('../api/mcp-middleware.js').McpErrorCode;
-  let Database: typeof import('better-sqlite3');
+  let createSqliteAdapterFn: typeof import('../api/db-sqlite.js').createSqliteAdapter;
 
   before(async () => {
     const mod = await import('../api/mcp-middleware.js');
@@ -133,23 +133,21 @@ describe('McpMiddleware — unit', () => {
     getMcpMiddlewareFn = mod.getMcpMiddleware;
     resetFn = mod.resetMcpMiddleware;
     McpErrorCode = mod.McpErrorCode;
-    Database = (await import('better-sqlite3')).default;
+    const dbMod = await import('../api/db-sqlite.js');
+    createSqliteAdapterFn = dbMod.createSqliteAdapter;
   });
 
   it('getMcpMiddleware returns a singleton', () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     resetFn();
     const a = getMcpMiddlewareFn(db);
     const b = getMcpMiddlewareFn(db);
     assert.strictEqual(a, b, 'should return same instance');
     resetFn();
-    db.close();
   });
 
   it('evaluateToolCall — allows safe reads', () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
     const session = middleware.createSession({ tenantId: 'test-tenant' });
 
@@ -165,12 +163,10 @@ describe('McpMiddleware — unit', () => {
     assert.strictEqual(result.blocked, false);
     assert.ok(typeof result.durationMs === 'number');
     assert.ok(result.durationMs >= 0);
-    db.close();
   });
 
   it('evaluateToolCall — blocks shell execution', () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
     const session = middleware.createSession({ tenantId: 'test-tenant' });
 
@@ -186,12 +182,10 @@ describe('McpMiddleware — unit', () => {
     assert.ok(result.mcpError, 'should include mcpError');
     assert.strictEqual(result.mcpError!.code, McpErrorCode.PolicyBlocked);
     assert.ok(result.mcpError!.message.includes("execute_command"));
-    db.close();
   });
 
   it('evaluateToolCall — blocks file writes', () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
     const session = middleware.createSession({ tenantId: 'test-tenant' });
 
@@ -204,12 +198,10 @@ describe('McpMiddleware — unit', () => {
 
     assert.strictEqual(result.blocked, true, 'write_file should be blocked');
     assert.strictEqual(result.decision, 'block');
-    db.close();
   });
 
   it('evaluateToolCall — applies actionMapping', () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
     // Map custom tool name "my_shell_tool" → "execute_command" which is blocked
     const session = middleware.createSession({
@@ -225,12 +217,10 @@ describe('McpMiddleware — unit', () => {
     });
 
     assert.strictEqual(result.blocked, true, 'mapped tool should be blocked');
-    db.close();
   });
 
   it('evaluateToolCall — increments session counters', () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
     const session = middleware.createSession({ tenantId: 'test-tenant' });
 
@@ -247,12 +237,10 @@ describe('McpMiddleware — unit', () => {
     assert.strictEqual(session.toolCallCount, 2);
     // blockedCount stays at 1
     assert.strictEqual(session.blockedCount, 1);
-    db.close();
   });
 
   it('parseMessage — valid tools/call', () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
 
     const raw = JSON.stringify({
@@ -264,22 +252,18 @@ describe('McpMiddleware — unit', () => {
     const parsed = middleware.parseMessage(raw);
     assert.ok(parsed, 'should parse valid JSON-RPC message');
     assert.strictEqual(parsed!.method, 'tools/call');
-    db.close();
   });
 
   it('parseMessage — returns null for invalid JSON', () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
 
     const parsed = middleware.parseMessage('not json {{{');
     assert.strictEqual(parsed, null);
-    db.close();
   });
 
   it('interceptMessage — passes through non-tool messages', async () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
     const session = middleware.createSession({ tenantId: 'test-tenant' });
 
@@ -293,12 +277,10 @@ describe('McpMiddleware — unit', () => {
     const { response, forward } = await middleware.interceptMessage(msg, session);
     assert.strictEqual(response, null, 'non-tool messages should not produce a response');
     assert.strictEqual(forward, true, 'non-tool messages should be forwarded');
-    db.close();
   });
 
   it('interceptMessage — blocks dangerous tools/call', async () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
     const session = middleware.createSession({ tenantId: 'test-tenant' });
 
@@ -316,12 +298,10 @@ describe('McpMiddleware — unit', () => {
     assert.ok(response!.error, 'response should contain an error');
     assert.strictEqual(response!.error!.code, McpErrorCode.PolicyBlocked);
     assert.ok(evaluation?.blocked);
-    db.close();
   });
 
   it('interceptMessage — allows safe tools/call', async () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
     const session = middleware.createSession({ tenantId: 'test-tenant' });
 
@@ -335,12 +315,10 @@ describe('McpMiddleware — unit', () => {
     const { response, forward } = await middleware.interceptMessage(msg, session);
     assert.strictEqual(forward, true, 'safe tool should be forwarded');
     assert.strictEqual(response, null, 'safe tool should not produce a blocking response');
-    db.close();
   });
 
   it('interceptMessage — returns error for tools/call without params.name', async () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
     const session = middleware.createSession({ tenantId: 'test-tenant' });
 
@@ -355,12 +333,10 @@ describe('McpMiddleware — unit', () => {
     assert.strictEqual(forward, false);
     assert.ok(response?.error);
     assert.strictEqual(response!.error!.code, McpErrorCode.InvalidParams);
-    db.close();
   });
 
   it('session persists to DB and can be retrieved', () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
 
     const session = middleware.createSession({
@@ -377,12 +353,10 @@ describe('McpMiddleware — unit', () => {
     assert.strictEqual(row!.id, session.id);
     assert.strictEqual(row!.tenant_id, 'persist-tenant');
     assert.strictEqual(row!.transport, 'stdio');
-    db.close();
   });
 
   it('listSessions returns sessions for the correct tenant', () => {
-    const db = new Database(':memory:');
-    db.exec("CREATE TABLE IF NOT EXISTS tenants (id TEXT PRIMARY KEY, name TEXT, email TEXT, plan TEXT, created_at TEXT, kill_switch_active INTEGER DEFAULT 0, kill_switch_at TEXT)");
+    const { adapter: db } = createSqliteAdapterFn(':memory:');
     const middleware = new McpMiddlewareClass(db);
 
     middleware.createSession({ tenantId: 'tenant-A' });
@@ -397,7 +371,6 @@ describe('McpMiddleware — unit', () => {
     for (const s of sessionsA) {
       assert.strictEqual(s.tenantId, 'tenant-A');
     }
-    db.close();
   });
 });
 

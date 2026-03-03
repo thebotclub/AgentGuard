@@ -5,7 +5,15 @@
  * middleware factories bound to a database instance.
  */
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import type { IDatabase, TenantRow, AgentRow } from '../db-interface.js';
+
+// ── Key verification helper ────────────────────────────────────────────────
+
+function sha256Hex(key: string): string {
+  return crypto.createHash('sha256').update(key).digest('hex');
+}
 
 // ── Extend Express Request ─────────────────────────────────────────────────
 // (module augmentation so the fields are always available on req)
@@ -23,8 +31,23 @@ declare global {
 // ── Auth Helpers ───────────────────────────────────────────────────────────
 
 async function lookupTenant(db: IDatabase, apiKey: string): Promise<TenantRow | null> {
-  const keyRow = await db.getApiKey(apiKey);
-  if (!keyRow) return null;
+  // Primary: SHA-256 lookup (fast, works for hashed keys)
+  const sha256 = sha256Hex(apiKey);
+  let keyRow = await db.getApiKeyBySha256(sha256);
+
+  if (keyRow) {
+    // Verify with bcrypt if key_hash is present; otherwise it's a legacy plaintext key
+    if (keyRow.key_hash) {
+      const valid = await bcrypt.compare(apiKey, keyRow.key_hash);
+      if (!valid) return null;
+    }
+    // key_hash is null → legacy row with sha256 only (migration period), accept it
+  } else {
+    // Fallback: legacy plaintext lookup for keys that predate the migration
+    keyRow = await db.getApiKey(apiKey);
+    if (!keyRow) return null;
+  }
+
   await db.touchApiKey(apiKey);
   const tenant = await db.getTenant(keyRow.tenant_id);
   return tenant ?? null;

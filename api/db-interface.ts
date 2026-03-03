@@ -24,6 +24,9 @@ export interface ApiKeyRow {
   created_at: string;
   last_used_at: string | null;
   is_active: number;
+  key_hash: string | null;
+  key_prefix: string | null;
+  key_sha256: string | null;
 }
 
 export interface AuditEventRow {
@@ -152,6 +155,7 @@ export interface IDatabase {
 
   // ── API Keys ──────────────────────────────────────────────────────────────
   getApiKey(key: string): Promise<ApiKeyRow | undefined>;
+  getApiKeyBySha256(sha256: string): Promise<ApiKeyRow | undefined>;
   createApiKey(key: string, tenantId: string, name: string): Promise<void>;
   touchApiKey(key: string): Promise<void>;
 

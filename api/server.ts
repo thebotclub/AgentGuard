@@ -7,6 +7,7 @@
  */
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import crypto from 'crypto';
 import { createPhase2Routes } from './phase2-routes.js';
 import { createMcpRoutes } from './mcp-routes.js';
 import {
@@ -265,7 +266,9 @@ async function main(): Promise<void> {
   const SEED_API_KEY = process.env['API_KEY'];
   if (SEED_API_KEY) {
     try {
-      const existing = await db.getApiKey(SEED_API_KEY);
+      // Check if this seed key already exists (by sha256)
+      const keySha256 = crypto.createHash('sha256').update(SEED_API_KEY).digest('hex');
+      const existing = await db.getApiKeyBySha256(keySha256);
       if (!existing) {
         const seedTenantId = 'seed-' + SEED_API_KEY.slice(-8);
         const existingTenant = await db.getTenant(seedTenantId);
@@ -281,11 +284,9 @@ async function main(): Promise<void> {
             ],
           );
         }
-        await db.run(
-          'INSERT INTO api_keys (key, tenant_id, created_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
-          [SEED_API_KEY, seedTenantId, new Date().toISOString()],
-        );
-        console.log(`[seed] registered API_KEY as tenant ${seedTenantId}`);
+        // Use createApiKey which handles hashing
+        await db.createApiKey(SEED_API_KEY, seedTenantId, 'default');
+        console.log(`[seed] registered API_KEY as tenant ${seedTenantId} (hashed)`);
       }
     } catch (e) {
       console.error('[seed] failed to register API_KEY:', e);
