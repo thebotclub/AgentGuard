@@ -204,12 +204,12 @@ export function createPhase2Routes(db: IDatabase): Router {
   // Run synchronously at startup (before any requests)
   void db.exec(`
     CREATE TABLE IF NOT EXISTS rate_limits (
-      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL REFERENCES tenants(id),
       agent_id TEXT,
       window_seconds INTEGER NOT NULL DEFAULT 60,
       max_requests INTEGER NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `).catch(() => { /* PG may use different syntax, already handled by schema */ });
 
@@ -225,14 +225,14 @@ export function createPhase2Routes(db: IDatabase): Router {
 
   void db.exec(`
     CREATE TABLE IF NOT EXISTS cost_events (
-      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      id TEXT PRIMARY KEY,
       tenant_id TEXT NOT NULL REFERENCES tenants(id),
       agent_id TEXT,
       tool TEXT NOT NULL,
       estimated_cost_cents REAL NOT NULL DEFAULT 0,
       currency TEXT NOT NULL DEFAULT 'USD',
       metadata TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `).catch(() => { /* already exists */ });
 
@@ -776,10 +776,18 @@ export function createPhase2Routes(db: IDatabase): Router {
     const toDate = to ? new Date(to).toISOString() : new Date().toISOString();
 
     // Detect if agent_id column exists on audit_events (backward compat)
+    // Works on both SQLite (PRAGMA) and PostgreSQL (information_schema)
     let hasAgentIdColumn = false;
     try {
-      const cols = await db.all<{ name: string }>("PRAGMA table_info(audit_events)");
-      hasAgentIdColumn = cols.some((c) => c.name === 'agent_id');
+      if (process.env['DB_TYPE'] === 'postgres') {
+        const cols = await db.all<{ column_name: string }>(
+          "SELECT column_name FROM information_schema.columns WHERE table_name = 'audit_events' AND column_name = 'agent_id'"
+        );
+        hasAgentIdColumn = cols.length > 0;
+      } else {
+        const cols = await db.all<{ name: string }>("PRAGMA table_info(audit_events)");
+        hasAgentIdColumn = cols.some((c) => c.name === 'agent_id');
+      }
     } catch {
       hasAgentIdColumn = false;
     }

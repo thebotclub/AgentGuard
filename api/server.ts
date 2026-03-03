@@ -1489,12 +1489,12 @@ async function main(): Promise<void> {
         const existingTenant = await db.getTenant(seedTenantId);
         if (!existingTenant) {
           await db.run(
-            'INSERT OR IGNORE INTO tenants (id, name, email, plan, created_at) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO tenants (id, name, email, plan, created_at) VALUES (?, ?, ?, ?, ?)',
             [seedTenantId, 'AgentGuard Admin', 'admin@agentguard.tech', 'enterprise', new Date().toISOString()]
           );
         }
         await db.run(
-          'INSERT OR IGNORE INTO api_keys (key, tenant_id, created_at) VALUES (?, ?, ?)',
+          'INSERT INTO api_keys (key, tenant_id, created_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
           [SEED_API_KEY, seedTenantId, new Date().toISOString()]
         );
         console.log(`[seed] registered API_KEY as tenant ${seedTenantId}`);

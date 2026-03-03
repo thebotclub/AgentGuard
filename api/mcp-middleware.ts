@@ -156,10 +156,13 @@ export class McpMiddleware {
   // ── Database Setup ──────────────────────────────────────────────────────
 
   private async initializeTables(): Promise<void> {
+    // Tables are created by the db adapter's initialize() method.
+    // Only create if they don't exist (belt-and-suspenders).
+    // Use SQL compatible with both SQLite and PostgreSQL.
     await this.db.exec(`
       CREATE TABLE IF NOT EXISTS mcp_configs (
-        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-        tenant_id TEXT NOT NULL REFERENCES tenants(id),
+        id TEXT PRIMARY KEY,
+        tenant_id TEXT NOT NULL,
         name TEXT NOT NULL,
         upstream_url TEXT,
         transport TEXT NOT NULL DEFAULT 'sse',
@@ -167,8 +170,8 @@ export class McpMiddleware {
         enabled INTEGER NOT NULL DEFAULT 1,
         action_mapping TEXT NOT NULL DEFAULT '{}',
         default_action TEXT NOT NULL DEFAULT 'allow',
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
         UNIQUE(tenant_id, name)
       )
     `).catch(() => { /* already exists */ });
@@ -184,14 +187,14 @@ export class McpMiddleware {
         action_mapping TEXT NOT NULL DEFAULT '{}',
         tool_call_count INTEGER NOT NULL DEFAULT 0,
         blocked_count INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        last_activity_at TEXT NOT NULL DEFAULT (datetime('now'))
+        created_at TEXT NOT NULL,
+        last_activity_at TEXT NOT NULL
       )
     `).catch(() => { /* already exists */ });
 
     await this.db.exec(`
       CREATE TABLE IF NOT EXISTS mcp_audit_events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         session_id TEXT NOT NULL,
         tenant_id TEXT NOT NULL,
         tool_name TEXT NOT NULL,
@@ -205,7 +208,7 @@ export class McpMiddleware {
         blocked INTEGER NOT NULL DEFAULT 0,
         previous_hash TEXT,
         hash TEXT,
-        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        created_at TEXT NOT NULL
       )
     `).catch(() => { /* already exists */ });
 
@@ -338,7 +341,7 @@ export class McpMiddleware {
     }>(
       `INSERT INTO mcp_configs
        (tenant_id, name, upstream_url, transport, agent_id, action_mapping, default_action, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
        RETURNING *`,
       [
         tenantId,
@@ -403,7 +406,7 @@ export class McpMiddleware {
     }>(
       `UPDATE mcp_configs
        SET name = ?, upstream_url = ?, transport = ?, agent_id = ?,
-           action_mapping = ?, default_action = ?, enabled = ?, updated_at = datetime('now')
+           action_mapping = ?, default_action = ?, enabled = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND tenant_id = ?
        RETURNING *`,
       [
