@@ -42,7 +42,7 @@ export function createEvaluateRoutes(
   // ── POST /api/v1/evaluate ─────────────────────────────────────────────────
   router.post(
     '/api/v1/evaluate',
-    auth.optionalTenantAuth,
+    auth.requireEvaluateAuth,
     async (req: Request, res: Response) => {
       const ks = await getGlobalKillSwitch(db);
       const tenantId = req.tenantId ?? 'demo';

@@ -503,7 +503,7 @@ guard.get_dashboard_stats()</code></pre>
       <tr><th>Value</th><th>Meaning</th></tr>
       <tr><td style="color:var(--green)">allow</td><td>Action is safe to execute</td></tr>
       <tr><td style="color:var(--red)">block</td><td>Action violates a policy rule — do not execute</td></tr>
-      <tr><td style="color:var(--amber)">hitl_required</td><td>Human-in-the-loop approval needed before execution</td></tr>
+      <tr><td style="color:var(--amber)">require_approval</td><td>Human-in-the-loop approval needed before execution</td></tr>
       <tr><td style="color:var(--cyan)">monitor</td><td>Allowed but logged for observability</td></tr>
     </table>
     <div class="callout callout-tip"><strong>Kill switch takes priority.</strong> If either the global or tenant-level kill switch is active, all evaluations return <code>block</code> immediately with reason <code>KILL_SWITCH</code>.</div>
@@ -1208,7 +1208,7 @@ jobs:
       <tr><th>Event</th><th>Triggered when</th></tr>
       <tr><td>block</td><td>An evaluation returns <code>block</code></td></tr>
       <tr><td>killswitch</td><td>Global or tenant kill switch is activated</td></tr>
-      <tr><td>hitl</td><td>An evaluation returns <code>hitl_required</code> (human-in-the-loop)</td></tr>
+      <tr><td>hitl</td><td>An evaluation returns <code>require_approval</code> (human-in-the-loop)</td></tr>
       <tr><td>*</td><td>Subscribe to all event types</td></tr>
     </table>
     <h4>Example — curl</h4>

@@ -427,6 +427,16 @@ describe('Default action', () => {
     assert.equal(r.result, 'allow');
     assert.equal(r.matchedRuleId, null);
   });
+
+  it('monitors unknown tool when default is monitor', () => {
+    const monitorDoc: PolicyDocument = { ...BASE_DOC, id: 'monitor-default', default: 'monitor', rules: [] };
+    const engine = new PolicyEngine();
+    engine.registerDocument(monitorDoc);
+    const r = engine.evaluate(makeReq('unknown_tool_xyz'), makeCtx(), 'monitor-default');
+    assert.equal(r.result, 'monitor');
+    assert.equal(r.matchedRuleId, null);
+    assert.match(r.reason ?? '', /monitor/i);
+  });
 });
 
 // ─── Custom Rules ────────────────────────────────────────────────────────────
@@ -672,6 +682,69 @@ describe('evalValueConstraint', () => {
   it('evaluates domain_not_in for URLs', () => {
     assert.equal(evalValueConstraint({ domain_not_in: ['evil.com'] }, 'https://safe.com/data'), true);
     assert.equal(evalValueConstraint({ domain_not_in: ['evil.com'] }, 'https://evil.com/steal'), false);
+  });
+});
+
+// ─── PolicyEngine absent-param bug fix ───────────────────────────────────────
+
+describe('PolicyEngine absent-param security fix', () => {
+  it('absent param does NOT match a rule that requires it (CRITICAL fix)', () => {
+    // A rule that checks params.table — if table is absent, rule must NOT match
+    const engine = new PolicyEngine();
+    const doc: PolicyDocument = {
+      id: 'absent-param-test',
+      name: 'Absent Param Test',
+      version: '1.0.0',
+      default: 'allow',
+      rules: [
+        {
+          id: 'block-pii-tables',
+          priority: 10,
+          action: 'block',
+          when: [
+            { tool: { in: ['db_query'] } },
+            { params: { table: { in: ['users', 'customers'] } } },
+          ],
+          severity: 'high',
+          tags: [],
+          riskBoost: 0,
+        },
+      ],
+    };
+    engine.registerDocument(doc);
+    // db_query WITH no table param — should NOT match the block rule (table absent)
+    const r = engine.evaluate(makeReq('db_query', {}), makeCtx(), 'absent-param-test');
+    assert.notEqual(r.result, 'block', 'absent param should not cause block rule to match');
+    assert.notEqual(r.matchedRuleId, 'block-pii-tables');
+  });
+
+  it('absent param with exists:false constraint matches (explicit absence check)', () => {
+    const engine = new PolicyEngine();
+    const doc: PolicyDocument = {
+      id: 'exists-false-test',
+      name: 'Exists False Test',
+      version: '1.0.0',
+      default: 'allow',
+      rules: [
+        {
+          id: 'block-missing-auth',
+          priority: 10,
+          action: 'block',
+          when: [
+            { tool: { in: ['http_request'] } },
+            { params: { auth_token: { exists: false } } },
+          ],
+          severity: 'high',
+          tags: [],
+          riskBoost: 0,
+        },
+      ],
+    };
+    engine.registerDocument(doc);
+    // http_request with no auth_token — should match (exists:false checks for absence)
+    const r = engine.evaluate(makeReq('http_request', {}), makeCtx(), 'exists-false-test');
+    assert.equal(r.result, 'block');
+    assert.equal(r.matchedRuleId, 'block-missing-auth');
   });
 });
 

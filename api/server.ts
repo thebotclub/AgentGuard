@@ -63,7 +63,8 @@ app.use(
       if (isAllowed) {
         callback(null, true);
       } else {
-        callback(new Error('CORS: origin not allowed'));
+        // Return false — omits CORS headers for disallowed origins (no crash/500)
+        callback(null, false);
       }
     },
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
@@ -197,6 +198,22 @@ async function main(): Promise<void> {
   });
 
   app.get('/health', async (_req: Request, res: Response) => {
+    let dbOk = false;
+    try {
+      dbOk = await db.ping();
+    } catch {
+      /* db down */
+    }
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.status(dbOk ? 200 : 503).json({
+      status: dbOk ? 'ok' : 'degraded',
+      version: '0.6.0',
+    });
+  });
+
+  // ── Admin health (authenticated) ───────────────────────────────────────
+  const adminAuth = createAuthMiddleware(db);
+  app.get('/api/v1/admin/health', adminAuth.requireAdminAuth, async (_req: Request, res: Response) => {
     const ks = await getGlobalKillSwitch(db);
     let dbOk = false;
     let tenantCount = 0;
@@ -208,10 +225,9 @@ async function main(): Promise<void> {
     } catch {
       /* db down */
     }
-    const status = dbOk ? 'ok' : 'degraded';
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.status(dbOk ? 200 : 503).json({
-      status,
+      status: dbOk ? 'ok' : 'degraded',
       engine: 'agentguard',
       version: '0.6.0',
       uptime: Math.floor(process.uptime()),
@@ -239,6 +255,7 @@ async function main(): Promise<void> {
   // ── Global Error Handler ───────────────────────────────────────────────
   app.use(
     (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+      // Handle JSON parse errors
       if (
         err instanceof SyntaxError &&
         'status' in err &&
@@ -247,6 +264,16 @@ async function main(): Promise<void> {
         return res
           .status(400)
           .json({ error: 'Invalid JSON in request body' });
+      }
+      // Handle payload-too-large (express body-parser emits type 'entity.too.large')
+      if (
+        err instanceof Error &&
+        'type' in err &&
+        (err as { type: string }).type === 'entity.too.large'
+      ) {
+        return res
+          .status(413)
+          .json({ error: 'Request body too large. Maximum size is 50kb.' });
       }
       console.error('[error]', err instanceof Error ? err.message : err);
       res.status(500).json({ error: 'Internal server error' });

@@ -991,10 +991,8 @@ decision = guard.<span class="py-fn">evaluate</span>(
             </div>
             <div class="code-pane" id="pane-curl">
 <pre style="margin:0;background:transparent;font-family:inherit"><span class="curl-kw">curl</span> <span class="curl-fl">-X POST</span> \
-  <span class="curl-url">https://agentguard-api.greenrock-adeab1b0\
-.australiaeast.azurecontainerapps.io\
-/api/v1/evaluate</span> \
-  <span class="curl-fl">-H</span> <span class="curl-val">"Authorization: Bearer ag_live_sk_..."</span> \
+  <span class="curl-url">https://api.agentguard.tech/api/v1/evaluate</span> \
+  <span class="curl-fl">-H</span> <span class="curl-val">"X-API-Key: ag_live_sk_..."</span> \
   <span class="curl-fl">-H</span> <span class="curl-val">"Content-Type: application/json"</span> \
   <span class="curl-fl">-d</span> <span class="curl-val">'{
     "tool": "database_query",
@@ -1110,7 +1108,7 @@ decision = guard.<span class="py-fn">evaluate</span>(
 // ═══════════════════════════════════════════════════════
 // CONSTANTS & STATE
 // ═══════════════════════════════════════════════════════
-const API_BASE = 'https://agentguard-api.greenrock-adeab1b0.australiaeast.azurecontainerapps.io';
+const API_BASE = 'https://api.agentguard.tech';
 
 const SCENES = [
   { id: 's1', name: 'The Problem',            duration: 8000  },

@@ -56,7 +56,7 @@ export const DEFAULT_POLICY: PolicyDocument = {
   name: 'AgentGuard Demo Policy',
   description: 'Interactive demo policy for the AgentGuard playground',
   version: '1.0.0',
-  default: 'allow',
+  default: 'monitor',
   rules: [
     {
       id: 'block-external-http',
@@ -177,6 +177,29 @@ export const DEFAULT_POLICY: PolicyDocument = {
       ],
       tags: ['read-only'],
       riskBoost: 0,
+    },
+    {
+      id: 'block-system-path-writes',
+      description: 'Block file writes to sensitive system paths (/etc/, /usr/, /bin/, /sbin/, /boot/, /sys/, /proc/)',
+      priority: 3,
+      action: 'block',
+      severity: 'critical',
+      when: [
+        {
+          tool: {
+            in: ['file_write', 'write_file', 'create_file', 'overwrite_file', 'append_file'],
+          },
+        },
+        {
+          params: {
+            path: {
+              regex: '^/(etc|usr|bin|sbin|boot|sys|proc|lib|lib64)(/|$)',
+            },
+          },
+        },
+      ],
+      tags: ['security', 'system-integrity'],
+      riskBoost: 400,
     },
   ],
 };

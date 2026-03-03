@@ -65,6 +65,40 @@ function makeRequireTenantAuth(db: IDatabase) {
   };
 }
 
+/**
+ * Auth middleware for evaluation endpoints — accepts both tenant keys and agent keys.
+ * Returns 401 for unauthenticated requests.
+ */
+function makeRequireEvaluateAuth(db: IDatabase) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const apiKey = req.headers['x-api-key'] as string | undefined;
+    if (!apiKey) {
+      res.status(401).json({ error: 'X-API-Key header required' });
+      return;
+    }
+    if (apiKey.startsWith('ag_agent_')) {
+      const agentRow = await db.getAgentByKey(apiKey);
+      if (!agentRow) {
+        res.status(401).json({ error: 'Invalid or inactive agent key' });
+        return;
+      }
+      const tenant = await db.getTenant(agentRow.tenant_id);
+      if (tenant) (req as AuthedRequest).tenant = tenant;
+      (req as AuthedRequest).tenantId = agentRow.tenant_id;
+      next();
+      return;
+    }
+    const tenant = await lookupTenantFromDb(db, apiKey);
+    if (!tenant) {
+      res.status(401).json({ error: 'Invalid or inactive API key' });
+      return;
+    }
+    (req as AuthedRequest).tenant = tenant;
+    (req as AuthedRequest).tenantId = tenant.id;
+    next();
+  };
+}
+
 function makeOptionalAuth(db: IDatabase) {
   return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     const apiKey = req.headers['x-api-key'] as string | undefined;
@@ -112,11 +146,12 @@ function isValidUrl(url: string): boolean {
 export function createMcpRoutes(db: IDatabase): Router {
   const router = Router();
   const requireAuth = makeRequireTenantAuth(db);
+  const requireEvaluateAuth = makeRequireEvaluateAuth(db);
   const optionalAuth = makeOptionalAuth(db);
   const mcp = getMcpMiddleware(db);
 
   // ── POST /api/v1/mcp/evaluate ──────────────────────────────────────────────
-  router.post('/api/v1/mcp/evaluate', optionalAuth, async (req: Request, res: Response): Promise<void> => {
+  router.post('/api/v1/mcp/evaluate', requireEvaluateAuth, async (req: Request, res: Response): Promise<void> => {
     const tenantId = (req as AuthedRequest).tenantId;
     const body = req.body as Record<string, unknown> ?? {};
 

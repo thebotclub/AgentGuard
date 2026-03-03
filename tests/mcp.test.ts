@@ -384,8 +384,17 @@ describe('McpMiddleware — unit', () => {
 // ─── 2. POST /api/v1/mcp/evaluate ─────────────────────────────────────────
 
 describe('POST /api/v1/mcp/evaluate', () => {
-  it('evaluates an allowed MCP tool call (unauthenticated/demo)', async () => {
+  it('returns 401 without auth (auth required)', async () => {
     const { status, body } = await request('POST', '/api/v1/mcp/evaluate', {
+      toolName: 'list_directory',
+      arguments: { path: '/tmp' },
+    });
+    assert.equal(status, 401, JSON.stringify(body));
+    assert.ok(body['error']);
+  });
+
+  it('evaluates an allowed MCP tool call (authenticated)', async () => {
+    const { status, body } = await authedRequest('POST', '/api/v1/mcp/evaluate', {
       toolName: 'list_directory',
       arguments: { path: '/tmp' },
     });
@@ -399,7 +408,7 @@ describe('POST /api/v1/mcp/evaluate', () => {
   });
 
   it('evaluates a blocked MCP tool call and returns MCP error', async () => {
-    const { status, body } = await request('POST', '/api/v1/mcp/evaluate', {
+    const { status, body } = await authedRequest('POST', '/api/v1/mcp/evaluate', {
       toolName: 'execute_command',
       arguments: { command: 'rm -rf /' },
     });
@@ -425,7 +434,7 @@ describe('POST /api/v1/mcp/evaluate', () => {
       params: { name: 'write_file', arguments: { path: '/etc/hosts', content: 'evil' } },
     };
 
-    const { status, body } = await request('POST', '/api/v1/mcp/evaluate', { mcpMessage });
+    const { status, body } = await authedRequest('POST', '/api/v1/mcp/evaluate', { mcpMessage });
 
     assert.equal(status, 200, JSON.stringify(body));
     assert.strictEqual(body['blocked'], true, 'write_file should be blocked');
@@ -442,14 +451,14 @@ describe('POST /api/v1/mcp/evaluate', () => {
       params: { uri: 'file:///tmp/test.txt' },
     };
 
-    const { status, body } = await request('POST', '/api/v1/mcp/evaluate', { mcpMessage });
+    const { status, body } = await authedRequest('POST', '/api/v1/mcp/evaluate', { mcpMessage });
     assert.equal(status, 400, JSON.stringify(body));
     assert.ok(body['error'], 'should return error for non-tools/call method');
   });
 
   it('continues an existing session by sessionId', async () => {
     // First call to create a session
-    const { body: first } = await request('POST', '/api/v1/mcp/evaluate', {
+    const { body: first } = await authedRequest('POST', '/api/v1/mcp/evaluate', {
       toolName: 'read_file',
       arguments: { path: '/tmp/a.txt' },
     });
@@ -457,7 +466,7 @@ describe('POST /api/v1/mcp/evaluate', () => {
     assert.ok(sessionId, 'first call should return sessionId');
 
     // Second call uses the same session
-    const { status, body: second } = await request('POST', '/api/v1/mcp/evaluate', {
+    const { status, body: second } = await authedRequest('POST', '/api/v1/mcp/evaluate', {
       toolName: 'read_file',
       arguments: { path: '/tmp/b.txt' },
       sessionId,
@@ -467,7 +476,7 @@ describe('POST /api/v1/mcp/evaluate', () => {
   });
 
   it('returns 400 for missing toolName', async () => {
-    const { status, body } = await request('POST', '/api/v1/mcp/evaluate', {
+    const { status, body } = await authedRequest('POST', '/api/v1/mcp/evaluate', {
       arguments: { path: '/tmp/test.txt' },
     });
     assert.equal(status, 400);
@@ -475,7 +484,7 @@ describe('POST /api/v1/mcp/evaluate', () => {
   });
 
   it('returns 400 for toolName too long', async () => {
-    const { status, body } = await request('POST', '/api/v1/mcp/evaluate', {
+    const { status, body } = await authedRequest('POST', '/api/v1/mcp/evaluate', {
       toolName: 'a'.repeat(201),
     });
     assert.equal(status, 400);
@@ -484,7 +493,7 @@ describe('POST /api/v1/mcp/evaluate', () => {
 
   it('applies custom actionMapping from request body', async () => {
     // Map "my_delete_tool" → "execute_command" which is blocked by default policy
-    const { status, body } = await request('POST', '/api/v1/mcp/evaluate', {
+    const { status, body } = await authedRequest('POST', '/api/v1/mcp/evaluate', {
       toolName: 'my_delete_tool',
       arguments: {},
       actionMapping: { my_delete_tool: 'execute_command' },

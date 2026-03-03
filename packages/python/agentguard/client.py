@@ -4,6 +4,8 @@ from typing import Any, Optional
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
+__version__ = "0.6.0"
+
 
 class AgentGuard:
     """Client for the AgentGuard API."""
@@ -17,6 +19,7 @@ class AgentGuard:
         headers = {
             "X-API-Key": self.api_key,
             "Content-Type": "application/json",
+            "User-Agent": f"agentguard-python/{__version__}",
         }
         data = json.dumps(body).encode() if body else None
         req = Request(url, data=data, headers=headers, method=method)
