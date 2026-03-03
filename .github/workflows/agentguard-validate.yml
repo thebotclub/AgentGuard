@@ -1,0 +1,31 @@
+name: AgentGuard Policy Coverage
+
+on:
+  pull_request:
+    branches: [main, master, develop]
+  push:
+    branches: [main, master]
+
+jobs:
+  agentguard-validate:
+    name: Validate Agent Tool Coverage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write   # needed for PR comments
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: AgentGuard Policy Coverage Check
+        uses: ./.github/actions/agentguard-validate
+        with:
+          api-key: ${{ secrets.AGENTGUARD_API_KEY }}
+          api-url: 'https://api.agentguard.tech'
+          directory: '.'
+          threshold: '100'
+          fail-on-uncovered: 'true'
+          comment: 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

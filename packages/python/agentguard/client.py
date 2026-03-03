@@ -483,3 +483,151 @@ class AgentGuard:
                 print(f"  {session['id']}: {session['tool_call_count']} calls")
         """
         return self._request("GET", "/api/v1/mcp/sessions")
+
+    # ── Validation & Certification ───────────────────────────────────────────
+
+    def validate_agent(self, agent_id: str, declared_tools: list) -> dict:
+        """Dry-run an agent's declared tools through the policy engine.
+
+        Validates every tool in ``declared_tools`` against the active policy rules
+        without executing any real actions. Returns a coverage score and per-tool
+        results. An agent must reach 100% coverage before it can be certified.
+
+        Args:
+            agent_id: The agent ID to validate.
+            declared_tools: List of tool name strings the agent intends to use
+                            (e.g. ``["file_read", "http_post", "llm_query"]``).
+
+        Returns:
+            dict with keys:
+                - ``agent_id``: str
+                - ``valid``: bool — True if all tools are covered by a policy rule
+                - ``coverage``: int — percentage of tools with explicit rule coverage (0–100)
+                - ``risk_score``: int — aggregate risk score across all tools (0–1000)
+                - ``results``: list of per-tool dicts with tool, decision, rule_id, risk_score, reason
+                - ``uncovered``: list of tool names with no matching policy rule
+                - ``validated_at``: ISO 8601 timestamp
+
+        Example::
+
+            result = client.validate_agent("agt_abc123", [
+                "file_read", "http_post", "llm_query",
+            ])
+            print(f"Coverage: {result['coverage']}%  Risk: {result['risk_score']}")
+            if result["uncovered"]:
+                print("Uncovered tools:", result["uncovered"])
+        """
+        return self._request(
+            "POST",
+            f"/api/v1/agents/{agent_id}/validate",
+            {"declaredTools": declared_tools},
+        )
+
+    def get_agent_readiness(self, agent_id: str) -> dict:
+        """Get the current readiness / certification status of an agent.
+
+        Possible statuses:
+            - ``"registered"`` — agent exists but has never been validated
+            - ``"validated"``  — agent has been validated but not certified (or coverage < 100%)
+            - ``"certified"``  — agent has a valid, unexpired certification
+            - ``"expired"``    — agent's certification has expired; re-validate and re-certify
+
+        Args:
+            agent_id: The agent ID to check.
+
+        Returns:
+            dict with keys:
+                - ``agent_id``: str
+                - ``name``: str
+                - ``status``: one of "certified", "validated", "registered", "expired"
+                - ``last_validated``: ISO 8601 timestamp or None
+                - ``coverage``: int or None
+                - ``certified_at``: ISO 8601 timestamp or None
+                - ``expires_at``: ISO 8601 timestamp or None
+
+        Example::
+
+            status = client.get_agent_readiness("agt_abc123")
+            if status["status"] != "certified":
+                print(f"Agent is not certified: {status['status']}")
+        """
+        return self._request("GET", f"/api/v1/agents/{agent_id}/readiness")
+
+    def certify_agent(self, agent_id: str) -> dict:
+        """Certify an agent that has passed validation with 100% policy coverage.
+
+        Certification is valid for 30 days. The returned ``certification_token``
+        can be stored and passed to deployment pipelines as proof the agent is
+        certified.
+
+        Requirements:
+            - Agent must have been validated via ``validate_agent()`` first.
+            - Validation must have achieved 100% coverage (all declared tools matched a rule).
+
+        Args:
+            agent_id: The agent ID to certify.
+
+        Returns:
+            dict with keys:
+                - ``agent_id``: str
+                - ``name``: str
+                - ``certified``: bool
+                - ``certified_at``: ISO 8601 timestamp
+                - ``expires_at``: ISO 8601 timestamp (30 days from now)
+                - ``certification_token``: str — store this securely
+                - ``coverage``: int
+                - ``message``: str
+
+        Raises:
+            RuntimeError: If the agent hasn't been validated or coverage is < 100%.
+
+        Example::
+
+            cert = client.certify_agent("agt_abc123")
+            print(f"Certified until {cert['expires_at']}")
+            print(f"Token: {cert['certification_token']}")
+        """
+        return self._request("POST", f"/api/v1/agents/{agent_id}/certify")
+
+    def admit_mcp_server(self, server_url: str, tools: list) -> dict:
+        """Pre-flight admission check for an MCP server.
+
+        Evaluates all tools provided by the MCP server against the policy engine
+        before allowing the server to be connected. Returns ``admitted: True`` only
+        if every tool passes evaluation (no blocks, 100% coverage).
+
+        Use this in CI/CD pipelines or at MCP proxy startup to gate tool server
+        admission.
+
+        Args:
+            server_url: The URL or identifier of the MCP tool server.
+            tools: List of tool descriptor dicts from the MCP server's tools/list
+                   response. Each dict must have a ``"name"`` key (str), and may
+                   optionally include ``"description"`` and ``"inputSchema"``.
+
+        Returns:
+            dict with keys:
+                - ``server_url``: str
+                - ``admitted``: bool — True if all tools pass, False otherwise
+                - ``coverage``: int — percentage of tools with explicit rule coverage
+                - ``uncovered``: list of tool names with no matching policy rule
+                - ``results``: list of per-tool dicts (tool, decision, rule_id, risk_score, reason)
+                - ``checked_at``: ISO 8601 timestamp
+
+        Example::
+
+            result = client.admit_mcp_server(
+                "http://localhost:4000/mcp",
+                [
+                    {"name": "read_file", "description": "Read a file"},
+                    {"name": "write_file", "description": "Write a file"},
+                ],
+            )
+            if not result["admitted"]:
+                raise RuntimeError("MCP server rejected by policy engine")
+        """
+        return self._request(
+            "POST",
+            "/api/v1/mcp/admit",
+            {"serverUrl": server_url, "tools": tools},
+        )

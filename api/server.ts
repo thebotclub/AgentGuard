@@ -13,6 +13,7 @@ import path from 'path';
 import yaml from 'js-yaml';
 import { createPhase2Routes, checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from './phase2-routes.js';
 import { createMcpRoutes } from './mcp-routes.js';
+import { createValidationRoutes, runValidationMigrations } from './validation-routes.js';
 import { PolicyEngine } from '../packages/sdk/src/core/policy-engine.js';
 import type { PolicyDocument, ActionRequest, AgentContext, PolicyDecision } from '../packages/sdk/src/core/types.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
@@ -131,6 +132,9 @@ try {
 } catch {
   // Column already exists — safe to ignore
 }
+
+// Migration: add validation/certification columns to agents table
+runValidationMigrations(db);
 
 // ── Template Cache ─────────────────────────────────────────────────────────
 // Resolve templates dir relative to this file's location (works with tsx and compiled JS)
@@ -815,6 +819,10 @@ app.get('/', (_req: Request, res: Response) => {
       'GET  /api/v1/mcp/config': 'List MCP proxy configurations (requires API key)',
       'PUT  /api/v1/mcp/config': 'Create or update an MCP proxy configuration (requires API key)',
       'GET  /api/v1/mcp/sessions': 'List active MCP sessions (requires API key)',
+      'POST /api/v1/agents/:id/validate': 'Dry-run declared tools through policy engine (requires API key)',
+      'GET  /api/v1/agents/:id/readiness': 'Get agent certification/readiness status (requires API key)',
+      'POST /api/v1/agents/:id/certify': 'Certify agent after 100% coverage validation (requires API key)',
+      'POST /api/v1/mcp/admit': 'MCP server pre-flight admission check (requires API key)',
     },
     docs: 'https://agentguard.tech',
     dashboard: 'https://app.agentguard.tech',
@@ -1658,6 +1666,14 @@ app.use(createPhase2Routes(db));
 
 // ── Phase 3: MCP (Model Context Protocol) Middleware Routes ───────────────
 app.use(createMcpRoutes(db));
+
+// ── Validation & Certification Routes ────────────────────────────────────
+// Mounted BEFORE the 404 handler — handles:
+//   POST /api/v1/agents/:id/validate
+//   GET  /api/v1/agents/:id/readiness
+//   POST /api/v1/agents/:id/certify
+//   POST /api/v1/mcp/admit
+app.use(createValidationRoutes(db));
 
 // ── Global Error Handler ───────────────────────────────────────────────────
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

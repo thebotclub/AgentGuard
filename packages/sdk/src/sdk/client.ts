@@ -426,4 +426,204 @@ export class AgentGuard {
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
     return res.json();
   }
+
+  // ── Validation & Certification ───────────────────────────────────────────
+
+  /**
+   * Dry-run an agent's declared tools through the policy engine.
+   *
+   * Validates every tool in `declaredTools` against the active policy rules
+   * without executing any real actions. Returns a coverage score and per-tool
+   * results. An agent must reach 100% coverage before it can be certified.
+   *
+   * @param agentId       The agent ID to validate
+   * @param declaredTools Array of tool names the agent intends to use
+   * @returns             Validation result including coverage %, risk score, and per-tool decisions
+   *
+   * @example
+   * const result = await client.validateAgent('agt_abc123', [
+   *   'file_read', 'http_post', 'llm_query',
+   * ]);
+   * console.log(`Coverage: ${result.coverage}%  Risk: ${result.riskScore}`);
+   * if (result.uncovered.length > 0) {
+   *   console.warn('Uncovered tools:', result.uncovered);
+   * }
+   */
+  async validateAgent(
+    agentId: string,
+    declaredTools: string[],
+  ): Promise<{
+    agentId: string;
+    valid: boolean;
+    coverage: number;
+    riskScore: number;
+    results: Array<{ tool: string; decision: string; ruleId: string | null; riskScore: number; reason: string | null }>;
+    uncovered: string[];
+    validatedAt: string;
+  }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/agents/${encodeURIComponent(agentId)}/validate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+      body: JSON.stringify({ declaredTools }),
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{
+      agentId: string;
+      valid: boolean;
+      coverage: number;
+      riskScore: number;
+      results: Array<{ tool: string; decision: string; ruleId: string | null; riskScore: number; reason: string | null }>;
+      uncovered: string[];
+      validatedAt: string;
+    }>;
+  }
+
+  /**
+   * Get the current readiness / certification status of an agent.
+   *
+   * Possible statuses:
+   * - `"registered"` — agent exists but has never been validated
+   * - `"validated"`  — agent has been validated but not certified (or coverage < 100%)
+   * - `"certified"`  — agent has a valid, unexpired certification
+   * - `"expired"`    — agent's certification has expired; re-validate and re-certify
+   *
+   * @param agentId  The agent ID to check
+   * @returns        Readiness status object
+   *
+   * @example
+   * const status = await client.getAgentReadiness('agt_abc123');
+   * if (status.status !== 'certified') {
+   *   console.warn('Agent is not certified!', status.status);
+   * }
+   */
+  async getAgentReadiness(agentId: string): Promise<{
+    agentId: string;
+    name: string;
+    status: 'certified' | 'validated' | 'registered' | 'expired';
+    lastValidated: string | null;
+    coverage: number | null;
+    certifiedAt: string | null;
+    expiresAt: string | null;
+  }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/agents/${encodeURIComponent(agentId)}/readiness`, {
+      headers: { 'X-API-Key': this.apiKey },
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{
+      agentId: string;
+      name: string;
+      status: 'certified' | 'validated' | 'registered' | 'expired';
+      lastValidated: string | null;
+      coverage: number | null;
+      certifiedAt: string | null;
+      expiresAt: string | null;
+    }>;
+  }
+
+  /**
+   * Certify an agent that has passed validation with 100% policy coverage.
+   *
+   * Certification is valid for 30 days. The returned `certificationToken` can
+   * be stored and passed to deployment pipelines as proof the agent is certified.
+   *
+   * Requirements:
+   * - Agent must have been validated via `validateAgent()` first
+   * - Validation must have achieved 100% coverage (all declared tools matched a rule)
+   *
+   * @param agentId  The agent ID to certify
+   * @returns        Certification details including token and expiry date
+   *
+   * @example
+   * const cert = await client.certifyAgent('agt_abc123');
+   * console.log(`Certified until ${cert.expiresAt}`);
+   * console.log('Token:', cert.certificationToken);
+   */
+  async certifyAgent(agentId: string): Promise<{
+    agentId: string;
+    name: string;
+    certified: boolean;
+    certifiedAt: string;
+    expiresAt: string;
+    certificationToken: string;
+    coverage: number;
+    message: string;
+  }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/agents/${encodeURIComponent(agentId)}/certify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{
+      agentId: string;
+      name: string;
+      certified: boolean;
+      certifiedAt: string;
+      expiresAt: string;
+      certificationToken: string;
+      coverage: number;
+      message: string;
+    }>;
+  }
+
+  /**
+   * Pre-flight admission check for an MCP server.
+   *
+   * Evaluates all tools provided by the MCP server against the policy engine
+   * before allowing the server to be connected. Returns `admitted: true` only
+   * if every tool passes evaluation (no blocks, 100% coverage).
+   *
+   * Use this in CI/CD pipelines or at MCP proxy startup to gate tool server
+   * admission.
+   *
+   * @param serverUrl  The URL or identifier of the MCP tool server
+   * @param tools      Array of tool descriptors from the MCP server's tools/list
+   * @returns          Admission result with per-tool decisions
+   *
+   * @example
+   * const result = await client.admitMcpServer(
+   *   'http://localhost:4000/mcp',
+   *   [
+   *     { name: 'read_file', description: 'Read a file', inputSchema: {} },
+   *     { name: 'write_file', description: 'Write a file', inputSchema: {} },
+   *   ],
+   * );
+   * if (!result.admitted) {
+   *   throw new Error('MCP server rejected by policy engine');
+   * }
+   */
+  async admitMcpServer(
+    serverUrl: string,
+    tools: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }>,
+  ): Promise<{
+    serverUrl: string;
+    admitted: boolean;
+    coverage: number;
+    uncovered: string[];
+    results: Array<{ tool: string; decision: string; ruleId: string | null; riskScore: number; reason: string | null }>;
+    checkedAt: string;
+  }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/mcp/admit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+      body: JSON.stringify({ serverUrl, tools }),
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{
+      serverUrl: string;
+      admitted: boolean;
+      coverage: number;
+      uncovered: string[];
+      results: Array<{ tool: string; decision: string; ruleId: string | null; riskScore: number; reason: string | null }>;
+      checkedAt: string;
+    }>;
+  }
 }

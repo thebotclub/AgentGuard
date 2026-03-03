@@ -1,0 +1,51 @@
+name: 'AgentGuard Validate'
+description: 'Scan agent code for tool usage and validate coverage against AgentGuard policy engine'
+author: 'AgentGuard (The Bot Club)'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  api-key:
+    description: 'AgentGuard API key (secret). Use secrets.AGENTGUARD_API_KEY.'
+    required: true
+
+  api-url:
+    description: 'AgentGuard API base URL'
+    required: false
+    default: 'https://api.agentguard.tech'
+
+  directory:
+    description: 'Directory to scan for agent tool usage patterns'
+    required: false
+    default: '.'
+
+  threshold:
+    description: 'Minimum required policy coverage percentage (0–100). Workflow fails if coverage is below this.'
+    required: false
+    default: '100'
+
+  fail-on-uncovered:
+    description: 'Fail the workflow if any tools are uncovered by policy (true/false)'
+    required: false
+    default: 'true'
+
+  comment:
+    description: 'Post a coverage report as a PR comment (true/false)'
+    required: false
+    default: 'true'
+
+outputs:
+  coverage:
+    description: 'Policy coverage percentage (0–100)'
+
+  risk-score:
+    description: 'Aggregate risk score (0–1000)'
+
+  passed:
+    description: '"true" if coverage meets threshold and no uncovered tools (when fail-on-uncovered is true), "false" otherwise'
+
+runs:
+  using: 'node20'
+  main: 'index.js'
