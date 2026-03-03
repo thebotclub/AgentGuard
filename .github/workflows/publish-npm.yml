@@ -1,0 +1,57 @@
+name: 📦 Publish TypeScript SDK to npm
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'sdk-v*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish-sdk:
+    name: 📦 Publish @the-bot-club/agentguard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install & build SDK
+        working-directory: packages/sdk
+        run: |
+          npm install
+          npm run build --if-present
+
+      - name: Publish
+        working-directory: packages/sdk
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-cli:
+    name: 📦 Publish @the-bot-club/agentguard-cli
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install & build CLI
+        working-directory: packages/cli
+        run: |
+          npm install
+          npm run build
+
+      - name: Publish
+        working-directory: packages/cli
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
