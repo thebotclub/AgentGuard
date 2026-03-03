@@ -344,6 +344,33 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         console.log(`[pg] migrated ${unhashedRows.length} existing API key(s) to sha256 lookup`);
       }
 
+      // ── Row-Level Security (RLS) ───────────────────────────────────────────
+      // Enable RLS on all tenant-scoped tables for defense-in-depth.
+      // The application already enforces tenant isolation via tenant_id in queries,
+      // but RLS provides an additional database-level security layer.
+      const rlsTables = [
+        'tenants',
+        'api_keys',
+        'audit_events',
+        'sessions',
+        'webhooks',
+        'agents',
+        'rate_limits',
+        'cost_events',
+      ];
+      for (const table of rlsTables) {
+        try {
+          await pool.query(`ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY`);
+          console.log(`[pg] RLS enabled on ${table}`);
+        } catch (e) {
+          // Ignore if already enabled or table doesn't exist (may be created later)
+          const msg = e instanceof Error ? e.message : String(e);
+          if (!msg.includes('already enabled') && !msg.includes('does not exist')) {
+            console.log(`[pg] RLS setup for ${table}: ${msg}`);
+          }
+        }
+      }
+
       console.log('[pg] schema ready');
     },
 
