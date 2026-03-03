@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgentGuard — AI Agent Security Platform | Runtime Policy Engine & EU AI Act Compliance</title>
-<meta name="description" content="Runtime security for AI agents. Declarative policy engine, tamper-proof audit trail, kill switch, compliance templates (EU AI Act, APRA CPS 234, SOC 2). Sub-millisecond evaluation. Open-source SDK for LangChain, CrewAI, AutoGen.">
-<meta name="keywords" content="AI agent security, agentic AI governance, runtime policy engine, EU AI Act compliance, OWASP agentic AI, AI audit trail, agent kill switch, LLM agent firewall, MCP security, AI compliance automation">
+<title>AgentGuard — AI Agent Deployment Enforcement | CI/CD Gate & Runtime Policy Engine</title>
+<meta name="description" content="AgentGuard enforces security policies at deploy-time and runtime. Like container scanning, but for AI agents. GitHub Action CI/CD gate, sub-millisecond runtime enforcement, tamper-evident compliance trail. EU AI Act, SOC 2, APRA CPS 234.">
+<meta name="keywords" content="AI agent deployment enforcement, AI agent security, CI/CD gate AI agents, agentic AI governance, runtime policy engine, EU AI Act compliance, OWASP agentic AI, AI audit trail, agent firewall, LLM security, MCP security, LangChain security, CrewAI security">
 <meta name="author" content="Hani Kashi — Founder, AgentGuard">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://agentguard.tech">
 
 <!-- OG / Twitter meta tags -->
-<meta property="og:title" content="AgentGuard — AI Agent Security Platform | Runtime Policy Engine">
-<meta property="og:description" content="Runtime security for AI agents. Declarative policy engine, tamper-proof audit trail, EU AI Act compliance. Sub-millisecond evaluation. Open-source SDK.">
+<meta property="og:title" content="AgentGuard — Stop Deploying Unsafe AI Agents">
+<meta property="og:description" content="AgentGuard enforces security policies at deploy-time and runtime. Like container scanning, but for AI agents.">
 <meta property="og:site_name" content="AgentGuard">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://agentguard.tech">
 <meta property="og:image" content="https://agentguard.tech/social-512.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="AgentGuard — AI Agent Security Platform">
-<meta name="twitter:description" content="Runtime security for AI agents. Policy engine, audit trail, EU AI Act compliance. Open-source SDK.">
+<meta name="twitter:title" content="AgentGuard — Stop Deploying Unsafe AI Agents">
+<meta name="twitter:description" content="Security policies enforced at deploy-time and runtime. Like container scanning, but for AI agents.">
 
 <!-- JSON-LD Structured Data -->
 <script type="application/ld+json">
@@ -30,7 +30,7 @@
   "applicationCategory": "SecurityApplication",
   "operatingSystem": "Cloud",
   "url": "https://agentguard.tech",
-  "description": "Runtime security platform for AI agents. Declarative policy engine, tamper-proof audit trail, compliance automation for EU AI Act, APRA CPS 234, SOC 2.",
+  "description": "AI agent deployment enforcement platform. CI/CD gate blocks unsafe agents before production. Runtime policy engine evaluates every tool call. Tamper-evident compliance trail for EU AI Act, APRA CPS 234, SOC 2.",
   "offers": [
     { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD", "description": "10,000 evaluations/month, 2 agent keys, 5 compliance templates" },
     { "@type": "Offer", "name": "Pro", "price": "299", "priceCurrency": "USD", "description": "1M evaluations/month, unlimited agents, webhooks, dashboard" }
@@ -142,6 +142,11 @@ nav{position:sticky;top:0;z-index:100;background:rgba(10,10,26,0.92);backdrop-fi
 .trust-badge.blue{border-color:rgba(99,102,241,0.3);color:var(--accent-hi);background:var(--accent-dim)}
 .trust-badge.amber{border-color:rgba(245,158,11,0.3);color:#fcd34d;background:rgba(245,158,11,0.06)}
 
+/* FRAMEWORK BADGES */
+.framework-badges{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px}
+.fw-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:8px;font-size:.8rem;font-weight:600;color:var(--text-dim);letter-spacing:.02em}
+.fw-badge.active{border-color:var(--border);color:var(--text)}
+
 /* SECTION HEADERS */
 .section-eyebrow{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--accent-hi);margin-bottom:10px}
 .section-head{margin-bottom:12px}
@@ -149,8 +154,8 @@ nav{position:sticky;top:0;z-index:100;background:rgba(10,10,26,0.92);backdrop-fi
 
 /* HOW IT WORKS */
 #how-it-works{background:var(--bg-card2)}
-.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;position:relative}
-.steps-grid::before{content:'';position:absolute;top:38px;left:calc(16.666% + 20px);right:calc(16.666% + 20px);height:1px;background:linear-gradient(90deg,var(--accent-dim),var(--border),var(--accent-dim))}
+.steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;position:relative}
+.steps-grid::before{content:'';position:absolute;top:38px;left:calc(12.5% + 20px);right:calc(12.5% + 20px);height:1px;background:linear-gradient(90deg,var(--accent-dim),var(--border),var(--accent-dim))}
 .step-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;position:relative}
 .step-number{width:44px;height:44px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;color:#fff;margin-bottom:20px;position:relative;z-index:1}
 .step-card h3{font-size:1.05rem;margin-bottom:10px}
@@ -165,26 +170,61 @@ nav{position:sticky;top:0;z-index:100;background:rgba(10,10,26,0.92);backdrop-fi
 .code-block .bl{color:var(--red)}
 
 /* CARDS */
-#problem{background:var(--bg)}
 .cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+
+/* PILLARS (features) */
+#pillars{background:var(--bg)}
+.pillar-card{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:28px 24px;position:relative;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.pillar-card:hover{border-color:var(--accent);box-shadow:0 0 30px var(--accent-glow)}
+.pillar-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.pillar-card.cicd::before{background:linear-gradient(90deg,#6366f1,#8b5cf6)}
+.pillar-card.runtime::before{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.pillar-card.compliance::before{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.pillar-number{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:500;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.pillar-icon{font-size:2rem;margin-bottom:14px}
+.pillar-card h3{font-size:1.1rem;margin-bottom:10px}
+.pillar-card p{font-size:.9rem;line-height:1.65}
+.pillar-tag{display:inline-block;margin-top:14px;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);background:var(--accent-dim);padding:3px 10px;border-radius:4px}
+
+/* WHY ENFORCEMENT — comparison table */
+#why-enforcement{background:var(--bg-card2)}
+.comparison-table{width:100%;border-collapse:collapse;margin-top:8px}
+.comparison-table thead th{padding:14px 20px;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);text-align:left}
+.comparison-table thead th:first-child{color:var(--text-dim)}
+.comparison-table thead .col-before{color:#ef4444;background:rgba(239,68,68,0.06);border-radius:8px 8px 0 0}
+.comparison-table thead .col-after{color:#22c55e;background:rgba(34,197,94,0.06);border-radius:8px 8px 0 0}
+.comparison-table tbody tr{border-bottom:1px solid var(--border-dim)}
+.comparison-table tbody tr:last-child{border-bottom:none}
+.comparison-table tbody td{padding:14px 20px;font-size:.9rem;vertical-align:top}
+.comparison-table tbody td:first-child{font-weight:600;color:var(--text-bright);width:28%}
+.comparison-table tbody .col-before{background:rgba(239,68,68,0.03);color:var(--text-dim)}
+.comparison-table tbody .col-before::before{content:'✕  ';color:#ef4444;font-size:.8rem}
+.comparison-table tbody .col-after{background:rgba(34,197,94,0.03);color:var(--text)}
+.comparison-table tbody .col-after::before{content:'✓  ';color:#22c55e;font-size:.8rem}
+.table-wrap{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius-lg);overflow:hidden;overflow-x:auto}
+
+/* CODE EXAMPLE (GitHub Actions) */
+#code-example{background:var(--bg)}
+.gh-action-wrap{background:#0d0d1f;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.gh-action-header{display:flex;align-items:center;gap:12px;padding:14px 20px;background:rgba(99,102,241,0.07);border-bottom:1px solid var(--border-dim)}
+.gh-action-dots{display:flex;gap:6px}
+.gh-action-dot{width:12px;height:12px;border-radius:50%}
+.gh-action-filename{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text-dim);margin-left:4px}
+.gh-action-badge{margin-left:auto;font-size:.72rem;font-weight:600;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#86efac;padding:3px 10px;border-radius:100px}
+.gh-action-body{padding:24px 28px;font-family:'JetBrains Mono',monospace;font-size:.8rem;line-height:1.85;overflow-x:auto}
+.gh-action-body .y-key{color:#c084fc}
+.gh-action-body .y-val{color:#86efac}
+.gh-action-body .y-str{color:#fbbf24}
+.gh-action-body .y-cmt{color:#3a3a5a}
+.gh-action-body .y-hi{color:var(--accent-hi)}
+
+/* PERSONA / problem cards */
+#problem{background:var(--bg-card2)}
 .problem-card{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:28px 24px;position:relative;overflow:hidden}
 .problem-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),#f97316)}
 .problem-icon{font-size:1.8rem;margin-bottom:14px}
 .problem-card h3{font-size:1rem;margin-bottom:8px}
 .problem-card p{font-size:.9rem;line-height:1.6}
-.problem-quote{margin-top:40px;padding:24px 28px;background:var(--bg-card);border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0;font-style:italic;color:var(--text-dim);font-size:.95rem;line-height:1.7}
-.problem-quote cite{display:block;margin-top:10px;font-style:normal;font-size:.82rem;font-weight:600;color:var(--text-dim)}
-
-/* SOLUTION */
-#solution{background:var(--bg-card2)}
-.solution-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;position:relative;overflow:hidden;transition:border-color .15s,box-shadow .15s}
-.solution-card:hover{border-color:var(--accent);box-shadow:0 0 30px var(--accent-glow)}
-.solution-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#6366f1,#8b5cf6)}
-.solution-number{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:500;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
-.solution-visual{font-size:2rem;margin-bottom:14px}
-.solution-card h3{font-size:1.05rem;margin-bottom:8px}
-.solution-card p{font-size:.9rem;line-height:1.6}
-.solution-tag{display:inline-block;margin-top:14px;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);background:var(--accent-dim);padding:3px 10px;border-radius:4px}
 
 /* PERSONAS */
 #personas{background:var(--bg)}
@@ -256,7 +296,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(10,10,26,0.92);backdrop-fi
 footer{border-top:1px solid var(--border-dim);padding:32px 0}
 .footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
 .footer-copy{font-size:.82rem;color:#6b7280}
-.footer-links{display:flex;gap:24px}
+.footer-links{display:flex;gap:24px;flex-wrap:wrap}
 .footer-links a{font-size:.82rem;color:#6b7280;transition:color .15s}
 .footer-links a:hover{color:var(--accent-hi)}
 
@@ -266,7 +306,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
 .form-success p{font-size:.9rem}
 .form-error{display:none;color:#fca5a5;font-size:.82rem;margin-top:8px;text-align:center}
 
-/* Hamburger — base rule MUST come before media queries */
+/* Hamburger */
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;z-index:200;background:none;border:none;cursor:pointer}
 .hamburger span{display:block;width:24px;height:2px;background:var(--text-bright);border-radius:2px;transition:transform .2s,opacity .2s}
 .hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
@@ -290,6 +330,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
   .social-inner{flex-direction:column;align-items:flex-start}
   .social-divider{display:none}
   .demo-grid{grid-template-columns:1fr !important}
+  .comparison-table tbody td:first-child{width:auto}
 }
 @media(max-width:768px){
   html,body{overflow-x:hidden;max-width:100vw}
@@ -298,28 +339,22 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
   h1{font-size:2rem}
   .stat-row{gap:16px}
   .pricing-card{padding:24px 20px}
-  /* Hide desktop nav links and CTA */
   .nav-links .nav-link{display:none}
   .nav-links .nav-cta{display:none}
-  /* Show hamburger */
   .hamburger{display:flex}
-  /* Show mobile menu when open */
   .mobile-menu.open{display:flex}
-  /* Button touch targets */
   .btn-primary{padding:16px 24px;font-size:1.05rem;min-height:48px}
   .pricing-cta{padding:14px 24px;font-size:1rem;min-height:48px}
-  /* Hero pseudo element overflow fix */
   #hero::before{width:100%;max-width:100vw}
-  /* Code blocks must not overflow */
   .code-block{overflow-x:auto;max-width:100%;word-break:break-word}
   pre{overflow-x:auto;max-width:100%}
-  /* OSS code block */
   .oss-code-block{width:100%;min-width:0;overflow-x:auto}
-  /* Badge row wrapping */
-  .badge-row{flex-wrap:wrap}
-  /* Container padding tighter on very small screens */
+  .badge-row,.framework-badges{flex-wrap:wrap}
   .container{padding:0 16px}
   .nav-inner{padding:14px 16px}
+  .gh-action-body{font-size:.72rem;padding:16px}
+  .comparison-table{font-size:.82rem}
+  .comparison-table thead th,.comparison-table tbody td{padding:10px 12px}
 }
 </style>
 </head>
@@ -331,11 +366,11 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
     <div class="logo"><img src="/agentguard-logo.svg?v=3" alt="AgentGuard" style="height:44px;width:44px;vertical-align:middle;margin-right:8px">AgentGuard</div>
     <div class="nav-links">
       <a href="#how-it-works" class="nav-link">How It Works</a>
+      <a href="#why-enforcement" class="nav-link">Why Enforcement</a>
       <a href="#pricing" class="nav-link">Pricing</a>
       <a href="#demo" class="nav-link">Demo</a>
-      <a href="https://about.agentguard.tech" class="nav-link">About</a>
       <a href="https://docs.agentguard.tech" class="nav-link">Docs</a>
-      <a href="#hero-form" class="nav-cta">Get Started Free →</a>
+      <a href="https://docs.agentguard.tech" class="nav-cta">Get Started Free →</a>
     </div>
     <div class="hamburger" id="hamburger" onclick="document.getElementById('hamburger').classList.toggle('open');document.getElementById('mobile-menu').classList.toggle('open')">
       <span></span><span></span><span></span>
@@ -343,9 +378,9 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
   </div>
   <div class="mobile-menu" id="mobile-menu">
     <a href="#how-it-works">How It Works</a>
+    <a href="#why-enforcement">Why Enforcement</a>
     <a href="#pricing">Pricing</a>
     <a href="#demo">Demo</a>
-    <a href="https://about.agentguard.tech">About</a>
     <a href="https://docs.agentguard.tech">Docs</a>
     <a href="#hero-form" class="nav-cta">Get Started Free →</a>
   </div>
@@ -357,12 +392,24 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
     <div class="hero-inner">
       <div class="hero-copy">
         <div class="hero-badge"><span class="badge-dot"></span>EU AI Act enforcement begins August 2026</div>
-        <h1 class="hero-headline">The <span class="gradient-text">Firewall</span><br>for AI Agents</h1>
-        <p class="hero-sub">Your agents are booking flights, approving payments, and accessing sensitive data — with no security layer between them and a catastrophic failure. AgentGuard fixes that.</p>
-        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
-          <div style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--text-dim)"><span style="color:var(--green)">✓</span> Any framework</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--text-dim)"><span style="color:var(--green)">✓</span> &lt;1ms overhead</div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--text-dim)"><span style="color:var(--green)">✓</span> Open core</div>
+        <h1 class="hero-headline">Stop deploying<br><span class="gradient-text">unsafe AI agents</span></h1>
+        <p class="hero-sub">AgentGuard enforces security policies at deploy-time and runtime. Like container scanning, but for AI agents.</p>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:28px">
+          <div style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--text-dim)"><span style="color:var(--green)">✓</span> CI/CD gate — blocks unsafe deploys</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--text-dim)"><span style="color:var(--green)">✓</span> &lt;1ms runtime enforcement</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--text-dim)"><span style="color:var(--green)">✓</span> Compliance trail built in</div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <a href="https://docs.agentguard.tech" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:14px 28px;border-radius:10px;font-weight:700;font-size:1rem;transition:background .15s" onmouseover="this.style.background='#4042b0'" onmouseout="this.style.background='var(--accent)'">Get Started Free →</a>
+          <a href="https://github.com/AgentGuard-tech/agentguard" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:14px 28px;border-radius:10px;font-weight:600;font-size:1rem;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text-bright)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⭐ View on GitHub</a>
+        </div>
+        <div class="framework-badges" style="margin-top:28px">
+          <span style="font-size:.75rem;color:var(--text-dim);margin-right:4px">Works with:</span>
+          <span class="fw-badge active">🦜 LangChain</span>
+          <span class="fw-badge active">🚢 CrewAI</span>
+          <span class="fw-badge active">🤖 AutoGen</span>
+          <span class="fw-badge active">⬡ OpenAI</span>
+          <span class="fw-badge">Any MCP agent</span>
         </div>
       </div>
 
@@ -388,7 +435,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
             <input type="text" id="company-hero" name="company" placeholder="Acme Corp" autocomplete="organization">
           </div>
           <button type="submit" class="btn-primary" id="btn-hero-submit">Create Free Account →</button>
-          <a href="https://demo.agentguard.tech" target="_blank" class="btn-demo" style="display:inline-block;margin-top:12px;padding:12px 28px;border:2px solid var(--accent,#5254d4);border-radius:8px;color:var(--accent,#5254d4);text-decoration:none;font-weight:600;font-size:0.95rem;text-align:center;transition:all 0.2s;background:transparent;" onmouseover="this.style.background='var(--accent,#5254d4)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--accent,#5254d4)'">▶ Watch Demo (68s)</a>
+          <a href="https://demo.agentguard.tech" target="_blank" class="btn-demo" style="display:inline-block;margin-top:12px;padding:12px 28px;border:2px solid var(--accent,#5254d4);border-radius:8px;color:var(--accent,#5254d4);text-decoration:none;font-weight:600;font-size:0.95rem;text-align:center;transition:all 0.2s;background:transparent;width:100%" onmouseover="this.style.background='var(--accent,#5254d4)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--accent,#5254d4)'">▶ Watch Demo (68s)</a>
           <div class="form-error" id="form-hero-error" role="alert" aria-live="polite"></div>
         </form>
         <div class="form-success" id="form-hero-success">
@@ -413,11 +460,13 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
 <div id="social-proof">
   <div class="container">
     <div class="social-inner">
-      <div class="social-stat"><strong>50K+</strong> evaluations processed in beta</div>
+      <div class="social-stat"><strong>34</strong> API endpoints</div>
       <div class="social-divider"></div>
-      <div class="social-stat"><strong>$6.34B</strong>invested in AI security in 2025</div>
+      <div class="social-stat"><strong>TypeScript + Python</strong> SDKs</div>
       <div class="social-divider"></div>
-      <div class="social-stat"><strong>0</strong>category leaders in agent runtime security</div>
+      <div class="social-stat"><strong>7</strong> built-in policy templates</div>
+      <div class="social-divider"></div>
+      <div class="social-stat"><strong>Sub-ms</strong> evaluation latency</div>
       <div class="social-divider"></div>
       <div class="urgency-bar">⚠️ <strong>August 2026:</strong> EU AI Act enforcement for high-risk AI systems begins</div>
     </div>
@@ -427,106 +476,48 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
         <span class="trust-badge green">🛡 SOC 2 Type II Ready</span>
         <span class="trust-badge blue">⚡ &lt; 1ms evaluation latency</span>
         <span class="trust-badge green">📋 OWASP Top 10 for Agentic AI</span>
-        <span class="trust-badge amber">✅ 99.99% uptime SLA</span>
-        <span class="trust-badge blue">🔒 EU AI Act Art. 9, 12, 14</span>
+        <span class="trust-badge amber">🔒 EU AI Act Art. 9, 12, 14</span>
+        <span class="trust-badge blue">🚀 GitHub Action included</span>
       </div>
     </div>
   </div>
 </div>
 
-<!-- HOW IT WORKS -->
-<section id="how-it-works">
+<!-- THREE PILLARS -->
+<section id="pillars">
   <div class="container">
-    <div class="section-eyebrow">Getting Started</div>
-    <h2 class="section-head">Three steps to full protection.</h2>
-    <p class="section-sub">From zero to a live policy engine in under 5 minutes. No infra to manage.</p>
-    <div class="steps-grid">
-
-      <div class="step-card">
-        <div class="step-number">1</div>
-        <h3>Install</h3>
-        <p>Add the SDK to your project. Works with LangChain, AutoGen, CrewAI, or raw API calls.</p>
-        <div class="code-block"><span style="color:var(--text-dim)">$</span> <span class="fn">npm</span> install <span class="str">@the-bot-club/agentguard</span><br><br><span class="cm"># or Python</span><br><span style="color:var(--text-dim)">$</span> <span class="fn">pip</span> install <span class="str">agentguard-tech</span></div>
-      </div>
-
-      <div class="step-card">
-        <div class="step-number">2</div>
-        <h3>Define Policies</h3>
-        <p>Write declarative YAML policies — version-controlled, reviewed in PRs. Enforced outside the model.</p>
-        <div class="code-block"><span class="kw">id</span>: <span class="str">my-policy</span><br><span class="kw">version</span>: <span class="val">1.0.0</span><br><span class="kw">rules</span>:<br>&nbsp;&nbsp;- <span class="kw">id</span>: <span class="str">block-external</span><br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">action</span>: <span class="bl">block</span><br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">match</span>:<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">tool</span>: <span class="str">http_post</span><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">param.destination</span>:<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">notIn</span>: <span class="str">allowlist</span><br><span class="kw">default</span>: <span class="ok">allow</span></div>
-      </div>
-
-      <div class="step-card">
-        <div class="step-number">3</div>
-        <h3>Protect</h3>
-        <p>Wrap your agent. Every action evaluated before execution — sub-millisecond, no compromises.</p>
-        <div class="code-block"><span class="kw">const</span> decision = <span class="kw">await</span> <span class="fn">guard</span>.evaluate({<br>&nbsp;&nbsp;tool: <span class="str">"http_post"</span>,<br>&nbsp;&nbsp;params: { destination: url }<br>});<br><br><span class="cm">// { result: "block",</span><br><span class="cm">//   riskScore: 75,</span><br><span class="cm">//   durationMs: 0.49 }</span></div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- PROBLEM -->
-<section id="problem">
-  <div class="container">
-    <div class="section-eyebrow">The Problem</div>
-    <h2 class="section-head">Your agents are in production.<br>Your security team has no idea what they're doing.</h2>
-    <p class="section-sub">Traditional security tools see the API call. They don't understand why an agent made it — or whether it should have.</p>
+    <div class="section-eyebrow">What AgentGuard Does</div>
+    <h2 class="section-head">Three layers. One platform.</h2>
+    <p class="section-sub">Deploy-time enforcement stops problems before they reach production. Runtime enforcement catches what slips through. The compliance trail proves you were in control the whole time.</p>
     <div class="cards-3">
-      <div class="problem-card">
-        <div class="problem-icon">🕳️</div>
-        <h3>Zero Runtime Visibility</h3>
-        <p>Your SIEM logs that a Stripe API was called for $4,200. It can't tell you if that was legitimate — or the result of a prompt injection attack via a crafted support ticket.</p>
-      </div>
-      <div class="problem-card">
-        <div class="problem-icon">🚫</div>
-        <h3>No Policy Enforcement Layer</h3>
-        <p>System prompts are not security controls. They're probabilistic suggestions the LLM can ignore, misinterpret, or be manipulated into bypassing. There's nothing between the agent's decision and the action it executes.</p>
-      </div>
-      <div class="problem-card">
-        <div class="problem-icon">📋</div>
-        <h3>Compliance Evidence Doesn't Exist</h3>
-        <p>EU AI Act Article 12 requires documented logging of every high-risk AI decision. When your auditor asks for it, "we have a system prompt in Notion" is not a compliance programme.</p>
-      </div>
-    </div>
-    <blockquote class="problem-quote">
-      "I have 200 agents deployed across 6 departments. I can't tell you what they accessed yesterday, whether any of them violated our data handling policies, or if one is currently exfiltrating PII to a third-party API. My board asks about AI risk every quarter and I have nothing to show them."
-      <cite>— CISO, Financial Services Enterprise (discovery interview, Jan 2026)</cite>
-    </blockquote>
-  </div>
-</section>
 
-<!-- SOLUTION -->
-<section id="solution">
-  <div class="container">
-    <div class="section-eyebrow">The Solution</div>
-    <h2 class="section-head">Three layers of protection.<br>One 5-minute integration.</h2>
-    <p class="section-sub">AgentGuard sits between your agent and the world — enforcing policy, recording everything, and stopping runaway behaviour before it becomes a headline.</p>
-    <div class="cards-3">
-      <div class="solution-card">
-        <div class="solution-number">Layer 01</div>
-        <div class="solution-visual">🛡️</div>
-        <h3>Policy Engine</h3>
-        <p>Declarative policies — YAML, version-controlled, reviewed in PRs — define what agents <em>can and cannot</em> do. Enforced outside the model, so they can't be bypassed by a clever prompt.</p>
-        <div class="solution-tag">EU AI Act Art. 9</div>
+      <div class="pillar-card cicd">
+        <div class="pillar-number">Pillar 01</div>
+        <div class="pillar-icon">🚦</div>
+        <h3>CI/CD Gate</h3>
+        <p>Block unsafe agents before they reach production. Our GitHub Action scans agent code, validates policy coverage, and fails the pipeline if security requirements aren't met.</p>
+        <div class="pillar-tag">Shift Left</div>
       </div>
-      <div class="solution-card">
-        <div class="solution-number">Layer 02</div>
-        <div class="solution-visual">📡</div>
-        <h3>Real-Time Monitoring</h3>
-        <p>Every agent action logged with full context: intent, plan, execution, result. Anomaly detection, chain-of-thought inspection, risk scoring. Enriched alerts flow into your existing Splunk or Sentinel.</p>
-        <div class="solution-tag">EU AI Act Art. 12–13</div>
+
+      <div class="pillar-card runtime">
+        <div class="pillar-number">Pillar 02</div>
+        <div class="pillar-icon">⚡</div>
+        <h3>Runtime Enforcement</h3>
+        <p>Every tool call is evaluated against your security policy in real-time. Block, monitor, or require human approval — sub-millisecond latency.</p>
+        <div class="pillar-tag" style="color:#22c55e;background:rgba(34,197,94,0.1)">Always On</div>
       </div>
-      <div class="solution-card">
-        <div class="solution-number">Layer 03</div>
-        <div class="solution-visual">⚡</div>
-        <h3>Kill Switch</h3>
-        <p>Instant halt in &lt;500ms. Human-in-the-loop gates for high-risk actions. Configurable fail-closed/fail-open per agent tier. Stop the worst cases before they cascade.</p>
-        <div class="solution-tag">EU AI Act Art. 14</div>
+
+      <div class="pillar-card compliance">
+        <div class="pillar-number">Pillar 03</div>
+        <div class="pillar-icon">📋</div>
+        <h3>Compliance Trail</h3>
+        <p>Tamper-evident audit log with SHA-256 hash chain. Generate compliance evidence for EU AI Act, SOC 2, and APRA CPS 234 — before your auditor asks.</p>
+        <div class="pillar-tag" style="color:#f59e0b;background:rgba(245,158,11,0.1)">Audit Ready</div>
       </div>
+
     </div>
-    <!-- Additional Capabilities -->
+
+    <!-- Additional capabilities strip -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:40px">
       <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius)">
         <div style="font-size:1.2rem;margin-bottom:6px">🔔</div>
@@ -539,11 +530,6 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
         <div style="font-size:.78rem;color:var(--text-dim)">Per-agent keys, scoped policies, individual audit trails</div>
       </div>
       <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius)">
-        <div style="font-size:1.2rem;margin-bottom:6px">📊</div>
-        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Compliance Templates</div>
-        <div style="font-size:.78rem;color:var(--text-dim)">SOC 2, APRA CPS 234, EU AI Act, OWASP — pre-built policy packs</div>
-      </div>
-      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius)">
         <div style="font-size:1.2rem;margin-bottom:6px">⏱️</div>
         <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Rate Limiting</div>
         <div style="font-size:.78rem;color:var(--text-dim)">Per-agent sliding window limits — prevent runaway costs</div>
@@ -554,18 +540,174 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
         <div style="font-size:.78rem;color:var(--text-dim)">Track spend per agent, per tool — know where the money goes</div>
       </div>
       <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius)">
+        <div style="font-size:1.2rem;margin-bottom:6px">🔌</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">MCP Middleware</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Policy enforcement on any Model Context Protocol server</div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius)">
         <div style="font-size:1.2rem;margin-bottom:6px">📈</div>
-        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Real-Time Dashboard</div>
-        <div style="font-size:.78rem;color:var(--text-dim)">Live decision feed, block rates, agent activity — full observability</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Live Dashboard</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Real-time decision feed, block rates, agent activity</div>
       </div>
     </div>
-    <div style="margin-top:20px;padding:20px 24px;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-        <span style="font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--accent-hi)">npm install @the-bot-club/agentguard</span>
-        <span style="font-size:.78rem;color:var(--text-dim);margin-left:4px">or</span>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--accent-hi)">pip install agentguard-tech</span>
+  </div>
+</section>
+
+<!-- WHY DEPLOYMENT ENFORCEMENT -->
+<section id="why-enforcement">
+  <div class="container">
+    <div class="section-eyebrow">Why Deployment Enforcement?</div>
+    <h2 class="section-head">System prompts aren't security controls.</h2>
+    <p class="section-sub" style="max-width:640px">System prompts are probabilistic suggestions the model can ignore. AgentGuard enforces policy outside the model — at deploy-time and runtime — so compliance is structural, not hopeful.</p>
+
+    <div class="table-wrap">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="col-before">Before AgentGuard</th>
+            <th class="col-after">After AgentGuard</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Deployment gate</td>
+            <td class="col-before">No check before pushing agents to production</td>
+            <td class="col-after">CI/CD pipeline fails if agent tools lack policy coverage</td>
+          </tr>
+          <tr>
+            <td>Tool call enforcement</td>
+            <td class="col-before">System prompt asks the model not to do bad things</td>
+            <td class="col-after">Every tool call evaluated against a versioned YAML policy — outside the model</td>
+          </tr>
+          <tr>
+            <td>Audit trail</td>
+            <td class="col-before">SIEM logs show an API was called — not whether it should have been</td>
+            <td class="col-after">SHA-256 hash-chained log of every decision, with intent and policy context</td>
+          </tr>
+          <tr>
+            <td>Compliance evidence</td>
+            <td class="col-before">A Confluence page and a Slack thread</td>
+            <td class="col-after">Pre-built reports for EU AI Act Art. 9/12/14, SOC 2, APRA CPS 234</td>
+          </tr>
+          <tr>
+            <td>Incident response</td>
+            <td class="col-before">Find out an agent misbehaved after the damage is done</td>
+            <td class="col-after">Kill switch halts any agent in &lt;500ms; blocked actions alert in real-time</td>
+          </tr>
+          <tr>
+            <td>Policy updates</td>
+            <td class="col-before">Re-deploy the agent with a new system prompt — and hope</td>
+            <td class="col-after">Update the YAML policy, merge the PR — enforcement is immediate</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <blockquote style="margin-top:40px;padding:24px 28px;background:var(--bg-card);border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0;font-style:italic;color:var(--text-dim);font-size:.95rem;line-height:1.7">
+      "I have 200 agents deployed across 6 departments. I can't tell you what they accessed yesterday, whether any of them violated our data handling policies, or if one is currently exfiltrating PII to a third-party API. My board asks about AI risk every quarter and I have nothing to show them."
+      <cite style="display:block;margin-top:10px;font-style:normal;font-size:.82rem;font-weight:600;color:var(--text-dim)">— CISO, Financial Services Enterprise (discovery interview, Jan 2026)</cite>
+    </blockquote>
+  </div>
+</section>
+
+<!-- HOW IT WORKS — 4-step flow -->
+<section id="how-it-works">
+  <div class="container">
+    <div class="section-eyebrow">Getting Started</div>
+    <h2 class="section-head">Zero to enforced in four steps.</h2>
+    <p class="section-sub">From install to a live CI/CD gate and runtime policy engine in under 10 minutes.</p>
+    <div class="steps-grid">
+
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <h3>Install the SDK</h3>
+        <p>Add AgentGuard to your project. Works with LangChain, CrewAI, AutoGen, or any MCP-compatible agent.</p>
+        <div class="code-block"><span class="cm"># TypeScript / Node</span><br><span style="color:var(--text-dim)">$</span> <span class="fn">npm</span> install <span class="str">@the-bot-club/agentguard</span><br><br><span class="cm"># Python</span><br><span style="color:var(--text-dim)">$</span> <span class="fn">pip</span> install <span class="str">agentguard-tech</span></div>
       </div>
-      <div style="font-size:.78rem;font-weight:600;color:var(--accent);white-space:nowrap">&lt;1ms p99 latency guaranteed</div>
+
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <h3>Define Your Policy</h3>
+        <p>Write a YAML security policy — version-controlled, reviewed in PRs, enforced outside the model.</p>
+        <div class="code-block"><span class="kw">id</span>: <span class="str">production-policy</span><br><span class="kw">version</span>: <span class="val">1.0.0</span><br><span class="kw">rules</span>:<br>&nbsp;&nbsp;- <span class="kw">id</span>: <span class="str">block-external</span><br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">action</span>: <span class="bl">block</span><br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">match</span>:<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">tool</span>: <span class="str">http_post</span><br><span class="kw">default</span>: <span class="ok">allow</span></div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <h3>Add the CI Gate</h3>
+        <p>One line in your GitHub Actions workflow. Fails the pipeline if any agent tool lacks policy coverage.</p>
+        <div class="code-block"><span class="cm"># .github/workflows/deploy.yml</span><br><span class="kw">- uses</span>: <span class="str">agentguard-tech/validate@v1</span><br>&nbsp;&nbsp;<span class="kw">with</span>:<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">path</span>: <span class="str">.</span><br><span class="cm"># Blocks deploy if uncovered tools</span></div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <h3>Runtime Enforced</h3>
+        <p>Every tool call is checked against your policy before execution. Block, allow, or require approval.</p>
+        <div class="code-block"><span class="kw">const</span> decision = <span class="kw">await</span> <span class="fn">guard</span>.evaluate({<br>&nbsp;&nbsp;tool: <span class="str">"http_post"</span>,<br>&nbsp;&nbsp;params: { destination: url }<br>});<br><span class="cm">// { result: "block",</span><br><span class="cm">//   durationMs: 0.49 }</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CODE EXAMPLE: GitHub Actions -->
+<section id="code-example">
+  <div class="container">
+    <div class="section-eyebrow">GitHub Actions Integration</div>
+    <h2 class="section-head" style="margin-bottom:12px">Your pipeline. Your gate.</h2>
+    <p class="section-sub" style="margin-bottom:36px">Drop this workflow into any repo. AgentGuard validates tool coverage before every deploy — like container scanning, but for agents.</p>
+
+    <div class="gh-action-wrap">
+      <div class="gh-action-header">
+        <div class="gh-action-dots">
+          <div class="gh-action-dot" style="background:#ef4444"></div>
+          <div class="gh-action-dot" style="background:#f59e0b"></div>
+          <div class="gh-action-dot" style="background:#22c55e"></div>
+        </div>
+        <span class="gh-action-filename">.github/workflows/deploy.yml</span>
+        <span class="gh-action-badge">✓ AgentGuard Gate</span>
+      </div>
+      <div class="gh-action-body">
+<span class="y-key">name:</span> <span class="y-val">Deploy Agent to Production</span>
+<span class="y-key">on:</span>
+  <span class="y-key">push:</span>
+    <span class="y-key">branches:</span> <span class="y-val">[ main ]</span>
+
+<span class="y-key">jobs:</span>
+  <span class="y-key">agentguard-gate:</span>
+    <span class="y-key">runs-on:</span> <span class="y-val">ubuntu-latest</span>
+    <span class="y-key">steps:</span>
+      <span class="y-cmt"># ✅ Step 1 — Validate agent tool coverage against policy</span>
+      - <span class="y-key">uses:</span> <span class="y-val">agentguard-tech/validate@v1</span>
+        <span class="y-key">with:</span>
+          <span class="y-key">path:</span> <span class="y-str">.</span>                          <span class="y-cmt"># scan the entire repo</span>
+          <span class="y-key">policy:</span> <span class="y-str">./policy.yaml</span>           <span class="y-cmt"># your security policy</span>
+          <span class="y-key">api-key:</span> <span class="y-str">${{ secrets.AGENTGUARD_KEY }}</span>
+          <span class="y-key">fail-on-uncovered:</span> <span class="y-val">true</span>        <span class="y-cmt"># ← blocks deploy if any tool lacks coverage</span>
+
+  <span class="y-key">deploy:</span>
+    <span class="y-key">needs:</span> <span class="y-val">agentguard-gate</span>            <span class="y-cmt"># ← deploy only runs if gate passes</span>
+    <span class="y-key">runs-on:</span> <span class="y-val">ubuntu-latest</span>
+    <span class="y-key">steps:</span>
+      - <span class="y-key">name:</span> <span class="y-val">Deploy to production</span>
+        <span class="y-key">run:</span> <span class="y-str">./deploy.sh</span>
+</div>
+    </div>
+
+    <div style="margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid rgba(34,197,94,0.2);border-radius:var(--radius);display:flex;gap:12px;align-items:flex-start">
+        <span style="font-size:1.4rem;flex-shrink:0">✅</span>
+        <div><div style="font-size:.88rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">All tools covered</div><div style="font-size:.8rem;color:var(--text-dim)">Policy covers every tool in the codebase — deploy proceeds</div></div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius);display:flex;gap:12px;align-items:flex-start">
+        <span style="font-size:1.4rem;flex-shrink:0">🚫</span>
+        <div><div style="font-size:.88rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Uncovered tools found</div><div style="font-size:.8rem;color:var(--text-dim)">Pipeline fails, PR blocked — agent cannot reach production</div></div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid rgba(245,158,11,0.2);border-radius:var(--radius);display:flex;gap:12px;align-items:flex-start">
+        <span style="font-size:1.4rem;flex-shrink:0">📋</span>
+        <div><div style="font-size:.88rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Certification created</div><div style="font-size:.8rem;color:var(--text-dim)">Every successful gate creates a deployment certification in the audit trail</div></div>
+      </div>
     </div>
   </div>
 </section>
@@ -722,7 +864,8 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
     method: <span style="color:var(--green)">"POST"</span>,
     headers: {
       <span style="color:var(--green)">"Content-Type"</span>: <span style="color:var(--green)">"application/json"</span>,
-      <span style="color:var(--green)">"X-API-Key"</span>: <span style="color:var(--green)">"ag_live_..."</span>);
+      <span style="color:var(--green)">"X-API-Key"</span>: <span style="color:var(--green)">"ag_live_..."</span>
+    },
     body: JSON.stringify({
       tool: <span style="color:var(--green)">"http_post"</span>,
       params: { destination: url }
@@ -775,9 +918,9 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
           <li>Community support</li>
           <li>7-day audit retention</li>
           <li>5 compliance templates</li>
-          <li>Basic rate limiting</li>
+          <li>GitHub Action CI gate</li>
         </ul>
-        <a href="#hero-form" class="pricing-cta primary">Get Started Free</a>
+        <a href="https://docs.agentguard.tech" class="pricing-cta primary">Get Started Free</a>
       </div>
 
       <!-- Pro / Team -->
@@ -795,8 +938,9 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
           <li>Agent-scoped policies</li>
           <li>Cost attribution &amp; rate limiting</li>
           <li>Real-time dashboard</li>
+          <li>7 compliance templates</li>
         </ul>
-        <a href="#hero-form" class="pricing-cta primary">Start Pro Trial</a>
+        <a href="https://docs.agentguard.tech" class="pricing-cta primary">Start Pro Trial</a>
       </div>
 
       <!-- Enterprise -->
@@ -832,8 +976,8 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
         <p style="margin-top:10px">The core policy engine is open source. Read it. Audit it. Fork it. Enterprise features — compliance modules, SIEM integrations, advanced anomaly detection, executive reporting — are for teams that need them.</p>
         <p style="margin-top:12px">Security tools you can't read are security theatre. We're not that.</p>
         <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
-          <a href="mailto:hello@agentguard.tech?subject=GitHub%20Access%20Request" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid var(--border-dim);border-radius:8px;padding:8px 16px;font-size:.85rem;font-weight:600;color:var(--text-dim);transition:color .15s" onmouseover="this.style.color='var(--text-bright)'" onmouseout="this.style.color='var(--text-dim)'">⭐ Request Repo Access</a>
-          <a href="#hero-form" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent-dim);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:.85rem;font-weight:600;color:var(--accent-hi)">Get enterprise access →</a>
+          <a href="https://github.com/AgentGuard-tech/agentguard" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid var(--border-dim);border-radius:8px;padding:8px 16px;font-size:.85rem;font-weight:600;color:var(--text-dim);transition:color .15s" onmouseover="this.style.color='var(--text-bright)'" onmouseout="this.style.color='var(--text-dim)'">⭐ View on GitHub</a>
+          <a href="https://docs.agentguard.tech" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent-dim);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:.85rem;font-weight:600;color:var(--accent-hi)">Read the Docs →</a>
         </div>
       </div>
       <div class="oss-code-block">
@@ -846,7 +990,7 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
         <div><span style="color:var(--text-dim)">)</span></div>
         <div>&nbsp;</div>
         <div class="comment"># That's it. Policy enforced.</div>
-        <div class="comment"># Audit log running. Kill switch active.</div>
+        <div class="comment"># Audit log running. CI gate active.</div>
       </div>
     </div>
   </div>
@@ -857,13 +1001,17 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
   <div class="container">
     <div class="cta2-inner">
       <div class="cta2-left">
-        <div class="section-eyebrow">Private Beta</div>
+        <div class="section-eyebrow">Deployment Enforcement Platform</div>
         <h2>The window is 18 months.</h2>
-        <p>No category leader exists yet. Regulation is live. Agents are going to production. The enterprises that secure their agent infrastructure now won't be scrambling when their auditor — or their insurer — asks the hard questions.</p>
+        <p>No category leader exists yet. Regulation is live. Agents are going to production. The enterprises that enforce security at deploy-time now won't be scrambling when their auditor — or their insurer — asks the hard questions.</p>
         <div class="stat-row" style="margin-top:24px">
-          <div class="stat-item"><strong>$10B+</strong><span>TAM by 2027</span></div>
+          <div class="stat-item"><strong>34</strong><span>API endpoints</span></div>
           <div class="stat-item"><strong>Aug '26</strong><span>EU AI Act deadline</span></div>
           <div class="stat-item"><strong>&lt;1ms</strong><span>Latency guarantee</span></div>
+        </div>
+        <div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap">
+          <a href="https://docs.agentguard.tech" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:14px 28px;border-radius:10px;font-weight:700;font-size:1rem;transition:background .15s" onmouseover="this.style.background='#4042b0'" onmouseout="this.style.background='var(--accent)'">Get Started Free →</a>
+          <a href="https://github.com/AgentGuard-tech/agentguard" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:14px 28px;border-radius:10px;font-weight:600;font-size:1rem;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text-bright)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">View on GitHub</a>
         </div>
       </div>
 
@@ -901,11 +1049,13 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
 <footer>
   <div class="container">
     <div class="footer-inner">
-      <div class="footer-copy">AgentGuard © 2026 — Built by <a href="https://linkedin.com/in/hanikashi" style="color:var(--accent-hi);text-decoration:none">Hani Kashi</a> · Runtime security for the agentic era.</div>
+      <div class="footer-copy">AgentGuard © 2026 — Built by <a href="https://linkedin.com/in/hanikashi" style="color:var(--accent-hi);text-decoration:none">Hani Kashi</a> · Deployment enforcement for the agentic era.</div>
       <div class="footer-links">
-        <a href="https://github.com/AgentGuard-tech/agentguard" target="_blank">GitHub</a>
-        <a href="https://www.linkedin.com/company/agentguard" target="_blank">LinkedIn</a>
-        <a href="https://linkedin.com/in/hanikashi" target="_blank">Founder</a>
+        <a href="https://docs.agentguard.tech">Docs</a>
+        <a href="https://app.agentguard.tech">Dashboard</a>
+        <a href="https://demo.agentguard.tech">Demo</a>
+        <a href="https://github.com/AgentGuard-tech/agentguard" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://about.agentguard.tech">About</a>
         <a href="mailto:hello@agentguard.tech">hello@agentguard.tech</a>
       </div>
     </div>
@@ -965,28 +1115,20 @@ function handleSignupForm(formEl, successEl, errorEl, isMainForm) {
     var email = formEl.querySelector('input[type=email]');
     var company = formEl.querySelector('input[name=company]');
 
-    if (!name || !name.value.trim()) {
-      name && name.focus();
-      return;
-    }
-    if (!email || !email.value || !email.value.includes('@') || !email.value.includes('.')) {
-      email && email.focus();
-      return;
-    }
+    if (!name || !name.value.trim()) { name && name.focus(); return; }
+    if (!email || !email.value || !email.value.includes('@') || !email.value.includes('.')) { email && email.focus(); return; }
 
     btn.textContent = 'Creating account...';
     btn.disabled = true;
 
-    // Call the real signup API
     var payload = {
       name: name.value.trim(),
       email: email.value.trim(),
       company: company ? company.value.trim() : ''
     };
 
-    // Try primary, then fallback
     var triedFallback = false;
-    
+
     function trySignup(apiUrl) {
       fetch(apiUrl + '/api/v1/signup', {
         method: 'POST',
@@ -996,10 +1138,8 @@ function handleSignupForm(formEl, successEl, errorEl, isMainForm) {
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (data.apiKey) {
-          // Success! Show API key
           formEl.style.display = 'none';
           successEl.style.display = 'block';
-          
           if (isMainForm) {
             var apikeyBox = document.getElementById('hero-apikey-box');
             var apikeyVal = document.getElementById('hero-apikey-val');
@@ -1007,11 +1147,8 @@ function handleSignupForm(formEl, successEl, errorEl, isMainForm) {
               apikeyVal.textContent = data.apiKey;
               apikeyBox.style.display = 'block';
             }
-            // Store in localStorage for dashboard
             try { localStorage.setItem('ag_api_key', data.apiKey); } catch {}
           }
-          
-          // Mark as signed up
           try { localStorage.setItem('ag_signed_up', '1'); } catch {}
         } else {
           throw new Error(data.error || 'Signup failed');
@@ -1022,20 +1159,16 @@ function handleSignupForm(formEl, successEl, errorEl, isMainForm) {
           triedFallback = true;
           trySignup(API_FALLBACK);
         } else {
-          // API not available - show demo mode message
           formEl.style.display = 'none';
           successEl.style.display = 'block';
-          
           if (isMainForm) {
             var apikeyBox = document.getElementById('hero-apikey-box');
             var apikeyVal = document.getElementById('hero-apikey-val');
             if (apikeyBox && apikeyVal) {
-              // Show demo API key
               apikeyVal.textContent = 'ag_demo_' + Math.random().toString(36).substr(2, 20);
               apikeyBox.style.display = 'block';
             }
           }
-          
           var p = successEl.querySelector('p');
           if (p) p.textContent = 'Demo mode: API key generated locally. Sign up at https://agentguard.tech for a real key.';
         }
@@ -1045,7 +1178,7 @@ function handleSignupForm(formEl, successEl, errorEl, isMainForm) {
         btn.textContent = originalText;
       });
     }
-    
+
     trySignup(API_PRIMARY);
   });
 }
@@ -1067,7 +1200,7 @@ function handleSignupForm(formEl, successEl, errorEl, isMainForm) {
 })();
 
 // Check already signed up
-function checkAlreadySignedUp() {
+(function checkAlreadySignedUp() {
   try {
     if (localStorage.getItem('ag_signed_up') === '1') {
       var cta2Form = document.getElementById('form-cta2');
@@ -1079,8 +1212,7 @@ function checkAlreadySignedUp() {
       }
     }
   } catch {}
-}
-checkAlreadySignedUp();
+})();
 
 // API playground
 var sessionId = null;
@@ -1091,7 +1223,6 @@ var auditEvents = [];
 (function warmApi() {
   var urls = [API_PRIMARY, API_FALLBACK];
   var tryIndex = 0;
-  
   function tryNext() {
     if (tryIndex >= urls.length) return;
     fetch(urls[tryIndex] + '/health', { signal: AbortSignal.timeout(8000) })
@@ -1102,10 +1233,7 @@ var auditEvents = [];
           if (dot) dot.style.background = 'var(--green)';
         }
       })
-      .catch(function() {
-        tryIndex++;
-        tryNext();
-      });
+      .catch(function() { tryIndex++; tryNext(); });
   }
   tryNext();
 })();
@@ -1135,7 +1263,7 @@ function renderDecision(data) {
   var result = data.decision.result;
   var c = colors[result] || 'var(--text)';
   var icon = icons[result] || '?';
-  
+
   return '<div style="margin-bottom:12px">' +
     '<span style="font-size:1.1rem;font-weight:700;color:' + c + '">' + icon + ' ' + esc(result || '').toUpperCase() + '</span>' +
     (data.decision.matchedRuleId ? '<span style="color:var(--text-dim);margin-left:12px;font-size:.82rem">rule: ' + esc(data.decision.matchedRuleId) + '</span>' : '') +
@@ -1146,11 +1274,6 @@ function renderDecision(data) {
     'eval_time: <span style="color:var(--accent-hi)">' + Number(data.decision.durationMs) + 'ms</span><br>' +
     'session_actions: ' + Number(data.session && data.session.actionCount || 0) + '<br>' +
     '</div>';
-}
-
-function insertJsonSafely(data) {
-  var el = document.getElementById('landing-json-out');
-  if (el) el.textContent = JSON.stringify(data.decision, null, 2);
 }
 
 function addAuditEntry(tool, params, decision) {
@@ -1247,7 +1370,6 @@ async function runEval() {
       dot.style.background = data.decision.result === 'allow' ? 'var(--green)' : data.decision.result === 'block' ? 'var(--red)' : 'var(--amber)';
       latEl.textContent = totalMs + 'ms round-trip';
       responseEl.innerHTML = renderDecision(data);
-      insertJsonSafely(data);
 
       if (data.decision.result === 'allow') statsAllowed++;
       else if (data.decision.result === 'block') statsBlocked++;
