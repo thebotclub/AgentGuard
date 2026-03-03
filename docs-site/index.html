@@ -45,6 +45,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .sidebar .nav-link .method{font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 5px;border-radius:3px;margin-right:6px;display:inline-block;min-width:38px;text-align:center}
 .method-get{background:rgba(34,197,94,0.15);color:#22c55e}
 .method-post{background:rgba(59,130,246,0.15);color:#60a5fa}
+.method-put{background:rgba(245,158,11,0.15);color:#f59e0b}
 .method-delete{background:rgba(239,68,68,0.15);color:#ef4444}
 
 .main{margin-left:var(--sidebar-w);flex:1;max-width:900px;padding:40px 48px 80px}
@@ -92,6 +93,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 .auth-optional{background:rgba(245,158,11,0.12);color:#fbbf24}
 .auth-none{background:rgba(34,197,94,0.12);color:#86efac}
 .badge-new{background:rgba(6,182,212,0.15);color:#06b6d4;font-size:.65rem;font-weight:700;padding:2px 6px;border-radius:3px;margin-left:8px;vertical-align:middle}
+.badge-enforcement{background:rgba(139,92,246,0.2);color:#c4b5fd;font-size:.65rem;font-weight:700;padding:2px 6px;border-radius:3px;margin-left:8px;vertical-align:middle}
 
 /* ─── TABS ─── */
 .tabs{display:flex;gap:0;border-bottom:2px solid var(--border-dim);margin:16px 0 0}
@@ -106,7 +108,12 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 .callout-info{background:rgba(59,130,246,0.08);border-left:3px solid #3b82f6}
 .callout-warn{background:rgba(245,158,11,0.08);border-left:3px solid #f59e0b}
 .callout-tip{background:rgba(34,197,94,0.08);border-left:3px solid #22c55e}
+.callout-enforcement{background:rgba(139,92,246,0.08);border-left:3px solid #8b5cf6}
 .callout strong{color:var(--text-bright)}
+
+/* ─── FEATURED SECTION (Deployment Enforcement) ─── */
+.featured-section{background:linear-gradient(135deg,rgba(139,92,246,0.08),rgba(82,84,212,0.05));border:1px solid rgba(139,92,246,0.25);border-radius:12px;padding:24px 28px;margin:0 0 24px}
+.featured-section h2{border-top:none;padding-top:0;margin-top:0;color:#c4b5fd}
 
 /* ─── MOBILE ─── */
 .menu-toggle{display:none;position:fixed;top:12px;left:12px;z-index:200;background:var(--bg-card);border:1px solid var(--border);padding:8px 12px;border-radius:8px;color:var(--text);cursor:pointer;font-size:1.2rem}
@@ -130,7 +137,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 <aside class="sidebar">
   <div class="sidebar-header">
     <a href="https://agentguard.tech" class="sidebar-logo"><img src="/agentguard-logo.svg?v=3" alt="" style="height:40px;width:40px"> AgentGuard</a>
-    <div class="sidebar-version">v0.2.1 · docs</div>
+    <div class="sidebar-version">v0.6.0 · docs</div>
   </div>
   <nav>
     <div class="nav-group">
@@ -146,21 +153,39 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
       <a href="#evaluate" class="nav-link"><span class="method method-post">POST</span> Evaluate</a>
       <a href="#audit" class="nav-link"><span class="method method-get">GET</span> Audit Trail</a>
       <a href="#audit-verify" class="nav-link"><span class="method method-get">GET</span> Verify Chain</a>
-      <a href="#killswitch" class="nav-link"><span class="method method-post">POST</span> Kill Switch</a>
-      <a href="#usage" class="nav-link"><span class="method method-get">GET</span> Usage Stats</a>
     </div>
     <div class="nav-group">
-      <div class="nav-group-title">Governance</div>
-      <a href="#agents" class="nav-link">Agent Identity</a>
-      <a href="#templates" class="nav-link">Compliance Templates</a>
-      <a href="#webhooks" class="nav-link">Webhook Alerts</a>
-      <a href="#policy-engine" class="nav-link">Policy Engine</a>
+      <div class="nav-group-title">Agent Management</div>
+      <a href="#agents" class="nav-link">CRUD Agents</a>
+      <a href="#agent-readiness" class="nav-link"><span class="method method-get">GET</span> Readiness</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">🛡️ Deployment Enforcement</div>
+      <a href="#deployment-enforcement" class="nav-link">Overview</a>
+      <a href="#agent-validate" class="nav-link"><span class="method method-post">POST</span> Validate</a>
+      <a href="#agent-certify" class="nav-link"><span class="method method-post">POST</span> Certify</a>
+      <a href="#coverage-check" class="nav-link"><span class="method method-post">POST</span> Coverage Check</a>
+      <a href="#mcp-admit" class="nav-link"><span class="method method-post">POST</span> MCP Admit</a>
+      <a href="#github-action" class="nav-link">GitHub Action</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">MCP Middleware</div>
+      <a href="#mcp-evaluate" class="nav-link"><span class="method method-post">POST</span> MCP Evaluate</a>
+      <a href="#mcp-config" class="nav-link"><span class="method method-get">GET</span>/<span class="method method-put">PUT</span> Config</a>
+      <a href="#mcp-sessions" class="nav-link"><span class="method method-get">GET</span> Sessions</a>
     </div>
     <div class="nav-group">
       <div class="nav-group-title">Observability</div>
       <a href="#rate-limits" class="nav-link">Rate Limiting</a>
       <a href="#costs" class="nav-link">Cost Attribution</a>
       <a href="#dashboard-api" class="nav-link">Dashboard API</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title">Governance</div>
+      <a href="#webhooks" class="nav-link">Webhooks</a>
+      <a href="#killswitch" class="nav-link">Kill Switch</a>
+      <a href="#templates" class="nav-link">Policy Templates</a>
+      <a href="#policy-engine" class="nav-link">Policy Engine</a>
     </div>
     <div class="nav-group">
       <div class="nav-group-title">Resources</div>
@@ -189,7 +214,11 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
   </div>
   <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
     <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">VERSION</div>
-    <div style="font-size:1.1rem;font-weight:700;color:var(--accent-hi)">v0.2.1</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--accent-hi)">v0.6.0</div>
+  </div>
+  <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
+    <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">ENDPOINTS</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--cyan)">34</div>
   </div>
 </div>
 
@@ -207,17 +236,13 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
   -d '{"name": "Acme Corp", "email": "security@acme.com"}'</code></pre>
 <p>Response includes your <code>apiKey</code> (format: <code>ag_live_</code> + 32 hex chars). <strong>Store it securely — it's only shown once.</strong></p>
 
-<h3>2. Install the SDK</h3>
-<div class="tabs" data-tabgroup="install">
-  <div class="tab active" data-tab="ts">TypeScript</div>
-  <div class="tab" data-tab="py">Python</div>
-</div>
-<div class="tab-panel active" data-tab="ts" data-tabgroup="install">
-<pre><code>npm install @the-bot-club/agentguard</code></pre>
-</div>
-<div class="tab-panel" data-tab="py" data-tabgroup="install">
-<pre><code>pip install agentguard-tech</code></pre>
-</div>
+<h3>2. Register an agent</h3>
+<div class="code-header"><span>curl</span></div>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{"name": "booking-agent", "policy_scope": ["booking", "read-only"]}'</code></pre>
+<p>Response includes a scoped <code>ag_agent_*</code> key for that agent. Use this key when your agent calls evaluate.</p>
 
 <h3>3. Evaluate an action</h3>
 <div class="tabs" data-tabgroup="eval">
@@ -229,7 +254,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 <pre><code>import { AgentGuard } from '@the-bot-club/agentguard';
 
 const guard = new AgentGuard({
-  apiKey: 'ag_live_your_key_here',
+  apiKey: 'ag_agent_your_agent_key_here',
   baseUrl: 'https://api.agentguard.tech'
 });
 
@@ -239,7 +264,6 @@ const decision = await guard.evaluate({
 });
 
 if (decision.result === 'allow') {
-  // Safe to execute
   await executeAction();
 } else {
   console.log(`Blocked: ${decision.reason}`);
@@ -249,7 +273,7 @@ if (decision.result === 'allow') {
 <pre><code>from agentguard import AgentGuard
 
 guard = AgentGuard(
-    api_key="ag_live_your_key_here",
+    api_key="ag_agent_your_agent_key_here",
     base_url="https://api.agentguard.tech"
 )
 
@@ -266,7 +290,7 @@ else:
 <div class="tab-panel" data-tab="curl" data-tabgroup="eval">
 <pre><code>curl -X POST https://api.agentguard.tech/api/v1/evaluate \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: ag_live_your_key_here" \
+  -H "X-API-Key: ag_agent_your_agent_key_here" \
   -d '{
     "tool": "http_post",
     "params": {
@@ -287,12 +311,14 @@ else:
 
 <p>AgentGuard uses two types of API keys:</p>
 <table class="params">
-<tr><th>Key Format</th><th>Type</th><th>Description</th></tr>
-<tr><td>ag_live_*</td><td><span class="param-type">tenant</span></td><td>Tenant-level key. Full access to all endpoints for your account.</td></tr>
-<tr><td>ag_agent_*</td><td><span class="param-type">agent</span></td><td>Agent-scoped key. Restricted to evaluate + audit. Policies scoped to this agent.</td></tr>
+<tr><th>Key Format</th><th>Type</th><th>Permissions</th></tr>
+<tr><td>ag_live_*</td><td><span class="param-type">tenant</span></td><td>Full access — agent management, kill switch, webhooks, policy, all admin operations</td></tr>
+<tr><td>ag_agent_*</td><td><span class="param-type">agent</span></td><td>Restricted — <code>evaluate</code>, <code>audit</code>, and MCP evaluate only. Policies scoped to this agent.</td></tr>
 </table>
 
-<div class="callout callout-info"><strong>No API key?</strong> Requests without a key run in <strong>demo mode</strong> — fully functional but data isn't persisted. Great for testing.</div>
+<div class="callout callout-info"><strong>No API key?</strong> Requests without a key run in <strong>demo mode</strong> — fully functional but data isn't persisted. Great for testing. Demo mode returns a <code>sessionId</code> you can reference for the playground.</div>
+
+<div class="callout callout-warn"><strong>Agent keys are restricted.</strong> Using an <code>ag_agent_*</code> key on admin endpoints (create agent, kill switch, webhooks) returns <code>403</code>. Always use your tenant key for management operations.</div>
 
 
 <!-- SDK -->
@@ -307,17 +333,31 @@ const guard = new AgentGuard({
   baseUrl: 'https://api.agentguard.tech'  // optional, this is the default
 });
 
-// Core methods
-await guard.evaluate({ tool, params });
+// Core
+await guard.evaluate({ tool, params, context });
 await guard.getAudit({ limit, offset });
 await guard.verifyAuditChain();
 await guard.getUsage();
-await guard.setKillSwitch(true);
 
 // Agent management
-await guard.createAgent({ name, policyScope });
+await guard.createAgent({ name, policy_scope });
 await guard.listAgents();
 await guard.deleteAgent(agentId);
+
+// Deployment enforcement (v0.6.0)
+await guard.validateAgent(agentId, { declaredTools: ['file_read', 'http_post'] });
+await guard.getAgentReadiness(agentId);
+await guard.certifyAgent(agentId);
+await guard.coverageCheck({ tools: [{ name: 'search_web' }] });
+
+// MCP
+await guard.mcpEvaluate({ toolName, arguments: {}, sessionId });
+await guard.getMcpConfig();
+await guard.putMcpConfig({ name, upstreamUrl, transport });
+await guard.listMcpSessions();
+
+// Kill switch
+await guard.setKillSwitch(true);
 
 // Webhooks
 await guard.createWebhook({ url, events, secret });
@@ -332,6 +372,7 @@ await guard.applyTemplate(name);
 // Rate limiting
 await guard.createRateLimit({ windowSeconds, maxRequests });
 await guard.listRateLimits();
+await guard.deleteRateLimit(id);
 
 // Cost attribution
 await guard.trackCost({ agentId, tool, estimatedCost, currency, metadata });
@@ -348,30 +389,46 @@ await guard.getDashboardAgents();</code></pre>
 
 guard = AgentGuard(
     api_key=os.environ["AGENTGUARD_API_KEY"],
-    base_url="https://api.agentguard.tech"  # optional, this is the default
+    base_url="https://api.agentguard.tech"  # optional
 )
 
-# Same methods available — snake_case convention
+# Core — snake_case convention
 guard.evaluate(tool=tool, params=params)
 guard.get_audit(limit=50)
 guard.verify_audit_chain()
+
+# Agent management
+guard.create_agent(name="my-agent", policy_scope=["read-only"])
+guard.list_agents()
+guard.delete_agent(agent_id)
+
+# Deployment enforcement (v0.6.0)
+guard.validate_agent(agent_id, declared_tools=["file_read", "http_post"])
+guard.get_agent_readiness(agent_id)
+guard.certify_agent(agent_id)
+guard.coverage_check(tools=[{"name": "search_web"}])
+
+# Kill switch
 guard.set_kill_switch(True)
-guard.create_agent(name="my-agent", policy_scope="read-only")
-guard.create_webhook(url="https://hooks.slack.com/...", events=["block"])
+
+# Webhooks & templates
+guard.create_webhook(url="https://hooks.slack.com/...", events=["block", "killswitch"])
 guard.list_templates()
 guard.apply_template("soc2-starter")
+
+# Rate limits & costs
 guard.create_rate_limit(window_seconds=60, max_requests=100)
 guard.track_cost(agent_id="agent-1", tool="gpt-4", estimated_cost=0.03)
 guard.get_cost_summary(period="24h", group_by="agent")
-guard.get_dashboard_stats()
-guard.get_dashboard_feed(limit=20)
-guard.get_dashboard_agents()</code></pre>
+
+# Dashboard
+guard.get_dashboard_stats()</code></pre>
 
 <div class="callout callout-info"><strong>CJS + ESM supported.</strong> The TypeScript SDK works with both <code>require()</code> and <code>import</code>.</div>
 
 
 <!-- ────────────────────────────────────────────────── -->
-<!-- API REFERENCE -->
+<!-- CORE API -->
 <!-- ────────────────────────────────────────────────── -->
 
 <!-- SIGNUP -->
@@ -437,8 +494,18 @@ guard.get_dashboard_agents()</code></pre>
       <tr><td style="color:var(--green)">allow</td><td>Action is safe to execute</td></tr>
       <tr><td style="color:var(--red)">block</td><td>Action violates a policy rule — do not execute</td></tr>
       <tr><td style="color:var(--amber)">hitl_required</td><td>Human-in-the-loop approval needed before execution</td></tr>
+      <tr><td style="color:var(--cyan)">monitor</td><td>Allowed but logged for observability</td></tr>
     </table>
-    <div class="callout callout-tip"><strong>Without an API key</strong>, requests run in demo mode — functional evaluation against default rules, but decisions aren't persisted.</div>
+    <div class="callout callout-tip"><strong>Kill switch takes priority.</strong> If either the global or tenant-level kill switch is active, all evaluations return <code>block</code> immediately with reason <code>KILL_SWITCH</code>.</div>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/evaluate \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_agent_your_key_here" \
+  -d '{
+    "tool": "shell_exec",
+    "params": {"command": "sudo rm -rf /"},
+    "context": {"sessionId": "session-001"}
+  }'</code></pre>
   </div>
 </div>
 
@@ -471,13 +538,16 @@ guard.get_dashboard_agents()</code></pre>
       "riskScore": 95,
       "durationMs": 0.04,
       "hashChain": "sha256:...",
-      "agentId": "agent-1",
-      "timestamp": "2026-03-02T02:15:00.000Z"
+      "agentId": "booking-agent",
+      "timestamp": "2026-03-03T09:00:00.000Z"
     }
   ],
   "count": 1,
   "total": 42
 }</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl https://api.agentguard.tech/api/v1/audit?limit=20&offset=0 \
+  -H "X-API-Key: ag_live_your_key_here"</code></pre>
   </div>
 </div>
 
@@ -489,97 +559,52 @@ guard.get_dashboard_agents()</code></pre>
     <span class="auth-badge auth-required">Auth Required</span>
   </div>
   <div class="endpoint-body">
-    <p>Cryptographically verify the integrity of your audit trail. Returns <code>valid: true</code> if no entries have been tampered with.</p>
+    <p>Cryptographically verify the integrity of your entire audit trail. Re-computes every SHA-256 hash and confirms the chain is unbroken. Returns <code>valid: false</code> if any entry has been tampered with at the database level.</p>
 <pre><code>{
   "valid": true,
   "eventsChecked": 42,
   "message": "Hash chain verified — all 42 events are intact."
 }</code></pre>
+    <div class="callout callout-info"><strong>Hash algorithm:</strong> <code>SHA-256(previousHash + tool + result + createdAt + tenantId)</code>. The first event uses a genesis hash of 64 zeros.</div>
   </div>
 </div>
 
 
-<!-- KILL SWITCH -->
-<h2 id="killswitch">Kill Switch</h2>
-<p>Instantly block all agent actions for your tenant — no code changes, no redeployment. When active, every evaluation returns <code>block</code> with reason <code>KILL_SWITCH</code>.</p>
-
-<div class="endpoint">
-  <div class="endpoint-header">
-    <span class="method method-get">GET</span>
-    <span class="path">/api/v1/killswitch</span>
-    <span class="auth-badge auth-none">Public</span>
-  </div>
-  <div class="endpoint-body">
-    <p>Check global kill switch status.</p>
-<pre><code>{ "active": false }</code></pre>
-  </div>
-</div>
-
-<div class="endpoint">
-  <div class="endpoint-header">
-    <span class="method method-post">POST</span>
-    <span class="path">/api/v1/killswitch</span>
-    <span class="auth-badge auth-required">Auth Required</span>
-  </div>
-  <div class="endpoint-body">
-    <h4>Request Body</h4>
-    <table class="params">
-      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
-      <tr><td>active</td><td><span class="param-type">boolean</span></td><td><span class="param-req">required</span></td><td><code>true</code> to activate (block all), <code>false</code> to deactivate</td></tr>
-    </table>
-  </div>
-</div>
-
-
-<!-- USAGE -->
-<h2 id="usage">Usage Stats</h2>
-
-<div class="endpoint">
-  <div class="endpoint-header">
-    <span class="method method-get">GET</span>
-    <span class="path">/api/v1/usage</span>
-    <span class="auth-badge auth-required">Auth Required</span>
-  </div>
-  <div class="endpoint-body">
-    <p>Get evaluation counts and breakdown for your tenant.</p>
-<pre><code>{
-  "totalEvaluations": 12847,
-  "allowed": 11203,
-  "blocked": 1644,
-  "hitlRequired": 0,
-  "uniqueTools": 18,
-  "uniqueSessions": 45
-}</code></pre>
-  </div>
-</div>
-
-
-<!-- AGENTS -->
-<h2 id="agents">Agent Identity</h2>
-<p>Create scoped API keys for individual agents. Each agent key restricts which policies apply and tracks decisions per-agent in the audit trail.</p>
+<!-- ────────────────────────────────────────────────── -->
+<!-- AGENT MANAGEMENT -->
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="agents">Agent Management</h2>
+<p>Create scoped API keys for individual agents. Each agent key restricts which policies apply and tracks decisions per-agent in the audit trail. Agents progress through a lifecycle: <strong>registered → validated → certified</strong>.</p>
 
 <div class="endpoint">
   <div class="endpoint-header">
     <span class="method method-post">POST</span>
     <span class="path">/api/v1/agents</span>
     <span class="auth-badge auth-required">Auth Required</span>
-    <span class="badge-new">NEW</span>
   </div>
   <div class="endpoint-body">
     <h4>Request Body</h4>
     <table class="params">
       <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
-      <tr><td>name</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Agent identifier (e.g. <code>"booking-agent"</code>)</td></tr>
-      <tr><td>policy_scope</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Policy scope tag — only rules matching this scope apply to this agent</td></tr>
+      <tr><td>name</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Agent identifier (e.g. <code>"booking-agent"</code>). Unique per tenant.</td></tr>
+      <tr><td>policy_scope</td><td><span class="param-type">string[]</span></td><td><span class="param-opt">optional</span></td><td>Policy scope tags — only rules matching these tags apply to this agent</td></tr>
     </table>
     <h4>Response — 201</h4>
 <pre><code>{
   "id": "a1b2c3...",
+  "tenantId": "tenant-...",
   "name": "booking-agent",
   "apiKey": "ag_agent_98b70bb5a48...",
-  "policyScope": "booking",
-  "createdAt": "2026-03-02T02:15:00.000Z"
+  "policyScope": ["booking"],
+  "active": true,
+  "createdAt": "2026-03-03T09:00:00.000Z",
+  "note": "Store the apiKey securely — it will not be shown again."
 }</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{"name": "booking-agent", "policy_scope": ["booking", "read-only"]}'</code></pre>
   </div>
 </div>
 
@@ -589,7 +614,20 @@ guard.get_dashboard_agents()</code></pre>
     <span class="path">/api/v1/agents</span>
     <span class="auth-badge auth-required">Auth Required</span>
   </div>
-  <div class="endpoint-body"><p>List all agents for your tenant.</p></div>
+  <div class="endpoint-body">
+    <p>List all agents for your tenant.</p>
+<pre><code>{
+  "agents": [
+    {
+      "id": "a1b2c3...",
+      "name": "booking-agent",
+      "policyScope": ["booking"],
+      "active": true,
+      "createdAt": "2026-03-03T09:00:00.000Z"
+    }
+  ]
+}</code></pre>
+  </div>
 </div>
 
 <div class="endpoint">
@@ -598,143 +636,450 @@ guard.get_dashboard_agents()</code></pre>
     <span class="path">/api/v1/agents/:id</span>
     <span class="auth-badge auth-required">Auth Required</span>
   </div>
-  <div class="endpoint-body"><p>Revoke an agent key and remove the agent. Immediately blocks all future evaluations using this key.</p></div>
+  <div class="endpoint-body">
+    <p>Deactivate an agent. Immediately invalidates the agent's API key — all future evaluations using it return <code>401</code>.</p>
+<pre><code>{ "id": "a1b2c3...", "deactivated": true }</code></pre>
+  </div>
 </div>
 
-
-<!-- TEMPLATES -->
-<h2 id="templates">Compliance Templates</h2>
-<p>Pre-built policy rulesets mapped to real-world compliance frameworks. Apply a template to instantly load industry-standard rules.</p>
-
-<table class="params" style="margin:20px 0">
-  <tr><th>Template</th><th>Rules</th><th>Framework</th></tr>
-  <tr><td>soc2-starter</td><td>8</td><td>SOC 2 Type II — access control, data handling, audit logging</td></tr>
-  <tr><td>apra-cps234</td><td>10</td><td>APRA CPS 234 — Australian prudential standard for information security</td></tr>
-  <tr><td>eu-ai-act</td><td>12</td><td>EU AI Act Articles 9, 12, 14 — risk management, logging, human oversight</td></tr>
-  <tr><td>owasp-agentic</td><td>10</td><td>OWASP Top 10 for Agentic Applications — prompt injection, privilege escalation</td></tr>
-  <tr><td>financial-services</td><td>11</td><td>Financial services composite — PCI DSS, SOX, Basel III operational risk</td></tr>
-</table>
-
+<h3 id="agent-readiness">Agent Readiness</h3>
 <div class="endpoint">
   <div class="endpoint-header">
     <span class="method method-get">GET</span>
-    <span class="path">/api/v1/templates</span>
-    <span class="auth-badge auth-none">Public</span>
-  </div>
-  <div class="endpoint-body"><p>List all available compliance templates.</p></div>
-</div>
-
-<div class="endpoint">
-  <div class="endpoint-header">
-    <span class="method method-get">GET</span>
-    <span class="path">/api/v1/templates/:name</span>
-    <span class="auth-badge auth-none">Public</span>
-  </div>
-  <div class="endpoint-body"><p>Get full template details including all rules.</p></div>
-</div>
-
-<div class="endpoint">
-  <div class="endpoint-header">
-    <span class="method method-post">POST</span>
-    <span class="path">/api/v1/templates/:name/apply</span>
+    <span class="path">/api/v1/agents/:id/readiness</span>
     <span class="auth-badge auth-required">Auth Required</span>
-  </div>
-  <div class="endpoint-body"><p>Apply a compliance template to your tenant. Adds the template's rules to your active policy.</p></div>
-</div>
-
-
-<!-- WEBHOOKS -->
-<h2 id="webhooks">Webhook Alerts</h2>
-<p>Get real-time notifications when actions are blocked, the kill switch activates, or human review is required. Webhooks include HMAC-SHA256 signatures for verification.</p>
-
-<div class="endpoint">
-  <div class="endpoint-header">
-    <span class="method method-post">POST</span>
-    <span class="path">/api/v1/webhooks</span>
-    <span class="auth-badge auth-required">Auth Required</span>
-    <span class="badge-new">NEW</span>
   </div>
   <div class="endpoint-body">
-    <h4>Request Body</h4>
-    <table class="params">
-      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
-      <tr><td>url</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>HTTPS endpoint to receive events</td></tr>
-      <tr><td>events</td><td><span class="param-type">string[]</span></td><td><span class="param-req">required</span></td><td>Event types: <code>block</code>, <code>hitl</code>, <code>killswitch</code></td></tr>
-      <tr><td>secret</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>HMAC secret for payload verification</td></tr>
-    </table>
-    <h4>Webhook Payload</h4>
+    <p>Get an agent's current certification and deployment readiness status.</p>
+    <h4>Response — 200</h4>
 <pre><code>{
-  "event_type": "block",
-  "tenant_id": "a80dd96c-...",
-  "agent_id": "booking-agent",
-  "data": {
-    "decision": "block",
-    "rule": "block-external-api",
-    "tool": "http_post",
-    "riskScore": 75
-  },
-  "timestamp": "2026-03-02T02:15:00.000Z"
+  "agentId": "a1b2c3...",
+  "name": "booking-agent",
+  "status": "certified",
+  "lastValidated": "2026-03-03T08:00:00.000Z",
+  "coverage": 100,
+  "certifiedAt": "2026-03-03T08:30:00.000Z",
+  "expiresAt": "2026-04-02T08:30:00.000Z"
 }</code></pre>
-    <div class="callout callout-info"><strong>HMAC verification:</strong> If you set a <code>secret</code>, every payload includes an <code>X-AgentGuard-Signature</code> header with <code>sha256=HMAC(payload, secret)</code>.</div>
+    <h4>Status Values</h4>
+    <table class="params">
+      <tr><th>Status</th><th>Meaning</th></tr>
+      <tr><td style="color:var(--text-dim)">registered</td><td>Agent created but never validated</td></tr>
+      <tr><td style="color:var(--amber)">validated</td><td>Tools validated but not yet certified</td></tr>
+      <tr><td style="color:var(--green)">certified</td><td>100% coverage achieved; deployment token active</td></tr>
+      <tr><td style="color:var(--red)">expired</td><td>Certification expired (30-day window). Re-validate and certify.</td></tr>
+    </table>
   </div>
 </div>
+
+
+<!-- ────────────────────────────────────────────────── -->
+<!-- DEPLOYMENT ENFORCEMENT -->
+<!-- ────────────────────────────────────────────────── -->
+<div class="featured-section">
+<h2 id="deployment-enforcement" style="margin-top:0">🛡️ Deployment Enforcement <span class="badge-new">NEW in v0.6.0</span></h2>
+<p style="color:var(--text)">AgentGuard's deployment enforcement layer blocks uncertified agents from reaching production. Integrate into CI/CD pipelines and GitHub Actions to gate every deployment on policy coverage.</p>
+
+<p><strong>The enforcement workflow:</strong></p>
+<ol style="color:var(--text-dim);margin-left:24px;margin-bottom:16px;line-height:2">
+  <li>Declare your agent's tools with <code>POST /api/v1/agents/:id/validate</code></li>
+  <li>Review coverage — every tool must match a policy rule (100% required)</li>
+  <li>Certify with <code>POST /api/v1/agents/:id/certify</code> — get a 30-day deployment token</li>
+  <li>Gate CI/CD on the certification token using the <a href="#github-action">GitHub Action</a></li>
+  <li>For MCP servers, run <code>POST /api/v1/mcp/admit</code> before connecting</li>
+</ol>
+
+<div class="callout callout-enforcement"><strong>Why 100% coverage?</strong> Any tool without a matching policy rule is a blind spot — AgentGuard can't enforce what it doesn't know about. Certification requires every declared tool to be explicitly covered by at least one policy rule.</div>
+</div>
+
+<h3 id="agent-validate">Validate Agent Tools (Dry Run)</h3>
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/agents/:id/validate</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+    <span class="badge-enforcement">Enforcement</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Dry-run an agent's declared tools through the policy engine. Returns per-tool decisions, coverage percentage, and identifies uncovered tools. Does not affect live traffic.</p>
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>declaredTools</td><td><span class="param-type">string[]</span></td><td><span class="param-req">required</span></td><td>List of tool names the agent may call (max 200)</td></tr>
+    </table>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "agentId": "a1b2c3...",
+  "valid": false,
+  "coverage": 71,
+  "riskScore": 145,
+  "validatedAt": "2026-03-03T09:00:00.000Z",
+  "results": [
+    { "tool": "file_read", "decision": "allow", "ruleId": "allow-read-operations", "riskScore": 0, "reason": null },
+    { "tool": "http_post", "decision": "block", "ruleId": "block-external-http", "riskScore": 200, "reason": "Blocked by rule block-external-http" },
+    { "tool": "send_email", "decision": "allow", "ruleId": null, "riskScore": 0, "reason": null }
+  ],
+  "uncovered": ["send_email"]
+}</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents/a1b2c3/validate \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{
+    "declaredTools": ["file_read", "http_post", "shell_exec", "send_email"]
+  }'</code></pre>
+    <div class="callout callout-info"><strong>Coverage = policy coverage, not safety.</strong> A tool can be <em>covered</em> by a <code>block</code> rule — meaning AgentGuard will actively block it. 100% coverage means every tool is explicitly addressed by policy, not that every tool is allowed.</div>
+  </div>
+</div>
+
+<h3 id="agent-certify">Certify Agent</h3>
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/agents/:id/certify</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+    <span class="badge-enforcement">Enforcement</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Certify an agent for production deployment. Requires the agent to have been validated with 100% policy coverage. Issues a 30-day certification token.</p>
+    <p>Returns <code>422</code> if the agent has never been validated, or if the last validation has coverage below 100%.</p>
+    <h4>Response — 201</h4>
+<pre><code>{
+  "agentId": "a1b2c3...",
+  "name": "booking-agent",
+  "certified": true,
+  "certifiedAt": "2026-03-03T09:00:00.000Z",
+  "expiresAt": "2026-04-02T09:00:00.000Z",
+  "certificationToken": "agcert_a3f9e2b1c8d4...",
+  "coverage": 100,
+  "message": "Agent 'booking-agent' certified. Token is valid for 30 days."
+}</code></pre>
+    <h4>Error — 422 (coverage too low)</h4>
+<pre><code>{
+  "error": "Certification requires 100% policy coverage. Current coverage: 71%. Fix uncovered tools and re-validate.",
+  "coverage": 71
+}</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents/a1b2c3/certify \
+  -H "X-API-Key: ag_live_your_key_here"</code></pre>
+  </div>
+</div>
+
+<h3 id="coverage-check">Coverage Check (CLI / CI Integration)</h3>
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/agents/coverage-check</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+    <span class="badge-enforcement">Enforcement</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Check policy coverage for a list of tools without requiring a pre-registered agent. Used by the AgentGuard CLI and GitHub Action to gate pull requests.</p>
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>tools</td><td><span class="param-type">object[]</span></td><td><span class="param-req">required</span></td><td>List of <code>{ name: string, framework?: string }</code> tool descriptors</td></tr>
+      <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Scope check to a registered agent's policies</td></tr>
+      <tr><td>includeSuggestions</td><td><span class="param-type">boolean</span></td><td><span class="param-opt">optional</span></td><td>Return policy suggestions for uncovered tools</td></tr>
+    </table>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "tenantId": "tenant-...",
+  "checkedAt": "2026-03-03T09:00:00.000Z",
+  "totalTools": 3,
+  "coveredTools": 2,
+  "uncoveredTools": 1,
+  "coveragePercent": 66.7,
+  "results": [
+    {
+      "toolName": "search_web",
+      "covered": true,
+      "policies": [{ "policyId": "pol_001", "ruleId": "monitor-search", "decision": "monitor" }]
+    },
+    {
+      "toolName": "raw:shell",
+      "covered": false,
+      "policies": [],
+      "severity": "critical",
+      "suggestion": "Create a policy blocking shell access: { when: [{ tool: { in: ['raw:shell'] } }], action: 'block', severity: 'critical' }"
+    }
+  ]
+}</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents/coverage-check \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{
+    "tools": [
+      { "name": "search_web", "framework": "langchain" },
+      { "name": "send_email", "framework": "langchain" },
+      { "name": "raw:shell", "framework": "raw" }
+    ],
+    "includeSuggestions": true
+  }'</code></pre>
+  </div>
+</div>
+
+<h3 id="mcp-admit">MCP Server Admission</h3>
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/mcp/admit</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+    <span class="badge-enforcement">Enforcement</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Pre-flight admission check for an MCP server. Validates all tools exposed by the server against the policy engine before connection is established. If <code>admitted: false</code>, do not connect — the server exposes tools that are blocked or uncovered by policy.</p>
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>serverUrl</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>URL of the MCP server being admitted</td></tr>
+      <tr><td>tools</td><td><span class="param-type">object[]</span></td><td><span class="param-req">required</span></td><td>Array of <code>{ name: string }</code> tool descriptors exposed by the server (max 200)</td></tr>
+    </table>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "serverUrl": "https://mcp.example.com",
+  "admitted": false,
+  "coverage": 85,
+  "uncovered": ["raw:shell"],
+  "results": [
+    { "tool": "file_read", "decision": "allow", "ruleId": "allow-read-operations", "riskScore": 0, "reason": null },
+    { "tool": "raw:shell", "decision": "allow", "ruleId": null, "riskScore": 0, "reason": null }
+  ],
+  "checkedAt": "2026-03-03T09:00:00.000Z"
+}</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/mcp/admit \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{
+    "serverUrl": "https://mcp.example.com",
+    "tools": [
+      { "name": "file_read" },
+      { "name": "raw:shell" },
+      { "name": "db_query" }
+    ]
+  }'</code></pre>
+  </div>
+</div>
+
+<h3 id="github-action">GitHub Action</h3>
+<p>Gate deployments on AgentGuard policy coverage directly in your CI/CD pipeline. The <code>agentguard-tech/validate@v1</code> action scans your agent code, detects tool usage, and fails the PR if coverage drops below your threshold.</p>
+
+<div class="code-header"><span>.github/workflows/agentguard.yml</span></div>
+<pre><code>name: AgentGuard Policy Gate
+
+on: [pull_request]
+
+jobs:
+  agentguard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: AgentGuard Validate
+        uses: agentguard-tech/validate@v1
+        id: agentguard
+        with:
+          # Required
+          api-key: ${{ secrets.AGENTGUARD_API_KEY }}
+
+          # Optional — all have defaults
+          path: './src/agents'      # Directory to scan (default: '.')
+          threshold: '85'           # Coverage % required to pass (default: '80')
+          fail-on: 'high'           # Fail on uncovered tools of this severity (default: 'high')
+          framework: 'auto'         # langchain|crewai|autogen|mcp|auto (default: 'auto')
+          agent-id: ''              # Validate against a registered agent's declared tools
+          post-comment: 'true'      # Post PR coverage report as a comment (default: 'true')
+          fail-on-decrease: 'true'  # Fail if coverage drops vs. base branch
+
+      - name: Show Results
+        run: |
+          echo "Coverage: ${{ steps.agentguard.outputs.coverage }}"
+          echo "Status:   ${{ steps.agentguard.outputs.status }}"</code></pre>
+
+<div class="callout callout-tip"><strong>Coverage report is posted automatically.</strong> When <code>post-comment: true</code>, the action posts a detailed coverage table on the pull request showing which tools are covered, blocked, or missing policy rules.</div>
+
+
+<!-- ────────────────────────────────────────────────── -->
+<!-- MCP MIDDLEWARE -->
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="mcp-middleware">MCP Middleware</h2>
+<p>AgentGuard acts as a policy enforcement layer for <a href="https://modelcontextprotocol.io">Model Context Protocol</a> servers. Wrap your MCP server connection with AgentGuard to evaluate every tool call before it reaches the server.</p>
+
+<h3 id="mcp-evaluate">MCP Tool Evaluation</h3>
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/mcp/evaluate</span>
+    <span class="auth-badge auth-optional">Auth Optional</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Evaluate an MCP tool call against the policy engine. Accepts either a raw MCP JSON-RPC <code>tools/call</code> message or a simplified <code>toolName</code>/<code>arguments</code> format.</p>
+    <h4>Request Body — Simple Format</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>toolName</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Name of the MCP tool being called</td></tr>
+      <tr><td>arguments</td><td><span class="param-type">object</span></td><td><span class="param-opt">optional</span></td><td>Tool arguments</td></tr>
+      <tr><td>sessionId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Session ID for tracking (created automatically if omitted)</td></tr>
+      <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Associate evaluation with a registered agent</td></tr>
+      <tr><td>actionMapping</td><td><span class="param-type">object</span></td><td><span class="param-opt">optional</span></td><td>Map MCP tool names to AgentGuard action types</td></tr>
+    </table>
+    <h4>Request Body — MCP JSON-RPC Format</h4>
+<pre><code>{
+  "mcpMessage": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "read_file",
+      "arguments": { "path": "/etc/passwd" }
+    }
+  },
+  "sessionId": "session-abc123"
+}</code></pre>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "decision": "block",
+  "blocked": true,
+  "riskScore": 95,
+  "durationMs": 0.3,
+  "sessionId": "session-abc123",
+  "matchedRuleId": "block-pii-tables",
+  "reason": "Blocked by rule block-pii-tables",
+  "mcpErrorResponse": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "error": { "code": -32603, "message": "Tool call blocked by AgentGuard policy" }
+  }
+}</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/mcp/evaluate \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_agent_your_key_here" \
+  -d '{
+    "toolName": "execute_query",
+    "arguments": {"table": "users"},
+    "sessionId": "session-001"
+  }'</code></pre>
+  </div>
+</div>
+
+<h3 id="mcp-config">MCP Configuration</h3>
 
 <div class="endpoint">
   <div class="endpoint-header">
     <span class="method method-get">GET</span>
-    <span class="path">/api/v1/webhooks</span>
+    <span class="path">/api/v1/mcp/config</span>
     <span class="auth-badge auth-required">Auth Required</span>
   </div>
-  <div class="endpoint-body"><p>List all webhooks for your tenant.</p></div>
+  <div class="endpoint-body">
+    <p>List all MCP proxy configurations for your tenant. Pass <code>?id=&lt;configId&gt;</code> to fetch a single config.</p>
+<pre><code>{
+  "configs": [
+    {
+      "id": "cfg-abc...",
+      "name": "my-mcp-server",
+      "upstreamUrl": "https://mcp.example.com",
+      "transport": "sse",
+      "defaultAction": "allow",
+      "enabled": true,
+      "createdAt": "2026-03-03T09:00:00.000Z"
+    }
+  ],
+  "count": 1
+}</code></pre>
+  </div>
 </div>
 
 <div class="endpoint">
   <div class="endpoint-header">
-    <span class="method method-delete">DELETE</span>
-    <span class="path">/api/v1/webhooks/:id</span>
+    <span class="method method-put">PUT</span>
+    <span class="path">/api/v1/mcp/config</span>
     <span class="auth-badge auth-required">Auth Required</span>
   </div>
-  <div class="endpoint-body"><p>Delete a webhook.</p></div>
+  <div class="endpoint-body">
+    <p>Create (omit <code>id</code>) or update (include <code>id</code>) an MCP proxy configuration.</p>
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>id</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Omit to create; include to update</td></tr>
+      <tr><td>name</td><td><span class="param-type">string</span></td><td><span class="param-req">required (create)</span></td><td>Unique name for this MCP config</td></tr>
+      <tr><td>upstreamUrl</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Upstream MCP server URL (HTTP or HTTPS)</td></tr>
+      <tr><td>transport</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td><code>sse</code> or <code>stdio</code></td></tr>
+      <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Associate with a registered agent</td></tr>
+      <tr><td>actionMapping</td><td><span class="param-type">object</span></td><td><span class="param-opt">optional</span></td><td>Map MCP tool names → AgentGuard action types</td></tr>
+      <tr><td>defaultAction</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td><code>allow</code> or <code>block</code></td></tr>
+      <tr><td>enabled</td><td><span class="param-type">boolean</span></td><td><span class="param-opt">optional</span></td><td>Enable or disable this config</td></tr>
+    </table>
+    <h4>Example — curl (create)</h4>
+<pre><code>curl -X PUT https://api.agentguard.tech/api/v1/mcp/config \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{
+    "name": "my-mcp-server",
+    "upstreamUrl": "https://mcp.example.com",
+    "transport": "sse",
+    "defaultAction": "allow"
+  }'</code></pre>
+  </div>
+</div>
+
+<h3 id="mcp-sessions">MCP Sessions</h3>
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/mcp/sessions</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>List active MCP sessions for your tenant, including per-session tool call and block counts.</p>
+<pre><code>{
+  "sessions": [
+    {
+      "id": "sess-abc...",
+      "tenantId": "tenant-...",
+      "agentId": "booking-agent",
+      "transport": "sse",
+      "upstreamUrl": "https://mcp.example.com",
+      "toolCallCount": 47,
+      "blockedCount": 3,
+      "createdAt": "2026-03-03T08:00:00.000Z",
+      "lastActivityAt": "2026-03-03T09:00:00.000Z"
+    }
+  ],
+  "count": 1
+}</code></pre>
+  </div>
 </div>
 
 
-<!-- POLICY ENGINE -->
-<h2 id="policy-engine">Policy Engine</h2>
-<p>The policy engine evaluates 7 rule types against every action, in priority order:</p>
-
-<table class="params">
-  <tr><th>Rule Type</th><th>Description</th><th>Example</th></tr>
-  <tr><td>resource_access</td><td>Block or allow access to specific tools/resources</td><td>Block <code>shell_exec</code>, allow <code>file_read</code></td></tr>
-  <tr><td>rate_limit</td><td>Limit action frequency per time window</td><td>Max 10 API calls per minute</td></tr>
-  <tr><td>scope_restriction</td><td>Restrict parameter values</td><td>Only allow <code>http_post</code> to whitelisted domains</td></tr>
-  <tr><td>hitl_gate</td><td>Require human approval before execution</td><td>Flag any action over $1,000</td></tr>
-  <tr><td>time_window</td><td>Allow/block actions based on time</td><td>No deployments outside business hours</td></tr>
-  <tr><td>environment</td><td>Environment-specific rules</td><td>Block destructive actions in production</td></tr>
-  <tr><td>data_classification</td><td>Protect sensitive data patterns</td><td>Block access to PII-classified resources</td></tr>
-</table>
-
-<p>Rules are evaluated in priority order (lowest number first). The first matching rule determines the result. If no rule matches, the <strong>default action</strong> applies (configurable, defaults to <code>allow</code>).</p>
-
-
+<!-- ────────────────────────────────────────────────── -->
 <!-- RATE LIMITS -->
-<h2 id="rate-limits">Rate Limiting</h2>
-<p>Custom rate limits enforce evaluation frequency per tenant or per agent using a sliding window algorithm.</p>
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="rate-limits">Rate Limits &amp; Costs</h2>
+<p>Custom rate limits enforce evaluation frequency per tenant or per agent using a sliding window algorithm. Pair rate limits with cost tracking to get full observability over your agent fleet.</p>
 
+<h3>Rate Limiting</h3>
 <div class="endpoint">
   <div class="endpoint-header">
     <span class="method method-post">POST</span>
     <span class="path">/api/v1/rate-limits</span>
     <span class="auth-badge auth-required">Auth Required</span>
-    <span class="badge-new">NEW</span>
   </div>
   <div class="endpoint-body">
     <h4>Request Body</h4>
     <table class="params">
       <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
-      <tr><td>windowSeconds</td><td><span class="param-type">integer</span></td><td><span class="param-req">required</span></td><td>Window size (1–86400 seconds)</td></tr>
-      <tr><td>maxRequests</td><td><span class="param-type">integer</span></td><td><span class="param-req">required</span></td><td>Max evaluations allowed in window</td></tr>
-      <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Scope to specific agent (omit for tenant-wide)</td></tr>
+      <tr><td>windowSeconds</td><td><span class="param-type">integer</span></td><td><span class="param-req">required</span></td><td>Window size in seconds (1–86400)</td></tr>
+      <tr><td>maxRequests</td><td><span class="param-type">integer</span></td><td><span class="param-req">required</span></td><td>Max evaluations allowed in the window</td></tr>
+      <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Scope to a specific agent (omit for tenant-wide)</td></tr>
     </table>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/rate-limits \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{"windowSeconds": 60, "maxRequests": 100, "agentId": "booking-agent"}'</code></pre>
   </div>
 </div>
 
@@ -744,7 +1089,7 @@ guard.get_dashboard_agents()</code></pre>
     <span class="path">/api/v1/rate-limits</span>
     <span class="auth-badge auth-required">Auth Required</span>
   </div>
-  <div class="endpoint-body"><p>List all rate limits.</p></div>
+  <div class="endpoint-body"><p>List all rate limit configurations for your tenant.</p></div>
 </div>
 
 <div class="endpoint">
@@ -753,31 +1098,38 @@ guard.get_dashboard_agents()</code></pre>
     <span class="path">/api/v1/rate-limits/:id</span>
     <span class="auth-badge auth-required">Auth Required</span>
   </div>
-  <div class="endpoint-body"><p>Remove a rate limit.</p></div>
+  <div class="endpoint-body"><p>Remove a rate limit configuration.</p></div>
 </div>
 
-
-<!-- COSTS -->
-<h2 id="costs">Cost Attribution</h2>
-<p>Track and attribute costs per agent and per tool. Automatically estimates costs based on tool type, or submit exact costs manually.</p>
+<h3 id="costs">Cost Attribution</h3>
+<p>Track and attribute costs per agent and per tool. Automatically roll up costs over time periods and group by agent, tool, or day.</p>
 
 <div class="endpoint">
   <div class="endpoint-header">
     <span class="method method-post">POST</span>
     <span class="path">/api/v1/costs/track</span>
     <span class="auth-badge auth-required">Auth Required</span>
-    <span class="badge-new">NEW</span>
   </div>
   <div class="endpoint-body">
     <h4>Request Body</h4>
     <table class="params">
       <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
-      <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Agent to attribute cost to</td></tr>
       <tr><td>tool</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Tool or action name</td></tr>
       <tr><td>estimatedCost</td><td><span class="param-type">number</span></td><td><span class="param-req">required</span></td><td>Cost in specified currency</td></tr>
+      <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Agent to attribute the cost to</td></tr>
       <tr><td>currency</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Currency code (default: <code>USD</code>)</td></tr>
       <tr><td>metadata</td><td><span class="param-type">object</span></td><td><span class="param-opt">optional</span></td><td>Additional context (tokens, model, etc.)</td></tr>
     </table>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/costs/track \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{
+    "tool": "openai_chat",
+    "estimatedCost": 0.03,
+    "agentId": "booking-agent",
+    "metadata": {"model": "gpt-4o", "tokens": 1200}
+  }'</code></pre>
   </div>
 </div>
 
@@ -803,23 +1155,169 @@ guard.get_dashboard_agents()</code></pre>
     <span class="path">/api/v1/costs/agents</span>
     <span class="auth-badge auth-required">Auth Required</span>
   </div>
-  <div class="endpoint-body"><p>Get cost breakdown by agent.</p></div>
+  <div class="endpoint-body"><p>Get cost breakdown by agent — total spend, call count, and top tools per agent.</p></div>
 </div>
 
 
+<!-- ────────────────────────────────────────────────── -->
+<!-- WEBHOOKS -->
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="webhooks">Webhooks</h2>
+<p>Get real-time notifications when actions are blocked, the kill switch activates, or human review is required. Webhooks include HMAC-SHA256 signatures for payload verification.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/webhooks</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>url</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>HTTPS endpoint to receive events</td></tr>
+      <tr><td>events</td><td><span class="param-type">string[]</span></td><td><span class="param-req">required</span></td><td>Event types: <code>block</code>, <code>killswitch</code>, <code>hitl</code>, <code>*</code> (all)</td></tr>
+      <tr><td>secret</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>HMAC secret for payload signature verification</td></tr>
+    </table>
+    <h4>Webhook Payload</h4>
+<pre><code>{
+  "event_type": "block",
+  "tenant_id": "a80dd96c-...",
+  "agent_id": "booking-agent",
+  "data": {
+    "decision": "block",
+    "rule": "block-external-api",
+    "tool": "http_post",
+    "riskScore": 75
+  },
+  "timestamp": "2026-03-03T09:00:00.000Z"
+}</code></pre>
+    <div class="callout callout-info"><strong>HMAC verification:</strong> If you set a <code>secret</code>, every request includes an <code>X-AgentGuard-Signature</code> header with <code>sha256=HMAC(payload, secret)</code>. Always verify this header before processing.</div>
+    <h4>Event Types</h4>
+    <table class="params">
+      <tr><th>Event</th><th>Triggered when</th></tr>
+      <tr><td>block</td><td>An evaluation returns <code>block</code></td></tr>
+      <tr><td>killswitch</td><td>Global or tenant kill switch is activated</td></tr>
+      <tr><td>hitl</td><td>An evaluation returns <code>hitl_required</code> (human-in-the-loop)</td></tr>
+      <tr><td>*</td><td>Subscribe to all event types</td></tr>
+    </table>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/webhooks \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{
+    "url": "https://hooks.slack.com/services/T.../B.../...",
+    "events": ["block", "killswitch"],
+    "secret": "my-webhook-secret"
+  }'</code></pre>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/webhooks</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body"><p>List all webhooks for your tenant.</p></div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-delete">DELETE</span>
+    <span class="path">/api/v1/webhooks/:id</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body"><p>Delete a webhook subscription.</p></div>
+</div>
+
+
+<!-- ────────────────────────────────────────────────── -->
+<!-- KILL SWITCH -->
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="killswitch">Kill Switch</h2>
+<p>Instantly block all agent actions — no code changes, no redeployment. AgentGuard provides two levels of kill switch: <strong>tenant-level</strong> (affects only your agents) and <strong>global</strong> (admin-only, affects all tenants). When active, every evaluation returns <code>block</code> with reason <code>KILL_SWITCH</code>.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/killswitch</span>
+    <span class="auth-badge auth-none">Public</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Check kill switch status. Without an API key, returns global status only. With an API key, returns both global and tenant-level status.</p>
+<pre><code>{
+  "global": { "active": false, "activatedAt": null },
+  "tenant": { "active": false, "activatedAt": null }
+}</code></pre>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/killswitch</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Toggle the <strong>tenant-level</strong> kill switch. Only affects evaluations under your tenant API key.</p>
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>active</td><td><span class="param-type">boolean</span></td><td><span class="param-opt">optional</span></td><td><code>true</code> to activate, <code>false</code> to deactivate. Omit to toggle.</td></tr>
+    </table>
+    <h4>Example — activate kill switch</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/killswitch \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{"active": true}'</code></pre>
+<pre><code>{
+  "active": true,
+  "message": "Tenant kill switch ACTIVATED — your evaluations will return BLOCK"
+}</code></pre>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/admin/killswitch</span>
+    <span class="auth-badge auth-required">Admin Only</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Toggle the <strong>global</strong> kill switch. Requires an <code>ag_admin_*</code> key. Affects every tenant on the platform — use with extreme caution.</p>
+    <div class="callout callout-warn"><strong>Global kill switch</strong> immediately blocks all evaluations across all tenants. This is for emergency incident response only.</div>
+  </div>
+</div>
+
+
+<!-- ────────────────────────────────────────────────── -->
 <!-- DASHBOARD -->
+<!-- ────────────────────────────────────────────────── -->
 <h2 id="dashboard-api">Dashboard API</h2>
-<p>Real-time operational data for building dashboards and monitoring.</p>
+<p>Real-time operational data for building custom dashboards and monitoring integrations.</p>
 
 <div class="endpoint">
   <div class="endpoint-header">
     <span class="method method-get">GET</span>
     <span class="path">/api/v1/dashboard/stats</span>
     <span class="auth-badge auth-required">Auth Required</span>
-    <span class="badge-new">NEW</span>
   </div>
   <div class="endpoint-body">
-    <p>Aggregated statistics: evaluation counts, block rates, top triggered rules, active agents.</p>
+    <p>Aggregated statistics: evaluation counts, block rates, top triggered rules, and active agent count.</p>
+<pre><code>{
+  "evaluations": { "total": 12847, "allowed": 11203, "blocked": 1644, "monitored": 0 },
+  "blockRate": 12.8,
+  "topRules": [
+    { "ruleId": "block-privilege-escalation", "count": 844 },
+    { "ruleId": "block-external-http", "count": 412 }
+  ],
+  "activeAgents": 5,
+  "period": "24h"
+}</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl https://api.agentguard.tech/api/v1/dashboard/stats \
+  -H "X-API-Key: ag_live_your_key_here"</code></pre>
   </div>
 </div>
 
@@ -830,11 +1328,11 @@ guard.get_dashboard_agents()</code></pre>
     <span class="auth-badge auth-required">Auth Required</span>
   </div>
   <div class="endpoint-body">
-    <p>Real-time event feed. Returns the most recent evaluation decisions.</p>
+    <p>Real-time event feed — the most recent evaluation decisions across all agents.</p>
     <h4>Query Parameters</h4>
     <table class="params">
       <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
-      <tr><td>limit</td><td><span class="param-type">number</span></td><td>20</td><td>Number of events (1–100)</td></tr>
+      <tr><td>limit</td><td><span class="param-type">number</span></td><td>20</td><td>Number of events to return (1–100)</td></tr>
     </table>
   </div>
 </div>
@@ -845,20 +1343,147 @@ guard.get_dashboard_agents()</code></pre>
     <span class="path">/api/v1/dashboard/agents</span>
     <span class="auth-badge auth-required">Auth Required</span>
   </div>
-  <div class="endpoint-body"><p>Activity breakdown per agent — evaluations, blocks, last active timestamp.</p></div>
+  <div class="endpoint-body"><p>Activity breakdown per agent — evaluation counts, block counts, and last active timestamp.</p></div>
 </div>
 
 
+<!-- ────────────────────────────────────────────────── -->
+<!-- SDKs -->
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="sdk-detail">SDKs</h2>
+
+<h3>TypeScript / Node.js</h3>
+<div class="tabs" data-tabgroup="install">
+  <div class="tab active" data-tab="ts">npm</div>
+  <div class="tab" data-tab="yarn">yarn</div>
+</div>
+<div class="tab-panel active" data-tab="ts" data-tabgroup="install">
+<pre><code>npm install @the-bot-club/agentguard</code></pre>
+</div>
+<div class="tab-panel" data-tab="yarn" data-tabgroup="install">
+<pre><code>yarn add @the-bot-club/agentguard</code></pre>
+</div>
+
+<pre><code>import { AgentGuard } from '@the-bot-club/agentguard';
+
+const guard = new AgentGuard({
+  apiKey: process.env.AGENTGUARD_API_KEY,
+  baseUrl: 'https://api.agentguard.tech'
+});
+
+// Before any agent action
+const decision = await guard.evaluate({ tool: 'send_email', params: { to: 'user@example.com' } });
+if (decision.result !== 'allow') throw new Error(`Blocked: ${decision.reason}`);
+await sendEmail(...);</code></pre>
+
+<div class="callout callout-info"><strong>CJS + ESM supported.</strong> The TypeScript SDK works with both <code>require()</code> and <code>import</code>. Full TypeScript types included.</div>
+
+<h3>Python</h3>
+<pre><code>pip install agentguard-tech</code></pre>
+
+<pre><code>from agentguard import AgentGuard
+import os
+
+guard = AgentGuard(
+    api_key=os.environ["AGENTGUARD_API_KEY"],
+    base_url="https://api.agentguard.tech"
+)
+
+# Synchronous
+decision = guard.evaluate(tool="send_email", params={"to": "user@example.com"})
+if decision["result"] != "allow":
+    raise Exception(f"Blocked: {decision['reason']}")
+
+# Works with LangChain, CrewAI, AutoGen, and custom agent frameworks</code></pre>
+
+
+<!-- ────────────────────────────────────────────────── -->
+<!-- POLICY TEMPLATES -->
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="templates">Policy Templates</h2>
+<p>Pre-built policy rulesets mapped to real-world compliance frameworks. Apply a template to instantly load industry-standard rules into your tenant policy.</p>
+
+<table class="params" style="margin:20px 0">
+  <tr><th>Template ID</th><th>Name</th><th>Description</th></tr>
+  <tr><td>soc2-starter</td><td>SOC 2 Starter</td><td>SOC 2 Type II — access control, data handling, audit logging, change management</td></tr>
+  <tr><td>apra-cps234</td><td>APRA CPS 234</td><td>Australian prudential standard for information security — critical data, third-party risk</td></tr>
+  <tr><td>eu-ai-act</td><td>EU AI Act</td><td>EU AI Act Articles 9, 12, 14 — risk management, logging, human oversight, prohibited practices</td></tr>
+  <tr><td>owasp-agentic</td><td>OWASP Agentic Top 10</td><td>OWASP Top 10 for Agentic AI — prompt injection, privilege escalation, excessive permissions</td></tr>
+  <tr><td>financial-services</td><td>Financial Services Baseline</td><td>Composite standard — PCI DSS, SOX, Basel III operational risk</td></tr>
+  <tr><td>customer-service</td><td>Customer Service Agent</td><td>Safe defaults for customer-facing agents — PII protection, escalation gates</td></tr>
+  <tr><td>code-agent</td><td>Code Agent</td><td>Safe defaults for coding agents — blocks destructive commands, monitors file writes</td></tr>
+</table>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/templates</span>
+    <span class="auth-badge auth-none">Public</span>
+  </div>
+  <div class="endpoint-body"><p>List all available compliance templates with metadata.</p></div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/templates/:name</span>
+    <span class="auth-badge auth-none">Public</span>
+  </div>
+  <div class="endpoint-body"><p>Get full template details including all rules.</p></div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/templates/:name/apply</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Apply a compliance template to your tenant. Adds the template's rules to your active policy. Existing rules are not removed.</p>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/templates/soc2-starter/apply \
+  -H "X-API-Key: ag_live_your_key_here"</code></pre>
+  </div>
+</div>
+
+
+<!-- ────────────────────────────────────────────────── -->
+<!-- POLICY ENGINE -->
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="policy-engine">Policy Engine</h2>
+<p>The policy engine evaluates 7 rule types against every action, in priority order. Rules are written in YAML and loaded from templates or custom uploads.</p>
+
+<table class="params">
+  <tr><th>Rule Type</th><th>Description</th><th>Example</th></tr>
+  <tr><td>resource_access</td><td>Block or allow access to specific tools/resources</td><td>Block <code>shell_exec</code>, allow <code>file_read</code></td></tr>
+  <tr><td>rate_limit</td><td>Limit action frequency per time window</td><td>Max 10 API calls per minute</td></tr>
+  <tr><td>scope_restriction</td><td>Restrict parameter values</td><td>Only allow <code>http_post</code> to whitelisted domains</td></tr>
+  <tr><td>hitl_gate</td><td>Require human approval before execution</td><td>Flag any financial action over $1,000</td></tr>
+  <tr><td>time_window</td><td>Allow/block actions based on time of day</td><td>No deployments outside business hours</td></tr>
+  <tr><td>environment</td><td>Environment-specific rules</td><td>Block destructive actions in production</td></tr>
+  <tr><td>data_classification</td><td>Protect sensitive data patterns</td><td>Block access to PII-classified resources</td></tr>
+</table>
+
+<p>Rules are evaluated in <strong>priority order</strong> (lowest number = highest priority). The first matching rule determines the result. If no rule matches, the <strong>default action</strong> applies (configurable, defaults to <code>allow</code>).</p>
+
+<div class="callout callout-info"><strong>Sub-millisecond evaluation.</strong> The policy engine runs entirely in-process — no network calls during evaluation. P99 latency is under 1ms even for complex rule sets.</div>
+
+
+<!-- ────────────────────────────────────────────────── -->
 <!-- ERRORS -->
+<!-- ────────────────────────────────────────────────── -->
 <h2 id="errors">Error Handling</h2>
-<p>All errors return JSON with an <code>error</code> field:</p>
+<p>All errors return JSON with an <code>error</code> field. HTTP status codes follow REST conventions:</p>
 <pre><code>{ "error": "Invalid or missing API key" }</code></pre>
 
 <table class="params">
   <tr><th>Status</th><th>Meaning</th></tr>
   <tr><td>400</td><td>Bad request — missing or invalid parameters</td></tr>
   <tr><td>401</td><td>Unauthorized — invalid or missing API key</td></tr>
+  <tr><td>403</td><td>Forbidden — agent key used on a tenant-only endpoint</td></tr>
   <tr><td>404</td><td>Not found — endpoint or resource doesn't exist</td></tr>
+  <tr><td>409</td><td>Conflict — resource already exists (e.g. duplicate agent name)</td></tr>
+  <tr><td>422</td><td>Unprocessable — validation failed (e.g. coverage below 100% on certify)</td></tr>
   <tr><td>429</td><td>Rate limit exceeded — includes <code>resetAt</code> timestamp</td></tr>
   <tr><td>500</td><td>Internal server error</td></tr>
 </table>
@@ -867,13 +1492,15 @@ guard.get_dashboard_agents()</code></pre>
 <pre><code>{
   "error": "Rate limit exceeded",
   "remaining": 0,
-  "resetAt": 1709345760
+  "resetAt": 1741000000
 }</code></pre>
 
 
+<!-- ────────────────────────────────────────────────── -->
 <!-- PLAYGROUND -->
+<!-- ────────────────────────────────────────────────── -->
 <h2 id="playground">Playground</h2>
-<p>Test the policy engine without signing up. All playground endpoints are public — no API key required.</p>
+<p>Test the policy engine without signing up. All playground endpoints are public — no API key required. Decisions aren't persisted beyond the session.</p>
 
 <div class="endpoint">
   <div class="endpoint-header">
@@ -881,7 +1508,7 @@ guard.get_dashboard_agents()</code></pre>
     <span class="path">/api/v1/playground/session</span>
     <span class="auth-badge auth-none">Public</span>
   </div>
-  <div class="endpoint-body"><p>Create a temporary playground session.</p></div>
+  <div class="endpoint-body"><p>Create a temporary playground session. Returns a <code>sessionId</code> to track evaluations.</p></div>
 </div>
 
 <div class="endpoint">
@@ -899,7 +1526,16 @@ guard.get_dashboard_agents()</code></pre>
     <span class="path">/api/v1/playground/scenarios</span>
     <span class="auth-badge auth-none">Public</span>
   </div>
-  <div class="endpoint-body"><p>Get pre-built test scenarios to try.</p></div>
+  <div class="endpoint-body"><p>Get pre-built attack scenario tests to explore the policy engine's capabilities.</p></div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/playground/audit/:sessionId</span>
+    <span class="auth-badge auth-none">Public</span>
+  </div>
+  <div class="endpoint-body"><p>Retrieve the audit trail for a specific playground session.</p></div>
 </div>
 
 
