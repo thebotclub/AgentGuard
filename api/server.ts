@@ -20,6 +20,10 @@ import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
 // ── SQLite Setup ───────────────────────────────────────────────────────────
 function openDatabase(): Database.Database {
+  // Warn if PostgreSQL is configured but not yet supported
+  if (process.env['DB_TYPE'] === 'postgres') {
+    console.warn('[db] ⚠️  DB_TYPE=postgres is set but PostgreSQL migration is pending. Falling back to SQLite.');
+  }
   // AG_DB_PATH env allows tests to pass ':memory:' or a temp path for isolation
   if (process.env['AG_DB_PATH']) {
     const dbPath = process.env['AG_DB_PATH'];
