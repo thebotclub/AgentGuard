@@ -335,8 +335,9 @@ describe('McpMiddleware — unit', () => {
     assert.strictEqual(response!.error!.code, McpErrorCode.InvalidParams);
   });
 
-  it('session persists to DB and can be retrieved', () => {
+  it('session persists to DB and can be retrieved', async () => {
     const { adapter: db } = createSqliteAdapterFn(':memory:');
+    await db.initialize();
     const middleware = new McpMiddlewareClass(db);
 
     const session = middleware.createSession({
@@ -344,10 +345,12 @@ describe('McpMiddleware — unit', () => {
       transport: 'stdio',
     });
 
-    // Retrieve from DB (bypass in-memory map by looking in DB directly)
-    const row = db.prepare('SELECT * FROM mcp_sessions WHERE id = ?').get(session.id) as {
-      id: string; tenant_id: string; transport: string;
-    } | undefined;
+    // Retrieve from DB via adapter
+    // Give fire-and-forget INSERT a moment to complete
+    await new Promise(r => setTimeout(r, 50));
+    const row = await db.get<{ id: string; tenant_id: string; transport: string }>(
+      'SELECT * FROM mcp_sessions WHERE id = ?', [session.id]
+    );
 
     assert.ok(row, 'session should be persisted to DB');
     assert.strictEqual(row!.id, session.id);
@@ -355,16 +358,20 @@ describe('McpMiddleware — unit', () => {
     assert.strictEqual(row!.transport, 'stdio');
   });
 
-  it('listSessions returns sessions for the correct tenant', () => {
+  it('listSessions returns sessions for the correct tenant', async () => {
     const { adapter: db } = createSqliteAdapterFn(':memory:');
+    await db.initialize();
     const middleware = new McpMiddlewareClass(db);
 
     middleware.createSession({ tenantId: 'tenant-A' });
     middleware.createSession({ tenantId: 'tenant-A' });
     middleware.createSession({ tenantId: 'tenant-B' });
 
-    const sessionsA = middleware.listSessions('tenant-A');
-    const sessionsB = middleware.listSessions('tenant-B');
+    // Give fire-and-forget INSERTs time to complete
+    await new Promise(r => setTimeout(r, 100));
+
+    const sessionsA = await middleware.listSessions('tenant-A');
+    const sessionsB = await middleware.listSessions('tenant-B');
 
     assert.strictEqual(sessionsA.length, 2, 'tenant-A should have 2 sessions');
     assert.strictEqual(sessionsB.length, 1, 'tenant-B should have 1 session');
