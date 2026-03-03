@@ -62,6 +62,8 @@ async function request(
 
 // ─── Server lifecycle ─────────────────────────────────────────────────────────
 
+describe('Validation & Certification API', () => {
+
 async function waitForServer(retries = 30, delayMs = 300): Promise<void> {
   for (let i = 0; i < retries; i++) {
     try {
@@ -1041,3 +1043,5 @@ describe('Full certification workflow', () => {
     assert.equal(res.body['coverage'], 100);
   });
 });
+
+}); // end Validation & Certification API
