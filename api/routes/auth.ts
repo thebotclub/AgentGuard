@@ -52,7 +52,7 @@ export function createAuthRoutes(
     if (!signupParsed.success) {
       return res
         .status(400)
-        .json({ error: signupParsed.error.issues[0].message });
+        .json({ error: signupParsed.error.issues[0]!.message });
     }
     const { name, email } = signupParsed.data;
 

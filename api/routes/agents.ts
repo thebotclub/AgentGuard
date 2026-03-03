@@ -32,7 +32,7 @@ export function createAgentRoutes(
       if (!agentParsed.success) {
         return res
           .status(400)
-          .json({ error: agentParsed.error.issues[0].message });
+          .json({ error: agentParsed.error.issues[0]!.message });
       }
       const { name, policy_scope } = agentParsed.data;
 

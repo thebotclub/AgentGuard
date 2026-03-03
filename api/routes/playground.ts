@@ -129,7 +129,7 @@ export function createPlaygroundRoutes(
       const playgroundEvalParsed = EvaluateRequest.safeParse(req.body ?? {});
       if (!playgroundEvalParsed.success) {
         return res.status(400).json({
-          error: playgroundEvalParsed.error.issues[0].message,
+          error: playgroundEvalParsed.error.issues[0]!.message,
         });
       }
       const { tool, params } = playgroundEvalParsed.data;

@@ -312,7 +312,7 @@ export function createValidationRoutes(db: IDatabase): Router {
 
     const validateParsed = ValidateAgentRequest.safeParse(req.body ?? {});
     if (!validateParsed.success) {
-      return res.status(400).json({ error: validateParsed.error.issues[0].message });
+      return res.status(400).json({ error: validateParsed.error.issues[0]!.message });
     }
 
     const tools = validateParsed.data.declaredTools.filter(
@@ -453,7 +453,7 @@ export function createValidationRoutes(db: IDatabase): Router {
   router.post('/api/v1/mcp/admit', auth, (req: Request, res: Response) => {
     const admitParsed = McpAdmitRequest.safeParse(req.body ?? {});
     if (!admitParsed.success) {
-      return res.status(400).json({ error: admitParsed.error.issues[0].message });
+      return res.status(400).json({ error: admitParsed.error.issues[0]!.message });
     }
     const { serverUrl, tools } = admitParsed.data;
 

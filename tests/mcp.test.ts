@@ -717,7 +717,7 @@ describe('GET /api/v1/mcp/sessions', () => {
     assert.ok(sessions.length >= 2, `expected >= 2 sessions, got ${sessions.length}`);
 
     // Validate session shape
-    const s = sessions[0];
+    const s = sessions[0]!;
     assert.ok(typeof s['id'] === 'string', 'session should have id');
     assert.ok(typeof s['toolCallCount'] === 'number', 'session should have toolCallCount');
     assert.ok(typeof s['blockedCount'] === 'number', 'session should have blockedCount');

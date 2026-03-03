@@ -147,7 +147,7 @@ export function createEvaluateRoutes(
 
       const evalParsed = EvaluateRequest.safeParse(req.body ?? {});
       if (!evalParsed.success) {
-        return res.status(400).json({ error: evalParsed.error.issues[0].message });
+        return res.status(400).json({ error: evalParsed.error.issues[0]!.message });
       }
       const { tool, params } = evalParsed.data;
       if (tool.length > 200) {

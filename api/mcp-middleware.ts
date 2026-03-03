@@ -544,9 +544,9 @@ export class McpMiddleware {
 
     return {
       decision: decision.result,
-      matchedRuleId: decision.matchedRuleId,
+      matchedRuleId: decision.matchedRuleId ?? undefined,
       riskScore: decision.riskScore,
-      reason: decision.reason,
+      reason: decision.reason ?? undefined,
       durationMs,
       blocked,
       mcpError,
