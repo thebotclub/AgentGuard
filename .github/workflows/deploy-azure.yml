@@ -11,6 +11,7 @@ on:
       - 'Dockerfile.*'
       - 'nginx-*.conf'
       - 'package.json'
+      - 'package-lock.json'
   workflow_dispatch:
 
 permissions:
@@ -33,9 +34,8 @@ jobs:
           node-version: '22'
       - run: npm install --ignore-scripts
       - run: npm run test
-      - run: npx tsx --version
       - name: Type check API
-        run: npx tsc --noEmit --esModuleInterop --target ES2022 --module nodenext --moduleResolution nodenext api/server.ts 2>/dev/null || echo "⚠️ Type check had warnings (non-blocking)"
+        run: npx tsc --noEmit --esModuleInterop --target ES2022 --module nodenext --moduleResolution nodenext api/server.ts 2>&1 || echo "⚠️ Type check had warnings (non-blocking)"
 
   build-deploy:
     name: 🏗️ Build & Deploy
@@ -44,6 +44,8 @@ jobs:
     needs: validate
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -62,24 +64,38 @@ jobs:
             exit 0
           fi
           CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "all")
-          echo "api=false" >> $GITHUB_OUTPUT
-          echo "landing=false" >> $GITHUB_OUTPUT
-          echo "dashboard=false" >> $GITHUB_OUTPUT
-          echo "$CHANGED" | grep -qE '^(api/|packages/|Dockerfile\.api|package\.json)' && echo "api=true" >> $GITHUB_OUTPUT || true
-          echo "$CHANGED" | grep -qE '^(landing/|Dockerfile\.landing|nginx-landing)' && echo "landing=true" >> $GITHUB_OUTPUT || true
-          echo "$CHANGED" | grep -qE '^(dashboard/|Dockerfile\.dashboard|nginx-dashboard)' && echo "dashboard=true" >> $GITHUB_OUTPUT || true
+          echo "Changed files:"
+          echo "$CHANGED"
+          
+          # Detect which components changed
+          API=false
+          LANDING=false
+          DASHBOARD=false
+          
+          echo "$CHANGED" | grep -qE '^(api/|packages/|Dockerfile\.api|package\.json|package-lock)' && API=true
+          echo "$CHANGED" | grep -qE '^(landing/|Dockerfile\.landing|nginx-landing)' && LANDING=true
+          echo "$CHANGED" | grep -qE '^(dashboard/|Dockerfile\.dashboard|nginx-dashboard)' && DASHBOARD=true
+          
+          echo "api=$API" >> $GITHUB_OUTPUT
+          echo "landing=$LANDING" >> $GITHUB_OUTPUT
+          echo "dashboard=$DASHBOARD" >> $GITHUB_OUTPUT
+          
+          echo "Deploy: api=$API landing=$LANDING dashboard=$DASHBOARD"
 
       - name: Build & deploy API
         if: steps.changes.outputs.api == 'true'
         run: |
+          echo "🔨 Building API image..."
           az acr build --registry ${{ env.ACR_NAME }} \
             --image agentguard-api:${{ github.sha }} \
             --image agentguard-api:latest \
             --file Dockerfile.api .
+          echo "🚀 Deploying API..."
           az containerapp update \
             --name agentguard-api \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_NAME }}.azurecr.io/agentguard-api:${{ github.sha }}
+          echo "✅ API deployed: ${{ github.sha }}"
 
       - name: Build & deploy Landing
         if: steps.changes.outputs.landing == 'true'
@@ -106,13 +122,17 @@ jobs:
             --image ${{ env.ACR_NAME }}.azurecr.io/agentguard-dashboard:${{ github.sha }}
 
       - name: Health check
+        if: steps.changes.outputs.api == 'true'
         run: |
+          echo "⏳ Waiting for API to start..."
           sleep 30
-          API_URL="https://agentguard-api.greenrock-adeab1b0.australiaeast.azurecontainerapps.io"
+          API_URL="https://api.agentguard.tech"
           for i in $(seq 1 10); do
-            if curl -sf "$API_URL/health" -o /dev/null; then
-              echo "✅ API healthy (attempt $i)"
-              # Quick smoke test
+            HEALTH=$(curl -sf "$API_URL/health" 2>/dev/null)
+            if [ $? -eq 0 ]; then
+              VERSION=$(echo "$HEALTH" | python3 -c "import sys,json; print(json.load(sys.stdin).get('version','?'))" 2>/dev/null)
+              echo "✅ API healthy (attempt $i) — version $VERSION"
+              # Smoke test
               RESULT=$(curl -s -X POST "$API_URL/api/v1/evaluate" \
                 -H "Content-Type: application/json" \
                 -d '{"tool":"sudo","params":{"command":"test"}}')
@@ -122,5 +142,5 @@ jobs:
             echo "Attempt $i — waiting..."
             sleep $((i * 3))
           done
-          echo "::error::Health check failed"
+          echo "::error::Health check failed after 10 attempts"
           exit 1
