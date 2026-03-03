@@ -6,29 +6,17 @@
  * forwarding them upstream. Non-tool messages (resources/read, prompts/get, etc.)
  * pass through without evaluation.
  *
- * Supports:
- *  - SSE transport (HTTP + Server-Sent Events, the standard MCP HTTP transport)
- *  - stdio transport interception (JSON-RPC over stdin/stdout)
- *  - In-process policy evaluation (no extra network hop)
- *  - Audit trail for every MCP tool call
- *  - Per-session tracking
- *
  * Architecture:
  *  MCP Client → AgentGuard MCP Proxy → [PolicyEngine] → MCP Tool Server
- *
- * The proxy intercepts JSON-RPC requests. For `tools/call`, it evaluates the
- * action via the policy engine. ALLOW/MONITOR → forward upstream. BLOCK → return
- * a JSON-RPC error without contacting the upstream server.
  */
 import crypto from 'crypto';
-import Database from 'better-sqlite3';
+import type { IDatabase } from './db-interface.js';
 import { PolicyEngine } from '../packages/sdk/src/core/policy-engine.js';
 import type { PolicyDocument, ActionRequest, AgentContext } from '../packages/sdk/src/core/types.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
 // ── MCP JSON-RPC Types ────────────────────────────────────────────────────
 
-/** Standard JSON-RPC 2.0 request */
 export interface McpRequest {
   jsonrpc: '2.0';
   id?: string | number | null;
@@ -36,7 +24,6 @@ export interface McpRequest {
   params?: unknown;
 }
 
-/** Standard JSON-RPC 2.0 response */
 export interface McpResponse {
   jsonrpc: '2.0';
   id?: string | number | null;
@@ -48,20 +35,17 @@ export interface McpResponse {
   };
 }
 
-/** JSON-RPC error codes */
 export const McpErrorCode = {
   ParseError: -32700,
   InvalidRequest: -32600,
   MethodNotFound: -32601,
   InvalidParams: -32602,
   InternalError: -32603,
-  // AgentGuard custom codes
   PolicyBlocked: -32001,
   KillSwitchActive: -32002,
   RateLimitExceeded: -32003,
 } as const;
 
-/** MCP `tools/call` params shape */
 export interface McpToolCallParams {
   name: string;
   arguments?: Record<string, unknown>;
@@ -156,21 +140,23 @@ const MCP_DEFAULT_POLICY: PolicyDocument = {
 // ── McpMiddleware Core Class ──────────────────────────────────────────────
 
 export class McpMiddleware {
-  private db: Database.Database;
+  private db: IDatabase;
   private sessions = new Map<string, McpSession>();
   private policyEngine: PolicyEngine;
 
-  constructor(db: Database.Database) {
+  constructor(db: IDatabase) {
     this.db = db;
     this.policyEngine = new PolicyEngine();
     this.policyEngine.registerDocument(MCP_DEFAULT_POLICY);
-    this.initializeTables();
+    // Tables are initialized by the DB adapter's initialize() method
+    // but we also call it here for compatibility (idempotent)
+    void this.initializeTables();
   }
 
   // ── Database Setup ──────────────────────────────────────────────────────
 
-  private initializeTables(): void {
-    this.db.exec(`
+  private async initializeTables(): Promise<void> {
+    await this.db.exec(`
       CREATE TABLE IF NOT EXISTS mcp_configs (
         id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
         tenant_id TEXT NOT NULL REFERENCES tenants(id),
@@ -184,8 +170,10 @@ export class McpMiddleware {
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         UNIQUE(tenant_id, name)
-      );
+      )
+    `).catch(() => { /* already exists */ });
 
+    await this.db.exec(`
       CREATE TABLE IF NOT EXISTS mcp_sessions (
         id TEXT PRIMARY KEY,
         tenant_id TEXT NOT NULL,
@@ -198,8 +186,10 @@ export class McpMiddleware {
         blocked_count INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         last_activity_at TEXT NOT NULL DEFAULT (datetime('now'))
-      );
+      )
+    `).catch(() => { /* already exists */ });
 
+    await this.db.exec(`
       CREATE TABLE IF NOT EXISTS mcp_audit_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         session_id TEXT NOT NULL,
@@ -216,18 +206,17 @@ export class McpMiddleware {
         previous_hash TEXT,
         hash TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
-      );
+      )
+    `).catch(() => { /* already exists */ });
 
-      CREATE INDEX IF NOT EXISTS idx_mcp_configs_tenant ON mcp_configs(tenant_id);
-      CREATE INDEX IF NOT EXISTS idx_mcp_sessions_tenant ON mcp_sessions(tenant_id);
-      CREATE INDEX IF NOT EXISTS idx_mcp_audit_tenant ON mcp_audit_events(tenant_id, created_at);
-      CREATE INDEX IF NOT EXISTS idx_mcp_audit_session ON mcp_audit_events(session_id);
-    `);
+    await this.db.exec(`CREATE INDEX IF NOT EXISTS idx_mcp_configs_tenant ON mcp_configs(tenant_id)`).catch(() => {});
+    await this.db.exec(`CREATE INDEX IF NOT EXISTS idx_mcp_sessions_tenant ON mcp_sessions(tenant_id)`).catch(() => {});
+    await this.db.exec(`CREATE INDEX IF NOT EXISTS idx_mcp_audit_tenant ON mcp_audit_events(tenant_id, created_at)`).catch(() => {});
+    await this.db.exec(`CREATE INDEX IF NOT EXISTS idx_mcp_audit_session ON mcp_audit_events(session_id)`).catch(() => {});
   }
 
   // ── Session Management ──────────────────────────────────────────────────
 
-  /** Create or retrieve a session. Returns a session object. */
   createSession(opts: {
     tenantId: string;
     agentId?: string | null;
@@ -254,39 +243,31 @@ export class McpMiddleware {
 
     this.sessions.set(id, session);
 
-    // Persist to DB
-    this.db.prepare<[string, string, string | null, string | null, string, string | null, string, string, string]>(
+    // Persist to DB (fire-and-forget, don't block the sync createSession call)
+    void this.db.run(
       `INSERT INTO mcp_sessions
        (id, tenant_id, agent_id, config_id, transport, upstream_url, action_mapping, created_at, last_activity_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      id,
-      session.tenantId,
-      session.agentId,
-      session.configId,
-      session.transport,
-      session.upstreamUrl,
-      JSON.stringify(session.actionMapping),
-      now,
-      now,
-    );
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, session.tenantId, session.agentId, session.configId, session.transport,
+       session.upstreamUrl, JSON.stringify(session.actionMapping), now, now]
+    ).catch(err => console.error('[mcp] failed to persist session:', err));
 
     return session;
   }
 
   getSession(sessionId: string): McpSession | undefined {
-    // Check in-memory first
+    return this.sessions.get(sessionId);
+  }
+
+  async getSessionAsync(sessionId: string): Promise<McpSession | undefined> {
     if (this.sessions.has(sessionId)) return this.sessions.get(sessionId);
 
-    // Fall back to DB
-    const row = this.db.prepare<[string]>(
-      'SELECT * FROM mcp_sessions WHERE id = ?'
-    ).get(sessionId) as {
+    const row = await this.db.get<{
       id: string; tenant_id: string; agent_id: string | null;
       config_id: string | null; transport: string; upstream_url: string | null;
       action_mapping: string; tool_call_count: number; blocked_count: number;
       created_at: string; last_activity_at: string;
-    } | undefined;
+    }>('SELECT * FROM mcp_sessions WHERE id = ?', [sessionId]);
 
     if (!row) return undefined;
 
@@ -307,15 +288,13 @@ export class McpMiddleware {
     return session;
   }
 
-  listSessions(tenantId: string): McpSession[] {
-    const rows = this.db.prepare<[string]>(
-      `SELECT * FROM mcp_sessions WHERE tenant_id = ? ORDER BY last_activity_at DESC LIMIT 100`
-    ).all(tenantId) as Array<{
+  async listSessions(tenantId: string): Promise<McpSession[]> {
+    const rows = await this.db.all<{
       id: string; tenant_id: string; agent_id: string | null;
       config_id: string | null; transport: string; upstream_url: string | null;
       action_mapping: string; tool_call_count: number; blocked_count: number;
       created_at: string; last_activity_at: string;
-    }>;
+    }>(`SELECT * FROM mcp_sessions WHERE tenant_id = ? ORDER BY last_activity_at DESC LIMIT 100`, [tenantId]);
 
     return rows.map(r => ({
       id: r.id,
@@ -334,69 +313,68 @@ export class McpMiddleware {
 
   private updateSession(session: McpSession): void {
     session.lastActivityAt = new Date().toISOString();
-    this.db.prepare<[string, number, number, string]>(
+    void this.db.run(
       `UPDATE mcp_sessions
        SET last_activity_at = ?, tool_call_count = ?, blocked_count = ?
-       WHERE id = ?`
-    ).run(session.lastActivityAt, session.toolCallCount, session.blockedCount, session.id);
+       WHERE id = ?`,
+      [session.lastActivityAt, session.toolCallCount, session.blockedCount, session.id]
+    ).catch(err => console.error('[mcp] failed to update session:', err));
   }
 
   // ── Config CRUD ─────────────────────────────────────────────────────────
 
-  createConfig(tenantId: string, opts: {
+  async createConfig(tenantId: string, opts: {
     name: string;
     upstreamUrl?: string | null;
     transport?: 'sse' | 'stdio';
     agentId?: string | null;
     actionMapping?: Record<string, string>;
     defaultAction?: 'allow' | 'block';
-  }): McpConfig {
-    const row = this.db.prepare<[string, string, string | null, string, string | null, string, string]>(
+  }): Promise<McpConfig> {
+    const row = await this.db.get<{
+      id: string; tenant_id: string; name: string; upstream_url: string | null;
+      transport: string; agent_id: string | null; enabled: number;
+      action_mapping: string; default_action: string; created_at: string; updated_at: string;
+    }>(
       `INSERT INTO mcp_configs
        (tenant_id, name, upstream_url, transport, agent_id, action_mapping, default_action, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
-       RETURNING *`
-    ).get(
-      tenantId,
-      opts.name,
-      opts.upstreamUrl ?? null,
-      opts.transport ?? 'sse',
-      opts.agentId ?? null,
-      JSON.stringify(opts.actionMapping ?? {}),
-      opts.defaultAction ?? 'allow',
-    ) as {
-      id: string; tenant_id: string; name: string; upstream_url: string | null;
-      transport: string; agent_id: string | null; enabled: number;
-      action_mapping: string; default_action: string; created_at: string; updated_at: string;
-    };
+       RETURNING *`,
+      [
+        tenantId,
+        opts.name,
+        opts.upstreamUrl ?? null,
+        opts.transport ?? 'sse',
+        opts.agentId ?? null,
+        JSON.stringify(opts.actionMapping ?? {}),
+        opts.defaultAction ?? 'allow',
+      ]
+    );
 
+    if (!row) throw new Error('Failed to create MCP config');
     return this.rowToConfig(row);
   }
 
-  listConfigs(tenantId: string): McpConfig[] {
-    const rows = this.db.prepare<[string]>(
-      'SELECT * FROM mcp_configs WHERE tenant_id = ? ORDER BY created_at DESC'
-    ).all(tenantId) as Array<{
+  async listConfigs(tenantId: string): Promise<McpConfig[]> {
+    const rows = await this.db.all<{
       id: string; tenant_id: string; name: string; upstream_url: string | null;
       transport: string; agent_id: string | null; enabled: number;
       action_mapping: string; default_action: string; created_at: string; updated_at: string;
-    }>;
+    }>('SELECT * FROM mcp_configs WHERE tenant_id = ? ORDER BY created_at DESC', [tenantId]);
     return rows.map(r => this.rowToConfig(r));
   }
 
-  getConfig(tenantId: string, configId: string): McpConfig | undefined {
-    const row = this.db.prepare<[string, string]>(
-      'SELECT * FROM mcp_configs WHERE id = ? AND tenant_id = ?'
-    ).get(configId, tenantId) as {
+  async getConfig(tenantId: string, configId: string): Promise<McpConfig | undefined> {
+    const row = await this.db.get<{
       id: string; tenant_id: string; name: string; upstream_url: string | null;
       transport: string; agent_id: string | null; enabled: number;
       action_mapping: string; default_action: string; created_at: string; updated_at: string;
-    } | undefined;
+    }>('SELECT * FROM mcp_configs WHERE id = ? AND tenant_id = ?', [configId, tenantId]);
 
     return row ? this.rowToConfig(row) : undefined;
   }
 
-  updateConfig(tenantId: string, configId: string, opts: Partial<{
+  async updateConfig(tenantId: string, configId: string, opts: Partial<{
     name: string;
     upstreamUrl: string | null;
     transport: 'sse' | 'stdio';
@@ -404,8 +382,8 @@ export class McpMiddleware {
     actionMapping: Record<string, string>;
     defaultAction: 'allow' | 'block';
     enabled: boolean;
-  }>): McpConfig | undefined {
-    const existing = this.getConfig(tenantId, configId);
+  }>): Promise<McpConfig | undefined> {
+    const existing = await this.getConfig(tenantId, configId);
     if (!existing) return undefined;
 
     const updated = {
@@ -418,27 +396,28 @@ export class McpMiddleware {
       enabled: opts.enabled !== undefined ? opts.enabled : existing.enabled,
     };
 
-    const row = this.db.prepare<[string, string | null, string, string | null, string, string, number, string, string]>(
+    const row = await this.db.get<{
+      id: string; tenant_id: string; name: string; upstream_url: string | null;
+      transport: string; agent_id: string | null; enabled: number;
+      action_mapping: string; default_action: string; created_at: string; updated_at: string;
+    }>(
       `UPDATE mcp_configs
        SET name = ?, upstream_url = ?, transport = ?, agent_id = ?,
            action_mapping = ?, default_action = ?, enabled = ?, updated_at = datetime('now')
        WHERE id = ? AND tenant_id = ?
-       RETURNING *`
-    ).get(
-      updated.name,
-      updated.upstreamUrl,
-      updated.transport,
-      updated.agentId,
-      JSON.stringify(updated.actionMapping),
-      updated.defaultAction,
-      updated.enabled ? 1 : 0,
-      configId,
-      tenantId,
-    ) as {
-      id: string; tenant_id: string; name: string; upstream_url: string | null;
-      transport: string; agent_id: string | null; enabled: number;
-      action_mapping: string; default_action: string; created_at: string; updated_at: string;
-    } | undefined;
+       RETURNING *`,
+      [
+        updated.name,
+        updated.upstreamUrl,
+        updated.transport,
+        updated.agentId,
+        JSON.stringify(updated.actionMapping),
+        updated.defaultAction,
+        updated.enabled ? 1 : 0,
+        configId,
+        tenantId,
+      ]
+    );
 
     return row ? this.rowToConfig(row) : undefined;
   }
@@ -465,12 +444,6 @@ export class McpMiddleware {
 
   // ── Policy Evaluation ───────────────────────────────────────────────────
 
-  /**
-   * Core evaluation: given an MCP `tools/call` payload, evaluate against the
-   * policy engine. Maps tool name through actionMapping, then evaluates.
-   *
-   * Returns the decision + metadata needed to respond or forward the call.
-   */
   evaluateToolCall(opts: {
     toolName: string;
     toolArguments?: Record<string, unknown>;
@@ -488,7 +461,6 @@ export class McpMiddleware {
       actionMapping = {},
     } = opts;
 
-    // Map tool name to AgentGuard action (e.g. "write_file" → "file:write")
     const effectiveMapping = { ...actionMapping, ...(session?.actionMapping ?? {}) };
     const actionName = effectiveMapping[toolName] ?? toolName;
 
@@ -515,7 +487,6 @@ export class McpMiddleware {
     try {
       decision = this.policyEngine.evaluate(actionRequest, ctx, MCP_DEFAULT_POLICY.id);
     } catch (_e) {
-      // On evaluation error, fail closed
       const durationMs = Math.round((performance.now() - start) * 100) / 100;
       return {
         decision: 'block',
@@ -534,7 +505,6 @@ export class McpMiddleware {
 
     const blocked = decision.result === 'block' || decision.result === 'require_approval';
 
-    // Build MCP error if blocked
     const mcpError: McpResponse['error'] | undefined = blocked
       ? {
           code: McpErrorCode.PolicyBlocked,
@@ -549,8 +519,7 @@ export class McpMiddleware {
         }
       : undefined;
 
-    // Write audit trail entry
-    this.writeAuditEntry({
+    void this.writeAuditEntry({
       sessionId: session?.id ?? requestId,
       tenantId,
       toolName,
@@ -564,7 +533,6 @@ export class McpMiddleware {
       blocked,
     });
 
-    // Update session counters
     if (session) {
       session.toolCallCount++;
       if (blocked) session.blockedCount++;
@@ -584,10 +552,11 @@ export class McpMiddleware {
 
   // ── Audit Trail ─────────────────────────────────────────────────────────
 
-  private getLastMcpHash(tenantId: string): string {
-    const row = this.db.prepare<[string]>(
-      'SELECT hash FROM mcp_audit_events WHERE tenant_id = ? ORDER BY id DESC LIMIT 1'
-    ).get(tenantId) as { hash: string } | undefined;
+  private async getLastMcpHash(tenantId: string): Promise<string> {
+    const row = await this.db.get<{ hash: string }>(
+      'SELECT hash FROM mcp_audit_events WHERE tenant_id = ? ORDER BY id DESC LIMIT 1',
+      [tenantId]
+    );
     return row?.hash ?? GENESIS_HASH;
   }
 
@@ -595,7 +564,7 @@ export class McpMiddleware {
     return crypto.createHash('sha256').update(prev + '|' + data).digest('hex');
   }
 
-  private writeAuditEntry(opts: {
+  private async writeAuditEntry(opts: {
     sessionId: string;
     tenantId: string;
     toolName: string;
@@ -607,45 +576,38 @@ export class McpMiddleware {
     reason: string | null;
     durationMs: number;
     blocked: boolean;
-  }): void {
+  }): Promise<void> {
     const now = new Date().toISOString();
-    const prevHash = this.getLastMcpHash(opts.tenantId);
+    const prevHash = await this.getLastMcpHash(opts.tenantId);
     const eventData = `mcp:${opts.toolName}|${opts.decision}|${now}`;
     const hash = this.makeHash(eventData, prevHash);
 
-    this.db.prepare<[string, string, string, string, string | null, string, string | null, number, string | null, number, number, string, string, string]>(
+    await this.db.run(
       `INSERT INTO mcp_audit_events
        (session_id, tenant_id, tool_name, action_name, arguments, decision,
         matched_rule_id, risk_score, reason, duration_ms, blocked, previous_hash, hash, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      opts.sessionId,
-      opts.tenantId,
-      opts.toolName,
-      opts.actionName,
-      opts.arguments ? JSON.stringify(opts.arguments) : null,
-      opts.decision,
-      opts.matchedRuleId,
-      opts.riskScore,
-      opts.reason,
-      opts.durationMs,
-      opts.blocked ? 1 : 0,
-      prevHash,
-      hash,
-      now,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        opts.sessionId,
+        opts.tenantId,
+        opts.toolName,
+        opts.actionName,
+        opts.arguments ? JSON.stringify(opts.arguments) : null,
+        opts.decision,
+        opts.matchedRuleId,
+        opts.riskScore,
+        opts.reason,
+        opts.durationMs,
+        opts.blocked ? 1 : 0,
+        prevHash,
+        hash,
+        now,
+      ]
     );
   }
 
   // ── MCP JSON-RPC Message Interception ────────────────────────────────────
 
-  /**
-   * Process an incoming MCP JSON-RPC message.
-   *
-   * Returns an object with:
-   *  - `response`: If non-null, send this back to the client immediately (blocked or error)
-   *  - `forward`: If true, forward the original request to the upstream server
-   *  - `evaluation`: The evaluation result (for `tools/call` requests)
-   */
   async interceptMessage(
     message: McpRequest,
     session: McpSession,
@@ -654,12 +616,10 @@ export class McpMiddleware {
     forward: boolean;
     evaluation?: McpEvaluationResult;
   }> {
-    // Only intercept `tools/call` — everything else passes through
     if (message.method !== 'tools/call') {
       return { response: null, forward: true };
     }
 
-    // Validate params
     const params = message.params as McpToolCallParams | undefined;
     if (!params || typeof params.name !== 'string') {
       return {
@@ -675,7 +635,6 @@ export class McpMiddleware {
       };
     }
 
-    // Evaluate through policy engine
     const evaluation = this.evaluateToolCall({
       toolName: params.name,
       toolArguments: (params.arguments ?? {}) as Record<string, unknown>,
@@ -685,7 +644,6 @@ export class McpMiddleware {
     });
 
     if (evaluation.blocked) {
-      // Return a JSON-RPC error — do NOT forward to upstream
       return {
         response: {
           jsonrpc: '2.0',
@@ -697,14 +655,9 @@ export class McpMiddleware {
       };
     }
 
-    // ALLOW or MONITOR — forward upstream
     return { response: null, forward: true, evaluation };
   }
 
-  /**
-   * Forward an MCP JSON-RPC request to the upstream server via HTTP.
-   * Used for SSE transport where the upstream is an HTTP endpoint.
-   */
   async forwardToUpstream(
     upstreamUrl: string,
     message: McpRequest,
@@ -760,10 +713,6 @@ export class McpMiddleware {
     }
   }
 
-  /**
-   * Parse a raw JSON string as an MCP request.
-   * Returns null if the message is not valid JSON-RPC.
-   */
   parseMessage(raw: string): McpRequest | null {
     try {
       const parsed = JSON.parse(raw) as unknown;
@@ -781,12 +730,6 @@ export class McpMiddleware {
     }
   }
 
-  /**
-   * Process a raw JSON-RPC string (used by stdio transport interceptor).
-   *
-   * Returns the JSON string to write back, or null if the message should be
-   * forwarded to the upstream stdio process unchanged.
-   */
   async processStdioLine(
     line: string,
     session: McpSession,
@@ -801,13 +744,11 @@ export class McpMiddleware {
       return JSON.stringify(response) + '\n';
     }
 
-    // If it's allowed and we have an upstream URL, proxy there
     if (forward && upstreamUrl) {
       const upstreamResponse = await this.forwardToUpstream(upstreamUrl, message);
       return JSON.stringify(upstreamResponse) + '\n';
     }
 
-    // No upstream — pass through for the caller to handle
     return null;
   }
 }
@@ -816,7 +757,7 @@ export class McpMiddleware {
 
 let _instance: McpMiddleware | null = null;
 
-export function getMcpMiddleware(db: Database.Database): McpMiddleware {
+export function getMcpMiddleware(db: IDatabase): McpMiddleware {
   if (!_instance) {
     _instance = new McpMiddleware(db);
   }

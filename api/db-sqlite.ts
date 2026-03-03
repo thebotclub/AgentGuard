@@ -207,8 +207,76 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
     async initialize(): Promise<void> {
       db.exec(SCHEMA_SQL);
       db.exec(SEED_SETTINGS_SQL);
-      // Migration: add agent_id to audit_events if not present (backward compat)
+
+      // ── Backward-compat migrations ──────────────────────────────────────────
+      // Migration: add agent_id to audit_events if not present
       try { db.exec('ALTER TABLE audit_events ADD COLUMN agent_id TEXT'); } catch { /* already exists */ }
+
+      // Migration: validation/certification columns on agents table
+      const validationCols: Array<{ name: string; type: string }> = [
+        { name: 'declared_tools', type: 'TEXT' },
+        { name: 'last_validated_at', type: 'TEXT' },
+        { name: 'validation_coverage', type: 'INTEGER' },
+        { name: 'certified_at', type: 'TEXT' },
+        { name: 'certification_expires_at', type: 'TEXT' },
+        { name: 'certification_token', type: 'TEXT' },
+      ];
+      for (const col of validationCols) {
+        try { db.exec(`ALTER TABLE agents ADD COLUMN ${col.name} ${col.type}`); } catch { /* already exists */ }
+      }
+
+      // Migration: MCP tables (also created by McpMiddleware but we ensure they exist here)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS mcp_configs (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          tenant_id TEXT NOT NULL REFERENCES tenants(id),
+          name TEXT NOT NULL,
+          upstream_url TEXT,
+          transport TEXT NOT NULL DEFAULT 'sse',
+          agent_id TEXT,
+          enabled INTEGER NOT NULL DEFAULT 1,
+          action_mapping TEXT NOT NULL DEFAULT '{}',
+          default_action TEXT NOT NULL DEFAULT 'allow',
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(tenant_id, name)
+        );
+        CREATE TABLE IF NOT EXISTS mcp_sessions (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL,
+          agent_id TEXT,
+          config_id TEXT,
+          transport TEXT NOT NULL DEFAULT 'sse',
+          upstream_url TEXT,
+          action_mapping TEXT NOT NULL DEFAULT '{}',
+          tool_call_count INTEGER NOT NULL DEFAULT 0,
+          blocked_count INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          last_activity_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS mcp_audit_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id TEXT NOT NULL,
+          tenant_id TEXT NOT NULL,
+          tool_name TEXT NOT NULL,
+          action_name TEXT NOT NULL,
+          arguments TEXT,
+          decision TEXT NOT NULL,
+          matched_rule_id TEXT,
+          risk_score INTEGER NOT NULL DEFAULT 0,
+          reason TEXT,
+          duration_ms REAL,
+          blocked INTEGER NOT NULL DEFAULT 0,
+          previous_hash TEXT,
+          hash TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_mcp_configs_tenant ON mcp_configs(tenant_id);
+        CREATE INDEX IF NOT EXISTS idx_mcp_sessions_tenant ON mcp_sessions(tenant_id);
+        CREATE INDEX IF NOT EXISTS idx_mcp_audit_tenant ON mcp_audit_events(tenant_id, created_at);
+        CREATE INDEX IF NOT EXISTS idx_mcp_audit_session ON mcp_audit_events(session_id);
+      `);
+
       console.log('[db] SQLite schema ready');
     },
 

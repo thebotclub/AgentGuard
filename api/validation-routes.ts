@@ -19,22 +19,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import Database from 'better-sqlite3';
 import crypto from 'crypto';
+import type { IDatabase, TenantRow } from './db-interface.js';
 import { ValidateAgentRequest, McpAdmitRequest } from './schemas.js';
 import { PolicyEngine } from '../packages/sdk/src/core/policy-engine.js';
 import type { ActionRequest, AgentContext, PolicyDecision } from '../packages/sdk/src/core/types.js';
 import type { PolicyDocument } from '../packages/sdk/src/core/types.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
-
-interface TenantRow {
-  id: string;
-  name: string;
-  email: string;
-  plan: string;
-  created_at: string;
-  kill_switch_active: number;
-  kill_switch_at: string | null;
-}
 
 interface ApiKeyRow {
   key: string;
@@ -68,18 +59,16 @@ interface AuthedRequest extends Request {
 
 // ── Auth helpers ───────────────────────────────────────────────────────────
 
-function lookupTenantFromDb(db: Database.Database, apiKey: string): TenantRow | null {
-  const keyRow = db
-    .prepare<[string]>('SELECT * FROM api_keys WHERE key = ? AND is_active = 1')
-    .get(apiKey) as ApiKeyRow | undefined;
+async function lookupTenantFromDb(db: IDatabase, apiKey: string): Promise<TenantRow | null> {
+  const keyRow = await db.getApiKey(apiKey) as ApiKeyRow | undefined;
   if (!keyRow) return null;
-  db.prepare<[string]>("UPDATE api_keys SET last_used_at = datetime('now') WHERE key = ?").run(apiKey);
-  const tenant = db.prepare<[string]>('SELECT * FROM tenants WHERE id = ?').get(keyRow.tenant_id) as TenantRow | undefined;
+  await db.touchApiKey(apiKey);
+  const tenant = await db.getTenant(keyRow.tenant_id);
   return tenant ?? null;
 }
 
-function requireTenantAuth(db: Database.Database) {
-  return (req: Request, res: Response, next: NextFunction) => {
+function requireTenantAuth(db: IDatabase) {
+  return async (req: Request, res: Response, next: NextFunction) => {
     const apiKey = req.headers['x-api-key'] as string | undefined;
     if (!apiKey) {
       return res.status(401).json({ error: 'X-API-Key header required' });
@@ -87,7 +76,7 @@ function requireTenantAuth(db: Database.Database) {
     if (apiKey.startsWith('ag_agent_')) {
       return res.status(403).json({ error: 'Agent keys cannot perform tenant admin operations. Use your tenant API key.' });
     }
-    const tenant = lookupTenantFromDb(db, apiKey);
+    const tenant = await lookupTenantFromDb(db, apiKey);
     if (!tenant) {
       return res.status(401).json({ error: 'Invalid or inactive API key' });
     }
@@ -98,7 +87,6 @@ function requireTenantAuth(db: Database.Database) {
 }
 
 // ── Default policy for dry-run evaluation ─────────────────────────────────
-// Mirrors the DEFAULT_POLICY from server.ts so dry-runs use the same rules.
 const DEFAULT_POLICY_FOR_VALIDATION: PolicyDocument = {
   id: 'validation-policy',
   name: 'AgentGuard Validation Policy',
@@ -175,10 +163,6 @@ const DEFAULT_POLICY_FOR_VALIDATION: PolicyDocument = {
 
 // ── Risk Score Calculator ──────────────────────────────────────────────────
 
-/**
- * Aggregate risk score across all tool evaluation results.
- * Returns 0–1000 (clamped). Uncovered tools get a moderate base risk.
- */
 function computeAggregateRiskScore(
   results: Array<{ tool: string; decision: string; riskScore: number }>,
 ): number {
@@ -239,11 +223,6 @@ function dryRunTools(tools: string[]): ValidationResult[] {
   });
 }
 
-/**
- * Determine "coverage" as the percentage of tools that hit an explicit rule
- * (i.e. not falling through to the default). A tool is "covered" when the
- * policy engine matched a rule (matchedRuleId is non-null).
- */
 function computeCoverage(results: ValidationResult[]): { coverage: number; uncovered: string[] } {
   if (results.length === 0) return { coverage: 100, uncovered: [] };
   const uncovered = results.filter((r) => r.ruleId === null).map((r) => r.tool);
@@ -257,11 +236,13 @@ function generateCertToken(): string {
   return 'agcert_' + crypto.randomBytes(24).toString('hex');
 }
 
-// ── Run schema migrations ─────────────────────────────────────────────────
+// ── Run schema migrations (called from server.ts for SQLite raw compat) ───
 
+/**
+ * Kept for backward compat: called from server.ts with the raw SQLite db.
+ * The IDatabase initialize() method already handles these migrations.
+ */
 export function runValidationMigrations(db: Database.Database): void {
-  // New columns on agents table — SQLite doesn't support IF NOT EXISTS for columns,
-  // so we run each ALTER separately and swallow the "duplicate column" error.
   const newColumns: Array<{ name: string; type: string }> = [
     { name: 'declared_tools', type: 'TEXT' },
     { name: 'last_validated_at', type: 'TEXT' },
@@ -282,20 +263,12 @@ export function runValidationMigrations(db: Database.Database): void {
 
 // ── Route Factory ──────────────────────────────────────────────────────────
 
-export function createValidationRoutes(db: Database.Database): Router {
-  // Ensure schema is up to date
-  runValidationMigrations(db);
-
+export function createValidationRoutes(db: IDatabase): Router {
   const router = Router();
   const auth = requireTenantAuth(db);
 
   // ── POST /api/v1/agents/:id/validate ──────────────────────────────────────
-  /**
-   * Dry-run each declared tool through the policy engine.
-   * Input:  { declaredTools: string[] }
-   * Output: { valid, coverage, results, uncovered, riskScore }
-   */
-  router.post('/api/v1/agents/:id/validate', auth, (req: Request, res: Response) => {
+  router.post('/api/v1/agents/:id/validate', auth, async (req: Request, res: Response) => {
     const tenantId = (req as AuthedRequest).tenantId;
     const agentId = req.params['id'] as string;
 
@@ -303,11 +276,10 @@ export function createValidationRoutes(db: Database.Database): Router {
       return res.status(400).json({ error: 'Invalid agent id' });
     }
 
-    const agent = db
-      .prepare<[string, string]>(
-        'SELECT * FROM agents WHERE id = ? AND tenant_id = ? AND active = 1',
-      )
-      .get(agentId, tenantId) as AgentRow | undefined;
+    const agent = await db.get<AgentRow>(
+      'SELECT * FROM agents WHERE id = ? AND tenant_id = ? AND active = 1',
+      [agentId, tenantId]
+    );
 
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
@@ -318,7 +290,6 @@ export function createValidationRoutes(db: Database.Database): Router {
       return res.status(400).json({ error: validateParsed.error.issues[0].message });
     }
 
-    // Validate tool names (filter and check length limits)
     const tools = validateParsed.data.declaredTools.filter(
       (t): t is string => typeof t === 'string' && t.length > 0 && t.length <= 200,
     );
@@ -329,19 +300,18 @@ export function createValidationRoutes(db: Database.Database): Router {
       return res.status(400).json({ error: 'declaredTools too long (max 200 tools)' });
     }
 
-    // Dry-run all tools through the policy engine
     const results = dryRunTools(tools);
     const { coverage, uncovered } = computeCoverage(results);
     const riskScore = computeAggregateRiskScore(results);
     const valid = uncovered.length === 0;
     const now = new Date().toISOString();
 
-    // Persist declared tools and validation metadata
-    db.prepare<[string, string, number, string]>(
+    await db.run(
       `UPDATE agents
        SET declared_tools = ?, last_validated_at = ?, validation_coverage = ?
        WHERE id = ?`,
-    ).run(JSON.stringify(tools), now, coverage, agentId);
+      [JSON.stringify(tools), now, coverage, agentId]
+    );
 
     return res.json({
       agentId,
@@ -355,10 +325,7 @@ export function createValidationRoutes(db: Database.Database): Router {
   });
 
   // ── GET /api/v1/agents/:id/readiness ──────────────────────────────────────
-  /**
-   * Returns the agent's current certification / readiness status.
-   */
-  router.get('/api/v1/agents/:id/readiness', auth, (req: Request, res: Response) => {
+  router.get('/api/v1/agents/:id/readiness', auth, async (req: Request, res: Response) => {
     const tenantId = (req as AuthedRequest).tenantId;
     const agentId = req.params['id'] as string;
 
@@ -366,17 +333,15 @@ export function createValidationRoutes(db: Database.Database): Router {
       return res.status(400).json({ error: 'Invalid agent id' });
     }
 
-    const agent = db
-      .prepare<[string, string]>(
-        'SELECT * FROM agents WHERE id = ? AND tenant_id = ? AND active = 1',
-      )
-      .get(agentId, tenantId) as AgentRow | undefined;
+    const agent = await db.get<AgentRow>(
+      'SELECT * FROM agents WHERE id = ? AND tenant_id = ? AND active = 1',
+      [agentId, tenantId]
+    );
 
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
     }
 
-    // Determine status
     let status: 'certified' | 'validated' | 'registered' | 'expired';
 
     if (agent.certified_at && agent.certification_expires_at) {
@@ -404,11 +369,7 @@ export function createValidationRoutes(db: Database.Database): Router {
   });
 
   // ── POST /api/v1/agents/:id/certify ───────────────────────────────────────
-  /**
-   * Certify an agent that has passed validation with 100% coverage.
-   * Sets certified_at, certification_expires_at (+30 days), and a token.
-   */
-  router.post('/api/v1/agents/:id/certify', auth, (req: Request, res: Response) => {
+  router.post('/api/v1/agents/:id/certify', auth, async (req: Request, res: Response) => {
     const tenantId = (req as AuthedRequest).tenantId;
     const agentId = req.params['id'] as string;
 
@@ -416,24 +377,21 @@ export function createValidationRoutes(db: Database.Database): Router {
       return res.status(400).json({ error: 'Invalid agent id' });
     }
 
-    const agent = db
-      .prepare<[string, string]>(
-        'SELECT * FROM agents WHERE id = ? AND tenant_id = ? AND active = 1',
-      )
-      .get(agentId, tenantId) as AgentRow | undefined;
+    const agent = await db.get<AgentRow>(
+      'SELECT * FROM agents WHERE id = ? AND tenant_id = ? AND active = 1',
+      [agentId, tenantId]
+    );
 
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
     }
 
-    // Must have been validated
     if (!agent.last_validated_at) {
       return res.status(422).json({
         error: 'Agent has not been validated yet. Call POST /api/v1/agents/:id/validate first.',
       });
     }
 
-    // Must have 100% coverage to certify
     const coverage = agent.validation_coverage ?? 0;
     if (coverage < 100) {
       return res.status(422).json({
@@ -444,14 +402,15 @@ export function createValidationRoutes(db: Database.Database): Router {
 
     const now = new Date();
     const certifiedAt = now.toISOString();
-    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(); // +30 days
+    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const token = generateCertToken();
 
-    db.prepare<[string, string, string, string]>(
+    await db.run(
       `UPDATE agents
        SET certified_at = ?, certification_expires_at = ?, certification_token = ?
        WHERE id = ?`,
-    ).run(certifiedAt, expiresAt, token, agentId);
+      [certifiedAt, expiresAt, token, agentId]
+    );
 
     return res.status(201).json({
       agentId,
@@ -466,12 +425,6 @@ export function createValidationRoutes(db: Database.Database): Router {
   });
 
   // ── POST /api/v1/mcp/admit ────────────────────────────────────────────────
-  /**
-   * Pre-flight admission check for an MCP server.
-   * Evaluates all provided tools and returns admitted: true/false.
-   * Input:  { serverUrl, tools: [{ name, description, inputSchema }] }
-   * Output: { admitted, results, coverage, serverUrl }
-   */
   router.post('/api/v1/mcp/admit', auth, (req: Request, res: Response) => {
     const admitParsed = McpAdmitRequest.safeParse(req.body ?? {});
     if (!admitParsed.success) {
@@ -479,7 +432,6 @@ export function createValidationRoutes(db: Database.Database): Router {
     }
     const { serverUrl, tools } = admitParsed.data;
 
-    // Extract tool names; filter by length limit
     const toolNames: string[] = [];
     for (const t of tools) {
       const name = t.name.trim();
@@ -495,7 +447,6 @@ export function createValidationRoutes(db: Database.Database): Router {
       return res.status(400).json({ error: 'Too many tools (max 200)' });
     }
 
-    // Dry-run all tools
     const results = dryRunTools(toolNames);
     const { coverage, uncovered } = computeCoverage(results);
     const admitted = uncovered.length === 0 && results.every((r) => r.decision !== 'block');

@@ -1,13 +1,13 @@
 /**
  * AgentGuard API Server — Production Backend
- * SQLite persistence, real auth, tenant isolation, persistent audit trail.
+ * SQLite persistence (default) or PostgreSQL (DB_TYPE=postgres + DATABASE_URL).
+ * Real auth, tenant isolation, persistent audit trail.
  *
  * Hardened: auth, rate limiting, CORS allowlist, error handling, memory caps.
  */
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
-import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
@@ -18,6 +18,8 @@ import { EvaluateRequest, SignupRequest, CreateAgentRequest } from './schemas.js
 import { PolicyEngine } from '../packages/sdk/src/core/policy-engine.js';
 import type { PolicyDocument, ActionRequest, AgentContext, PolicyDecision } from '../packages/sdk/src/core/types.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
+import type { IDatabase, TenantRow, ApiKeyRow, AgentRow, WebhookRow } from './db-interface.js';
+import { createDb } from './db-factory.js';
 
 // ── SSRF URL Validation ────────────────────────────────────────────────────
 /**
@@ -62,36 +64,32 @@ function validateWebhookUrl(rawUrl: string): string | null {
   }
 
   // 4. Reject IPv4 literals in private ranges
-  //    Matches bare IPv4 (e.g. "10.0.0.1") and IPv4-mapped IPv6 (::ffff:10.0.0.1)
   const ipv4Literal = hostname.match(
     /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$|^::ffff:(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/,
   );
   if (ipv4Literal) {
-    // Normalise: pick the right capture groups for both formats
     const a = parseInt(ipv4Literal[1] ?? ipv4Literal[5]!, 10);
     const b = parseInt(ipv4Literal[2] ?? ipv4Literal[6]!, 10);
     const c = parseInt(ipv4Literal[3] ?? ipv4Literal[7]!, 10);
 
     const isPrivate =
-      a === 10 ||                                   // 10.0.0.0/8
-      a === 127 ||                                  // 127.0.0.0/8
-      (a === 169 && b === 254) ||                  // 169.254.0.0/16 (link-local / IMDS)
-      (a === 172 && b >= 16 && b <= 31) ||         // 172.16.0.0/12
-      (a === 192 && b === 168) ||                  // 192.168.0.0/16
-      (a === 0);                                   // 0.0.0.0/8
+      a === 10 ||
+      a === 127 ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 0);
 
     if (isPrivate) {
       return 'url must not point to a private or internal network address';
     }
   }
 
-  // 5. Reject IPv6 loopback and ULA (fc00::/7 = fc00:: – fdff::)
-  //    Strip surrounding brackets that URL parser keeps in hostname
+  // 5. Reject IPv6 loopback and ULA
   const ipv6 = hostname.replace(/^\[|\]$/g, '');
   if (ipv6 === '::1' || ipv6 === '0:0:0:0:0:0:0:1') {
     return 'url must not point to a private or internal network address';
   }
-  // fc00::/7 covers fc00–fd00 range — first byte 0xfc or 0xfd
   if (/^(fc|fd)[0-9a-f]{0,2}:/i.test(ipv6)) {
     return 'url must not point to a private or internal network address';
   }
@@ -99,130 +97,7 @@ function validateWebhookUrl(rawUrl: string): string | null {
   return null; // valid
 }
 
-// ── SQLite Setup ───────────────────────────────────────────────────────────
-function openDatabase(): Database.Database {
-  // Warn if PostgreSQL is configured but not yet supported
-  if (process.env['DB_TYPE'] === 'postgres') {
-    console.warn('[db] ⚠️  DB_TYPE=postgres is set but PostgreSQL migration is pending. Falling back to SQLite.');
-  }
-  // AG_DB_PATH env allows tests to pass ':memory:' or a temp path for isolation
-  if (process.env['AG_DB_PATH']) {
-    const dbPath = process.env['AG_DB_PATH'];
-    console.log(`[db] opening SQLite at ${dbPath} (from AG_DB_PATH)`);
-    const db = new Database(dbPath === ':memory:' ? ':memory:' : dbPath);
-    db.pragma('journal_mode = DELETE');
-    db.pragma('busy_timeout = 5000');
-    db.pragma('foreign_keys = ON');
-    return db;
-  }
-  // Try /data first (Docker volume), fall back to local
-  let dbPath = './agentguard.db';
-  try {
-    if (!fs.existsSync('/data')) fs.mkdirSync('/data', { recursive: true });
-    dbPath = '/data/agentguard.db';
-  } catch {
-    // /data not writable — use local path
-    dbPath = path.resolve('./agentguard.db');
-  }
-  console.log(`[db] opening SQLite at ${dbPath}`);
-  const db = new Database(dbPath);
-  db.pragma('journal_mode = DELETE');
-  db.pragma('busy_timeout = 5000');
-  db.pragma('foreign_keys = ON');
-  return db;
-}
-
-const db = openDatabase();
-
-// Run schema migrations
-db.exec(`
-  CREATE TABLE IF NOT EXISTS tenants (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    plan TEXT DEFAULT 'free',
-    created_at TEXT DEFAULT (datetime('now')),
-    kill_switch_active INTEGER DEFAULT 0,
-    kill_switch_at TEXT
-  );
-
-  CREATE TABLE IF NOT EXISTS api_keys (
-    key TEXT PRIMARY KEY,
-    tenant_id TEXT NOT NULL REFERENCES tenants(id),
-    name TEXT DEFAULT 'default',
-    created_at TEXT DEFAULT (datetime('now')),
-    last_used_at TEXT,
-    is_active INTEGER DEFAULT 1
-  );
-
-  CREATE TABLE IF NOT EXISTS audit_events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tenant_id TEXT,
-    session_id TEXT,
-    tool TEXT NOT NULL,
-    action TEXT,
-    result TEXT NOT NULL,
-    rule_id TEXT,
-    risk_score INTEGER,
-    reason TEXT,
-    duration_ms REAL,
-    previous_hash TEXT,
-    hash TEXT,
-    created_at TEXT DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS sessions (
-    id TEXT PRIMARY KEY,
-    tenant_id TEXT,
-    created_at TEXT DEFAULT (datetime('now')),
-    last_activity TEXT
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_events(tenant_id);
-  CREATE INDEX IF NOT EXISTS idx_audit_session ON audit_events(session_id);
-  CREATE INDEX IF NOT EXISTS idx_apikeys_tenant ON api_keys(tenant_id);
-
-  -- Phase 1: Webhook Alerts
-  CREATE TABLE IF NOT EXISTS webhooks (
-    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-    tenant_id TEXT NOT NULL REFERENCES tenants(id),
-    url TEXT NOT NULL,
-    events TEXT NOT NULL DEFAULT '["block","killswitch"]',
-    secret TEXT,
-    active INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-  CREATE INDEX IF NOT EXISTS idx_webhooks_tenant ON webhooks(tenant_id);
-
-  -- Phase 1: Agent Identity & Scoping
-  CREATE TABLE IF NOT EXISTS agents (
-    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
-    tenant_id TEXT NOT NULL REFERENCES tenants(id),
-    name TEXT NOT NULL,
-    api_key TEXT UNIQUE NOT NULL,
-    policy_scope TEXT NOT NULL DEFAULT '[]',
-    active INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(tenant_id, name)
-  );
-  CREATE INDEX IF NOT EXISTS idx_agents_tenant ON agents(tenant_id);
-  CREATE INDEX IF NOT EXISTS idx_agents_key ON agents(api_key);
-
-  -- Add agent_id to audit_events (migration-safe: ignore if column exists)
-`);
-
-// Migration: add agent_id to audit_events if not present
-try {
-  db.exec('ALTER TABLE audit_events ADD COLUMN agent_id TEXT');
-} catch {
-  // Column already exists — safe to ignore
-}
-
-// Migration: add validation/certification columns to agents table
-runValidationMigrations(db);
-
 // ── Template Cache ─────────────────────────────────────────────────────────
-// Resolve templates dir relative to this file's location (works with tsx and compiled JS)
 const TEMPLATES_DIR = path.resolve(
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(process.argv[1] ?? '.'),
   'templates'
@@ -261,126 +136,6 @@ function loadTemplates(): void {
 
 loadTemplates();
 
-// Prepared statements
-const stmtGetTenant = db.prepare<[string]>('SELECT * FROM tenants WHERE id = ?');
-const stmtGetTenantByEmail = db.prepare<[string]>('SELECT * FROM tenants WHERE email = ?');
-const stmtInsertTenant = db.prepare<[string, string, string]>(
-  'INSERT INTO tenants (id, name, email) VALUES (?, ?, ?)'
-);
-const stmtUpdateTenantKillSwitch = db.prepare<[number, string | null, string]>(
-  'UPDATE tenants SET kill_switch_active = ?, kill_switch_at = ? WHERE id = ?'
-);
-
-const stmtGetApiKey = db.prepare<[string]>('SELECT * FROM api_keys WHERE key = ? AND is_active = 1');
-const stmtInsertApiKey = db.prepare<[string, string, string]>(
-  'INSERT INTO api_keys (key, tenant_id, name) VALUES (?, ?, ?)'
-);
-const stmtUpdateApiKeyUsed = db.prepare<[string]>(
-  "UPDATE api_keys SET last_used_at = datetime('now') WHERE key = ?"
-);
-
-const stmtInsertAuditEvent = db.prepare<[string | null, string | null, string, string | null, string, string | null, number | null, string | null, number | null, string | null, string | null, string, string | null]>(
-  `INSERT INTO audit_events
-   (tenant_id, session_id, tool, action, result, rule_id, risk_score, reason, duration_ms, previous_hash, hash, created_at, agent_id)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-);
-const stmtGetLastAuditEvent = db.prepare<[string]>(
-  'SELECT hash FROM audit_events WHERE tenant_id = ? ORDER BY id DESC LIMIT 1'
-);
-const stmtGetAuditEvents = db.prepare<[string, number, number]>(
-  'SELECT * FROM audit_events WHERE tenant_id = ? ORDER BY id ASC LIMIT ? OFFSET ?'
-);
-const stmtCountAuditEvents = db.prepare<[string]>(
-  'SELECT COUNT(*) as cnt FROM audit_events WHERE tenant_id = ?'
-);
-const stmtGetAllAuditEvents = db.prepare<[string]>(
-  'SELECT * FROM audit_events WHERE tenant_id = ? ORDER BY id ASC'
-);
-
-const stmtUsageTotal = db.prepare<[string]>(
-  'SELECT COUNT(*) as cnt FROM audit_events WHERE tenant_id = ?'
-);
-const stmtUsageByResult = db.prepare<[string]>(
-  'SELECT result, COUNT(*) as cnt FROM audit_events WHERE tenant_id = ? GROUP BY result'
-);
-const stmtUsageLast24h = db.prepare<[string]>(
-  "SELECT COUNT(*) as cnt FROM audit_events WHERE tenant_id = ? AND created_at >= datetime('now', '-1 day')"
-);
-const stmtTopBlockedTools = db.prepare<[string]>(
-  "SELECT tool, COUNT(*) as cnt FROM audit_events WHERE tenant_id = ? AND result = 'block' GROUP BY tool ORDER BY cnt DESC LIMIT 5"
-);
-const stmtAvgDuration = db.prepare<[string]>(
-  'SELECT AVG(duration_ms) as avg FROM audit_events WHERE tenant_id = ?'
-);
-
-const stmtUpsertSession = db.prepare<[string, string | null]>(
-  `INSERT INTO sessions (id, tenant_id, last_activity) VALUES (?, ?, datetime('now'))
-   ON CONFLICT(id) DO UPDATE SET last_activity = datetime('now')`
-);
-
-// Webhook statements
-const stmtInsertWebhook = db.prepare<[string, string, string, string | null]>(
-  'INSERT INTO webhooks (tenant_id, url, events, secret) VALUES (?, ?, ?, ?) RETURNING *'
-);
-const stmtGetWebhooksByTenant = db.prepare<[string]>(
-  'SELECT id, tenant_id, url, events, active, created_at FROM webhooks WHERE tenant_id = ? AND active = 1'
-);
-const stmtGetWebhookById = db.prepare<[string, string]>(
-  'SELECT * FROM webhooks WHERE id = ? AND tenant_id = ?'
-);
-const stmtDeleteWebhook = db.prepare<[string, string]>(
-  'UPDATE webhooks SET active = 0 WHERE id = ? AND tenant_id = ?'
-);
-const stmtGetActiveWebhooksForTenant = db.prepare<[string]>(
-  'SELECT * FROM webhooks WHERE tenant_id = ? AND active = 1'
-);
-
-// Agent statements
-const stmtInsertAgent = db.prepare<[string, string, string, string]>(
-  'INSERT INTO agents (tenant_id, name, api_key, policy_scope) VALUES (?, ?, ?, ?) RETURNING id, tenant_id, name, policy_scope, active, created_at'
-);
-const stmtGetAgentsByTenant = db.prepare<[string]>(
-  'SELECT id, tenant_id, name, policy_scope, active, created_at FROM agents WHERE tenant_id = ? AND active = 1'
-);
-const stmtGetAgentByKey = db.prepare<[string]>(
-  'SELECT * FROM agents WHERE api_key = ? AND active = 1'
-);
-const stmtGetAgentById = db.prepare<[string, string]>(
-  'SELECT id, tenant_id, name, policy_scope, active, created_at FROM agents WHERE id = ? AND tenant_id = ?'
-);
-const stmtDeactivateAgent = db.prepare<[string, string]>(
-  'UPDATE agents SET active = 0 WHERE id = ? AND tenant_id = ?'
-);
-
-// Global kill switch persisted in a simple settings table
-db.exec(`
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT
-  );
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('global_kill_switch', '0');
-  INSERT OR IGNORE INTO settings (key, value) VALUES ('global_kill_switch_at', '');
-`);
-
-const stmtGetSetting = db.prepare<[string]>('SELECT value FROM settings WHERE key = ?');
-const stmtSetSetting = db.prepare<[string, string]>(
-  'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)'
-);
-
-function getGlobalKillSwitch(): { active: boolean; at: string | null } {
-  const row = stmtGetSetting.get('global_kill_switch') as { value: string } | undefined;
-  const atRow = stmtGetSetting.get('global_kill_switch_at') as { value: string } | undefined;
-  return {
-    active: row?.value === '1',
-    at: atRow?.value || null,
-  };
-}
-
-function setGlobalKillSwitch(active: boolean) {
-  stmtSetSetting.run('global_kill_switch', active ? '1' : '0');
-  stmtSetSetting.run('global_kill_switch_at', active ? new Date().toISOString() : '');
-}
-
 // ── Express App ────────────────────────────────────────────────────────────
 const app = express();
 
@@ -392,7 +147,6 @@ const ALLOWED_ORIGINS = [
   'https://demo.agentguard.tech',
   'https://docs.agentguard.tech',
 ];
-// Extra origins from env (e.g. CORS_ORIGINS=https://staging.example.com,https://other.com)
 if (process.env['CORS_ORIGINS']) {
   ALLOWED_ORIGINS.push(...process.env['CORS_ORIGINS'].split(',').map(o => o.trim()).filter(Boolean));
 }
@@ -402,7 +156,6 @@ app.use(cors({
       !origin ||
       ALLOWED_ORIGINS.includes(origin) ||
       /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
-      // Allow any Azure Container Apps subdomain for agentguard — handles redeployment hostname changes
       /^https:\/\/agentguard-[^.]+\.australiaeast\.azurecontainerapps\.io$/.test(origin);
     if (isAllowed) {
       callback(null, true);
@@ -433,8 +186,6 @@ const WINDOW_MS = 60 * 1000;
 const MAX_SESSIONS = 1000;
 const MAX_AUDIT_EVENTS = 500;
 
-// Signup rate limit: 5 per IP per hour
-// In test mode allow more signups so e2e tests don't hit rate limits
 const SIGNUP_MAX = process.env['NODE_ENV'] === 'test' ? 100 : 5;
 const SIGNUP_WINDOW_MS = 60 * 60 * 1000;
 
@@ -484,7 +235,7 @@ function signupRateLimit(ip: string): boolean {
   const bucket = signupRateLimitMap.get(ip);
   if (!bucket || now - bucket.windowStart > SIGNUP_WINDOW_MS) {
     signupRateLimitMap.set(ip, { count: 1, windowStart: now });
-    return true; // allowed
+    return true;
   }
   bucket.count++;
   return bucket.count <= SIGNUP_MAX;
@@ -492,46 +243,9 @@ function signupRateLimit(ip: string): boolean {
 
 app.use(rateLimitMiddleware);
 
-// ── Tenant Auth Helper ─────────────────────────────────────────────────────
-interface TenantRow {
-  id: string;
-  name: string;
-  email: string;
-  plan: string;
-  created_at: string;
-  kill_switch_active: number;
-  kill_switch_at: string | null;
-}
-
-interface ApiKeyRow {
-  key: string;
-  tenant_id: string;
-  name: string;
-  created_at: string;
-  last_used_at: string | null;
-  is_active: number;
-}
-
-function lookupTenant(apiKey: string): TenantRow | null {
-  const keyRow = stmtGetApiKey.get(apiKey) as ApiKeyRow | undefined;
-  if (!keyRow) return null;
-  stmtUpdateApiKeyUsed.run(apiKey);
-  const tenant = stmtGetTenant.get(keyRow.tenant_id) as TenantRow | undefined;
-  return tenant ?? null;
-}
-
-// ── Auth Middleware (optional — public routes skip) ────────────────────────
-const ADMIN_KEY = process.env['ADMIN_KEY'];
-
-interface AgentRow {
-  id: string;
-  tenant_id: string;
-  name: string;
-  api_key: string;
-  policy_scope: string;
-  active: number;
-  created_at: string;
-}
+// ── Auth Types ─────────────────────────────────────────────────────────────
+// Re-export types from db-interface for local use
+// (TenantRow, ApiKeyRow, AgentRow are imported from db-interface above)
 
 // Attach tenant (and optionally agent) to request if API key present
 declare global {
@@ -545,13 +259,27 @@ declare global {
   }
 }
 
-function optionalTenantAuth(req: Request, _res: Response, next: NextFunction) {
+// ── DB (initialised in main async block below) ─────────────────────────────
+let db: IDatabase;
+
+// ── Auth Helpers ───────────────────────────────────────────────────────────
+async function lookupTenant(apiKey: string): Promise<TenantRow | null> {
+  const keyRow = await db.getApiKey(apiKey);
+  if (!keyRow) return null;
+  await db.touchApiKey(apiKey);
+  const tenant = await db.getTenant(keyRow.tenant_id);
+  return tenant ?? null;
+}
+
+// ── Auth Middleware ────────────────────────────────────────────────────────
+const ADMIN_KEY = process.env['ADMIN_KEY'];
+
+async function optionalTenantAuth(req: Request, _res: Response, next: NextFunction) {
   const apiKey = req.headers['x-api-key'] as string | undefined;
   if (apiKey && apiKey.startsWith('ag_agent_')) {
-    // Agent key path
-    const agentRow = stmtGetAgentByKey.get(apiKey) as AgentRow | undefined;
+    const agentRow = await db.getAgentByKey(apiKey);
     if (agentRow) {
-      const tenant = stmtGetTenant.get(agentRow.tenant_id) as TenantRow | undefined;
+      const tenant = await db.getTenant(agentRow.tenant_id);
       req.agent = agentRow;
       req.tenant = tenant ?? null;
       req.tenantId = agentRow.tenant_id;
@@ -561,7 +289,7 @@ function optionalTenantAuth(req: Request, _res: Response, next: NextFunction) {
       req.tenantId = 'demo';
     }
   } else if (apiKey) {
-    const tenant = lookupTenant(apiKey);
+    const tenant = await lookupTenant(apiKey);
     req.tenant = tenant;
     req.tenantId = tenant?.id ?? 'demo';
     req.agent = null;
@@ -573,16 +301,15 @@ function optionalTenantAuth(req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
-function requireTenantAuth(req: Request, res: Response, next: NextFunction) {
+async function requireTenantAuth(req: Request, res: Response, next: NextFunction) {
   const apiKey = req.headers['x-api-key'] as string | undefined;
   if (!apiKey) {
     return res.status(401).json({ error: 'X-API-Key header required' });
   }
-  // Agent keys cannot use tenant-admin endpoints
   if (apiKey.startsWith('ag_agent_')) {
     return res.status(403).json({ error: 'Agent keys cannot perform tenant admin operations. Use your tenant API key.' });
   }
-  const tenant = lookupTenant(apiKey);
+  const tenant = await lookupTenant(apiKey);
   if (!tenant) {
     return res.status(401).json({ error: 'Invalid or inactive API key' });
   }
@@ -727,7 +454,7 @@ function generateApiKey(): string {
   return 'ag_live_' + crypto.randomBytes(16).toString('hex');
 }
 
-function getOrCreateSession(sessionId?: string, tenantId = 'demo'): [string, SessionState] {
+async function getOrCreateSession(sessionId?: string, tenantId = 'demo'): Promise<[string, SessionState]> {
   if (sessionId && sessions.has(sessionId)) return [sessionId, sessions.get(sessionId)!];
 
   if (sessions.size >= MAX_SESSIONS) {
@@ -749,19 +476,19 @@ function getOrCreateSession(sessionId?: string, tenantId = 'demo'): [string, Ses
   };
   sessions.set(id, state);
 
-  // Persist session to SQLite
-  stmtUpsertSession.run(id, tenantId === 'demo' ? null : tenantId);
+  // Persist session to DB
+  await db.upsertSession(id, tenantId === 'demo' ? null : tenantId);
 
   return [id, state];
 }
 
 // ── Persistent audit trail helpers ────────────────────────────────────────
-function getLastHash(tenantId: string): string {
-  const row = stmtGetLastAuditEvent.get(tenantId) as { hash: string } | undefined;
-  return row?.hash ?? GENESIS_HASH;
+async function getLastHash(tenantId: string): Promise<string> {
+  const hash = await db.getLastAuditHash(tenantId);
+  return hash ?? GENESIS_HASH;
 }
 
-function storeAuditEvent(
+async function storeAuditEvent(
   tenantId: string,
   sessionId: string | null,
   tool: string,
@@ -772,12 +499,11 @@ function storeAuditEvent(
   durationMs: number,
   prevHash: string,
   agentId?: string | null,
-): string {
-  // Use a single consistent timestamp for both hash and created_at
+): Promise<string> {
   const createdAt = new Date().toISOString();
   const eventData = `${tool}|${result}|${createdAt}`;
   const hash = makeHash(eventData, prevHash);
-  stmtInsertAuditEvent.run(
+  await db.insertAuditEvent(
     tenantId === 'demo' ? null : tenantId,
     sessionId,
     tool,
@@ -796,16 +522,6 @@ function storeAuditEvent(
 }
 
 // ── Webhook Delivery ───────────────────────────────────────────────────────
-interface WebhookRow {
-  id: string;
-  tenant_id: string;
-  url: string;
-  events: string;
-  secret: string | null;
-  active: number;
-  created_at: string;
-}
-
 function hmacSignature(body: string, secret: string): string {
   return 'sha256=' + crypto.createHmac('sha256', secret).update(body).digest('hex');
 }
@@ -834,9 +550,8 @@ async function deliverWebhook(webhook: WebhookRow, eventType: string, payload: o
 }
 
 function fireWebhooksAsync(tenantId: string, eventType: string, payload: object): void {
-  // Fire async — do not block the hot path
   setTimeout(async () => {
-    const webhooks = stmtGetActiveWebhooksForTenant.all(tenantId) as WebhookRow[];
+    const webhooks = await db.getActiveWebhooksForTenant(tenantId);
     for (const wh of webhooks) {
       let eventList: string[] = [];
       try { eventList = JSON.parse(wh.events) as string[]; } catch { eventList = []; }
@@ -844,13 +559,27 @@ function fireWebhooksAsync(tenantId: string, eventType: string, payload: object)
 
       const ok = await deliverWebhook(wh, eventType, payload);
       if (!ok) {
-        // Retry once after 5s
         setTimeout(async () => {
           await deliverWebhook(wh, eventType, payload);
         }, 5000);
       }
     }
   }, 0);
+}
+
+// ── Global Kill Switch helpers ─────────────────────────────────────────────
+async function getGlobalKillSwitch(): Promise<{ active: boolean; at: string | null }> {
+  const val = await db.getSetting('global_kill_switch');
+  const at = await db.getSetting('global_kill_switch_at');
+  return {
+    active: val === '1',
+    at: at || null,
+  };
+}
+
+async function setGlobalKillSwitch(active: boolean): Promise<void> {
+  await db.setSetting('global_kill_switch', active ? '1' : '0');
+  await db.setSetting('global_kill_switch_at', active ? new Date().toISOString() : '');
 }
 
 // ── Agent Key Generation ───────────────────────────────────────────────────
@@ -860,8 +589,8 @@ function generateAgentKey(): string {
 
 // ── Routes ─────────────────────────────────────────────────────────────────
 
-app.get('/', (_req: Request, res: Response) => {
-  const ks = getGlobalKillSwitch();
+app.get('/', async (_req: Request, res: Response) => {
+  const ks = await getGlobalKillSwitch();
   res.json({
     name: 'AgentGuard Policy Engine API',
     version: '0.2.1',
@@ -914,18 +643,16 @@ app.get('/', (_req: Request, res: Response) => {
   });
 });
 
-app.get('/health', (_req: Request, res: Response) => {
-  const ks = getGlobalKillSwitch();
-  // Quick DB check
+app.get('/health', async (_req: Request, res: Response) => {
+  const ks = await getGlobalKillSwitch();
   let dbOk = false;
-  try { db.prepare('SELECT 1').get(); dbOk = true; } catch { /* db down */ }
-  // Count tenants and agents as a sanity check
   let tenantCount = 0;
   let agentCount = 0;
   try {
-    tenantCount = (db.prepare('SELECT COUNT(*) as n FROM tenants').get() as { n: number }).n;
-    agentCount = (db.prepare('SELECT COUNT(*) as n FROM agents WHERE active = 1').get() as { n: number }).n;
-  } catch { /* tables may not exist yet */ }
+    dbOk = await db.ping();
+    tenantCount = await db.countTenants();
+    agentCount = await db.countActiveAgents();
+  } catch { /* db down */ }
   const status = dbOk ? 'ok' : 'degraded';
   res.status(dbOk ? 200 : 503).json({
     status,
@@ -933,7 +660,7 @@ app.get('/health', (_req: Request, res: Response) => {
     version: '0.2.1',
     uptime: Math.floor(process.uptime()),
     killSwitch: ks.active,
-    db: dbOk ? 'sqlite' : 'error',
+    db: dbOk ? db.type : 'error',
     templates: templateCache.size,
     tenants: tenantCount,
     activeAgents: agentCount,
@@ -941,10 +668,9 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 // ── Signup ─────────────────────────────────────────────────────────────────
-app.post('/api/v1/signup', (req: Request, res: Response) => {
+app.post('/api/v1/signup', async (req: Request, res: Response) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
 
-  // Validate inputs BEFORE applying rate limit (prevents limit burn on bad requests)
   const signupParsed = SignupRequest.safeParse(req.body ?? {});
   if (!signupParsed.success) {
     return res.status(400).json({ error: signupParsed.error.issues[0].message });
@@ -958,8 +684,7 @@ app.post('/api/v1/signup', (req: Request, res: Response) => {
   const normalizedEmail = email.trim().toLowerCase();
   const cleanName = name.trim().substring(0, 200);
 
-  // Check if email already registered
-  const existing = stmtGetTenantByEmail.get(normalizedEmail) as TenantRow | undefined;
+  const existing = await db.getTenantByEmail(normalizedEmail);
   if (existing) {
     return res.status(409).json({ error: 'Email already registered' });
   }
@@ -968,10 +693,8 @@ app.post('/api/v1/signup', (req: Request, res: Response) => {
   const apiKey = generateApiKey();
 
   try {
-    db.transaction(() => {
-      stmtInsertTenant.run(tenantId, cleanName, normalizedEmail);
-      stmtInsertApiKey.run(apiKey, tenantId, 'default');
-    })();
+    await db.createTenant(tenantId, cleanName, normalizedEmail);
+    await db.createApiKey(apiKey, tenantId, 'default');
   } catch (e: unknown) {
     console.error('[signup] db error:', e instanceof Error ? e.message : e);
     return res.status(500).json({ error: 'Failed to create account' });
@@ -989,12 +712,12 @@ app.post('/api/v1/signup', (req: Request, res: Response) => {
 
 // ── Kill Switch ────────────────────────────────────────────────────────────
 
-app.get('/api/v1/killswitch', (req: Request, res: Response) => {
-  const ks = getGlobalKillSwitch();
+app.get('/api/v1/killswitch', async (req: Request, res: Response) => {
+  const ks = await getGlobalKillSwitch();
   const apiKey = req.headers['x-api-key'] as string | undefined;
 
   if (apiKey) {
-    const tenant = lookupTenant(apiKey);
+    const tenant = await lookupTenant(apiKey);
     if (tenant) {
       return res.json({
         global: { active: ks.active, activatedAt: ks.at },
@@ -1016,11 +739,10 @@ app.get('/api/v1/killswitch', (req: Request, res: Response) => {
 });
 
 // Tenant-level kill switch toggle
-app.post('/api/v1/killswitch', requireTenantAuth, (req: Request, res: Response) => {
+app.post('/api/v1/killswitch', requireTenantAuth, async (req: Request, res: Response) => {
   const tenant = req.tenant!;
   const { active } = req.body ?? {};
 
-  // Toggle if no body provided, or set explicitly
   let newState: boolean;
   if (typeof active === 'boolean') {
     newState = active;
@@ -1029,7 +751,7 @@ app.post('/api/v1/killswitch', requireTenantAuth, (req: Request, res: Response) 
   }
 
   const at = newState ? new Date().toISOString() : null;
-  stmtUpdateTenantKillSwitch.run(newState ? 1 : 0, at, tenant.id);
+  await db.updateTenantKillSwitch(tenant.id, newState ? 1 : 0, at);
 
   console.log(`[killswitch] tenant ${tenant.id}: ${tenant.kill_switch_active === 1} → ${newState}`);
 
@@ -1044,9 +766,9 @@ app.post('/api/v1/killswitch', requireTenantAuth, (req: Request, res: Response) 
 });
 
 // Admin global kill switch
-app.post('/api/v1/admin/killswitch', requireAdminAuth, (req: Request, res: Response) => {
+app.post('/api/v1/admin/killswitch', requireAdminAuth, async (req: Request, res: Response) => {
   const { active } = req.body ?? {};
-  const ks = getGlobalKillSwitch();
+  const ks = await getGlobalKillSwitch();
 
   let newState: boolean;
   if (typeof active === 'boolean') {
@@ -1055,7 +777,7 @@ app.post('/api/v1/admin/killswitch', requireAdminAuth, (req: Request, res: Respo
     newState = !ks.active;
   }
 
-  setGlobalKillSwitch(newState);
+  await setGlobalKillSwitch(newState);
   console.log(`[admin/killswitch] global: ${ks.active} → ${newState}`);
 
   res.json({
@@ -1081,12 +803,11 @@ app.get('/api/v1/evaluate', (_req: Request, res: Response) => {
   });
 });
 
-app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) => {
-  const ks = getGlobalKillSwitch();
+app.post('/api/v1/evaluate', optionalTenantAuth, async (req: Request, res: Response) => {
+  const ks = await getGlobalKillSwitch();
   const tenantId = req.tenantId ?? 'demo';
   const agentId = req.agent?.id ?? null;
 
-  // If agent key used but agent is inactive or unknown, reject
   const rawKey = req.headers['x-api-key'] as string | undefined;
   if (rawKey?.startsWith('ag_agent_') && !req.agent) {
     return res.status(401).json({ error: 'Invalid or inactive agent key' });
@@ -1095,7 +816,7 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
   // Check custom rate limits (Phase 2) — gracefully skip if tables don't exist yet
   if (tenantId !== 'demo') {
     try {
-      const rateLimitResult = checkPhase2RateLimit(db, tenantId, req.agent?.id);
+      const rateLimitResult = await checkPhase2RateLimit(db, tenantId, req.agent?.id);
       if (!rateLimitResult.allowed) {
         return res.status(429).json({
           error: 'Rate limit exceeded',
@@ -1110,7 +831,8 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
 
   // Check global kill switch
   if (ks.active) {
-    storeAuditEvent(tenantId, null, req.body?.tool ?? 'unknown', 'block', 'KILL_SWITCH', 1000, 'Global kill switch active', 0, getLastHash(tenantId), agentId);
+    const prevHash = await getLastHash(tenantId);
+    await storeAuditEvent(tenantId, null, req.body?.tool ?? 'unknown', 'block', 'KILL_SWITCH', 1000, 'Global kill switch active', 0, prevHash, agentId);
     if (tenantId !== 'demo') {
       fireWebhooksAsync(tenantId, 'killswitch', { event_type: 'killswitch', tenant_id: tenantId, agent_id: agentId, data: { decision: 'block', rule: 'KILL_SWITCH', tool: req.body?.tool ?? 'unknown' }, timestamp: new Date().toISOString() });
     }
@@ -1126,7 +848,8 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
 
   // Check tenant-level kill switch
   if (req.tenant && req.tenant.kill_switch_active === 1) {
-    storeAuditEvent(tenantId, null, req.body?.tool ?? 'unknown', 'block', 'TENANT_KILL_SWITCH', 1000, 'Tenant kill switch active', 0, getLastHash(tenantId), agentId);
+    const prevHash = await getLastHash(tenantId);
+    await storeAuditEvent(tenantId, null, req.body?.tool ?? 'unknown', 'block', 'TENANT_KILL_SWITCH', 1000, 'Tenant kill switch active', 0, prevHash, agentId);
     fireWebhooksAsync(tenantId, 'killswitch', { event_type: 'killswitch', tenant_id: tenantId, agent_id: agentId, data: { decision: 'block', rule: 'TENANT_KILL_SWITCH', tool: req.body?.tool ?? 'unknown' }, timestamp: new Date().toISOString() });
     return res.json({
       result: 'block',
@@ -1170,9 +893,8 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
   }
   const ms = Math.round((performance.now() - start) * 100) / 100;
 
-  // Store persistent audit event (includes agent_id if agent key used)
-  const prevHash = getLastHash(tenantId);
-  storeAuditEvent(
+  const prevHash = await getLastHash(tenantId);
+  await storeAuditEvent(
     tenantId, ctx.sessionId, tool,
     decision.result, decision.matchedRuleId ?? null,
     decision.riskScore, decision.reason ?? null,
@@ -1181,7 +903,7 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
 
   // Increment custom rate limit counter after successful evaluation
   if (tenantId !== 'demo') {
-    try { incrementRateCounter(db, tenantId, req.agent?.id); } catch { /* Phase 2 tables may not exist */ }
+    try { await incrementRateCounter(db, tenantId, req.agent?.id); } catch { /* Phase 2 tables may not exist */ }
   }
 
   // Fire webhooks async for block/killswitch events
@@ -1212,13 +934,13 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
 });
 
 // ── Persistent Audit Trail ─────────────────────────────────────────────────
-app.get('/api/v1/audit', requireTenantAuth, (req: Request, res: Response) => {
+app.get('/api/v1/audit', requireTenantAuth, async (req: Request, res: Response) => {
   const tenantId = req.tenantId!;
   const limit = Math.min(parseInt(String(req.query['limit'] ?? '50'), 10), 500);
   const offset = parseInt(String(req.query['offset'] ?? '0'), 10);
 
-  const total = (stmtCountAuditEvents.get(tenantId) as { cnt: number }).cnt;
-  const events = stmtGetAuditEvents.all(tenantId, limit, offset);
+  const total = await db.countAuditEvents(tenantId);
+  const events = await db.getAuditEvents(tenantId, limit, offset);
 
   res.json({
     tenantId,
@@ -1229,16 +951,9 @@ app.get('/api/v1/audit', requireTenantAuth, (req: Request, res: Response) => {
   });
 });
 
-app.get('/api/v1/audit/verify', requireTenantAuth, (req: Request, res: Response) => {
+app.get('/api/v1/audit/verify', requireTenantAuth, async (req: Request, res: Response) => {
   const tenantId = req.tenantId!;
-  const events = stmtGetAllAuditEvents.all(tenantId) as Array<{
-    id: number;
-    tool: string;
-    result: string;
-    created_at: string;
-    previous_hash: string | null;
-    hash: string | null;
-  }>;
+  const events = await db.getAllAuditEvents(tenantId);
 
   if (events.length === 0) {
     return res.json({ valid: true, eventCount: 0, message: 'No events to verify' });
@@ -1254,7 +969,6 @@ app.get('/api/v1/audit/verify', requireTenantAuth, (req: Request, res: Response)
       errors.push(`Event ${event.id}: previous_hash mismatch (expected ${prevHash.substring(0, 8)}..., got ${(event.previous_hash ?? '').substring(0, 8)}...)`);
     }
 
-    // Re-derive hash to check integrity
     const eventData = `${event.tool}|${event.result}|${event.created_at}`;
     const expectedHash = makeHash(eventData, prevHash);
     if (event.hash !== expectedHash) {
@@ -1276,14 +990,14 @@ app.get('/api/v1/audit/verify', requireTenantAuth, (req: Request, res: Response)
 });
 
 // ── Usage Stats ────────────────────────────────────────────────────────────
-app.get('/api/v1/usage', requireTenantAuth, (req: Request, res: Response) => {
+app.get('/api/v1/usage', requireTenantAuth, async (req: Request, res: Response) => {
   const tenantId = req.tenantId!;
 
-  const total = (stmtUsageTotal.get(tenantId) as { cnt: number }).cnt;
-  const byResult = stmtUsageByResult.all(tenantId) as Array<{ result: string; cnt: number }>;
-  const last24h = (stmtUsageLast24h.get(tenantId) as { cnt: number }).cnt;
-  const topBlockedTools = stmtTopBlockedTools.all(tenantId) as Array<{ tool: string; cnt: number }>;
-  const avgRow = stmtAvgDuration.get(tenantId) as { avg: number | null };
+  const total = await db.usageTotal(tenantId);
+  const byResult = await db.usageByResult(tenantId);
+  const last24h = await db.usageLast24h(tenantId);
+  const topBlockedTools = await db.topBlockedTools(tenantId);
+  const avgMs = await db.avgDurationMs(tenantId);
 
   const resultMap: Record<string, number> = {};
   for (const r of byResult) resultMap[r.result] = r.cnt;
@@ -1297,18 +1011,18 @@ app.get('/api/v1/usage', requireTenantAuth, (req: Request, res: Response) => {
     requireApproval: resultMap['require_approval'] ?? 0,
     last24h,
     topBlockedTools: topBlockedTools.map(t => ({ tool: t.tool, count: t.cnt })),
-    avgResponseMs: avgRow.avg !== null ? Math.round(avgRow.avg * 100) / 100 : 0,
+    avgResponseMs: avgMs !== null ? Math.round(avgMs * 100) / 100 : 0,
   });
 });
 
 // ── Playground Session ─────────────────────────────────────────────────────
-app.post('/api/v1/playground/session', optionalTenantAuth, (req: Request, res: Response) => {
+app.post('/api/v1/playground/session', optionalTenantAuth, async (req: Request, res: Response) => {
   if (sessions.size >= MAX_SESSIONS) {
     return res.status(503).json({ error: 'Session limit reached. Try again shortly.' });
   }
 
   const tenantId = req.tenantId ?? 'demo';
-  const [sessionId, session] = getOrCreateSession(undefined, tenantId);
+  const [sessionId, session] = await getOrCreateSession(undefined, tenantId);
 
   if (req.body?.policy) {
     try {
@@ -1337,9 +1051,9 @@ app.post('/api/v1/playground/session', optionalTenantAuth, (req: Request, res: R
   });
 });
 
-// Playground evaluate (with session + in-memory audit trail + SQLite persistence)
-app.post('/api/v1/playground/evaluate', optionalTenantAuth, (req: Request, res: Response) => {
-  const ks = getGlobalKillSwitch();
+// Playground evaluate (with session + in-memory audit trail + DB persistence)
+app.post('/api/v1/playground/evaluate', optionalTenantAuth, async (req: Request, res: Response) => {
+  const ks = await getGlobalKillSwitch();
   const tenantId = req.tenantId ?? 'demo';
 
   if (ks.active) {
@@ -1359,7 +1073,6 @@ app.post('/api/v1/playground/evaluate', optionalTenantAuth, (req: Request, res: 
     });
   }
 
-  // Check tenant kill switch
   if (req.tenant && req.tenant.kill_switch_active === 1) {
     return res.json({
       sessionId: req.body?.sessionId || null,
@@ -1387,7 +1100,7 @@ app.post('/api/v1/playground/evaluate', optionalTenantAuth, (req: Request, res: 
     return res.status(400).json({ error: 'tool name too long (max 200 chars)' });
   }
 
-  const [sid, session] = getOrCreateSession(sessionId, tenantId);
+  const [sid, session] = await getOrCreateSession(sessionId, tenantId);
   session.actionCount++;
 
   const actionRequest: ActionRequest = {
@@ -1408,7 +1121,6 @@ app.post('/api/v1/playground/evaluate', optionalTenantAuth, (req: Request, res: 
   }
   const durationMs = Math.round((performance.now() - startTime) * 100) / 100;
 
-  // Build in-memory audit entry with hash chaining
   const auditData = `${actionRequest.tool}|${decision.result}|${actionRequest.timestamp}`;
   const eventHash = makeHash(auditData, session.lastHash);
   const auditEntry: AuditEntry = {
@@ -1432,9 +1144,9 @@ app.post('/api/v1/playground/evaluate', optionalTenantAuth, (req: Request, res: 
   session.auditTrail.push(auditEntry);
   session.lastHash = eventHash;
 
-  // Persist to SQLite
-  const prevHash = getLastHash(tenantId);
-  storeAuditEvent(
+  // Persist to DB
+  const prevHash = await getLastHash(tenantId);
+  await storeAuditEvent(
     tenantId, sid, tool,
     decision.result, decision.matchedRuleId ?? null,
     decision.riskScore, decision.reason ?? null,
@@ -1442,7 +1154,7 @@ app.post('/api/v1/playground/evaluate', optionalTenantAuth, (req: Request, res: 
   );
 
   // Update session last_activity
-  stmtUpsertSession.run(sid, tenantId === 'demo' ? null : tenantId);
+  await db.upsertSession(sid, tenantId === 'demo' ? null : tenantId);
 
   res.json({
     sessionId: sid,
@@ -1521,8 +1233,7 @@ app.get('/api/v1/playground/scenarios', (_req: Request, res: Response) => {
 
 // ── Webhook Routes ─────────────────────────────────────────────────────────
 
-// POST /api/v1/webhooks — register a webhook
-app.post('/api/v1/webhooks', requireTenantAuth, (req: Request, res: Response) => {
+app.post('/api/v1/webhooks', requireTenantAuth, async (req: Request, res: Response) => {
   const { url, events, secret } = req.body ?? {};
   const tenantId = req.tenantId!;
 
@@ -1533,7 +1244,6 @@ app.post('/api/v1/webhooks', requireTenantAuth, (req: Request, res: Response) =>
     return res.status(400).json({ error: 'url too long (max 2000 chars)' });
   }
 
-  // SSRF prevention: validate URL format, scheme, and reject private/internal destinations
   const urlValidationError = validateWebhookUrl(url);
   if (urlValidationError) {
     return res.status(400).json({ error: urlValidationError });
@@ -1549,12 +1259,12 @@ app.post('/api/v1/webhooks', requireTenantAuth, (req: Request, res: Response) =>
   }
 
   try {
-    const row = stmtInsertWebhook.get(
+    const row = await db.insertWebhook(
       tenantId,
       url,
       JSON.stringify(eventList),
       secret && typeof secret === 'string' ? secret : null,
-    ) as { id: string; tenant_id: string; url: string; events: string; active: number; created_at: string };
+    );
 
     res.status(201).json({
       id: row.id,
@@ -1570,10 +1280,9 @@ app.post('/api/v1/webhooks', requireTenantAuth, (req: Request, res: Response) =>
   }
 });
 
-// GET /api/v1/webhooks — list tenant webhooks
-app.get('/api/v1/webhooks', requireTenantAuth, (req: Request, res: Response) => {
+app.get('/api/v1/webhooks', requireTenantAuth, async (req: Request, res: Response) => {
   const tenantId = req.tenantId!;
-  const rows = stmtGetWebhooksByTenant.all(tenantId) as Array<{ id: string; tenant_id: string; url: string; events: string; active: number; created_at: string }>;
+  const rows = await db.getWebhooksByTenant(tenantId);
   res.json({
     webhooks: rows.map(r => ({
       id: r.id,
@@ -1585,8 +1294,7 @@ app.get('/api/v1/webhooks', requireTenantAuth, (req: Request, res: Response) => 
   });
 });
 
-// DELETE /api/v1/webhooks/:id — deactivate a webhook
-app.delete('/api/v1/webhooks/:id', requireTenantAuth, (req: Request, res: Response) => {
+app.delete('/api/v1/webhooks/:id', requireTenantAuth, async (req: Request, res: Response) => {
   const tenantId = req.tenantId!;
   const webhookId = req.params["id"] as string;
 
@@ -1594,18 +1302,17 @@ app.delete('/api/v1/webhooks/:id', requireTenantAuth, (req: Request, res: Respon
     return res.status(400).json({ error: 'Invalid webhook id' });
   }
 
-  const existing = stmtGetWebhookById.get(webhookId, tenantId) as WebhookRow | undefined;
+  const existing = await db.getWebhookById(webhookId, tenantId);
   if (!existing) {
     return res.status(404).json({ error: 'Webhook not found' });
   }
 
-  stmtDeleteWebhook.run(webhookId, tenantId);
+  await db.deleteWebhook(webhookId, tenantId);
   res.json({ id: webhookId, deleted: true });
 });
 
 // ── Template Routes ────────────────────────────────────────────────────────
 
-// GET /api/v1/templates — list all templates
 app.get('/api/v1/templates', (_req: Request, res: Response) => {
   const templates = Array.from(templateCache.values()).map(t => ({
     id: t.id,
@@ -1619,7 +1326,6 @@ app.get('/api/v1/templates', (_req: Request, res: Response) => {
   res.json({ templates });
 });
 
-// GET /api/v1/templates/:name — get template detail with rules
 app.get('/api/v1/templates/:name', (req: Request, res: Response) => {
   const name = req.params["name"] as string;
   const template = templateCache.get(name);
@@ -1629,8 +1335,7 @@ app.get('/api/v1/templates/:name', (req: Request, res: Response) => {
   res.json({ template });
 });
 
-// POST /api/v1/templates/:name/apply — apply template to tenant (creates policies in audit log as acknowledgement)
-app.post('/api/v1/templates/:name/apply', requireTenantAuth, (req: Request, res: Response) => {
+app.post('/api/v1/templates/:name/apply', requireTenantAuth, async (req: Request, res: Response) => {
   const name = req.params["name"] as string;
   const template = templateCache.get(name);
   if (!template) {
@@ -1640,9 +1345,8 @@ app.post('/api/v1/templates/:name/apply', requireTenantAuth, (req: Request, res:
   const tenantId = req.tenantId!;
   const ruleCount = Array.isArray(template.rules) ? template.rules.length : 0;
 
-  // Record the template application in the audit trail
-  const prevHash = getLastHash(tenantId);
-  storeAuditEvent(
+  const prevHash = await getLastHash(tenantId);
+  await storeAuditEvent(
     tenantId,
     null,
     'template_apply',
@@ -1666,8 +1370,7 @@ app.post('/api/v1/templates/:name/apply', requireTenantAuth, (req: Request, res:
 
 // ── Agent Routes ───────────────────────────────────────────────────────────
 
-// POST /api/v1/agents — create an agent within a tenant
-app.post('/api/v1/agents', requireTenantAuth, (req: Request, res: Response) => {
+app.post('/api/v1/agents', requireTenantAuth, async (req: Request, res: Response) => {
   const tenantId = req.tenantId!;
 
   const agentParsed = CreateAgentRequest.safeParse(req.body ?? {});
@@ -1684,9 +1387,7 @@ app.post('/api/v1/agents', requireTenantAuth, (req: Request, res: Response) => {
   const agentKey = generateAgentKey();
 
   try {
-    const row = stmtInsertAgent.get(tenantId, name.trim(), agentKey, scopeJson) as {
-      id: string; tenant_id: string; name: string; policy_scope: string; active: number; created_at: string;
-    };
+    const row = await db.insertAgent(tenantId, name.trim(), agentKey, scopeJson);
 
     res.status(201).json({
       id: row.id,
@@ -1708,12 +1409,9 @@ app.post('/api/v1/agents', requireTenantAuth, (req: Request, res: Response) => {
   }
 });
 
-// GET /api/v1/agents — list tenant's agents
-app.get('/api/v1/agents', requireTenantAuth, (req: Request, res: Response) => {
+app.get('/api/v1/agents', requireTenantAuth, async (req: Request, res: Response) => {
   const tenantId = req.tenantId!;
-  const rows = stmtGetAgentsByTenant.all(tenantId) as Array<{
-    id: string; tenant_id: string; name: string; policy_scope: string; active: number; created_at: string;
-  }>;
+  const rows = await db.getAgentsByTenant(tenantId);
   res.json({
     agents: rows.map(r => ({
       id: r.id,
@@ -1725,8 +1423,7 @@ app.get('/api/v1/agents', requireTenantAuth, (req: Request, res: Response) => {
   });
 });
 
-// DELETE /api/v1/agents/:id — deactivate an agent
-app.delete('/api/v1/agents/:id', requireTenantAuth, (req: Request, res: Response) => {
+app.delete('/api/v1/agents/:id', requireTenantAuth, async (req: Request, res: Response) => {
   const tenantId = req.tenantId!;
   const agentRowId = req.params["id"] as string;
 
@@ -1734,83 +1431,95 @@ app.delete('/api/v1/agents/:id', requireTenantAuth, (req: Request, res: Response
     return res.status(400).json({ error: 'Invalid agent id' });
   }
 
-  const existing = stmtGetAgentById.get(agentRowId, tenantId) as AgentRow | undefined;
+  const existing = await db.getAgentById(agentRowId, tenantId);
   if (!existing) {
     return res.status(404).json({ error: 'Agent not found' });
   }
 
-  stmtDeactivateAgent.run(agentRowId, tenantId);
+  await db.deactivateAgent(agentRowId, tenantId);
   res.json({ id: agentRowId, deactivated: true });
 });
 
-// ── Phase 2 Routes (Rate Limiting, Cost Attribution, Dashboard) ────────────
-app.use(createPhase2Routes(db));
-
-// ── Phase 3: MCP (Model Context Protocol) Middleware Routes ───────────────
-app.use(createMcpRoutes(db));
-
-// ── Validation & Certification Routes ────────────────────────────────────
-// Mounted BEFORE the 404 handler — handles:
-//   POST /api/v1/agents/:id/validate
-//   GET  /api/v1/agents/:id/readiness
-//   POST /api/v1/agents/:id/certify
-//   POST /api/v1/mcp/admit
-app.use(createValidationRoutes(db));
-
-// ── Global Error Handler ───────────────────────────────────────────────────
-app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-  // Handle JSON body parse errors (malformed request bodies)
-  if (err instanceof SyntaxError && 'status' in err && (err as { status: number }).status === 400) {
-    return res.status(400).json({ error: 'Invalid JSON in request body' });
-  }
-  console.error('[error]', err instanceof Error ? err.message : err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-// 404 handler
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({
-    error: 'Not found',
-    hint: 'Try GET / for a list of available endpoints',
-    docs: 'https://agentguard.tech',
-    dashboard: 'https://app.agentguard.tech',
-  });
-});
-
+// ── Main: Init DB then start server ───────────────────────────────────────
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
-// ── Seed tenant from API_KEY env var ──────────────────────────────────────
-// If API_KEY is set (e.g. in Azure), ensure it exists as a registered tenant
-// so the dashboard and admin scripts can authenticate from day one.
-const SEED_API_KEY = process.env['API_KEY'];
-if (SEED_API_KEY) {
-  try {
-    const existing = db.prepare('SELECT key FROM api_keys WHERE key = ?').get(SEED_API_KEY);
-    if (!existing) {
-      const seedTenantId = 'seed-' + SEED_API_KEY.slice(-8);
-      const existingTenant = db.prepare('SELECT id FROM tenants WHERE id = ?').get(seedTenantId);
-      if (!existingTenant) {
-        db.prepare('INSERT OR IGNORE INTO tenants (id, name, email, plan, created_at) VALUES (?, ?, ?, ?, ?)')
-          .run(seedTenantId, 'AgentGuard Admin', 'admin@agentguard.tech', 'enterprise', new Date().toISOString());
-      }
-      db.prepare('INSERT OR IGNORE INTO api_keys (key, tenant_id, created_at) VALUES (?, ?, ?)')
-        .run(SEED_API_KEY, seedTenantId, new Date().toISOString());
-      console.log(`[seed] registered API_KEY as tenant ${seedTenantId}`);
-    }
-  } catch (e) {
-    console.error('[seed] failed to register API_KEY:', e);
+
+async function main(): Promise<void> {
+  // Initialize database
+  const { db: database, raw } = await createDb();
+  db = database;
+
+  // For backward-compat: route files that still need a raw SQLite instance
+  // If we're on SQLite, also run validation migrations via the raw adapter (idempotent)
+  if (raw) {
+    runValidationMigrations(raw);
   }
+
+  // Mount route files BEFORE the 404 and error handlers
+  // (Express processes middleware in registration order)
+  app.use(createPhase2Routes(db));
+  app.use(createMcpRoutes(db));
+  app.use(createValidationRoutes(db));
+
+  // ── Global Error Handler ─────────────────────────────────────────────────
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    if (err instanceof SyntaxError && 'status' in err && (err as { status: number }).status === 400) {
+      return res.status(400).json({ error: 'Invalid JSON in request body' });
+    }
+    console.error('[error]', err instanceof Error ? err.message : err);
+    res.status(500).json({ error: 'Internal server error' });
+  });
+
+  // 404 handler
+  app.use((_req: Request, res: Response) => {
+    res.status(404).json({
+      error: 'Not found',
+      hint: 'Try GET / for a list of available endpoints',
+      docs: 'https://agentguard.tech',
+      dashboard: 'https://app.agentguard.tech',
+    });
+  });
+
+  // Seed tenant from API_KEY env var
+  const SEED_API_KEY = process.env['API_KEY'];
+  if (SEED_API_KEY) {
+    try {
+      const existing = await db.getApiKey(SEED_API_KEY);
+      if (!existing) {
+        const seedTenantId = 'seed-' + SEED_API_KEY.slice(-8);
+        const existingTenant = await db.getTenant(seedTenantId);
+        if (!existingTenant) {
+          await db.run(
+            'INSERT OR IGNORE INTO tenants (id, name, email, plan, created_at) VALUES (?, ?, ?, ?, ?)',
+            [seedTenantId, 'AgentGuard Admin', 'admin@agentguard.tech', 'enterprise', new Date().toISOString()]
+          );
+        }
+        await db.run(
+          'INSERT OR IGNORE INTO api_keys (key, tenant_id, created_at) VALUES (?, ?, ?)',
+          [SEED_API_KEY, seedTenantId, new Date().toISOString()]
+        );
+        console.log(`[seed] registered API_KEY as tenant ${seedTenantId}`);
+      }
+    } catch (e) {
+      console.error('[seed] failed to register API_KEY:', e);
+    }
+  }
+
+  const ks = await getGlobalKillSwitch();
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🛡️  AgentGuard API v0.2.1 running on port ${PORT}`);
+    console.log(`   ${DEFAULT_POLICY.rules.length} rules loaded | default: ${DEFAULT_POLICY.default}`);
+    console.log(`   CORS: ${ALLOWED_ORIGINS.join(', ')}, localhost:*`);
+    console.log(`   Rate limit: ${MAX_REQUESTS} req/min per IP`);
+    console.log(`   Max sessions: ${MAX_SESSIONS} | Max audit events/session: ${MAX_AUDIT_EVENTS}`);
+    console.log(`   DB: ${db.type} | ${process.env['AG_DB_PATH'] || 'default path'}`);
+    console.log(`   Global kill switch: ${ks.active ? 'ACTIVE ⚠️' : 'inactive'}`);
+    if (ADMIN_KEY) console.log(`   Admin key: configured`);
+    else console.log(`   Admin key: NOT SET (set ADMIN_KEY env var)`);
+    if (SEED_API_KEY) console.log(`   Seed API key: registered`);
+  });
 }
 
-app.listen(PORT, '0.0.0.0', () => {
-  const ks = getGlobalKillSwitch();
-  console.log(`🛡️  AgentGuard API v0.2.1 running on port ${PORT}`);
-  console.log(`   ${DEFAULT_POLICY.rules.length} rules loaded | default: ${DEFAULT_POLICY.default}`);
-  console.log(`   CORS: ${ALLOWED_ORIGINS.join(', ')}, localhost:*`);
-  console.log(`   Rate limit: ${MAX_REQUESTS} req/min per IP`);
-  console.log(`   Max sessions: ${MAX_SESSIONS} | Max audit events/session: ${MAX_AUDIT_EVENTS}`);
-  console.log(`   SQLite persistence: enabled | DB: ${process.env['AG_DB_PATH'] || 'in-memory'}`);
-  console.log(`   Global kill switch: ${ks.active ? 'ACTIVE ⚠️' : 'inactive'}`);
-  if (ADMIN_KEY) console.log(`   Admin key: configured`);
-  else console.log(`   Admin key: NOT SET (set ADMIN_KEY env var)`);
-  if (SEED_API_KEY) console.log(`   Seed API key: registered`);
+main().catch(err => {
+  console.error('[fatal] Failed to start server:', err);
+  process.exit(1);
 });
