@@ -1,8 +1,5 @@
 FROM nginx:alpine
-COPY landing/ /usr/share/nginx/html/landing/
-COPY landing/index.html /usr/share/nginx/html/index.html
-COPY landing/sitemap.xml /usr/share/nginx/html/sitemap.xml
-COPY landing/robots.txt /usr/share/nginx/html/robots.txt
+COPY landing/ /usr/share/nginx/html/
 COPY blog/ /usr/share/nginx/html/blog/
 COPY reports/agent-threat-report.html /usr/share/nginx/html/reports/agent-threat-report.html
 COPY nginx-landing.conf /etc/nginx/conf.d/default.conf

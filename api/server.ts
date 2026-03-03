@@ -14,9 +14,90 @@ import yaml from 'js-yaml';
 import { createPhase2Routes, checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from './phase2-routes.js';
 import { createMcpRoutes } from './mcp-routes.js';
 import { createValidationRoutes, runValidationMigrations } from './validation-routes.js';
+import { EvaluateRequest, SignupRequest, CreateAgentRequest } from './schemas.js';
 import { PolicyEngine } from '../packages/sdk/src/core/policy-engine.js';
 import type { PolicyDocument, ActionRequest, AgentContext, PolicyDecision } from '../packages/sdk/src/core/types.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
+
+// ── SSRF URL Validation ────────────────────────────────────────────────────
+/**
+ * Validate a webhook URL for SSRF prevention.
+ * Checks:
+ *  1. URL is syntactically valid
+ *  2. URL uses HTTPS (not HTTP or other schemes)
+ *  3. Hostname does not resolve to a private/internal network
+ *     (checked statically — no DNS resolution)
+ *
+ * Returns null on success, or an error message string on failure.
+ */
+function validateWebhookUrl(rawUrl: string): string | null {
+  // 1. Parse URL
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return 'url must be a valid HTTP/HTTPS URL';
+  }
+
+  // 2. Require HTTPS
+  if (parsed.protocol !== 'https:') {
+    return 'url must use HTTPS (HTTP is not allowed)';
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  // 3. Reject private/internal hostnames by name
+  const privateHostnamePatterns = [
+    /^localhost$/,
+    /\.local$/,
+    /\.internal$/,
+    /\.localhost$/,
+    /^local$/,
+    /^internal$/,
+  ];
+  for (const pattern of privateHostnamePatterns) {
+    if (pattern.test(hostname)) {
+      return 'url must not point to a private or internal network address';
+    }
+  }
+
+  // 4. Reject IPv4 literals in private ranges
+  //    Matches bare IPv4 (e.g. "10.0.0.1") and IPv4-mapped IPv6 (::ffff:10.0.0.1)
+  const ipv4Literal = hostname.match(
+    /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$|^::ffff:(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/,
+  );
+  if (ipv4Literal) {
+    // Normalise: pick the right capture groups for both formats
+    const a = parseInt(ipv4Literal[1] ?? ipv4Literal[5]!, 10);
+    const b = parseInt(ipv4Literal[2] ?? ipv4Literal[6]!, 10);
+    const c = parseInt(ipv4Literal[3] ?? ipv4Literal[7]!, 10);
+
+    const isPrivate =
+      a === 10 ||                                   // 10.0.0.0/8
+      a === 127 ||                                  // 127.0.0.0/8
+      (a === 169 && b === 254) ||                  // 169.254.0.0/16 (link-local / IMDS)
+      (a === 172 && b >= 16 && b <= 31) ||         // 172.16.0.0/12
+      (a === 192 && b === 168) ||                  // 192.168.0.0/16
+      (a === 0);                                   // 0.0.0.0/8
+
+    if (isPrivate) {
+      return 'url must not point to a private or internal network address';
+    }
+  }
+
+  // 5. Reject IPv6 loopback and ULA (fc00::/7 = fc00:: – fdff::)
+  //    Strip surrounding brackets that URL parser keeps in hostname
+  const ipv6 = hostname.replace(/^\[|\]$/g, '');
+  if (ipv6 === '::1' || ipv6 === '0:0:0:0:0:0:0:1') {
+    return 'url must not point to a private or internal network address';
+  }
+  // fc00::/7 covers fc00–fd00 range — first byte 0xfc or 0xfd
+  if (/^(fc|fd)[0-9a-f]{0,2}:/i.test(ipv6)) {
+    return 'url must not point to a private or internal network address';
+  }
+
+  return null; // valid
+}
 
 // ── SQLite Setup ───────────────────────────────────────────────────────────
 function openDatabase(): Database.Database {
@@ -863,19 +944,12 @@ app.get('/health', (_req: Request, res: Response) => {
 app.post('/api/v1/signup', (req: Request, res: Response) => {
   const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
 
-  const { name, email } = req.body ?? {};
-
   // Validate inputs BEFORE applying rate limit (prevents limit burn on bad requests)
-  if (!name || typeof name !== 'string' || name.trim().length < 1) {
-    return res.status(400).json({ error: 'name is required' });
+  const signupParsed = SignupRequest.safeParse(req.body ?? {});
+  if (!signupParsed.success) {
+    return res.status(400).json({ error: signupParsed.error.issues[0].message });
   }
-  if (!email || typeof email !== 'string') {
-    return res.status(400).json({ error: 'email is required' });
-  }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email.trim())) {
-    return res.status(400).json({ error: 'Invalid email format' });
-  }
+  const { name, email } = signupParsed.data;
 
   if (!signupRateLimit(ip)) {
     return res.status(429).json({ error: 'Too many signups. Limit: 5 per hour per IP.' });
@@ -1064,10 +1138,11 @@ app.post('/api/v1/evaluate', optionalTenantAuth, (req: Request, res: Response) =
     });
   }
 
-  const { tool, params } = req.body ?? {};
-  if (!tool || typeof tool !== 'string') {
-    return res.status(400).json({ error: 'tool is required and must be a string' });
+  const evalParsed = EvaluateRequest.safeParse(req.body ?? {});
+  if (!evalParsed.success) {
+    return res.status(400).json({ error: evalParsed.error.issues[0].message });
   }
+  const { tool, params } = evalParsed.data;
   if (tool.length > 200) {
     return res.status(400).json({ error: 'tool name too long (max 200 chars)' });
   }
@@ -1302,10 +1377,12 @@ app.post('/api/v1/playground/evaluate', optionalTenantAuth, (req: Request, res: 
     });
   }
 
-  const { sessionId, tool, params } = req.body ?? {};
-  if (!tool || typeof tool !== 'string') {
-    return res.status(400).json({ error: 'tool is required and must be a string' });
+  const { sessionId } = req.body ?? {};
+  const playgroundEvalParsed = EvaluateRequest.safeParse(req.body ?? {});
+  if (!playgroundEvalParsed.success) {
+    return res.status(400).json({ error: playgroundEvalParsed.error.issues[0].message });
   }
+  const { tool, params } = playgroundEvalParsed.data;
   if (tool.length > 200) {
     return res.status(400).json({ error: 'tool name too long (max 200 chars)' });
   }
@@ -1452,11 +1529,14 @@ app.post('/api/v1/webhooks', requireTenantAuth, (req: Request, res: Response) =>
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'url is required' });
   }
-  if (!/^https?:\/\/.+/.test(url)) {
-    return res.status(400).json({ error: 'url must be a valid HTTP/HTTPS URL' });
-  }
   if (url.length > 2000) {
     return res.status(400).json({ error: 'url too long (max 2000 chars)' });
+  }
+
+  // SSRF prevention: validate URL format, scheme, and reject private/internal destinations
+  const urlValidationError = validateWebhookUrl(url);
+  if (urlValidationError) {
+    return res.status(400).json({ error: urlValidationError });
   }
 
   let eventList: string[] = ['block', 'killswitch'];
@@ -1588,15 +1668,13 @@ app.post('/api/v1/templates/:name/apply', requireTenantAuth, (req: Request, res:
 
 // POST /api/v1/agents — create an agent within a tenant
 app.post('/api/v1/agents', requireTenantAuth, (req: Request, res: Response) => {
-  const { name, policy_scope } = req.body ?? {};
   const tenantId = req.tenantId!;
 
-  if (!name || typeof name !== 'string' || name.trim().length < 1) {
-    return res.status(400).json({ error: 'name is required' });
+  const agentParsed = CreateAgentRequest.safeParse(req.body ?? {});
+  if (!agentParsed.success) {
+    return res.status(400).json({ error: agentParsed.error.issues[0].message });
   }
-  if (name.length > 200) {
-    return res.status(400).json({ error: 'name too long (max 200 chars)' });
-  }
+  const { name, policy_scope } = agentParsed.data;
 
   let scopeJson = '[]';
   if (Array.isArray(policy_scope)) {

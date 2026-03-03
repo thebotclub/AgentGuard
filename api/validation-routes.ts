@@ -19,6 +19,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import Database from 'better-sqlite3';
 import crypto from 'crypto';
+import { ValidateAgentRequest, McpAdmitRequest } from './schemas.js';
 import { PolicyEngine } from '../packages/sdk/src/core/policy-engine.js';
 import type { ActionRequest, AgentContext, PolicyDecision } from '../packages/sdk/src/core/types.js';
 import type { PolicyDocument } from '../packages/sdk/src/core/types.js';
@@ -312,13 +313,15 @@ export function createValidationRoutes(db: Database.Database): Router {
       return res.status(404).json({ error: 'Agent not found' });
     }
 
-    const { declaredTools } = req.body ?? {};
-    if (!Array.isArray(declaredTools) || declaredTools.length === 0) {
-      return res.status(400).json({ error: 'declaredTools must be a non-empty array of tool name strings' });
+    const validateParsed = ValidateAgentRequest.safeParse(req.body ?? {});
+    if (!validateParsed.success) {
+      return res.status(400).json({ error: validateParsed.error.issues[0].message });
     }
 
-    // Validate tool names
-    const tools = declaredTools.filter((t): t is string => typeof t === 'string' && t.length > 0 && t.length <= 200);
+    // Validate tool names (filter and check length limits)
+    const tools = validateParsed.data.declaredTools.filter(
+      (t): t is string => typeof t === 'string' && t.length > 0 && t.length <= 200,
+    );
     if (tools.length === 0) {
       return res.status(400).json({ error: 'declaredTools contains no valid tool name strings' });
     }
@@ -470,23 +473,18 @@ export function createValidationRoutes(db: Database.Database): Router {
    * Output: { admitted, results, coverage, serverUrl }
    */
   router.post('/api/v1/mcp/admit', auth, (req: Request, res: Response) => {
-    const { serverUrl, tools } = req.body ?? {};
-
-    if (typeof serverUrl !== 'string' || !serverUrl) {
-      return res.status(400).json({ error: 'serverUrl is required' });
+    const admitParsed = McpAdmitRequest.safeParse(req.body ?? {});
+    if (!admitParsed.success) {
+      return res.status(400).json({ error: admitParsed.error.issues[0].message });
     }
-    if (!Array.isArray(tools) || tools.length === 0) {
-      return res.status(400).json({ error: 'tools must be a non-empty array of { name, description?, inputSchema? }' });
-    }
+    const { serverUrl, tools } = admitParsed.data;
 
-    // Extract tool names; each element must have a string .name
+    // Extract tool names; filter by length limit
     const toolNames: string[] = [];
     for (const t of tools) {
-      if (typeof t === 'object' && t !== null && typeof (t as Record<string, unknown>)['name'] === 'string') {
-        const name = (t as Record<string, string>)['name'].trim();
-        if (name.length > 0 && name.length <= 200) {
-          toolNames.push(name);
-        }
+      const name = t.name.trim();
+      if (name.length > 0 && name.length <= 200) {
+        toolNames.push(name);
       }
     }
 

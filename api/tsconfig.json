@@ -11,5 +11,5 @@
     "declaration": false,
     "skipLibCheck": true
   },
-  "include": ["server.ts", "validation-routes.ts", "phase2-routes.ts", "mcp-routes.ts", "mcp-middleware.ts", "db-interface.ts", "db.ts", "../src/core/**/*.ts"]
+  "include": ["server.ts", "schemas.ts", "validation-routes.ts", "phase2-routes.ts", "mcp-routes.ts", "mcp-middleware.ts", "db-interface.ts", "db.ts", "../src/core/**/*.ts"]
 }
