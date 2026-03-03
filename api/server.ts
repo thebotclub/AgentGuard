@@ -209,6 +209,7 @@ async function main(): Promise<void> {
       /* db down */
     }
     const status = dbOk ? 'ok' : 'degraded';
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.status(dbOk ? 200 : 503).json({
       status,
       engine: 'agentguard',

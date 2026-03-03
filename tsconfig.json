@@ -13,14 +13,13 @@
     "sourceMap": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "outDir": "./dist",
+    "noEmit": true
   },
-  "references": [
-    { "path": "./packages/shared" },
-    { "path": "./packages/sdk" },
-    { "path": "./packages/api" }
-  ]
+  "include": ["api/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["node_modules", "dist", "packages/api"]
 }

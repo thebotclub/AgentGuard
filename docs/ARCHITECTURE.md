@@ -139,11 +139,25 @@ AgentGuard is a **runtime security platform for AI agents**. It intercepts every
 
 ### Structure
 
-The API server lives at `api/server.ts`. It currently spans ~1,700 lines — a known refactor target (see [Phase 6 in ROADMAP.md](./ROADMAP.md)). Route modules are already partially extracted:
+The API server lives at `api/server.ts` (~270 lines) — the orchestrator that wires middleware and mounts route modules. Routes are fully extracted into domain-specific files:
 
 ```
 api/
-├── server.ts              ← Main app: middleware, startup, core routes (~1700 lines)
+├── server.ts              ← App setup, middleware wiring, route mounting (~270 lines)
+├── routes/
+│   ├── evaluate.ts        ← POST /evaluate
+│   ├── agents.ts          ← CRUD /agents
+│   ├── audit.ts           ← GET /audit, /audit/verify + shared helpers
+│   ├── webhooks.ts        ← CRUD /webhooks
+│   ├── auth.ts            ← POST /signup, kill switches, usage, templates
+│   └── playground.ts      ← Playground endpoints
+├── middleware/
+│   ├── auth.ts            ← requireTenantAuth, optionalTenantAuth, requireAdminAuth
+│   └── rate-limit.ts      ← IP + signup rate limiting
+├── lib/
+│   ├── policy-engine-setup.ts  ← PolicyEngine init, template cache
+│   └── sessions.ts        ← In-memory session management
+├── types.ts               ← Shared types (AuthedRequest, SessionState, etc.)
 ├── phase2-routes.ts       ← Rate limits, cost attribution
 ├── mcp-routes.ts          ← MCP proxy routes
 ├── mcp-middleware.ts      ← MCP middleware engine

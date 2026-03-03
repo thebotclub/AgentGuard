@@ -106,8 +106,8 @@ The following capabilities are live in production at `api.agentguard.tech`. Each
 
 ---
 
-## Phase 6 — Server Modularisation (In Progress)
-*Target: March–April 2026*
+## Phase 6 — Server Modularisation ✅
+*Shipped: March 2026*
 
 **Goal:** Break `server.ts` (~1,700 lines) into cohesive route modules. This is engineering hygiene — no user-visible features. It unblocks faster iteration and easier onboarding for new contributors.
 
@@ -142,36 +142,23 @@ api/
 
 ---
 
-## Upcoming — Security Hardening
+## Phase 7 — Security Hardening ✅
 
-*Target: April 2026 | Runs in parallel with Phase 6*
+*Shipped: March 2026*
 
 These items address known gaps identified in [ARCHITECTURE_REVIEW.md](./ARCHITECTURE_REVIEW.md):
 
-### Bcrypt API Key Hashing
+### Bcrypt API Key Hashing ✅
 
-**Current state:** API keys stored as plaintext in `api_keys.key`. A database dump exposes all tenant credentials.
+**Shipped.** API keys are now hashed with bcrypt (cost 10) and looked up via SHA-256 index. Keys are returned once at creation; the database stores only `key_hash`, `key_prefix`, and `key_sha256`. Existing keys were auto-migrated on startup. Auth flow: SHA-256 lookup → bcrypt verify → fallback to legacy plaintext for unmigrated keys.
 
-**Plan:**
-1. Add `key_hash` column to `api_keys` table (bcrypt hash)
-2. Add `key_prefix` column for display (`ag_live_xxxx...xxxx`)
-3. On key creation: hash with bcrypt (cost 12), store hash + prefix, return plaintext once
-4. Update auth lookup: `bcrypt.compare(submitted_key, key_hash)`
-5. Migration: re-issue all existing keys (notify tenants)
+### Full Zod Validation ✅
 
-**Why it matters:** Industry standard. Required for any enterprise security review.
+**Shipped.** All API endpoints now have Zod schema validation. 17 schemas in `api/schemas.ts` covering signup, evaluate, agents, webhooks, MCP, rate limits, costs, playground, and kill switch endpoints.
 
-### Full Zod Validation
+### PostgreSQL Row-Level Security ✅
 
-**Current state:** 5 Zod schemas cover the most critical endpoints. Remaining ~29 endpoints use manual `if` checks.
-
-**Plan:** Add `src/schemas/` Zod schemas for all request bodies before each route extraction in Phase 6. No new endpoint ships without a Zod schema.
-
-### PostgreSQL Row-Level Security
-
-**Current state:** Tenant isolation enforced at application layer only (every query includes `tenant_id = ?`).
-
-**Plan:** After Phase 6 stabilises, enable `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` on all tenant-scoped tables. RLS provides defence-in-depth — a bug in application code cannot expose cross-tenant data.
+**Shipped.** RLS enabled on 8 tenant-scoped tables (tenants, api_keys, audit_events, sessions, webhooks, agents, rate_limits, cost_events). Application-layer tenant isolation continues as primary enforcement; RLS is defence-in-depth.
 
 ### Cloudflare Full/Strict SSL
 
