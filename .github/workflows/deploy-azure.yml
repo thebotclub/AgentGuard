@@ -124,23 +124,22 @@ jobs:
       - name: Health check
         if: steps.changes.outputs.api == 'true'
         run: |
-          echo "⏳ Waiting for API to start..."
-          sleep 30
+          echo "⏳ Waiting for API to start (cold start may take ~60s)..."
+          sleep 60
           API_URL="https://api.agentguard.tech"
-          for i in $(seq 1 10); do
-            HEALTH=$(curl -sf "$API_URL/health" 2>/dev/null)
+          for i in $(seq 1 12); do
+            HEALTH=$(curl -sf --max-time 10 "$API_URL/health" 2>/dev/null)
             if [ $? -eq 0 ]; then
               VERSION=$(echo "$HEALTH" | python3 -c "import sys,json; print(json.load(sys.stdin).get('version','?'))" 2>/dev/null)
               echo "✅ API healthy (attempt $i) — version $VERSION"
-              # Smoke test
-              RESULT=$(curl -s -X POST "$API_URL/api/v1/evaluate" \
+              RESULT=$(curl -s --max-time 10 -X POST "$API_URL/api/v1/evaluate" \
                 -H "Content-Type: application/json" \
                 -d '{"tool":"sudo","params":{"command":"test"}}')
               echo "Smoke test: $RESULT"
               exit 0
             fi
-            echo "Attempt $i — waiting..."
-            sleep $((i * 3))
+            echo "Attempt $i — waiting ${i}0s..."
+            sleep $((i * 10))
           done
-          echo "::error::Health check failed after 10 attempts"
+          echo "::error::Health check failed after 12 attempts"
           exit 1
