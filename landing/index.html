@@ -285,7 +285,23 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
   .stat-row{gap:16px}
   .pricing-card{padding:24px 20px}
   .nav-link{display:none}
+  .nav-cta{display:none}
+  .hamburger{display:flex}
+  .mobile-menu.open{display:flex}
+  .btn-primary{padding:16px 24px;font-size:1.05rem}
+  .nav-cta{padding:12px 24px;font-size:1rem}
+  .pricing-cta{padding:14px 24px;font-size:1rem}
 }
+/* Hamburger */
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;z-index:200}
+.hamburger span{display:block;width:24px;height:2px;background:var(--text-bright);border-radius:2px;transition:transform .2s,opacity .2s}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.mobile-menu{display:none;flex-direction:column;gap:12px;padding:16px 24px 20px;background:rgba(10,10,26,0.98);border-bottom:1px solid var(--border-dim)}
+.mobile-menu a{color:var(--text-dim);font-weight:500;font-size:1rem;padding:8px 0;transition:color .15s}
+.mobile-menu a:hover{color:var(--text-bright)}
+.mobile-menu .nav-cta{display:inline-block;text-align:center;background:var(--accent);color:#fff;padding:12px 24px;border-radius:8px;font-weight:600;margin-top:4px}
 .text-center{text-align:center}
 </style>
 </head>
@@ -303,6 +319,17 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
       <a href="https://docs.agentguard.tech" class="nav-link">Docs</a>
       <a href="#hero-form" class="nav-cta">Get Started Free →</a>
     </div>
+    <div class="hamburger" id="hamburger" onclick="document.getElementById('hamburger').classList.toggle('open');document.getElementById('mobile-menu').classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="#how-it-works">How It Works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#demo">Demo</a>
+    <a href="https://about.agentguard.tech">About</a>
+    <a href="https://docs.agentguard.tech">Docs</a>
+    <a href="#hero-form" class="nav-cta">Get Started Free →</a>
   </div>
 </nav>
 
@@ -1239,6 +1266,14 @@ document.querySelectorAll('a[href^="#"]').forEach(function(a) {
       var input = target.querySelector('input[type=text]');
       if (input) setTimeout(function() { input.focus(); }, 400);
     }
+  });
+});
+</script>
+<script>
+document.querySelectorAll('#mobile-menu a').forEach(function(a){
+  a.addEventListener('click',function(){
+    document.getElementById('hamburger').classList.remove('open');
+    document.getElementById('mobile-menu').classList.remove('open');
   });
 });
 </script>
