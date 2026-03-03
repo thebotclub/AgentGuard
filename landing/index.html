@@ -403,7 +403,14 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
           <a href="https://docs.agentguard.tech" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:14px 28px;border-radius:10px;font-weight:700;font-size:1rem;transition:background .15s" onmouseover="this.style.background='#4042b0'" onmouseout="this.style.background='var(--accent)'">Get Started Free →</a>
           <a href="https://github.com/AgentGuard-tech/agentguard" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:14px 28px;border-radius:10px;font-weight:600;font-size:1rem;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text-bright)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⭐ View on GitHub</a>
         </div>
-        <div class="framework-badges" style="margin-top:28px">
+        <!-- Demo video -->
+        <div style="margin-top:28px;display:block">
+          <video autoplay muted loop playsinline style="width:100%;max-width:560px;border-radius:12px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+            <source src="agentguard-explainer.mp4?v=1" type="video/mp4">
+          </video>
+          <div style="font-size:.75rem;color:var(--text-dim);margin-top:8px">AgentGuard blocks dangerous tool calls in real-time</div>
+        </div>
+        <div class="framework-badges" style="margin-top:20px">
           <span style="font-size:.75rem;color:var(--text-dim);margin-right:4px">Works with:</span>
           <span class="fw-badge active">🦜 LangChain</span>
           <span class="fw-badge active">🚢 CrewAI</span>
