@@ -174,6 +174,7 @@ tr:hover td { background:rgba(99,102,241,0.04); }
   <button class="nav-item" onclick="showPage('evaluate', event)">🔍 Evaluate</button>
   <div class="nav-section">Governance</div>
   <button class="nav-item" onclick="showPage('agents', event)">🤖 Agents</button>
+  <button class="nav-item" onclick="showPage('readiness', event)">🚀 Deployment</button>
   <button class="nav-item" onclick="showPage('policy', event)">📜 Policies</button>
   <button class="nav-item" onclick="showPage('webhooks', event)">🔔 Webhooks</button>
   <button class="nav-item" onclick="showPage('ratelimits', event)">⏱️ Rate Limits</button>
@@ -195,6 +196,7 @@ tr:hover td { background:rgba(99,102,241,0.04); }
     <button class="nav-item" onclick="showPage('evaluate', event)">🔍 Evaluate</button>
     <div class="nav-section">Governance</div>
     <button class="nav-item" onclick="showPage('agents', event)">🤖 Agents</button>
+    <button class="nav-item" onclick="showPage('readiness', event)">🚀 Deployment</button>
     <button class="nav-item" onclick="showPage('policy', event)">📜 Policies</button>
     <button class="nav-item" onclick="showPage('webhooks', event)">🔔 Webhooks</button>
     <button class="nav-item" onclick="showPage('ratelimits', event)">⏱️ Rate Limits</button>
@@ -449,6 +451,55 @@ tr:hover td { background:rgba(99,102,241,0.04); }
             </tr></thead>
             <tbody id="agents-tbody">
               <tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px">Loading agents...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DEPLOYMENT READINESS PAGE ───────────────────── -->
+    <div class="page" id="page-readiness" role="main">
+      <div class="main-header">
+        <h1>🚀 Deployment Readiness</h1>
+      </div>
+      <p style="color:var(--text-dim);margin-bottom:20px">View which agents are cleared for production deployment. An agent must be <strong>certified</strong> to deploy.</p>
+      
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:center">
+            <div>
+              <div id="stat-registered" style="font-size:2rem;font-weight:700;color:var(--text-bright)">-</div>
+              <div style="font-size:0.8rem;color:var(--text-dim)">Registered</div>
+            </div>
+            <div>
+              <div id="stat-validated" style="font-size:2rem;font-weight:700;color:var(--amber)">-</div>
+              <div style="font-size:0.8rem;color:var(--text-dim)">Validated</div>
+            </div>
+            <div>
+              <div id="stat-certified" style="font-size:2rem;font-weight:700;color:var(--green)">-</div>
+              <div style="font-size:0.8rem;color:var(--text-dim)">Certified</div>
+            </div>
+            <div>
+              <div id="stat-unscoped" style="font-size:2rem;font-weight:700;color:var(--red)">-</div>
+              <div style="font-size:0.8rem;color:var(--text-dim)">Unscoped</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body no-pad">
+          <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Agent</th>
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Status</th>
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Coverage</th>
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Certified</th>
+              <th style="text-align:left;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Expires</th>
+              <th style="text-align:right;padding:12px 16px;color:var(--text-dim);font-size:0.75rem;text-transform:uppercase">Actions</th>
+            </tr></thead>
+            <tbody id="readiness-tbody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -900,6 +951,57 @@ async function loadAgents() {
   } catch (e) { document.getElementById('agents-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--red);padding:24px">Failed to load agents</td></tr>'; }
 }
 
+async function loadReadiness() {
+  if (!storedApiKey) { document.getElementById('readiness-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key to view readiness</td></tr>'; return; }
+  try {
+    var r = await fetch(API + '/api/v1/agents', { headers: getApiHeaders(), signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var data = await r.json();
+    var agents = data.agents || [];
+    
+    var stats = { registered: 0, validated: 0, certified: 0, unscoped: 0 };
+    agents.forEach(function(a) {
+      var status = a.status || 'registered';
+      stats.registered++;
+      if (status === 'validated') stats.validated++;
+      else if (status === 'certified') stats.certified++;
+      if (!a.policyScope) stats.unscoped++;
+    });
+    document.getElementById('stat-registered').textContent = stats.registered;
+    document.getElementById('stat-validated').textContent = stats.validated;
+    document.getElementById('stat-certified').textContent = stats.certified;
+    document.getElementById('stat-unscoped').textContent = stats.unscoped;
+    
+    var tbody = document.getElementById('readiness-tbody');
+    if (agents.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">No agents to display</td></tr>'; return; }
+    tbody.innerHTML = agents.map(function(a) {
+      var status = a.status || 'registered';
+      var badgeClass = status === 'certified' ? 'badge-allow' : status === 'validated' ? 'badge-monitor' : 'badge-block';
+      var certDate = a.certifiedAt ? a.certifiedAt.replace('T', ' ').slice(0, 10) : '—';
+      var expDate = a.certificationExpiresAt ? a.certificationExpiresAt.replace('T', ' ').slice(0, 10) : '—';
+      var coverage = a.validationCoverage !== null && a.validationCoverage !== undefined ? a.validationCoverage + '%' : '—';
+      return '<tr style="border-bottom:1px solid var(--border-dim)">' +
+        '<td style="padding:12px 16px;font-weight:600;color:var(--text-bright)">' + esc(a.name) + '</td>' +
+        '<td style="padding:12px 16px"><span class="badge ' + badgeClass + '">' + esc(status) + '</span></td>' +
+        '<td style="padding:12px 16px;font-family:var(--mono);color:var(--accent-hi)">' + coverage + '</td>' +
+        '<td style="padding:12px 16px;font-size:0.82rem;color:var(--text-dim)">' + certDate + '</td>' +
+        '<td style="padding:12px 16px;font-size:0.82rem;color:var(--text-dim)">' + expDate + '</td>' +
+        '<td style="padding:12px 16px;text-align:right"><button class="btn btn-ghost" style="font-size:0.78rem" onclick="validateAgent(\'' + esc(a.id) + '\')">Validate</button></td>' +
+        '</tr>';
+    }).join('');
+  } catch (e) { document.getElementById('readiness-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:24px">Failed to load readiness data</td></tr>'; }
+}
+
+async function validateAgent(id) {
+  if (!confirm('Run validation for this agent?')) return;
+  try {
+    var r = await fetch(API + '/api/v1/agents/' + id + '/validate', { method: 'POST', headers: getApiHeaders(), signal: AbortSignal.timeout(15000) });
+    var data = await r.json();
+    if (r.ok && data.valid) { alert('✅ Agent validated! Coverage: ' + data.coverage + '%'); loadReadiness(); }
+    else { alert('❌ Validation failed: ' + (data.error || 'Unknown error')); }
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
 async function createAgent() {
   var name = document.getElementById('agent-name').value.trim();
   var scope = document.getElementById('agent-scope').value.trim();
@@ -1344,7 +1446,7 @@ function showPage(id, evt) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   // Update title
-  const titles = { overview: 'Dashboard', live: 'Live Feed', evaluate: 'Evaluate', policy: 'Policies', audit: 'Audit Trail', killswitch: 'Kill Switch', sdk: 'SDK & API', agents: 'Agents', webhooks: 'Webhooks', ratelimits: 'Rate Limits', costs: 'Costs' };
+  const titles = { overview: 'Dashboard', live: 'Live Feed', evaluate: 'Evaluate', policy: 'Policies', audit: 'Audit Trail', killswitch: 'Kill Switch', sdk: 'SDK & API', agents: 'Agents', readiness: 'Deployment Readiness', webhooks: 'Webhooks', ratelimits: 'Rate Limits', costs: 'Costs' };
   document.title = `AgentGuard — ${titles[id] || id}`;
   // Mark active nav item
   if (evt && evt.target) {
@@ -1364,6 +1466,7 @@ function showPage(id, evt) {
   if (id === 'overview' && storedApiKey) { loadDashboardStats(); loadDashboardFeed(); loadUsageStats(); }
   if (id === 'audit' && storedApiKey) { loadAuditTrail(); }
   if (id === 'agents') { loadAgents(); }
+  if (id === 'readiness') { loadReadiness(); }
   if (id === 'webhooks') { loadWebhooks(); }
   if (id === 'ratelimits') { loadRateLimits(); }
   if (id === 'costs') { loadCosts(); }
