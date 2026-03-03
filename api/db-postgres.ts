@@ -161,7 +161,6 @@ const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_events(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_audit_session ON audit_events(session_id);
   CREATE INDEX IF NOT EXISTS idx_apikeys_tenant ON api_keys(tenant_id);
-  CREATE INDEX IF NOT EXISTS idx_apikeys_sha256 ON api_keys(key_sha256);
   CREATE INDEX IF NOT EXISTS idx_webhooks_tenant ON webhooks(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_agents_tenant ON agents(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_agents_key ON agents(api_key);
@@ -343,6 +342,9 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       if (unhashedRows.length > 0) {
         console.log(`[pg] migrated ${unhashedRows.length} existing API key(s) to sha256 lookup`);
       }
+
+      // Create index on key_sha256 (after column exists)
+      try { await pool.query('CREATE INDEX IF NOT EXISTS idx_apikeys_sha256 ON api_keys(key_sha256)'); } catch { /* already exists */ }
 
       // ── Row-Level Security (RLS) ───────────────────────────────────────────
       // Enable RLS on all tenant-scoped tables for defense-in-depth.
