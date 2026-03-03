@@ -1,5 +1,6 @@
 FROM nginx:alpine
 COPY nginx-about.conf /etc/nginx/conf.d/default.conf
 COPY about/ /usr/share/nginx/html/
+COPY legal/ /usr/share/nginx/html/legal/
 RUN chmod -R 755 /usr/share/nginx/html
 EXPOSE 80
