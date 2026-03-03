@@ -261,6 +261,31 @@ export function runValidationMigrations(db: Database.Database): void {
   }
 }
 
+// Async version for IDatabase (PostgreSQL + SQLite via adapter)
+export async function runValidationMigrationsAsync(db: IDatabase): Promise<void> {
+  const newColumns: Array<{ name: string; type: string }> = [
+    { name: 'declared_tools', type: 'TEXT' },
+    { name: 'last_validated_at', type: 'TEXT' },
+    { name: 'validation_coverage', type: 'INTEGER' },
+    { name: 'certified_at', type: 'TEXT' },
+    { name: 'certification_expires_at', type: 'TEXT' },
+    { name: 'certification_token', type: 'TEXT' },
+  ];
+
+  for (const col of newColumns) {
+    try {
+      await db.exec(`ALTER TABLE agents ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
+    } catch {
+      // Safe to ignore — column exists or dialect doesn't support IF NOT EXISTS
+      try {
+        await db.exec(`ALTER TABLE agents ADD COLUMN ${col.name} ${col.type}`);
+      } catch {
+        // Already exists — expected
+      }
+    }
+  }
+}
+
 // ── Route Factory ──────────────────────────────────────────────────────────
 
 export function createValidationRoutes(db: IDatabase): Router {

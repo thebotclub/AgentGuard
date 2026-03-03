@@ -9,6 +9,16 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import type { IDatabase, TenantRow } from './db-interface.js';
 
+// ── DB-agnostic date helpers ───────────────────────────────────────────────
+// SQLite uses datetime('now', '-N days'), PostgreSQL uses NOW() - INTERVAL 'N days'
+const isPg = () => process.env['DB_TYPE'] === 'postgres';
+const daysAgo = (n: number) => isPg()
+  ? `NOW() - INTERVAL '${n} day'`
+  : `datetime('now', '-${n} day${n === 1 ? '' : 's'}')`;
+const hoursAgo = (n: number) => isPg()
+  ? `NOW() - INTERVAL '${n} hour'`
+  : `datetime('now', '-${n} hour${n === 1 ? '' : 's'}')`;
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface ApiKeyRow {
@@ -614,9 +624,9 @@ export function createPhase2Routes(db: IDatabase): Router {
     const windowCounts = await db.get<{ total: number; last_24h: number; last_7d: number; last_30d: number }>(
       `SELECT
          COUNT(*) as total,
-         SUM(CASE WHEN created_at >= datetime('now', '-1 day')  THEN 1 ELSE 0 END) as last_24h,
-         SUM(CASE WHEN created_at >= datetime('now', '-7 days') THEN 1 ELSE 0 END) as last_7d,
-         SUM(CASE WHEN created_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END) as last_30d
+         SUM(CASE WHEN created_at >= ${daysAgo(1)}  THEN 1 ELSE 0 END) as last_24h,
+         SUM(CASE WHEN created_at >= ${daysAgo(7)}  THEN 1 ELSE 0 END) as last_7d,
+         SUM(CASE WHEN created_at >= ${daysAgo(30)} THEN 1 ELSE 0 END) as last_30d
        FROM audit_events
        WHERE tenant_id = ?`,
       [tenantId]
@@ -632,7 +642,7 @@ export function createPhase2Routes(db: IDatabase): Router {
          SUM(CASE WHEN result = 'block' THEN 1 ELSE 0 END) as blocked
        FROM audit_events
        WHERE tenant_id = ?
-         AND created_at >= datetime('now', '-1 day')`,
+         AND created_at >= ${daysAgo(1)}`,
       [tenantId]
     );
 
@@ -645,7 +655,7 @@ export function createPhase2Routes(db: IDatabase): Router {
       `SELECT AVG(duration_ms) as avg
        FROM audit_events
        WHERE tenant_id = ?
-         AND created_at >= datetime('now', '-1 day')
+         AND created_at >= ${daysAgo(1)}
          AND duration_ms IS NOT NULL`,
       [tenantId]
     );
@@ -659,7 +669,7 @@ export function createPhase2Routes(db: IDatabase): Router {
       `SELECT COUNT(DISTINCT COALESCE(session_id, 'default')) as cnt
        FROM audit_events
        WHERE tenant_id = ?
-         AND created_at >= datetime('now', '-1 day')`,
+         AND created_at >= ${daysAgo(1)}`,
       [tenantId]
     );
     const activeAgentsCount = Number(activeAgentRow?.cnt ?? 0);
@@ -669,23 +679,26 @@ export function createPhase2Routes(db: IDatabase): Router {
        FROM audit_events
        WHERE tenant_id = ?
          AND result = 'block'
-         AND created_at >= datetime('now', '-1 day')
+         AND created_at >= ${daysAgo(1)}
        GROUP BY tool
        ORDER BY count DESC
        LIMIT 10`,
       [tenantId]
     );
 
+    const hourExpr = isPg()
+      ? `date_trunc('hour', created_at::timestamptz)::text`
+      : `strftime('%Y-%m-%dT%H:00:00Z', created_at)`;
     const evalsByHourRaw = await db.all<{ hour: string; total: number; blocked: number; allowed: number; monitored: number }>(
       `SELECT
-         strftime('%Y-%m-%dT%H:00:00Z', created_at) as hour,
+         ${hourExpr} as hour,
          COUNT(*) as total,
          SUM(CASE WHEN result = 'block' THEN 1 ELSE 0 END) as blocked,
          SUM(CASE WHEN result = 'allow' THEN 1 ELSE 0 END) as allowed,
          SUM(CASE WHEN result = 'monitor' THEN 1 ELSE 0 END) as monitored
        FROM audit_events
        WHERE tenant_id = ?
-         AND created_at >= datetime('now', '-1 day')
+         AND created_at >= ${daysAgo(1)}
        GROUP BY hour
        ORDER BY hour ASC`,
       [tenantId]

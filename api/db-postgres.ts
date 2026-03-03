@@ -88,6 +88,12 @@ const SCHEMA_SQL = `
     policy_scope TEXT NOT NULL DEFAULT '[]',
     active INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    declared_tools TEXT,
+    last_validated_at TEXT,
+    validation_coverage INTEGER,
+    certified_at TEXT,
+    certification_expires_at TEXT,
+    certification_token TEXT,
     UNIQUE(tenant_id, name)
   );
 

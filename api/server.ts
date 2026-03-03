@@ -13,7 +13,7 @@ import path from 'path';
 import yaml from 'js-yaml';
 import { createPhase2Routes, checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from './phase2-routes.js';
 import { createMcpRoutes } from './mcp-routes.js';
-import { createValidationRoutes, runValidationMigrations } from './validation-routes.js';
+import { createValidationRoutes, runValidationMigrations, runValidationMigrationsAsync } from './validation-routes.js';
 import { EvaluateRequest, SignupRequest, CreateAgentRequest } from './schemas.js';
 import { PolicyEngine } from '../packages/sdk/src/core/policy-engine.js';
 import type { PolicyDocument, ActionRequest, AgentContext, PolicyDecision } from '../packages/sdk/src/core/types.js';
@@ -1452,6 +1452,9 @@ async function main(): Promise<void> {
   // If we're on SQLite, also run validation migrations via the raw adapter (idempotent)
   if (raw) {
     runValidationMigrations(raw);
+  } else {
+    // PostgreSQL — use async migration (columns defined in PG schema, this is belt-and-suspenders)
+    await runValidationMigrationsAsync(db).catch((e: Error) => console.warn('[migrations] validation columns:', e.message));
   }
 
   // Mount route files BEFORE the 404 and error handlers
