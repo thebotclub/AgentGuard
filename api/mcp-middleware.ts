@@ -340,10 +340,11 @@ export class McpMiddleware {
       action_mapping: string; default_action: string; created_at: string; updated_at: string;
     }>(
       `INSERT INTO mcp_configs
-       (tenant_id, name, upstream_url, transport, agent_id, action_mapping, default_action, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+       (id, tenant_id, name, upstream_url, transport, agent_id, action_mapping, default_action, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
        RETURNING *`,
       [
+        crypto.randomUUID(),
         tenantId,
         opts.name,
         opts.upstreamUrl ?? null,

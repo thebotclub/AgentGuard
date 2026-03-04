@@ -4,7 +4,7 @@ from typing import Any, Optional
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 
 class AgentGuard:
@@ -88,7 +88,7 @@ class AgentGuard:
 
         Args:
             url: The HTTPS endpoint to deliver events to
-            events: List of event types to subscribe to
+            events: List of event types ('block', 'killswitch', 'hitl', '*')
             secret: Optional signing secret for payload verification
 
         Returns:
@@ -168,7 +168,7 @@ class AgentGuard:
         """Get a specific policy template by name.
 
         Args:
-            name: Template name (e.g. 'strict', 'permissive', 'financial')
+            name: Template ID (e.g. 'apra-cps234', 'eu-ai-act', 'owasp-agentic')
 
         Returns:
             dict with template details and policy rules
