@@ -4,7 +4,7 @@ from typing import Any, Optional
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 
 class AgentGuard:
