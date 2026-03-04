@@ -194,7 +194,9 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
       <div class="nav-group-title">Governance</div>
       <a href="#webhooks" class="nav-link">Webhooks</a>
       <a href="#killswitch" class="nav-link">Kill Switch</a>
+      <a href="#approvals" class="nav-link"><span class="method method-get">GET</span> Approvals <span class="badge-new">NEW</span></a>
       <a href="#templates" class="nav-link">Policy Templates</a>
+      <a href="#policy-mgmt" class="nav-link">Policy API <span class="badge-new">NEW</span></a>
       <a href="#policy-engine" class="nav-link">Policy Engine</a>
     </div>
     <div class="nav-group">
@@ -228,7 +230,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
   </div>
   <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
     <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">ENDPOINTS</div>
-    <div style="font-size:1.1rem;font-weight:700;color:var(--cyan)">34</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--cyan)">42</div>
   </div>
 </div>
 
@@ -333,6 +335,28 @@ else:
 
 <div class="callout callout-warn"><strong>Agent keys are restricted.</strong> Using an <code>ag_agent_*</code> key on admin endpoints (create agent, kill switch, webhooks) returns <code>403</code>. Always use your tenant key for management operations.</div>
 
+<h3>Key Rotation <span class="badge-new">v0.7.2</span></h3>
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/keys/rotate</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Rotate your tenant API key. The old key is <strong>immediately invalidated</strong> and a new <code>ag_live_*</code> key is returned.</p>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "apiKey": "ag_live_9f2e1a3c8b7d...",
+  "rotatedAt": "2026-03-04T03:00:00.000Z",
+  "message": "API key rotated. The previous key is immediately invalidated."
+}</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/keys/rotate \
+  -H "X-API-Key: ag_live_your_current_key_here"</code></pre>
+    <div class="callout callout-warn"><strong>Store the new key securely — the old key is immediately invalidated.</strong> All agents using the old key will receive <code>401</code> errors. Update your environment variables and secrets before rotating.</div>
+  </div>
+</div>
+
 
 <!-- SDK -->
 <h2 id="sdk">SDK Installation</h2>
@@ -371,6 +395,19 @@ await guard.listMcpSessions();
 
 // Kill switch
 await guard.setKillSwitch(true);
+
+// HITL Approvals (v0.7.2)
+await guard.listApprovals();
+await guard.approveRequest(approvalId, { note });
+await guard.denyRequest(approvalId, { note });
+
+// Policy Management (v0.7.2)
+await guard.getPolicy();
+await guard.setPolicy(rules);
+await guard.coverageCheck({ tools: ['shell_exec', 'file_read'] });
+
+// Key Rotation (v0.7.2)
+await guard.rotateKey();
 
 // Webhooks
 await guard.createWebhook({ url, events, secret });
@@ -423,6 +460,19 @@ guard.coverage_check(tools=[{"name": "search_web"}])
 
 # Kill switch
 guard.set_kill_switch(True)
+
+# HITL Approvals (v0.7.2)
+guard.list_approvals()
+guard.approve_request(approval_id, note="Reviewed")
+guard.deny_request(approval_id, note="Not authorised")
+
+# Policy Management (v0.7.2)
+guard.get_policy()
+guard.set_policy(rules=[...])
+guard.coverage_check(tools=["shell_exec", "file_read"])
+
+# Key Rotation (v0.7.2)
+guard.rotate_key()
 
 # Webhooks & templates
 guard.create_webhook(url="https://hooks.slack.com/...", events=["block", "killswitch"])
@@ -501,12 +551,42 @@ guard.get_dashboard_stats()</code></pre>
   "sessionId": "demo-abc123",
   "hashChain": "sha256:a1b2c3..."
 }</code></pre>
+    <h4>Response — 200 (with warnings) <span class="badge-new">v0.7.2</span></h4>
+<pre><code>{
+  "result": "allow",
+  "reason": null,
+  "riskScore": 0,
+  "rule": null,
+  "durationMs": 0.04,
+  "sessionId": "demo-abc123",
+  "hashChain": "sha256:d4e5f6...",
+  "warnings": [
+    {
+      "tool": "send_sms",
+      "message": "No policy rule matched this tool — fail-open applied. Add a policy rule to explicitly cover 'send_sms'.",
+      "severity": "medium"
+    }
+  ]
+}</code></pre>
+    <p style="font-size:.85rem"><code>warnings</code> is an optional array. It appears when a tool has no matching policy rule — the action is allowed (fail-open), but you're alerted to the coverage gap. <a href="#policy-mgmt">Add a policy rule →</a></p>
+    <h4>Response — 200 (require_approval)</h4>
+<pre><code>{
+  "result": "require_approval",
+  "reason": "Matched rule \"hitl-financial-actions\" — human review required",
+  "riskScore": 60,
+  "rule": "hitl-financial-actions",
+  "approvalId": "apr_8f3a2c1b...",
+  "durationMs": 0.08,
+  "sessionId": "session-001",
+  "hashChain": "sha256:b2c3d4..."
+}</code></pre>
+    <p style="font-size:.85rem">When <code>result</code> is <code>require_approval</code>, the response includes an <code>approvalId</code>. <strong>Do not execute the action.</strong> Poll <a href="#approvals"><code>GET /api/v1/approvals</code></a> and wait for approval before proceeding.</p>
     <h4>Result Values</h4>
     <table class="params">
       <tr><th>Value</th><th>Meaning</th></tr>
       <tr><td style="color:var(--green)">allow</td><td>Action is safe to execute</td></tr>
       <tr><td style="color:var(--red)">block</td><td>Action violates a policy rule — do not execute</td></tr>
-      <tr><td style="color:var(--amber)">require_approval</td><td>Human-in-the-loop approval needed before execution</td></tr>
+      <tr><td style="color:var(--amber)">require_approval</td><td>Human-in-the-loop approval needed. Response includes <code>approvalId</code> — <a href="#approvals">see Approvals</a></td></tr>
       <tr><td style="color:var(--cyan)">monitor</td><td>Allowed but logged for observability</td></tr>
     </table>
     <div class="callout callout-tip"><strong>Kill switch takes priority.</strong> If either the global or tenant-level kill switch is active, all evaluations return <code>block</code> immediately with reason <code>KILL_SWITCH</code>.</div>
@@ -1314,6 +1394,102 @@ jobs:
 
 
 <!-- ────────────────────────────────────────────────── -->
+<!-- HITL APPROVAL QUEUE -->
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="approvals">HITL Approval Queue <span class="badge-new">v0.7.2</span></h2>
+<p>When an evaluation returns <code>require_approval</code>, AgentGuard queues the action for human review. Use these endpoints to list, approve, or deny pending requests.</p>
+
+<div class="callout callout-info"><strong>Approval workflow:</strong> <code>evaluate</code> returns <code>require_approval</code> + <code>approvalId</code> → poll <code>GET /api/v1/approvals</code> → human reviews → <code>POST .../approve</code> or <code>.../deny</code> → resume or halt agent.</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/approvals</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>List all pending approval requests for your tenant.</p>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "approvals": [
+    {
+      "id": "apr_8f3a2c1b...",
+      "tool": "http_post",
+      "params": { "destination": "https://api.stripe.com/v1/charges", "amount": 9500 },
+      "rule": "hitl-financial-actions",
+      "riskScore": 60,
+      "agentId": "booking-agent",
+      "sessionId": "session-001",
+      "status": "pending",
+      "createdAt": "2026-03-04T03:00:00.000Z"
+    }
+  ],
+  "count": 1
+}</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl https://api.agentguard.tech/api/v1/approvals \
+  -H "X-API-Key: ag_live_your_key_here"</code></pre>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/approvals/:id/approve</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Approve a pending request. The agent may now proceed with the action.</p>
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>note</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Reviewer note — logged in the audit trail</td></tr>
+    </table>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "id": "apr_8f3a2c1b...",
+  "status": "approved",
+  "approvedAt": "2026-03-04T03:05:00.000Z",
+  "approvedBy": "tenant-..."
+}</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/approvals/apr_8f3a2c1b/approve \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{"note": "Reviewed and confirmed legitimate payment"}'</code></pre>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/approvals/:id/deny</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Deny a pending request. The action is blocked and the denial is recorded in the audit trail.</p>
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>note</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Reason for denial — logged in the audit trail</td></tr>
+    </table>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "id": "apr_8f3a2c1b...",
+  "status": "denied",
+  "deniedAt": "2026-03-04T03:05:00.000Z",
+  "deniedBy": "tenant-..."
+}</code></pre>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/approvals/apr_8f3a2c1b/deny \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{"note": "Suspicious destination — not an authorised payment endpoint"}'</code></pre>
+  </div>
+</div>
+
+
+<!-- ────────────────────────────────────────────────── -->
 <!-- DASHBOARD -->
 <!-- ────────────────────────────────────────────────── -->
 <h2 id="dashboard-api">Dashboard API</h2>
@@ -1395,8 +1571,36 @@ const guard = new AgentGuard({
 
 // Before any agent action
 const decision = await guard.evaluate({ tool: 'send_email', params: { to: 'user@example.com' } });
-if (decision.result !== 'allow') throw new Error(`Blocked: ${decision.reason}`);
-await sendEmail(...);</code></pre>
+if (decision.result === 'allow') {
+  await sendEmail(...);
+} else if (decision.result === 'require_approval') {
+  // v0.7.2: poll approvals until resolved
+  console.log(`Awaiting approval: ${decision.approvalId}`);
+  // Your app notifies a human reviewer; they call approve/deny via dashboard or API
+} else {
+  throw new Error(`Blocked: ${decision.reason}`);
+}
+
+// v0.7.2: HITL Approvals
+const pending = await guard.listApprovals();
+await guard.approveRequest(pending[0].id, { note: 'Reviewed OK' });
+await guard.denyRequest(pending[1].id, { note: 'Not authorised' });
+
+// v0.7.2: Policy Management
+const policy = await guard.getPolicy();
+await guard.setPolicy([{ id: 'block-shell', priority: 1, when: [{ tool: { in: ['shell_exec'] } }], action: 'block' }]);
+const coverage = await guard.coverageCheck({ tools: ['shell_exec', 'file_read', 'send_sms'] });
+
+// v0.7.2: Key Rotation
+const { apiKey } = await guard.rotateKey(); // old key is now invalid
+
+// v0.7.2: MCP helpers
+await guard.mcpEvaluate({ toolName: 'read_file', arguments: { path: '/etc/hosts' }, sessionId: 'sess-1' });
+await guard.getMcpConfigForAgent(agentId);
+await guard.putMcpConfig({ name: 'my-mcp', upstreamUrl: 'https://mcp.example.com', transport: 'sse' });
+
+// Audit chain
+await guard.verifyAuditChain();</code></pre>
 
 <div class="callout callout-info"><strong>CJS + ESM supported.</strong> The TypeScript SDK works with both <code>require()</code> and <code>import</code>. Full TypeScript types included.</div>
 
@@ -1413,8 +1617,28 @@ guard = AgentGuard(
 
 # Synchronous
 decision = guard.evaluate(tool="send_email", params={"to": "user@example.com"})
-if decision["result"] != "allow":
+if decision["result"] == "allow":
+    send_email(...)
+elif decision["result"] == "require_approval":
+    print(f"Awaiting approval: {decision['approvalId']}")
+else:
     raise Exception(f"Blocked: {decision['reason']}")
+
+# v0.7.2: HITL Approvals
+pending = guard.list_approvals()
+guard.approve_request(pending[0]["id"], note="Reviewed OK")
+guard.deny_request(pending[1]["id"], note="Not authorised")
+
+# v0.7.2: Policy Management
+policy = guard.get_policy()
+guard.set_policy(rules=[{"id": "block-shell", "priority": 1, "when": [{"tool": {"in": ["shell_exec"]}}], "action": "block"}])
+coverage = guard.coverage_check(tools=["shell_exec", "file_read", "send_sms"])
+
+# v0.7.2: Key Rotation
+new_key = guard.rotate_key()  # old key is now invalid
+
+# Audit chain
+guard.verify_audit_chain()
 
 # Works with LangChain, CrewAI, AutoGen, and custom agent frameworks</code></pre>
 
@@ -1465,6 +1689,125 @@ if decision["result"] != "allow":
     <h4>Example — curl</h4>
 <pre><code>curl -X POST https://api.agentguard.tech/api/v1/templates/soc2-starter/apply \
   -H "X-API-Key: ag_live_your_key_here"</code></pre>
+  </div>
+</div>
+
+
+<!-- ────────────────────────────────────────────────── -->
+<!-- POLICY MANAGEMENT API -->
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="policy-mgmt">Policy Management API <span class="badge-new">v0.7.2</span></h2>
+<p>Read and replace your tenant's active policy programmatically. Changes take effect immediately — no restart required.</p>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-get">GET</span>
+    <span class="path">/api/v1/policy</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Get the active policy for your tenant. Returns the custom policy if one has been set, otherwise returns the default rules.</p>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "source": "custom",
+  "updatedAt": "2026-03-04T02:00:00.000Z",
+  "rules": [
+    {
+      "id": "block-shell",
+      "priority": 1,
+      "when": [{ "tool": { "in": ["shell_exec", "bash", "python_exec"] } }],
+      "action": "block",
+      "severity": "critical",
+      "reason": "Shell access is prohibited"
+    }
+  ]
+}</code></pre>
+    <p><code>source</code> is <code>"default"</code> when no custom policy has been set, or <code>"custom"</code> after a <code>PUT</code>.</p>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-put">PUT</span>
+    <span class="path">/api/v1/policy</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Replace the active policy with a JSON array of rules. <strong>This is a full replace</strong> — existing custom rules are overwritten. To add rules without removing existing ones, use <a href="#templates"><code>POST /api/v1/templates/:name/apply</code></a>.</p>
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>rules</td><td><span class="param-type">object[]</span></td><td><span class="param-req">required</span></td><td>Array of policy rule objects (max 500)</td></tr>
+    </table>
+    <h4>Example — set a custom policy</h4>
+<pre><code>curl -X PUT https://api.agentguard.tech/api/v1/policy \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{
+    "rules": [
+      {
+        "id": "block-shell",
+        "priority": 1,
+        "when": [{ "tool": { "in": ["shell_exec", "bash"] } }],
+        "action": "block",
+        "severity": "critical",
+        "reason": "Shell access is prohibited"
+      },
+      {
+        "id": "hitl-payments",
+        "priority": 10,
+        "when": [{ "tool": { "in": ["http_post"] }, "params.destination": { "contains": "stripe.com" } }],
+        "action": "require_approval",
+        "severity": "high",
+        "reason": "Payment actions require human review"
+      },
+      {
+        "id": "monitor-file-reads",
+        "priority": 50,
+        "when": [{ "tool": { "in": ["file_read"] } }],
+        "action": "monitor",
+        "severity": "low"
+      }
+    ]
+  }'</code></pre>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "updated": true,
+  "ruleCount": 3,
+  "updatedAt": "2026-03-04T03:00:00.000Z"
+}</code></pre>
+  </div>
+</div>
+
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method method-post">POST</span>
+    <span class="path">/api/v1/policy/coverage</span>
+    <span class="auth-badge auth-required">Auth Required</span>
+  </div>
+  <div class="endpoint-body">
+    <p>Check which tools in a given list are covered by the active policy. Useful for pre-flight audits without a registered agent.</p>
+    <h4>Request Body</h4>
+    <table class="params">
+      <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+      <tr><td>tools</td><td><span class="param-type">string[]</span></td><td><span class="param-req">required</span></td><td>Tool names to check</td></tr>
+    </table>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/policy/coverage \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{"tools": ["shell_exec", "file_read", "send_sms"]}'</code></pre>
+    <h4>Response — 200</h4>
+<pre><code>{
+  "coveragePercent": 66.7,
+  "covered": ["shell_exec", "file_read"],
+  "uncovered": ["send_sms"],
+  "results": [
+    { "tool": "shell_exec", "covered": true, "action": "block", "ruleId": "block-shell" },
+    { "tool": "file_read",  "covered": true, "action": "monitor", "ruleId": "monitor-file-reads" },
+    { "tool": "send_sms",   "covered": false, "action": null, "ruleId": null }
+  ]
+}</code></pre>
   </div>
 </div>
 
