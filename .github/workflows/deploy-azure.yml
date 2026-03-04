@@ -7,6 +7,7 @@ on:
       - 'api/**'
       - 'landing/**'
       - 'dashboard/**'
+      - 'docs-site/**'
       - 'packages/**'
       - 'Dockerfile.*'
       - 'nginx-*.conf'
@@ -61,6 +62,7 @@ jobs:
             echo "api=true" >> $GITHUB_OUTPUT
             echo "landing=true" >> $GITHUB_OUTPUT
             echo "dashboard=true" >> $GITHUB_OUTPUT
+            echo "docs=true" >> $GITHUB_OUTPUT
             exit 0
           fi
           CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "all")
@@ -71,16 +73,19 @@ jobs:
           API=false
           LANDING=false
           DASHBOARD=false
+          DOCS=false
           
           echo "$CHANGED" | grep -qE '^(api/|packages/|Dockerfile\.api|package\.json|package-lock)' && API=true
           echo "$CHANGED" | grep -qE '^(landing/|Dockerfile\.landing|nginx-landing)' && LANDING=true
           echo "$CHANGED" | grep -qE '^(dashboard/|Dockerfile\.dashboard|nginx-dashboard)' && DASHBOARD=true
+          echo "$CHANGED" | grep -qE '^(docs-site/|Dockerfile\.docs|nginx-docs)' && DOCS=true
           
           echo "api=$API" >> $GITHUB_OUTPUT
           echo "landing=$LANDING" >> $GITHUB_OUTPUT
           echo "dashboard=$DASHBOARD" >> $GITHUB_OUTPUT
+          echo "docs=$DOCS" >> $GITHUB_OUTPUT
           
-          echo "Deploy: api=$API landing=$LANDING dashboard=$DASHBOARD"
+          echo "Deploy: api=$API landing=$LANDING dashboard=$DASHBOARD docs=$DOCS"
 
       - name: Build & deploy API
         if: steps.changes.outputs.api == 'true'
@@ -122,6 +127,18 @@ jobs:
             --name agentguard-dashboard \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_NAME }}.azurecr.io/agentguard-dashboard:${{ github.sha }}
+
+      - name: Build & deploy Docs
+        if: steps.changes.outputs.docs == 'true'
+        run: |
+          az acr build --registry ${{ env.ACR_NAME }} \
+            --image agentguard-docs:${{ github.sha }} \
+            --image agentguard-docs:latest \
+            --file Dockerfile.docs .
+          az containerapp update \
+            --name agentguard-docs \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/agentguard-docs:${{ github.sha }}
 
       - name: Health check
         if: steps.changes.outputs.api == 'true'
