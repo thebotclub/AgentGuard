@@ -245,16 +245,9 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
   -H "Content-Type: application/json" \
   -d '{"name": "Acme Corp", "email": "security@acme.com"}'</code></pre>
 <p>Response includes your <code>apiKey</code> (format: <code>ag_live_</code> + 32 hex chars). <strong>Store it securely — it's only shown once.</strong></p>
+<p>Your <code>ag_live_*</code> tenant key works directly with <code>/api/v1/evaluate</code> — you can start evaluating immediately without any additional setup.</p>
 
-<h3>2. Register an agent</h3>
-<div class="code-header"><span>curl</span></div>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: ag_live_your_key_here" \
-  -d '{"name": "booking-agent", "policy_scope": ["booking", "read-only"]}'</code></pre>
-<p>Response includes a scoped <code>ag_agent_*</code> key for that agent. Use this key when your agent calls evaluate.</p>
-
-<h3>3. Evaluate an action</h3>
+<h3>2. Evaluate an action</h3>
 <div class="tabs" data-tabgroup="eval">
   <div class="tab active" data-tab="ts">TypeScript</div>
   <div class="tab" data-tab="py">Python</div>
@@ -264,7 +257,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 <pre><code>import { AgentGuard } from '@the-bot-club/agentguard';
 
 const guard = new AgentGuard({
-  apiKey: 'ag_agent_your_agent_key_here',
+  apiKey: 'ag_live_your_key_here',   // your tenant key from signup
   baseUrl: 'https://api.agentguard.tech'
 });
 
@@ -283,7 +276,7 @@ if (decision.result === 'allow') {
 <pre><code>from agentguard import AgentGuard
 
 guard = AgentGuard(
-    api_key="ag_agent_your_agent_key_here",
+    api_key="ag_live_your_key_here",   # your tenant key from signup
     base_url="https://api.agentguard.tech"
 )
 
@@ -311,6 +304,16 @@ else:
 </div>
 
 <p>That's it. Every action your agent takes now goes through AgentGuard's policy engine before execution.</p>
+
+<h3>3. (Optional) Create scoped agent keys</h3>
+<p>For production deployments, you can create scoped <code>ag_agent_*</code> keys that are restricted to <code>evaluate</code> only. This is a best practice — it limits the blast radius if a key is leaked.</p>
+<div class="code-header"><span>curl</span></div>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: ag_live_your_key_here" \
+  -d '{"name": "booking-agent", "policy_scope": ["booking", "read-only"]}'</code></pre>
+<p>The response includes a scoped <code>ag_agent_*</code> key. Agent keys can only call <code>/api/v1/evaluate</code> — they cannot manage webhooks, kill switches, or other tenant resources.</p>
+<div class="callout callout-tip"><strong>Agent keys are optional.</strong> Your <code>ag_live_*</code> tenant key works for all API calls including evaluate. Agent keys are recommended for production multi-agent deployments where you want per-agent audit trails and restricted permissions.</div>
 
 
 <!-- AUTHENTICATION -->
@@ -1069,6 +1072,15 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <h2 id="rate-limits">Rate Limits &amp; Costs</h2>
 <p>Custom rate limits enforce evaluation frequency per tenant or per agent using a sliding window algorithm. Pair rate limits with cost tracking to get full observability over your agent fleet.</p>
+
+<div class="callout callout-info">
+  <strong>Platform-level rate limits:</strong>
+  <ul style="margin-top:8px;margin-bottom:0">
+    <li><strong>10 requests/min</strong> per IP for unauthenticated (demo mode) requests</li>
+    <li><strong>100 requests/min</strong> per IP for authenticated requests (any valid API key)</li>
+  </ul>
+  The custom rate limits below are <em>additional</em> tenant-configured limits on top of the platform defaults.
+</div>
 
 <h3>Rate Limiting</h3>
 <div class="endpoint">
