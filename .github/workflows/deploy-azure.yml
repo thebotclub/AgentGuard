@@ -124,6 +124,7 @@ jobs:
       - name: Health check
         if: steps.changes.outputs.api == 'true'
         run: |
+          set +e
           echo "⏳ Waiting for API to start (cold start may take ~60s)..."
           sleep 60
           API_URL="https://api.agentguard.tech"
