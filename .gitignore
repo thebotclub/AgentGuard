@@ -7,3 +7,11 @@ dist/
 .turbo/
 coverage/
 *.log
+
+# Secrets
+.env
+.env.local
+.env.production
+*.pem
+*.key
+.npmrc

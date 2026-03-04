@@ -5,19 +5,19 @@
 
 ---
 
-## Where We Are Today (v0.6.0)
+## Where We Are Today (v0.7.2)
 
 **Product:** Runtime security platform for AI agents with deployment enforcement.
 
 **Live:**
-- 34 API endpoints, PostgreSQL, bcrypt auth, full Zod validation, RLS
+- 42 API endpoints, PostgreSQL, bcrypt auth, full Zod validation, RLS
 - Dashboard with deployment readiness view
 - TypeScript + Python SDKs
 - GitHub Action for CI/CD gates
 - 7 policy templates
-- 116+ tests passing
+- 66 tests passing (15 suites)
 
-**Not yet:** No paying customers. No design partners. No incorporation. No CLI tool.
+**Not yet:** No paying customers. No design partners. No incorporation.
 
 ---
 
