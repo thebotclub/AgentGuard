@@ -626,4 +626,282 @@ export class AgentGuard {
       checkedAt: string;
     }>;
   }
+
+  // ── Additional SDK methods ───────────────────────────────────────────────
+
+  /**
+   * Verify the audit hash chain integrity for the authenticated tenant.
+   *
+   * Walks every audit event in order and validates that each event's
+   * `previous_hash` and `hash` fields are consistent. Returns `valid: true`
+   * only when the entire chain is intact.
+   *
+   * @returns Verification result with event count and any detected errors
+   *
+   * @example
+   * const result = await client.verifyAuditChain();
+   * if (!result.valid) console.error('Audit chain tampered!', result.errors);
+   */
+  async verifyAuditChain(): Promise<{
+    valid: boolean;
+    eventCount: number;
+    errors?: string[];
+    message: string;
+  }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/audit/verify`, {
+      headers: { 'X-API-Key': this.apiKey },
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{
+      valid: boolean;
+      eventCount: number;
+      errors?: string[];
+      message: string;
+    }>;
+  }
+
+  /**
+   * Check which tools in a list have matching policy rules (coverage check).
+   *
+   * Useful in CI/CD to ensure every tool your agent uses is covered by at
+   * least one explicit policy rule before deploying.
+   *
+   * @param tools  Array of tool names to check
+   * @returns      Coverage report with per-tool decisions and overall coverage %
+   *
+   * @example
+   * const cov = await client.coverageCheck(['file_read', 'http_post', 'llm_query']);
+   * if (cov.coverage < 100) console.warn('Uncovered tools:', cov.uncovered);
+   */
+  async coverageCheck(tools: string[]): Promise<{
+    coverage: number;
+    covered: string[];
+    uncovered: string[];
+    results: Array<{
+      tool: string;
+      decision: string;
+      ruleId: string | null;
+      riskScore: number;
+      reason: string | null;
+    }>;
+  }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/policy/coverage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+      body: JSON.stringify({ tools }),
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{
+      coverage: number;
+      covered: string[];
+      uncovered: string[];
+      results: Array<{
+        tool: string;
+        decision: string;
+        ruleId: string | null;
+        riskScore: number;
+        reason: string | null;
+      }>;
+    }>;
+  }
+
+  /**
+   * Evaluate an MCP tool call against the policy engine.
+   * Alias for `evaluateMcp` — prefer `evaluateMcp` for full option support.
+   *
+   * @param params  MCP evaluation parameters
+   * @returns       Decision object
+   */
+  async mcpEvaluate(params: {
+    toolName: string;
+    arguments?: Record<string, unknown>;
+    sessionId?: string;
+    agentId?: string;
+    actionMapping?: Record<string, string>;
+  }): Promise<{
+    decision: 'allow' | 'block' | 'monitor' | 'require_approval';
+    blocked: boolean;
+    matchedRuleId?: string;
+    riskScore: number;
+    reason?: string;
+    durationMs: number;
+    sessionId: string;
+  }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/mcp/evaluate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{
+      decision: 'allow' | 'block' | 'monitor' | 'require_approval';
+      blocked: boolean;
+      matchedRuleId?: string;
+      riskScore: number;
+      reason?: string;
+      durationMs: number;
+      sessionId: string;
+    }>;
+  }
+
+  /**
+   * Get the MCP proxy configuration for a specific agent.
+   *
+   * @param agentId  The agent ID whose MCP config to retrieve
+   * @returns        MCP configuration for the agent
+   *
+   * @example
+   * const { config } = await client.getMcpConfigForAgent('agt_abc123');
+   */
+  async getMcpConfigForAgent(agentId: string): Promise<unknown> {
+    const res = await fetch(
+      `${this.baseUrl}/api/v1/mcp/config/${encodeURIComponent(agentId)}`,
+      { headers: { 'X-API-Key': this.apiKey } },
+    );
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json();
+  }
+
+  /**
+   * Create or update the MCP proxy configuration for a specific agent.
+   *
+   * @param agentId  The agent ID to configure
+   * @param config   Configuration object (actionMapping, defaultAction, enabled…)
+   * @returns        The saved configuration
+   *
+   * @example
+   * await client.putMcpConfig('agt_abc123', {
+   *   actionMapping: { write_file: 'file:write' },
+   *   defaultAction: 'block',
+   * });
+   */
+  async putMcpConfig(
+    agentId: string,
+    config: {
+      name?: string;
+      upstreamUrl?: string | null;
+      transport?: 'sse' | 'stdio';
+      actionMapping?: Record<string, string>;
+      defaultAction?: 'allow' | 'block';
+      enabled?: boolean;
+    },
+  ): Promise<unknown> {
+    const res = await fetch(
+      `${this.baseUrl}/api/v1/mcp/config/${encodeURIComponent(agentId)}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': this.apiKey,
+        },
+        body: JSON.stringify({ agentId, ...config }),
+      },
+    );
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json();
+  }
+
+  /**
+   * List all pending HITL approval requests for the tenant.
+   *
+   * @returns List of pending approval items
+   *
+   * @example
+   * const { approvals } = await client.listApprovals();
+   * for (const a of approvals) { console.log(a.tool, a.status); }
+   */
+  async listApprovals(): Promise<{
+    approvals: Array<{
+      id: string;
+      agentId: string | null;
+      tool: string;
+      params: unknown;
+      status: 'pending' | 'approved' | 'denied';
+      createdAt: string;
+    }>;
+  }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/approvals`, {
+      headers: { 'X-API-Key': this.apiKey },
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{
+      approvals: Array<{
+        id: string;
+        agentId: string | null;
+        tool: string;
+        params: unknown;
+        status: 'pending' | 'approved' | 'denied';
+        createdAt: string;
+      }>;
+    }>;
+  }
+
+  /**
+   * Approve a pending HITL approval request.
+   * @param id  Approval ID from the evaluate response or listApprovals
+   */
+  async approveRequest(id: string): Promise<{ id: string; status: 'approved'; resolvedAt: string }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/approvals/${encodeURIComponent(id)}/approve`, {
+      method: 'POST',
+      headers: { 'X-API-Key': this.apiKey },
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{ id: string; status: 'approved'; resolvedAt: string }>;
+  }
+
+  /**
+   * Deny a pending HITL approval request.
+   * @param id  Approval ID from the evaluate response or listApprovals
+   */
+  async denyRequest(id: string): Promise<{ id: string; status: 'denied'; resolvedAt: string }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/approvals/${encodeURIComponent(id)}/deny`, {
+      method: 'POST',
+      headers: { 'X-API-Key': this.apiKey },
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{ id: string; status: 'denied'; resolvedAt: string }>;
+  }
+
+  /**
+   * Get the current custom policy rules for the tenant.
+   *
+   * @returns The tenant's policy rules array (or the default policy if none set)
+   */
+  async getPolicy(): Promise<unknown> {
+    const res = await fetch(`${this.baseUrl}/api/v1/policy`, {
+      headers: { 'X-API-Key': this.apiKey },
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json();
+  }
+
+  /**
+   * Replace the tenant's custom policy rules.
+   *
+   * @param rules  Array of policy rule objects
+   * @returns      Confirmation with rule count
+   *
+   * @example
+   * await client.setPolicy([
+   *   { id: 'allow-read', action: 'allow', tool: 'file_read', riskScore: 0 },
+   * ]);
+   */
+  async setPolicy(rules: unknown[]): Promise<unknown> {
+    const res = await fetch(`${this.baseUrl}/api/v1/policy`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+      body: JSON.stringify(rules),
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json();
+  }
 }
