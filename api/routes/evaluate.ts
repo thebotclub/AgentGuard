@@ -17,7 +17,10 @@ import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from '../phase2-routes.js';
 import { DEFAULT_POLICY } from '../lib/policy-engine-setup.js';
-import { getGlobalKillSwitch, getLastHash, storeAuditEvent, fireWebhooksAsync } from './audit.js';
+import { getGlobalKillSwitch, storeAuditEvent, fireWebhooksAsync } from './audit.js';
+import { createPendingApproval } from './approvals.js';
+// getLastHash is no longer called directly — storeAuditEvent is now atomic
+const NOOP_PREV_HASH = '';
 
 export function createEvaluateRoutes(
   db: IDatabase,
@@ -71,7 +74,6 @@ export function createEvaluateRoutes(
 
       // Check global kill switch
       if (ks.active) {
-        const prevHash = await getLastHash(db, tenantId);
         await storeAuditEvent(
           db,
           tenantId,
@@ -82,7 +84,7 @@ export function createEvaluateRoutes(
           1000,
           'Global kill switch active',
           0,
-          prevHash,
+          NOOP_PREV_HASH,
           agentId,
         );
         if (tenantId !== 'demo') {
@@ -110,7 +112,6 @@ export function createEvaluateRoutes(
 
       // Check tenant-level kill switch
       if (req.tenant && req.tenant.kill_switch_active === 1) {
-        const prevHash = await getLastHash(db, tenantId);
         await storeAuditEvent(
           db,
           tenantId,
@@ -121,7 +122,7 @@ export function createEvaluateRoutes(
           1000,
           'Tenant kill switch active',
           0,
-          prevHash,
+          NOOP_PREV_HASH,
           agentId,
         );
         fireWebhooksAsync(db, tenantId, 'killswitch', {
@@ -150,9 +151,8 @@ export function createEvaluateRoutes(
         return res.status(400).json({ error: evalParsed.error.issues[0]!.message });
       }
       const { tool, params } = evalParsed.data;
-      if (tool.length > 200) {
-        return res.status(400).json({ error: 'tool name too long (max 200 chars)' });
-      }
+      // Note: tool length (max 200) and character validation (alphanumeric/_.-:)
+      // are now enforced by the EvaluateRequest Zod schema.
 
       const engine = new PolicyEngine();
       engine.registerDocument(DEFAULT_POLICY);
@@ -184,7 +184,6 @@ export function createEvaluateRoutes(
       }
       const ms = Math.round((performance.now() - start) * 100) / 100;
 
-      const prevHash = await getLastHash(db, tenantId);
       await storeAuditEvent(
         db,
         tenantId,
@@ -195,7 +194,7 @@ export function createEvaluateRoutes(
         decision.riskScore,
         decision.reason ?? null,
         ms,
-        prevHash,
+        NOOP_PREV_HASH,
         agentId,
       );
 
@@ -208,7 +207,38 @@ export function createEvaluateRoutes(
         }
       }
 
-      // Fire webhooks async for block/killswitch events
+      // ── HITL: auto-create pending approval record ──────────────────────────
+      let approvalId: string | undefined;
+      if (decision.result === 'require_approval' && tenantId !== 'demo') {
+        try {
+          approvalId = await createPendingApproval(
+            db,
+            tenantId,
+            agentId,
+            tool,
+            typeof params === 'object' && params !== null
+              ? (params as Record<string, unknown>)
+              : {},
+          );
+        } catch (e) {
+          console.error('[evaluate] failed to create approval record:', e);
+        }
+      }
+
+      // ── P1: warn when no rule matched and result is monitor (fail-open) ────
+      const warnings: string[] = [];
+      if (
+        decision.result === 'monitor' &&
+        (decision.matchedRuleId === null ||
+          decision.matchedRuleId === undefined ||
+          decision.matchedRuleId === '')
+      ) {
+        warnings.push(
+          `No policy rules match tool '${tool}'. This tool is in fail-open monitor mode. Consider adding explicit rules.`,
+        );
+      }
+
+      // Fire webhooks async for block/require_approval events
       if (
         (decision.result === 'block' || decision.result === 'require_approval') &&
         tenantId !== 'demo'
@@ -227,6 +257,7 @@ export function createEvaluateRoutes(
               rule_matched: decision.matchedRuleId ?? null,
               risk_score: decision.riskScore,
               reason: decision.reason ?? null,
+              ...(approvalId ? { approval_id: approvalId } : {}),
             },
             timestamp: new Date().toISOString(),
           },
@@ -240,6 +271,8 @@ export function createEvaluateRoutes(
         reason: decision.reason,
         durationMs: ms,
         ...(agentId ? { agentId } : {}),
+        ...(approvalId ? { approvalId } : {}),
+        ...(warnings.length > 0 ? { warnings } : {}),
       });
     },
   );

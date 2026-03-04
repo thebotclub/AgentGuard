@@ -16,6 +16,7 @@ import type {
   AuditEventRow,
   WebhookRow,
   AgentRow,
+  ApprovalRow,
 } from './db-interface.js';
 import { randomUUID } from 'crypto';
 import crypto from 'crypto';
@@ -157,6 +158,26 @@ const SCHEMA_SQL = `
     UNIQUE(tenant_id, name)
   );
 
+  -- HITL Approvals
+  CREATE TABLE IF NOT EXISTS approvals (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL REFERENCES tenants(id),
+    agent_id TEXT,
+    tool TEXT NOT NULL,
+    params_json TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','denied')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    resolved_at TIMESTAMPTZ,
+    resolved_by TEXT
+  );
+
+  -- Custom policies (per-tenant policy overrides)
+  CREATE TABLE IF NOT EXISTS tenant_policies (
+    tenant_id TEXT PRIMARY KEY REFERENCES tenants(id),
+    policy_json TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
   -- Indexes
   CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_events(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_audit_session ON audit_events(session_id);
@@ -167,6 +188,7 @@ const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS idx_rate_limits_tenant ON rate_limits(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_cost_events_tenant ON cost_events(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_mcp_proxy_tenant ON mcp_proxy_configs(tenant_id);
+  CREATE INDEX IF NOT EXISTS idx_approvals_tenant ON approvals(tenant_id, status);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -457,6 +479,61 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
     },
 
     // ── Audit Events ──────────────────────────────────────────────────────────
+    async insertAuditEventSafe(
+      tenantId: string | null,
+      sessionId: string | null,
+      tool: string,
+      action: string | null,
+      result: string,
+      ruleId: string | null,
+      riskScore: number | null,
+      reason: string | null,
+      durationMs: number | null,
+      createdAt: string,
+      agentId: string | null,
+    ): Promise<string> {
+      // Use advisory lock keyed on a hash of the tenant_id to serialize writes
+      // for the same tenant. This prevents concurrent requests from reading the
+      // same previous_hash and producing a broken chain.
+      const GENESIS_HASH = '0'.repeat(64);
+      const lockKey = tenantId
+        ? parseInt(
+            crypto.createHash('sha256').update(tenantId).digest('hex').slice(0, 8),
+            16,
+          )
+        : 0;
+
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        // Acquire tenant-scoped advisory lock (session-level within transaction)
+        await client.query('SELECT pg_advisory_xact_lock($1)', [lockKey]);
+        // Now safely read last hash
+        const lastRow = await client.query<{ hash: string }>(
+          'SELECT hash FROM audit_events WHERE tenant_id IS NOT DISTINCT FROM $1 ORDER BY id DESC LIMIT 1',
+          [tenantId]
+        );
+        const prevHash = lastRow.rows[0]?.hash ?? GENESIS_HASH;
+        const eventData = `${tool}|${result}|${createdAt}`;
+        const newHash = crypto.createHash('sha256').update(prevHash + '|' + eventData).digest('hex');
+        await client.query(
+          `INSERT INTO audit_events
+           (tenant_id, session_id, tool, action, result, rule_id, risk_score, reason,
+            duration_ms, previous_hash, hash, created_at, agent_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+          [tenantId, sessionId, tool, action, result, ruleId, riskScore, reason,
+           durationMs, prevHash, newHash, createdAt, agentId]
+        );
+        await client.query('COMMIT');
+        return newHash;
+      } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+      } finally {
+        client.release();
+      }
+    },
+
     async insertAuditEvent(
       tenantId: string | null,
       sessionId: string | null,
@@ -695,6 +772,123 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
     async countActiveAgents(): Promise<number> {
       const row = await get<{ n: string }>('SELECT COUNT(*) as n FROM agents WHERE active = 1');
       return Number(row?.n ?? 0);
+    },
+
+    // ── Approvals (HITL) ──────────────────────────────────────────────────────
+    async createApproval(
+      id: string,
+      tenantId: string,
+      agentId: string | null,
+      tool: string,
+      paramsJson: string | null,
+    ): Promise<ApprovalRow> {
+      const result = await pool.query(
+        `INSERT INTO approvals (id, tenant_id, agent_id, tool, params_json)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+        [id, tenantId, agentId, tool, paramsJson]
+      );
+      const r = result.rows[0] as Record<string, unknown>;
+      return {
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        agent_id: (r['agent_id'] as string | null) ?? null,
+        tool: r['tool'] as string,
+        params_json: (r['params_json'] as string | null) ?? null,
+        status: r['status'] as 'pending' | 'approved' | 'denied',
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+        resolved_at: r['resolved_at']
+          ? (r['resolved_at'] instanceof Date
+            ? (r['resolved_at'] as Date).toISOString()
+            : String(r['resolved_at']))
+          : null,
+        resolved_by: (r['resolved_by'] as string | null) ?? null,
+      };
+    },
+
+    async getApproval(id: string, tenantId: string): Promise<ApprovalRow | undefined> {
+      const result = await pool.query(
+        'SELECT * FROM approvals WHERE id = $1 AND tenant_id = $2',
+        [id, tenantId]
+      );
+      if (!result.rows[0]) return undefined;
+      const r = result.rows[0] as Record<string, unknown>;
+      return {
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        agent_id: (r['agent_id'] as string | null) ?? null,
+        tool: r['tool'] as string,
+        params_json: (r['params_json'] as string | null) ?? null,
+        status: r['status'] as 'pending' | 'approved' | 'denied',
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+        resolved_at: r['resolved_at']
+          ? (r['resolved_at'] instanceof Date
+            ? (r['resolved_at'] as Date).toISOString()
+            : String(r['resolved_at']))
+          : null,
+        resolved_by: (r['resolved_by'] as string | null) ?? null,
+      };
+    },
+
+    async listPendingApprovals(tenantId: string): Promise<ApprovalRow[]> {
+      const result = await pool.query(
+        "SELECT * FROM approvals WHERE tenant_id = $1 AND status = 'pending' ORDER BY created_at DESC",
+        [tenantId]
+      );
+      return result.rows.map((r: Record<string, unknown>) => ({
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        agent_id: (r['agent_id'] as string | null) ?? null,
+        tool: r['tool'] as string,
+        params_json: (r['params_json'] as string | null) ?? null,
+        status: r['status'] as 'pending' | 'approved' | 'denied',
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+        resolved_at: r['resolved_at']
+          ? (r['resolved_at'] instanceof Date
+            ? (r['resolved_at'] as Date).toISOString()
+            : String(r['resolved_at']))
+          : null,
+        resolved_by: (r['resolved_by'] as string | null) ?? null,
+      }));
+    },
+
+    async resolveApproval(
+      id: string,
+      tenantId: string,
+      status: 'approved' | 'denied',
+      resolvedBy: string,
+    ): Promise<void> {
+      await pool.query(
+        `UPDATE approvals
+         SET status = $1, resolved_at = NOW(), resolved_by = $2
+         WHERE id = $3 AND tenant_id = $4`,
+        [status, resolvedBy, id, tenantId]
+      );
+    },
+
+    // ── Policy ────────────────────────────────────────────────────────────────
+    async getCustomPolicy(tenantId: string): Promise<string | null> {
+      const result = await pool.query(
+        'SELECT policy_json FROM tenant_policies WHERE tenant_id = $1',
+        [tenantId]
+      );
+      return (result.rows[0] as { policy_json: string } | undefined)?.policy_json ?? null;
+    },
+
+    async setCustomPolicy(tenantId: string, policyJson: string): Promise<void> {
+      await pool.query(
+        `INSERT INTO tenant_policies (tenant_id, policy_json, updated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (tenant_id) DO UPDATE
+           SET policy_json = EXCLUDED.policy_json, updated_at = NOW()`,
+        [tenantId, policyJson]
+      );
     },
   };
 

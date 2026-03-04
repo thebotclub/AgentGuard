@@ -18,7 +18,9 @@ import type {
   AuditEventRow,
   WebhookRow,
   AgentRow,
+  ApprovalRow,
 } from './db-interface.js';
+import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
 // ── Key hashing helpers ────────────────────────────────────────────────────
 
@@ -150,6 +152,28 @@ const SCHEMA_SQL = `
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(tenant_id, name)
   );
+
+  -- HITL Approvals
+  CREATE TABLE IF NOT EXISTS approvals (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL REFERENCES tenants(id),
+    agent_id TEXT,
+    tool TEXT NOT NULL,
+    params_json TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','denied')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    resolved_at TEXT,
+    resolved_by TEXT
+  );
+
+  -- Custom policies (per-tenant policy overrides)
+  CREATE TABLE IF NOT EXISTS tenant_policies (
+    tenant_id TEXT PRIMARY KEY REFERENCES tenants(id),
+    policy_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_approvals_tenant ON approvals(tenant_id, status);
 
   CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_events(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_audit_session ON audit_events(session_id);
@@ -320,6 +344,27 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         CREATE INDEX IF NOT EXISTS idx_mcp_audit_session ON mcp_audit_events(session_id);
       `);
 
+      // Migration: approvals table
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS approvals (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL,
+          agent_id TEXT,
+          tool TEXT NOT NULL,
+          params_json TEXT,
+          status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','denied')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          resolved_at TEXT,
+          resolved_by TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_approvals_tenant ON approvals(tenant_id, status);
+        CREATE TABLE IF NOT EXISTS tenant_policies (
+          tenant_id TEXT PRIMARY KEY,
+          policy_json TEXT NOT NULL,
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `);
+
       console.log('[db] SQLite schema ready');
     },
 
@@ -387,6 +432,43 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
     },
 
     // ── Audit Events ──────────────────────────────────────────────────────────
+    async insertAuditEventSafe(
+      tenantId: string | null,
+      sessionId: string | null,
+      tool: string,
+      action: string | null,
+      result: string,
+      ruleId: string | null,
+      riskScore: number | null,
+      reason: string | null,
+      durationMs: number | null,
+      createdAt: string,
+      agentId: string | null,
+    ): Promise<string> {
+      // SQLite with better-sqlite3 is synchronous — wrap in exclusive transaction
+      // to guarantee atomic read-last-hash + insert (already serialized by the
+      // event loop, but the transaction makes it explicit and safe).
+      const insertTx = db.transaction(() => {
+        const lastRow = db.prepare(
+          'SELECT hash FROM audit_events WHERE tenant_id IS ? ORDER BY id DESC LIMIT 1'
+        ).get(tenantId) as { hash: string } | undefined;
+        const prevHash = lastRow?.hash ?? GENESIS_HASH;
+        const eventData = `${tool}|${result}|${createdAt}`;
+        const newHash = crypto.createHash('sha256').update(prevHash + '|' + eventData).digest('hex');
+        db.prepare(
+          `INSERT INTO audit_events
+           (tenant_id, session_id, tool, action, result, rule_id, risk_score, reason,
+            duration_ms, previous_hash, hash, created_at, agent_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+          tenantId, sessionId, tool, action, result, ruleId, riskScore, reason,
+          durationMs, prevHash, newHash, createdAt, agentId
+        );
+        return newHash;
+      });
+      return insertTx() as string;
+    },
+
     async insertAuditEvent(
       tenantId: string | null,
       sessionId: string | null,
@@ -571,6 +653,65 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
 
     async deactivateAgent(id: string, tenantId: string): Promise<void> {
       db.prepare('UPDATE agents SET active = 0 WHERE id = ? AND tenant_id = ?').run(id, tenantId);
+    },
+
+    // ── Approvals (HITL) ──────────────────────────────────────────────────────
+    async createApproval(
+      id: string,
+      tenantId: string,
+      agentId: string | null,
+      tool: string,
+      paramsJson: string | null,
+    ): Promise<ApprovalRow> {
+      const row = db.prepare<[string, string, string | null, string, string | null]>(
+        `INSERT INTO approvals (id, tenant_id, agent_id, tool, params_json)
+         VALUES (?, ?, ?, ?, ?)
+         RETURNING *`
+      ).get(id, tenantId, agentId, tool, paramsJson) as ApprovalRow;
+      return row;
+    },
+
+    async getApproval(id: string, tenantId: string): Promise<ApprovalRow | undefined> {
+      return getSync<ApprovalRow>(
+        'SELECT * FROM approvals WHERE id = ? AND tenant_id = ?',
+        [id, tenantId]
+      );
+    },
+
+    async listPendingApprovals(tenantId: string): Promise<ApprovalRow[]> {
+      return allSync<ApprovalRow>(
+        "SELECT * FROM approvals WHERE tenant_id = ? AND status = 'pending' ORDER BY created_at DESC",
+        [tenantId]
+      );
+    },
+
+    async resolveApproval(
+      id: string,
+      tenantId: string,
+      status: 'approved' | 'denied',
+      resolvedBy: string,
+    ): Promise<void> {
+      db.prepare(
+        `UPDATE approvals SET status = ?, resolved_at = datetime('now'), resolved_by = ?
+         WHERE id = ? AND tenant_id = ?`
+      ).run(status, resolvedBy, id, tenantId);
+    },
+
+    // ── Policy ────────────────────────────────────────────────────────────────
+    async getCustomPolicy(tenantId: string): Promise<string | null> {
+      const row = getSync<{ policy_json: string }>(
+        'SELECT policy_json FROM tenant_policies WHERE tenant_id = ?',
+        [tenantId]
+      );
+      return row?.policy_json ?? null;
+    },
+
+    async setCustomPolicy(tenantId: string, policyJson: string): Promise<void> {
+      db.prepare(
+        `INSERT INTO tenant_policies (tenant_id, policy_json, updated_at)
+         VALUES (?, ?, datetime('now'))
+         ON CONFLICT(tenant_id) DO UPDATE SET policy_json = excluded.policy_json, updated_at = excluded.updated_at`
+      ).run(tenantId, policyJson);
     },
 
     // ── Health Check ──────────────────────────────────────────────────────────

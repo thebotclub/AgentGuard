@@ -74,14 +74,16 @@ export async function storeAuditEvent(
   riskScore: number,
   reason: string | null,
   durationMs: number,
-  prevHash: string,
+  // prevHash is now ignored — the adapter reads it atomically inside a lock
+  _prevHash: string,
   agentId?: string | null,
 ): Promise<string> {
   const createdAt = new Date().toISOString();
-  const eventData = `${tool}|${result}|${createdAt}`;
-  const hash = makeHash(eventData, prevHash);
-  await db.insertAuditEvent(
-    tenantId === 'demo' ? null : tenantId,
+  const effectiveTenantId = tenantId === 'demo' ? null : tenantId;
+  // insertAuditEventSafe atomically reads the last hash and inserts in one
+  // serialized operation, preventing hash-chain corruption under concurrency.
+  return db.insertAuditEventSafe(
+    effectiveTenantId,
     sessionId,
     tool,
     null,
@@ -90,12 +92,9 @@ export async function storeAuditEvent(
     riskScore,
     reason ?? null,
     durationMs,
-    prevHash,
-    hash,
     createdAt,
     agentId ?? null,
   );
-  return hash;
 }
 
 export async function deliverWebhook(

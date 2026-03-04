@@ -116,6 +116,18 @@ export interface McpConfigRow {
   created_at: string;
 }
 
+export interface ApprovalRow {
+  id: string;
+  tenant_id: string;
+  agent_id: string | null;
+  tool: string;
+  params_json: string | null;
+  status: 'pending' | 'approved' | 'denied';
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+}
+
 // ── Count/Aggregate helpers ────────────────────────────────────────────────
 
 export interface CountRow {
@@ -160,6 +172,25 @@ export interface IDatabase {
   touchApiKey(key: string): Promise<void>;
 
   // ── Audit Events ──────────────────────────────────────────────────────────
+  /**
+   * Atomically reads the last hash and inserts a new audit event in a
+   * serialized manner to prevent hash chain corruption under concurrent writes.
+   * Returns the new hash.
+   */
+  insertAuditEventSafe(
+    tenantId: string | null,
+    sessionId: string | null,
+    tool: string,
+    action: string | null,
+    result: string,
+    ruleId: string | null,
+    riskScore: number | null,
+    reason: string | null,
+    durationMs: number | null,
+    createdAt: string,
+    agentId: string | null,
+  ): Promise<string>;
+
   insertAuditEvent(
     tenantId: string | null,
     sessionId: string | null,
@@ -218,6 +249,27 @@ export interface IDatabase {
   getAgentByKey(apiKey: string): Promise<AgentRow | undefined>;
   getAgentById(id: string, tenantId: string): Promise<AgentRow | undefined>;
   deactivateAgent(id: string, tenantId: string): Promise<void>;
+
+  // ── Approvals (HITL) ──────────────────────────────────────────────────────
+  createApproval(
+    id: string,
+    tenantId: string,
+    agentId: string | null,
+    tool: string,
+    paramsJson: string | null,
+  ): Promise<ApprovalRow>;
+  getApproval(id: string, tenantId: string): Promise<ApprovalRow | undefined>;
+  listPendingApprovals(tenantId: string): Promise<ApprovalRow[]>;
+  resolveApproval(
+    id: string,
+    tenantId: string,
+    status: 'approved' | 'denied',
+    resolvedBy: string,
+  ): Promise<void>;
+
+  // ── Policy ────────────────────────────────────────────────────────────────
+  getCustomPolicy(tenantId: string): Promise<string | null>;
+  setCustomPolicy(tenantId: string, policyJson: string): Promise<void>;
 
   // ── Health Check ──────────────────────────────────────────────────────────
   ping(): Promise<boolean>;
