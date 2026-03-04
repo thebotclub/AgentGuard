@@ -56,7 +56,7 @@ export const DEFAULT_POLICY: PolicyDocument = {
   name: 'AgentGuard Demo Policy',
   description: 'Interactive demo policy for the AgentGuard playground',
   version: '1.0.0',
-  default: 'monitor',
+  default: 'block',
   rules: [
     {
       id: 'block-external-http',
