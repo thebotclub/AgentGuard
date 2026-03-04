@@ -10,7 +10,12 @@ import { z } from 'zod';
 // ── POST /api/v1/evaluate ─────────────────────────────────────────────────
 export const EvaluateRequestSchema = z.object({
   tool: z.string({ error: 'tool is required and must be a string' })
-    .min(1, 'tool is required and must be a string'),
+    .min(1, 'tool is required and must be a string')
+    .max(200, 'tool name too long (max 200 chars)')
+    .regex(
+      /^[a-zA-Z0-9_.\-:]+$/,
+      'tool name may only contain letters, digits, underscore, hyphen, dot, or colon',
+    ),
   params: z.record(z.string(), z.unknown()).optional().default({}),
   agentId: z.string().optional(),
   sessionId: z.string().optional(),

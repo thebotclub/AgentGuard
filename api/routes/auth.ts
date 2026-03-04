@@ -43,6 +43,16 @@ export function createAuthRoutes(
 
   // ── POST /api/v1/signup ───────────────────────────────────────────────────
   router.post('/api/v1/signup', async (req: Request, res: Response) => {
+    // P0 security: agent keys must never be able to spawn new tenant accounts.
+    // Signup is a public endpoint but if a key is supplied it must not be an
+    // agent-scoped key (privilege escalation guard).
+    const suppliedKey = req.headers['x-api-key'] as string | undefined;
+    if (suppliedKey && suppliedKey.startsWith('ag_agent_')) {
+      return res.status(403).json({
+        error: 'Agent keys cannot create tenant accounts. Use your tenant API key or no key.',
+      });
+    }
+
     const ip =
       (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
       req.socket.remoteAddress ||
