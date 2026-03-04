@@ -357,7 +357,7 @@ await guard.createAgent({ name, policy_scope });
 await guard.listAgents();
 await guard.deleteAgent(agentId);
 
-// Deployment enforcement (v0.6.0)
+// Deployment enforcement (v0.7.2)
 await guard.validateAgent(agentId, { declaredTools: ['file_read', 'http_post'] });
 await guard.getAgentReadiness(agentId);
 await guard.certifyAgent(agentId);
@@ -415,7 +415,7 @@ guard.create_agent(name="my-agent", policy_scope=["read-only"])
 guard.list_agents()
 guard.delete_agent(agent_id)
 
-# Deployment enforcement (v0.6.0)
+# Deployment enforcement (v0.7.2)
 guard.validate_agent(agent_id, declared_tools=["file_read", "http_post"])
 guard.get_agent_readiness(agent_id)
 guard.certify_agent(agent_id)
@@ -690,7 +690,7 @@ guard.get_dashboard_stats()</code></pre>
 <!-- DEPLOYMENT ENFORCEMENT -->
 <!-- ────────────────────────────────────────────────── -->
 <div class="featured-section">
-<h2 id="deployment-enforcement" style="margin-top:0">🛡️ Deployment Enforcement <span class="badge-new">NEW in v0.6.0</span></h2>
+<h2 id="deployment-enforcement" style="margin-top:0">🛡️ Deployment Enforcement <span class="badge-new">NEW in v0.7.2</span></h2>
 <p style="color:var(--text)">AgentGuard's deployment enforcement layer blocks uncertified agents from reaching production. Integrate into CI/CD pipelines and GitHub Actions to gate every deployment on policy coverage.</p>
 
 <p><strong>The enforcement workflow:</strong></p>
