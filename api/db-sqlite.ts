@@ -420,7 +420,7 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
     },
 
     async deactivateApiKeyBySha256(sha256: string): Promise<void> {
-      db.prepare("UPDATE api_keys SET active = 0 WHERE key_sha256 = ?").run(sha256);
+      db.prepare("UPDATE api_keys SET is_active = 0 WHERE key_sha256 = ?").run(sha256);
     },
 
     async updateAuditEventHashes(eventId: number, previousHash: string, hash: string): Promise<void> {

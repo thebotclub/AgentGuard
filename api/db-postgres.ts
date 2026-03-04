@@ -464,7 +464,7 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
     },
 
     async deactivateApiKeyBySha256(sha256: string): Promise<void> {
-      await pool.query('UPDATE api_keys SET active = 0 WHERE key_sha256 = $1', [sha256]);
+      await pool.query('UPDATE api_keys SET is_active = 0 WHERE key_sha256 = $1', [sha256]);
     },
 
     async updateAuditEventHashes(eventId: number, previousHash: string, hash: string): Promise<void> {
