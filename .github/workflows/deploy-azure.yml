@@ -94,8 +94,10 @@ jobs:
           az containerapp update \
             --name agentguard-api \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ env.ACR_NAME }}.azurecr.io/agentguard-api:${{ github.sha }}
-          echo "✅ API deployed: ${{ github.sha }}"
+            --image ${{ env.ACR_NAME }}.azurecr.io/agentguard-api:${{ github.sha }} \
+            --min-replicas 1 \
+            --max-replicas 3
+          echo "✅ API deployed (min 1 replica — no cold start): ${{ github.sha }}"
 
       - name: Build & deploy Landing
         if: steps.changes.outputs.landing == 'true'
