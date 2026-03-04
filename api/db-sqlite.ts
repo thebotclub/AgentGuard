@@ -419,6 +419,10 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       ).run(key, tenantId, name, keyHash, keyPrefix, keySha256);
     },
 
+    async deactivateApiKeyBySha256(sha256: string): Promise<void> {
+      db.prepare("UPDATE api_keys SET active = 0 WHERE key_sha256 = ?").run(sha256);
+    },
+
     async touchApiKey(key: string): Promise<void> {
       // Touch by sha256 (works for both hashed and legacy rows)
       const sha256 = sha256Hex(key);

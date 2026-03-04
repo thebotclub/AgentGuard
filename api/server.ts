@@ -36,6 +36,11 @@ loadTemplates();
 // ── Express App ────────────────────────────────────────────────────────────
 const app = express();
 
+// ── Trust proxy — only trust Cloudflare and Azure Container Apps ──────────
+// This ensures X-Forwarded-For cannot be spoofed by end users.
+// Cloudflare always sets the real client IP; Azure load balancer adds one hop.
+app.set('trust proxy', 2); // trust up to 2 proxy hops (Cloudflare + Azure LB)
+
 // ── CORS — restrict to known origins ──────────────────────────────────────
 const ALLOWED_ORIGINS = [
   'https://agentguard.tech',
@@ -117,7 +122,7 @@ async function main(): Promise<void> {
     const ks = await getGlobalKillSwitch(db);
     res.json({
       name: 'AgentGuard Policy Engine API',
-      version: '0.7.0',
+      version: '0.7.2',
       status: 'online',
       killSwitch: { active: ks.active, activatedAt: ks.at },
       endpoints: {
@@ -209,7 +214,7 @@ async function main(): Promise<void> {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.status(dbOk ? 200 : 503).json({
       status: dbOk ? 'ok' : 'degraded',
-      version: '0.7.0',
+      version: '0.7.2',
     });
   });
 
@@ -231,7 +236,7 @@ async function main(): Promise<void> {
     res.status(dbOk ? 200 : 503).json({
       status: dbOk ? 'ok' : 'degraded',
       engine: 'agentguard',
-      version: '0.7.0',
+      version: '0.7.2',
       uptime: Math.floor(process.uptime()),
       killSwitch: ks.active,
       db: dbOk ? db.type : 'error',

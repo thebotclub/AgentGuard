@@ -170,6 +170,7 @@ export interface IDatabase {
   getApiKeyBySha256(sha256: string): Promise<ApiKeyRow | undefined>;
   createApiKey(key: string, tenantId: string, name: string): Promise<void>;
   touchApiKey(key: string): Promise<void>;
+  deactivateApiKeyBySha256(sha256: string): Promise<void>;
 
   // ── Audit Events ──────────────────────────────────────────────────────────
   /**

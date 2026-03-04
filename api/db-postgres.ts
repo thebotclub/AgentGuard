@@ -463,6 +463,10 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       );
     },
 
+    async deactivateApiKeyBySha256(sha256: string): Promise<void> {
+      await pool.query('UPDATE api_keys SET active = 0 WHERE key_sha256 = $1', [sha256]);
+    },
+
     async touchApiKey(key: string): Promise<void> {
       const sha256 = sha256Hex(key);
       const result = await pool.query(

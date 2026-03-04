@@ -105,6 +105,43 @@ export function createAuthRoutes(
     });
   });
 
+  // ── POST /api/v1/keys/rotate ────────────────────────────────────────────
+  // Generates a new tenant API key and invalidates the old one.
+  router.post(
+    '/api/v1/keys/rotate',
+    auth.requireTenantAuth,
+    async (req: Request, res: Response) => {
+      const tenantId = req.tenantId!;
+      const oldKeyHeader = req.headers['x-api-key'] as string;
+
+      try {
+        // Generate new key
+        const newKey = generateApiKey();
+        await db.createApiKey(newKey, tenantId, 'rotated');
+
+        // Deactivate the old key
+        const sha256 = crypto.createHash('sha256').update(oldKeyHeader).digest('hex');
+        await db.deactivateApiKeyBySha256(sha256);
+
+        // Audit trail
+        await storeAuditEvent(
+          db, tenantId, null, 'key_rotate', 'allow', null, 0,
+          'API key rotated — old key invalidated', 0, '', null,
+        );
+
+        console.log(`[keys/rotate] tenant ${tenantId}: key rotated`);
+
+        res.json({
+          apiKey: newKey,
+          message: 'New API key generated. Your previous key has been invalidated. Store this key securely — it will not be shown again.',
+        });
+      } catch (e: unknown) {
+        console.error('[keys/rotate] error:', e instanceof Error ? e.message : e);
+        res.status(500).json({ error: 'Failed to rotate key' });
+      }
+    },
+  );
+
   // ── GET /api/v1/killswitch ────────────────────────────────────────────────
   router.get('/api/v1/killswitch', async (req: Request, res: Response) => {
     const ks = await getGlobalKillSwitch(db);
