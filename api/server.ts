@@ -26,6 +26,8 @@ import { createAgentRoutes } from './routes/agents.js';
 import { createWebhookRoutes } from './routes/webhooks.js';
 import { createAuthRoutes } from './routes/auth.js';
 import { createPlaygroundRoutes } from './routes/playground.js';
+import { createApprovalRoutes } from './routes/approvals.js';
+import { createPolicyRoutes } from './routes/policy.js';
 import type { IDatabase } from './db-interface.js';
 
 // ── Load Templates ─────────────────────────────────────────────────────────
@@ -246,6 +248,8 @@ async function main(): Promise<void> {
   app.use(createAgentRoutes(db, auth));
   app.use(createWebhookRoutes(db, auth));
   app.use(createPlaygroundRoutes(db, auth));
+  app.use(createApprovalRoutes(db, auth));
+  app.use(createPolicyRoutes(db, auth));
 
   // ── Already-extracted route modules ───────────────────────────────────
   app.use(createPhase2Routes(db));
@@ -328,7 +332,7 @@ async function main(): Promise<void> {
       `   ${DEFAULT_POLICY.rules.length} rules loaded | default: ${DEFAULT_POLICY.default}`,
     );
     console.log(`   CORS: ${ALLOWED_ORIGINS.join(', ')}, localhost:*`);
-    console.log(`   Rate limit: 100 req/min per IP`);
+    console.log(`   Rate limit: 10 req/min (unauthenticated) | 100 req/min (authenticated) per IP`);
     console.log(`   DB: ${db.type} | ${process.env['AG_DB_PATH'] || 'default path'}`);
     console.log(
       `   Global kill switch: ${ks.active ? 'ACTIVE ⚠️' : 'inactive'}`,
