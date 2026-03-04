@@ -63,9 +63,11 @@ export function createAgentRoutes(
         });
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
-        if (msg.includes('UNIQUE')) {
+        // SQLite: "UNIQUE constraint failed"
+        // PostgreSQL: "duplicate key value violates unique constraint"
+        if (msg.includes('UNIQUE') || msg.includes('duplicate key')) {
           return res.status(409).json({
-            error: 'An agent with this name already exists for your tenant',
+            error: 'An agent with this name already exists',
           });
         }
         console.error('[agents] insert error:', msg);
