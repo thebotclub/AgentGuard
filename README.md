@@ -81,7 +81,7 @@ See the [full documentation](https://docs.agentguard.tech) for quickstart guides
 
 ```yaml
 - name: AgentGuard Policy Check
-  uses: 0nebot/agentguard-action@v1
+  uses: AgentGuard-tech/agentguard-action@v1
   with:
     api-key: ${{ secrets.AGENTGUARD_API_KEY }}
     policy: production
@@ -107,7 +107,7 @@ See the [full documentation](https://docs.agentguard.tech) for quickstart guides
 
 ```bash
 # Clone
-git clone https://github.com/0nebot/agentguard.git
+git clone https://github.com/AgentGuard-tech/agentguard.git
 cd agentguard
 
 # Install & run
