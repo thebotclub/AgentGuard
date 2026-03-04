@@ -38,7 +38,7 @@ The whole thing is 34 API endpoints running on Express + PostgreSQL. Free to use
 Live: https://agentguard.tech
 Docs: https://docs.agentguard.tech
 Dashboard: https://app.agentguard.tech
-GitHub: https://github.com/onebot/agentguard
+GitHub: https://github.com/0nebot/agentguard
 
 ---
 
