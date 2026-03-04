@@ -225,5 +225,46 @@ export function createAuditRoutes(
     },
   );
 
+  // ── POST /api/v1/audit/repair ─────────────────────────────────────────────
+  // Admin-only: recalculates the hash chain for the authenticated tenant.
+  router.post(
+    '/api/v1/audit/repair',
+    auth.requireTenantAuth,
+    async (req: Request, res: Response) => {
+      const tenantId = req.tenantId!;
+      try {
+        const events = await db.getAllAuditEvents(tenantId);
+        if (events.length === 0) {
+          return res.json({ repaired: 0, total: 0, message: 'No audit events found' });
+        }
+
+        let prevHash = GENESIS_HASH;
+        let repaired = 0;
+
+        for (const event of events) {
+          const eventData = `${event.tool}|${event.result}|${event.created_at}`;
+          const expectedHash = makeHash(eventData, prevHash);
+
+          if (event.previous_hash !== prevHash || event.hash !== expectedHash) {
+            await db.updateAuditEventHashes(event.id, prevHash, expectedHash);
+            repaired++;
+          }
+          prevHash = expectedHash;
+        }
+
+        res.json({
+          repaired,
+          total: events.length,
+          message: repaired > 0
+            ? `Repaired ${repaired} of ${events.length} events`
+            : `Chain already intact — ${events.length} events verified`,
+        });
+      } catch (e) {
+        console.error('[audit/repair] error:', e);
+        res.status(500).json({ error: 'Failed to repair audit chain' });
+      }
+    },
+  );
+
   return router;
 }

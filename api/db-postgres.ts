@@ -467,6 +467,10 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       await pool.query('UPDATE api_keys SET active = 0 WHERE key_sha256 = $1', [sha256]);
     },
 
+    async updateAuditEventHashes(eventId: number, previousHash: string, hash: string): Promise<void> {
+      await pool.query('UPDATE audit_events SET previous_hash = $1, hash = $2 WHERE id = $3', [previousHash, hash, eventId]);
+    },
+
     async touchApiKey(key: string): Promise<void> {
       const sha256 = sha256Hex(key);
       const result = await pool.query(
