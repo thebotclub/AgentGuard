@@ -1,6 +1,6 @@
 {
   "name": "@the-bot-club/agentguard",
-  "version": "0.7.0",
+  "version": "0.7.2",
   "license": "MIT",
   "description": "AgentGuard SDK — policy engine, audit trail, kill switch, and LangChain/OpenAI integrations",
   "type": "module",
