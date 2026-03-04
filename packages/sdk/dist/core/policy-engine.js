@@ -151,7 +151,9 @@ export class PolicyEngine {
             reason =
                 result === 'block'
                     ? 'No matching rule — default action is block (fail-closed)'
-                    : 'No matching rule — default action is allow (fail-open)';
+                    : result === 'monitor'
+                        ? 'No matching rule — default action is monitor (unknown tool flagged for review)'
+                        : 'No matching rule — default action is allow (fail-open)';
         }
         else {
             result = terminalRule.action;
@@ -516,13 +518,12 @@ export function evalParamConditions(conditions, params) {
         else {
             const value = params[field];
             if (value === undefined) {
-                if ('exists' in constraint && constraint.exists === true)
-                    return false;
-                if ('is_null' in constraint && constraint.is_null === false)
-                    return false;
-                // Field absent but no exists constraint — treat as non-matching only if we have other constraints
-                // Per POLICY_ENGINE.md: absent field does not cause rule to fail (continue)
-                continue;
+                if ('exists' in constraint && constraint.exists === false)
+                    continue; // exists:false matches absent field
+                if ('is_null' in constraint && constraint.is_null === true)
+                    continue; // is_null:true matches absent field
+                // Field absent — rule cannot match; absent field should NOT satisfy param conditions
+                return false;
             }
             if (!evalValueConstraint(constraint, value))
                 return false;

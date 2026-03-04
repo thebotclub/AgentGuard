@@ -1595,7 +1595,7 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
     description: z.ZodOptional<z.ZodString>;
     version: z.ZodString;
     tenantId: z.ZodOptional<z.ZodString>;
-    default: z.ZodDefault<z.ZodEnum<["allow", "block"]>>;
+    default: z.ZodDefault<z.ZodEnum<["allow", "block", "monitor"]>>;
     targets: z.ZodOptional<z.ZodObject<{
         agentTags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         agentIds: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
@@ -2378,10 +2378,10 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
         slackChannel?: string | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
+    default: "allow" | "block" | "monitor";
+    version: string;
     id: string;
     name: string;
-    version: string;
-    default: "allow" | "block";
     rules: {
         id: string;
         priority: number;
@@ -2496,8 +2496,8 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
         on_timeout?: "allow" | "block" | undefined;
         slackChannel?: string | undefined;
     }[];
-    description?: string | undefined;
     tenantId?: string | undefined;
+    description?: string | undefined;
     targets?: {
         agentTags?: string[] | undefined;
         agentIds?: string[] | undefined;
@@ -2510,9 +2510,9 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
         maxActionsPerSession?: number | undefined;
     } | undefined;
 }, {
+    version: string;
     id: string;
     name: string;
-    version: string;
     rules: {
         id: string;
         action: "allow" | "block" | "monitor" | "require_approval";
@@ -2627,9 +2627,9 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
         on_timeout?: "allow" | "block" | undefined;
         slackChannel?: string | undefined;
     }[];
-    description?: string | undefined;
+    default?: "allow" | "block" | "monitor" | undefined;
     tenantId?: string | undefined;
-    default?: "allow" | "block" | undefined;
+    description?: string | undefined;
     targets?: {
         agentTags?: string[] | undefined;
         agentIds?: string[] | undefined;
@@ -3187,7 +3187,7 @@ export declare const PolicyBundleSchema: z.ZodObject<{
     tenantId: z.ZodOptional<z.ZodString>;
     version: z.ZodString;
     compiledAt: z.ZodString;
-    defaultAction: z.ZodEnum<["allow", "block"]>;
+    defaultAction: z.ZodEnum<["allow", "block", "monitor"]>;
     budgets: z.ZodOptional<z.ZodObject<{
         maxTokensPerSession: z.ZodOptional<z.ZodNumber>;
         maxTokensPerDay: z.ZodOptional<z.ZodNumber>;
@@ -3858,7 +3858,7 @@ export declare const PolicyBundleSchema: z.ZodObject<{
     }[];
     policyId: string;
     compiledAt: string;
-    defaultAction: "allow" | "block";
+    defaultAction: "allow" | "block" | "monitor";
     toolIndex: Record<string, number[]>;
     checksum: string;
     ruleCount: number;
@@ -3980,7 +3980,7 @@ export declare const PolicyBundleSchema: z.ZodObject<{
     }[];
     policyId: string;
     compiledAt: string;
-    defaultAction: "allow" | "block";
+    defaultAction: "allow" | "block" | "monitor";
     toolIndex: Record<string, number[]>;
     checksum: string;
     ruleCount: number;
@@ -4038,16 +4038,16 @@ export declare const ActionRequestSchema: z.ZodObject<{
     /** ISO 8601 timestamp of when the action was initiated */
     timestamp: z.ZodString;
 }, "strip", z.ZodTypeAny, {
+    agentId: string;
     params: Record<string, unknown>;
     tool: string;
     id: string;
-    agentId: string;
     inputDataLabels: string[];
     timestamp: string;
 }, {
+    agentId: string;
     tool: string;
     id: string;
-    agentId: string;
     timestamp: string;
     params?: Record<string, unknown> | undefined;
     inputDataLabels?: string[] | undefined;
@@ -4133,8 +4133,8 @@ export declare const AuditEventSchema: z.ZodObject<{
      */
     previousHash: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    tool: string;
     agentId: string;
+    tool: string;
     sessionId: string;
     policyVersion: string;
     timestamp: string;
@@ -4147,13 +4147,13 @@ export declare const AuditEventSchema: z.ZodObject<{
     decision: "allow" | "block" | "monitor" | "require_approval";
     eventHash: string;
     previousHash: string;
-    params?: Record<string, unknown> | undefined;
     tenantId?: string | undefined;
+    params?: Record<string, unknown> | undefined;
     result?: unknown;
     error?: string | undefined;
 }, {
-    tool: string;
     agentId: string;
+    tool: string;
     sessionId: string;
     policyVersion: string;
     timestamp: string;
@@ -4166,8 +4166,8 @@ export declare const AuditEventSchema: z.ZodObject<{
     decision: "allow" | "block" | "monitor" | "require_approval";
     eventHash: string;
     previousHash: string;
-    params?: Record<string, unknown> | undefined;
     tenantId?: string | undefined;
+    params?: Record<string, unknown> | undefined;
     result?: unknown;
     error?: string | undefined;
 }>;
@@ -4213,16 +4213,16 @@ export declare const ApprovalRequestSchema: z.ZodObject<{
         /** ISO 8601 timestamp of when the action was initiated */
         timestamp: z.ZodString;
     }, "strip", z.ZodTypeAny, {
+        agentId: string;
         params: Record<string, unknown>;
         tool: string;
         id: string;
-        agentId: string;
         inputDataLabels: string[];
         timestamp: string;
     }, {
+        agentId: string;
         tool: string;
         id: string;
-        agentId: string;
         timestamp: string;
         params?: Record<string, unknown> | undefined;
         inputDataLabels?: string[] | undefined;
@@ -4245,18 +4245,18 @@ export declare const ApprovalRequestSchema: z.ZodObject<{
     /** Reason the human provided when approving or denying */
     resolveReason: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
+    agentId: string;
     status: "pending" | "approved" | "denied" | "timeout";
     id: string;
     action: {
+        agentId: string;
         params: Record<string, unknown>;
         tool: string;
         id: string;
-        agentId: string;
         inputDataLabels: string[];
         timestamp: string;
     };
     approvers: string[];
-    agentId: string;
     sessionId: string;
     matchedRuleId: string;
     createdAt: string;
@@ -4265,18 +4265,18 @@ export declare const ApprovalRequestSchema: z.ZodObject<{
     resolvedAt?: string | undefined;
     resolveReason?: string | undefined;
 }, {
+    agentId: string;
     status: "pending" | "approved" | "denied" | "timeout";
     id: string;
     action: {
+        agentId: string;
         tool: string;
         id: string;
-        agentId: string;
         timestamp: string;
         params?: Record<string, unknown> | undefined;
         inputDataLabels?: string[] | undefined;
     };
     approvers: string[];
-    agentId: string;
     sessionId: string;
     matchedRuleId: string;
     createdAt: string;

@@ -1325,8 +1325,8 @@ export declare const PolicyRuleSchema: z.ZodObject<{
     on_timeout: z.ZodOptional<z.ZodDefault<z.ZodEnum<["block", "allow"]>>>;
     slackChannel: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    id: string;
     tags: string[];
+    id: string;
     priority: number;
     action: "allow" | "block" | "monitor" | "require_approval";
     when: ({
@@ -2145,8 +2145,8 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
         on_timeout: z.ZodOptional<z.ZodDefault<z.ZodEnum<["block", "allow"]>>>;
         slackChannel: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
-        id: string;
         tags: string[];
+        id: string;
         priority: number;
         action: "allow" | "block" | "monitor" | "require_approval";
         when: ({
@@ -2372,13 +2372,13 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
         slackChannel?: string | undefined;
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
-    id: string;
     name: string;
+    id: string;
     version: string;
     default: "allow" | "block";
     rules: {
-        id: string;
         tags: string[];
+        id: string;
         priority: number;
         action: "allow" | "block" | "monitor" | "require_approval";
         when: ({
@@ -2490,8 +2490,8 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
         on_timeout?: "allow" | "block" | undefined;
         slackChannel?: string | undefined;
     }[];
-    tenantId?: string | undefined;
     description?: string | undefined;
+    tenantId?: string | undefined;
     targets?: {
         agentTags?: string[] | undefined;
         agentIds?: string[] | undefined;
@@ -2504,8 +2504,8 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
         maxActionsPerSession?: number | undefined;
     } | undefined;
 }, {
-    id: string;
     name: string;
+    id: string;
     version: string;
     rules: {
         id: string;
@@ -2621,8 +2621,8 @@ export declare const PolicyDocumentSchema: z.ZodObject<{
         on_timeout?: "allow" | "block" | undefined;
         slackChannel?: string | undefined;
     }[];
-    tenantId?: string | undefined;
     description?: string | undefined;
+    tenantId?: string | undefined;
     default?: "allow" | "block" | undefined;
     targets?: {
         agentTags?: string[] | undefined;
@@ -2965,8 +2965,8 @@ export declare const CompiledRuleSchema: z.ZodObject<{
     riskBoost: z.ZodNumber;
     tags: z.ZodArray<z.ZodString, "many">;
 }, "strip", z.ZodTypeAny, {
-    id: string;
     tags: string[];
+    id: string;
     priority: number;
     action: "allow" | "block" | "monitor" | "require_approval";
     severity: string;
@@ -3070,8 +3070,8 @@ export declare const CompiledRuleSchema: z.ZodObject<{
         matches?: string[] | undefined;
     } | undefined;
 }, {
-    id: string;
     tags: string[];
+    id: string;
     priority: number;
     action: "allow" | "block" | "monitor" | "require_approval";
     severity: string;
@@ -3529,8 +3529,8 @@ export declare const PolicyBundleSchema: z.ZodObject<{
         riskBoost: z.ZodNumber;
         tags: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        id: string;
         tags: string[];
+        id: string;
         priority: number;
         action: "allow" | "block" | "monitor" | "require_approval";
         severity: string;
@@ -3634,8 +3634,8 @@ export declare const PolicyBundleSchema: z.ZodObject<{
             matches?: string[] | undefined;
         } | undefined;
     }, {
-        id: string;
         tags: string[];
+        id: string;
         priority: number;
         action: "allow" | "block" | "monitor" | "require_approval";
         severity: string;
@@ -3746,8 +3746,8 @@ export declare const PolicyBundleSchema: z.ZodObject<{
     policyId: string;
     version: string;
     rules: {
-        id: string;
         tags: string[];
+        id: string;
         priority: number;
         action: "allow" | "block" | "monitor" | "require_approval";
         severity: string;
@@ -3868,8 +3868,8 @@ export declare const PolicyBundleSchema: z.ZodObject<{
     policyId: string;
     version: string;
     rules: {
-        id: string;
         tags: string[];
+        id: string;
         priority: number;
         action: "allow" | "block" | "monitor" | "require_approval";
         severity: string;
@@ -4001,26 +4001,26 @@ export declare const PolicyDecisionSchema: z.ZodObject<{
     durationMs: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
     policyVersion: string;
-    matchedRuleId: string | null;
-    riskScore: number;
-    monitorRuleIds: string[];
-    reason: string | null;
-    durationMs: number;
     result: "allow" | "block" | "monitor" | "require_approval";
+    matchedRuleId: string | null;
+    monitorRuleIds: string[];
+    riskScore: number;
+    reason: string | null;
     gateId: string | null;
     gateTimeoutSec: number | null;
     evaluatedAt: string;
+    durationMs: number;
 }, {
     policyVersion: string;
-    matchedRuleId: string | null;
-    riskScore: number;
-    monitorRuleIds: string[];
-    reason: string | null;
-    durationMs: number;
     result: "allow" | "block" | "monitor" | "require_approval";
+    matchedRuleId: string | null;
+    monitorRuleIds: string[];
+    riskScore: number;
+    reason: string | null;
     gateId: string | null;
     gateTimeoutSec: number | null;
     evaluatedAt: string;
+    durationMs: number;
 }>;
 export type PolicyDecision = z.infer<typeof PolicyDecisionSchema>;
 export declare const CreatePolicySchema: z.ZodObject<{
@@ -4078,8 +4078,8 @@ export declare const TestPolicySchema: z.ZodObject<{
             params: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
             context: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
         }, "strip", z.ZodTypeAny, {
-            tool: string;
             params: Record<string, unknown>;
+            tool: string;
             context: Record<string, unknown>;
         }, {
             tool: string;
@@ -4103,26 +4103,26 @@ export declare const TestPolicySchema: z.ZodObject<{
             maxRiskScore?: number | undefined;
         }>;
     }, "strip", z.ZodTypeAny, {
+        name: string;
         expected: {
             decision: "allow" | "block" | "monitor" | "require_approval";
             matchedRule?: string | undefined;
             minRiskScore?: number | undefined;
             maxRiskScore?: number | undefined;
         };
-        name: string;
         input: {
-            tool: string;
             params: Record<string, unknown>;
+            tool: string;
             context: Record<string, unknown>;
         };
     }, {
+        name: string;
         expected: {
             decision: "allow" | "block" | "monitor" | "require_approval";
             matchedRule?: string | undefined;
             minRiskScore?: number | undefined;
             maxRiskScore?: number | undefined;
         };
-        name: string;
         input: {
             tool: string;
             params?: Record<string, unknown> | undefined;
@@ -4131,28 +4131,28 @@ export declare const TestPolicySchema: z.ZodObject<{
     }>, "many">;
 }, "strip", z.ZodTypeAny, {
     tests: {
+        name: string;
         expected: {
             decision: "allow" | "block" | "monitor" | "require_approval";
             matchedRule?: string | undefined;
             minRiskScore?: number | undefined;
             maxRiskScore?: number | undefined;
         };
-        name: string;
         input: {
-            tool: string;
             params: Record<string, unknown>;
+            tool: string;
             context: Record<string, unknown>;
         };
     }[];
 }, {
     tests: {
+        name: string;
         expected: {
             decision: "allow" | "block" | "monitor" | "require_approval";
             matchedRule?: string | undefined;
             minRiskScore?: number | undefined;
             maxRiskScore?: number | undefined;
         };
-        name: string;
         input: {
             tool: string;
             params?: Record<string, unknown> | undefined;

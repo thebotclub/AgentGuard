@@ -6,4 +6,6 @@
 export { AgentGuardToolWrapper, GuardedTool, ApprovalEventBus, } from './langchain-wrapper.js';
 export type { LangChainTool, WrapperOptions, ApprovalEvents, } from './langchain-wrapper.js';
 export { AgentGuard } from './client.js';
+export { autoRegister, getOrCreateGuard, listAgents, clearCredentials, getAgentCredentials, getDefaultStoragePath, withRetry, isRateLimitError, formatRateLimitError, } from '../auto-register.js';
+export type { AutoRegisterOptions, AgentCredentials, StoredConfig, RateLimitError, RegistrationError, } from '../auto-register.js';
 //# sourceMappingURL=index.d.ts.map

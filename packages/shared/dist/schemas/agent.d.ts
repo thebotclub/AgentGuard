@@ -48,7 +48,6 @@ export declare const UpdateAgentSchema: z.ZodObject<{
     tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     metadata: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
 }, "strip", z.ZodTypeAny, {
-    policyVersion?: string | undefined;
     name?: string | undefined;
     description?: string | null | undefined;
     policyId?: string | null | undefined;
@@ -56,8 +55,8 @@ export declare const UpdateAgentSchema: z.ZodObject<{
     riskTier?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined;
     tags?: string[] | undefined;
     metadata?: Record<string, string> | undefined;
+    policyVersion?: string | undefined;
 }, {
-    policyVersion?: string | undefined;
     name?: string | undefined;
     description?: string | null | undefined;
     policyId?: string | null | undefined;
@@ -65,6 +64,7 @@ export declare const UpdateAgentSchema: z.ZodObject<{
     riskTier?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined;
     tags?: string[] | undefined;
     metadata?: Record<string, string> | undefined;
+    policyVersion?: string | undefined;
 }>;
 export type UpdateAgentInput = z.infer<typeof UpdateAgentSchema>;
 export declare const ListAgentsQuerySchema: z.ZodObject<{
@@ -75,14 +75,14 @@ export declare const ListAgentsQuerySchema: z.ZodObject<{
     limit: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     limit: number;
-    status?: "ACTIVE" | "KILLED" | "QUARANTINED" | "INACTIVE" | undefined;
     policyId?: string | undefined;
     riskTier?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined;
+    status?: "ACTIVE" | "KILLED" | "QUARANTINED" | "INACTIVE" | undefined;
     cursor?: string | undefined;
 }, {
-    status?: "ACTIVE" | "KILLED" | "QUARANTINED" | "INACTIVE" | undefined;
     policyId?: string | undefined;
     riskTier?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined;
+    status?: "ACTIVE" | "KILLED" | "QUARANTINED" | "INACTIVE" | undefined;
     cursor?: string | undefined;
     limit?: number | undefined;
 }>;

@@ -16,3 +16,24 @@ export type {
 } from './langchain-wrapper.js';
 
 export { AgentGuard } from './client.js';
+
+// Auto-register exports
+export {
+  autoRegister,
+  getOrCreateGuard,
+  listAgents,
+  clearCredentials,
+  getAgentCredentials,
+  getDefaultStoragePath,
+  withRetry,
+  isRateLimitError,
+  formatRateLimitError,
+} from '../auto-register.js';
+
+export type {
+  AutoRegisterOptions,
+  AgentCredentials,
+  StoredConfig,
+  RateLimitError,
+  RegistrationError,
+} from '../auto-register.js';

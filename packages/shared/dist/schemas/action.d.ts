@@ -10,16 +10,16 @@ export declare const ActionRequestSchema: z.ZodObject<{
     inputDataLabels: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     timestamp: z.ZodString;
 }, "strip", z.ZodTypeAny, {
+    params: Record<string, unknown>;
+    tool: string;
     id: string;
     agentId: string;
-    tool: string;
-    params: Record<string, unknown>;
     inputDataLabels: string[];
     timestamp: string;
 }, {
+    tool: string;
     id: string;
     agentId: string;
-    tool: string;
     timestamp: string;
     params?: Record<string, unknown> | undefined;
     inputDataLabels?: string[] | undefined;
@@ -32,15 +32,15 @@ export declare const AgentContextSchema: z.ZodObject<{
     tenantId: z.ZodOptional<z.ZodString>;
     sessionContext: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
 }, "strip", z.ZodTypeAny, {
+    policyVersion: string;
     agentId: string;
     sessionId: string;
-    policyVersion: string;
     tenantId?: string | undefined;
     sessionContext?: Record<string, unknown> | undefined;
 }, {
+    policyVersion: string;
     agentId: string;
     sessionId: string;
-    policyVersion: string;
     tenantId?: string | undefined;
     sessionContext?: Record<string, unknown> | undefined;
 }>;
@@ -54,19 +54,19 @@ export declare const EvaluateActionSchema: z.ZodObject<{
     inputDataLabels: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     context: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
 }, "strip", z.ZodTypeAny, {
-    agentId: string;
-    tool: string;
     params: Record<string, unknown>;
+    tool: string;
+    agentId: string;
     inputDataLabels: string[];
     sessionId: string;
     context?: Record<string, unknown> | undefined;
 }, {
-    agentId: string;
     tool: string;
+    agentId: string;
     sessionId: string;
     params?: Record<string, unknown> | undefined;
-    inputDataLabels?: string[] | undefined;
     context?: Record<string, unknown> | undefined;
+    inputDataLabels?: string[] | undefined;
 }>;
 export type EvaluateActionInput = z.infer<typeof EvaluateActionSchema>;
 /** Telemetry batch ingest schema — matches Python SDK emitter format */
@@ -92,42 +92,42 @@ export declare const TelemetryEventSchema: z.ZodObject<{
     ragSourceIds: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     priorEventIds: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
 }, "strip", z.ZodTypeAny, {
+    riskScore: number;
+    decision: string;
     inputDataLabels: string[];
     sessionId: string;
     clientEventId: string;
     occurredAt: string;
     processingMs: number;
     actionType: string;
-    decision: string;
     matchedRuleIds: string[];
-    riskScore: number;
     outputDataLabels: string[];
     ragSourceIds: string[];
     priorEventIds: string[];
     policyVersion?: string | undefined;
+    matchedRuleId?: string | undefined;
     toolName?: string | undefined;
     toolTarget?: string | undefined;
     actionParams?: Record<string, unknown> | undefined;
-    matchedRuleId?: string | undefined;
     blockReason?: string | undefined;
     executionMs?: number | undefined;
     planningTraceSummary?: string | undefined;
 }, {
+    decision: string;
     sessionId: string;
     clientEventId: string;
     occurredAt: string;
     processingMs: number;
     actionType: string;
-    decision: string;
-    inputDataLabels?: string[] | undefined;
     policyVersion?: string | undefined;
+    matchedRuleId?: string | undefined;
+    riskScore?: number | undefined;
+    inputDataLabels?: string[] | undefined;
     toolName?: string | undefined;
     toolTarget?: string | undefined;
     actionParams?: Record<string, unknown> | undefined;
-    matchedRuleId?: string | undefined;
     matchedRuleIds?: string[] | undefined;
     blockReason?: string | undefined;
-    riskScore?: number | undefined;
     executionMs?: number | undefined;
     outputDataLabels?: string[] | undefined;
     planningTraceSummary?: string | undefined;
@@ -159,42 +159,42 @@ export declare const TelemetryBatchSchema: z.ZodObject<{
         ragSourceIds: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
         priorEventIds: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     }, "strip", z.ZodTypeAny, {
+        riskScore: number;
+        decision: string;
         inputDataLabels: string[];
         sessionId: string;
         clientEventId: string;
         occurredAt: string;
         processingMs: number;
         actionType: string;
-        decision: string;
         matchedRuleIds: string[];
-        riskScore: number;
         outputDataLabels: string[];
         ragSourceIds: string[];
         priorEventIds: string[];
         policyVersion?: string | undefined;
+        matchedRuleId?: string | undefined;
         toolName?: string | undefined;
         toolTarget?: string | undefined;
         actionParams?: Record<string, unknown> | undefined;
-        matchedRuleId?: string | undefined;
         blockReason?: string | undefined;
         executionMs?: number | undefined;
         planningTraceSummary?: string | undefined;
     }, {
+        decision: string;
         sessionId: string;
         clientEventId: string;
         occurredAt: string;
         processingMs: number;
         actionType: string;
-        decision: string;
-        inputDataLabels?: string[] | undefined;
         policyVersion?: string | undefined;
+        matchedRuleId?: string | undefined;
+        riskScore?: number | undefined;
+        inputDataLabels?: string[] | undefined;
         toolName?: string | undefined;
         toolTarget?: string | undefined;
         actionParams?: Record<string, unknown> | undefined;
-        matchedRuleId?: string | undefined;
         matchedRuleIds?: string[] | undefined;
         blockReason?: string | undefined;
-        riskScore?: number | undefined;
         executionMs?: number | undefined;
         outputDataLabels?: string[] | undefined;
         planningTraceSummary?: string | undefined;
@@ -204,23 +204,23 @@ export declare const TelemetryBatchSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     agentId: string;
     events: {
+        riskScore: number;
+        decision: string;
         inputDataLabels: string[];
         sessionId: string;
         clientEventId: string;
         occurredAt: string;
         processingMs: number;
         actionType: string;
-        decision: string;
         matchedRuleIds: string[];
-        riskScore: number;
         outputDataLabels: string[];
         ragSourceIds: string[];
         priorEventIds: string[];
         policyVersion?: string | undefined;
+        matchedRuleId?: string | undefined;
         toolName?: string | undefined;
         toolTarget?: string | undefined;
         actionParams?: Record<string, unknown> | undefined;
-        matchedRuleId?: string | undefined;
         blockReason?: string | undefined;
         executionMs?: number | undefined;
         planningTraceSummary?: string | undefined;
@@ -228,21 +228,21 @@ export declare const TelemetryBatchSchema: z.ZodObject<{
 }, {
     agentId: string;
     events: {
+        decision: string;
         sessionId: string;
         clientEventId: string;
         occurredAt: string;
         processingMs: number;
         actionType: string;
-        decision: string;
-        inputDataLabels?: string[] | undefined;
         policyVersion?: string | undefined;
+        matchedRuleId?: string | undefined;
+        riskScore?: number | undefined;
+        inputDataLabels?: string[] | undefined;
         toolName?: string | undefined;
         toolTarget?: string | undefined;
         actionParams?: Record<string, unknown> | undefined;
-        matchedRuleId?: string | undefined;
         matchedRuleIds?: string[] | undefined;
         blockReason?: string | undefined;
-        riskScore?: number | undefined;
         executionMs?: number | undefined;
         outputDataLabels?: string[] | undefined;
         planningTraceSummary?: string | undefined;
