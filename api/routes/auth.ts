@@ -123,11 +123,15 @@ export function createAuthRoutes(
         const sha256 = crypto.createHash('sha256').update(oldKeyHeader).digest('hex');
         await db.deactivateApiKeyBySha256(sha256);
 
-        // Audit trail
-        await storeAuditEvent(
-          db, tenantId, null, 'key_rotate', 'allow', null, 0,
-          'API key rotated — old key invalidated', 0, '', null,
-        );
+        // Audit trail (non-blocking)
+        try {
+          await storeAuditEvent(
+            db, tenantId, null, 'key_rotate', 'allow', null, 0,
+            'API key rotated — old key invalidated', 0, '', null,
+          );
+        } catch (e) {
+          console.warn('[keys/rotate] audit event failed (non-blocking):', e);
+        }
 
         console.log(`[keys/rotate] tenant ${tenantId}: key rotated`);
 
