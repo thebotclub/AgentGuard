@@ -1941,3 +1941,36 @@ window.addEventListener('load', () => {
   .header { flex-direction: column !important; gap: 1rem !important; }
 }
 </body></html>
+
+<!-- New v0.7.2 Features Section -->
+<div id="s8" class="scene" style="display:none">
+  <div class="scene-inner">
+    <div class="feature-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px;margin:0 auto;">
+      <div class="feature-card" style="background:rgba(255,255,255,0.05);border-radius:16px;padding:24px;border:1px solid rgba(255,255,255,0.1);">
+        <div style="font-size:48px;margin-bottom:16px">🔑</div>
+        <h4 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px">Key Rotation</h4>
+        <p style="font-size:14px;color:#94a3b8">Instantly rotate API keys. Old key invalidated immediately.</p>
+        <code style="background:#1a1a2e;padding:4px 8px;border-radius:4px;font-size:12px;color:#00d4aa">POST /keys/rotate</code>
+      </div>
+      <div class="feature-card" style="background:rgba(255,255,255,0.05);border-radius:16px;padding:24px;border:1px solid rgba(255,255,255,0.1);">
+        <div style="font-size:48px;margin-bottom:16px">📋</div>
+        <h4 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px">Policy API</h4>
+        <p style="font-size:14px;color:#94a3b8">GET/PUT policies via API. Policy as code.</p>
+        <code style="background:#1a1a2e;padding:4px 8px;border-radius:4px;font-size:12px;color:#00d4aa">PUT /policy</code>
+      </div>
+      <div class="feature-card" style="background:rgba(255,255,255,0.05);border-radius:16px;padding:24px;border:1px solid rgba(255,255,255,0.1);">
+        <div style="font-size:48px;margin-bottom:16px">👤</div>
+        <h4 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px">HITL Approvals</h4>
+        <p style="font-size:14px;color:#94a3b8">Human-in-the-loop for high-risk operations.</p>
+        <code style="background:#1a1a2e;padding:4px 8px;border-radius:4px;font-size:12px;color:#00d4aa">POST /approvals</code>
+      </div>
+      <div class="feature-card" style="background:rgba(255,255,255,0.05);border-radius:16px;padding:24px;border:1px solid rgba(255,255,255,0.1);">
+        <div style="font-size:48px;margin-bottom:16px">🤖</div>
+        <h4 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px">Auto-Register</h4>
+        <p style="font-size:14px;color:#94a3b8">Agents self-provision security. Zero config.</p>
+        <code style="background:#1a1a2e;padding:4px 8px;border-radius:4px;font-size:12px;color:#00d4aa">autoRegister:true</code>
+      </div>
+    </div>
+  </div>
+</div>
+
