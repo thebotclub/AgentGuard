@@ -1788,5 +1788,30 @@ window.addEventListener('load', () => {
   showScene(0);
 });
 </script>
-</body>
-</html>
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .hero h1 { font-size: 2rem !important; }
+  .hero p { font-size: 1rem !important; }
+  .terminal { 
+    width: 95% !important; 
+    max-width: 95% !important;
+    font-size: 0.7rem !important;
+  }
+  .terminal-window {
+    transform: scale(0.6) !important;
+    transform-origin: top left !important;
+    width: 166% !important;
+  }
+  .box { padding: 8px !important; }
+  .controls { flex-direction: column !important; gap: 8px !important; }
+  .play-btn { width: 100% !important; }
+  .dots { display: none !important; }
+}
+
+@media (max-width: 480px) {
+  .terminal-window { transform: scale(0.45) !important; width: 222% !important; }
+  .hero { padding: 1rem !important; }
+  .header { flex-direction: column !important; gap: 1rem !important; }
+}
+</body></html>

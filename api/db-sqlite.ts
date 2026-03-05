@@ -415,7 +415,7 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       const keyPrefix = key.substring(0, 12);
       const keySha256 = sha256Hex(key);
       db.prepare(
-        'INSERT INTO api_keys (key, tenant_id, name, key_hash, key_prefix, key_sha256) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO api_keys (tenant_id, name, key_hash, key_prefix, key_sha256) VALUES (?, ?, ?, ?, ?, ?)'
       ).run(key, tenantId, name, keyHash, keyPrefix, keySha256);
     },
 

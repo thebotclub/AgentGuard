@@ -36,6 +36,13 @@ loadTemplates();
 // ── Express App ────────────────────────────────────────────────────────────
 const app = express();
 
+// Request ID middleware
+app.use((req, res, next) => {
+  req.headers['x-request-id'] = req.headers['x-request-id'] || require('crypto').randomUUID();
+  res.setHeader('x-request-id', req.headers['x-request-id']);
+  next();
+});
+
 // ── Trust proxy — only trust Cloudflare and Azure Container Apps ──────────
 // This ensures X-Forwarded-For cannot be spoofed by end users.
 // Cloudflare always sets the real client IP; Azure load balancer adds one hop.

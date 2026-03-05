@@ -458,8 +458,8 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       const keyPrefix = key.substring(0, 12);
       const keySha256 = sha256Hex(key);
       await pool.query(
-        'INSERT INTO api_keys (key, tenant_id, name, key_hash, key_prefix, key_sha256) VALUES ($1, $2, $3, $4, $5, $6)',
-        [key, tenantId, name, keyHash, keyPrefix, keySha256]
+        'INSERT INTO api_keys (tenant_id, name, key_hash, key_prefix, key_sha256) VALUES ($1, $2, $3, $4, $5)',
+        [tenantId, name, keyHash, keyPrefix, keySha256]
       );
     },
 
