@@ -14,6 +14,7 @@ import type { AuthMiddleware } from '../middleware/auth.js';
 import { requireRole } from '../lib/rbac.js';
 import { encryptConfig, decryptConfig } from '../lib/integration-crypto.js';
 import { SsoConfigureRequestSchema } from '../schemas.js';
+import { requireFeature } from '../middleware/feature-gate.js';
 
 export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   const router = Router();
@@ -22,6 +23,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   router.post(
     '/api/v1/sso/configure',
     auth.requireTenantAuth,
+    requireFeature('sso'),
     requireRole('owner', 'admin'),
     async (req: Request, res: Response) => {
       const parsed = SsoConfigureRequestSchema.safeParse(req.body ?? {});
@@ -71,6 +73,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   router.get(
     '/api/v1/sso/config',
     auth.requireTenantAuth,
+    requireFeature('sso'),
     requireRole('owner', 'admin'),
     async (req: Request, res: Response) => {
       const tenantId = req.tenantId!;
@@ -102,6 +105,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   router.delete(
     '/api/v1/sso/config',
     auth.requireTenantAuth,
+    requireFeature('sso'),
     requireRole('owner', 'admin'),
     async (req: Request, res: Response) => {
       const tenantId = req.tenantId!;

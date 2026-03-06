@@ -183,6 +183,44 @@ export interface SsoConfigRow {
   created_at: string;
 }
 
+// ── License Row Types ──────────────────────────────────────────────────────
+
+export interface LicenseKeyRow {
+  id: string;
+  tenant_id: string;
+  key_hash: string;             // SHA-256 of the full AGKEY-... string
+  tier: string;                 // 'free' | 'pro' | 'enterprise'
+  features: string;             // JSON array of LicenseFeature
+  limits_json: string;          // JSON of limits object
+  offline_grace_days: number;
+  issued_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  revoke_reason: string | null;
+  stripe_subscription_id: string | null;
+  metadata: string | null;      // JSON blob
+  created_at: string;
+}
+
+export interface LicenseEventRow {
+  id: string;
+  tenant_id: string;
+  license_id: string | null;
+  event_type: string;           // 'issued' | 'validated' | 'revoked' | 'expired' | 'limit_exceeded' | 'feature_gated'
+  details: string | null;       // JSON
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface LicenseUsageRow {
+  id: string;
+  tenant_id: string;
+  month: string;                // 'YYYY-MM' format
+  event_count: number;
+  agent_count: number;
+  last_updated: string;
+}
+
 export interface McpServerRow {
   id: string;
   tenant_id: string;
@@ -472,4 +510,18 @@ export interface IDatabase {
   ping(): Promise<boolean>;
   countTenants(): Promise<number>;
   countActiveAgents(): Promise<number>;
+
+  // ── License Keys ──────────────────────────────────────────────────────────
+  insertLicenseKey(key: LicenseKeyRow): Promise<LicenseKeyRow>;
+  getLicenseKeyByTenant(tenantId: string): Promise<LicenseKeyRow | null>;
+  getLicenseKeyByHash(hash: string): Promise<LicenseKeyRow | null>;
+  revokeLicenseKey(id: string, reason: string): Promise<void>;
+
+  // ── License Events ────────────────────────────────────────────────────────
+  insertLicenseEvent(event: LicenseEventRow): Promise<void>;
+  getLicenseEvents(tenantId: string, limit: number): Promise<LicenseEventRow[]>;
+
+  // ── License Usage ─────────────────────────────────────────────────────────
+  upsertLicenseUsage(tenantId: string, month: string, events: number, agents: number): Promise<void>;
+  getLicenseUsage(tenantId: string, month: string): Promise<LicenseUsageRow | null>;
 }

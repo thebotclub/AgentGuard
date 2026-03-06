@@ -26,6 +26,9 @@ import type {
   ChildAgentRow,
   UsageAnalytics,
   PlatformAnalytics,
+  LicenseKeyRow,
+  LicenseEventRow,
+  LicenseUsageRow,
 } from './db-interface.js';
 import { randomUUID } from 'crypto';
 import crypto from 'crypto';
@@ -242,6 +245,53 @@ const SCHEMA_SQL = `
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
   CREATE INDEX IF NOT EXISTS idx_sso_configs_tenant ON sso_configs(tenant_id);
+
+  -- License Keys
+  CREATE TABLE IF NOT EXISTS license_keys (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    key_hash TEXT NOT NULL,
+    tier TEXT NOT NULL DEFAULT 'free',
+    features TEXT NOT NULL DEFAULT '[]',
+    limits_json TEXT NOT NULL DEFAULT '{}',
+    offline_grace_days INTEGER NOT NULL DEFAULT 1,
+    issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    revoked_at TIMESTAMPTZ,
+    revoke_reason TEXT,
+    stripe_subscription_id TEXT,
+    metadata TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_license_keys_tenant ON license_keys(tenant_id);
+  CREATE INDEX IF NOT EXISTS idx_license_keys_hash ON license_keys(key_hash);
+
+  -- License Events
+  CREATE TABLE IF NOT EXISTS license_events (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    license_id TEXT,
+    event_type TEXT NOT NULL,
+    details TEXT,
+    ip_address TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_license_events_tenant ON license_events(tenant_id, created_at);
+
+  -- License Usage
+  CREATE TABLE IF NOT EXISTS license_usage (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    month TEXT NOT NULL,
+    event_count INTEGER NOT NULL DEFAULT 0,
+    agent_count INTEGER NOT NULL DEFAULT 0,
+    last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(tenant_id, month)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_license_usage_tenant ON license_usage(tenant_id, month);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -1535,6 +1585,88 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
 
     async deleteSsoConfig(tenantId: string): Promise<void> {
       await pool.query('DELETE FROM sso_configs WHERE tenant_id = $1', [tenantId]);
+    },
+
+    // ── License Keys ──────────────────────────────────────────────────────────
+    async insertLicenseKey(key: LicenseKeyRow): Promise<LicenseKeyRow> {
+      const res = await pool.query<LicenseKeyRow>(
+        `INSERT INTO license_keys
+           (id, tenant_id, key_hash, tier, features, limits_json, offline_grace_days,
+            issued_at, expires_at, revoked_at, revoke_reason, stripe_subscription_id, metadata, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+         RETURNING *`,
+        [
+          key.id, key.tenant_id, key.key_hash, key.tier, key.features,
+          key.limits_json, key.offline_grace_days, key.issued_at, key.expires_at,
+          key.revoked_at, key.revoke_reason, key.stripe_subscription_id, key.metadata, key.created_at,
+        ]
+      );
+      return res.rows[0]!;
+    },
+
+    async getLicenseKeyByTenant(tenantId: string): Promise<LicenseKeyRow | null> {
+      const res = await pool.query<LicenseKeyRow>(
+        'SELECT * FROM license_keys WHERE tenant_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 1',
+        [tenantId]
+      );
+      return res.rows[0] ?? null;
+    },
+
+    async getLicenseKeyByHash(hash: string): Promise<LicenseKeyRow | null> {
+      const res = await pool.query<LicenseKeyRow>(
+        'SELECT * FROM license_keys WHERE key_hash = $1 LIMIT 1',
+        [hash]
+      );
+      return res.rows[0] ?? null;
+    },
+
+    async revokeLicenseKey(id: string, reason: string): Promise<void> {
+      await pool.query(
+        'UPDATE license_keys SET revoked_at = NOW(), revoke_reason = $1 WHERE id = $2',
+        [reason, id]
+      );
+    },
+
+    // ── License Events ─────────────────────────────────────────────────────────
+    async insertLicenseEvent(event: LicenseEventRow): Promise<void> {
+      await pool.query(
+        `INSERT INTO license_events (id, tenant_id, license_id, event_type, details, ip_address, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          event.id, event.tenant_id, event.license_id, event.event_type,
+          event.details, event.ip_address, event.created_at,
+        ]
+      );
+    },
+
+    async getLicenseEvents(tenantId: string, limit: number): Promise<LicenseEventRow[]> {
+      const res = await pool.query<LicenseEventRow>(
+        'SELECT * FROM license_events WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2',
+        [tenantId, limit]
+      );
+      return res.rows;
+    },
+
+    // ── License Usage ─────────────────────────────────────────────────────────
+    async upsertLicenseUsage(tenantId: string, month: string, events: number, agents: number): Promise<void> {
+      const id = randomUUID();
+      await pool.query(
+        `INSERT INTO license_usage (id, tenant_id, month, event_count, agent_count, last_updated)
+         VALUES ($1, $2, $3, $4, $5, NOW())
+         ON CONFLICT (tenant_id, month) DO UPDATE SET
+           event_count = license_usage.event_count + EXCLUDED.event_count,
+           agent_count = EXCLUDED.agent_count,
+           last_updated = NOW()`,
+        [id, tenantId, month, events, agents]
+      );
+    },
+
+    async getLicenseUsage(tenantId: string, month: string): Promise<LicenseUsageRow | null> {
+      const res = await pool.query<LicenseUsageRow>(
+        'SELECT * FROM license_usage WHERE tenant_id = $1 AND month = $2',
+        [tenantId, month]
+      );
+      return res.rows[0] ?? null;
     },
   };
 

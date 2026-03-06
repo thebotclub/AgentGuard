@@ -198,6 +198,43 @@ export const SsoConfigureRequestSchema = z.object({
     .max(2000, 'clientSecret too long (max 2000 chars)'),
 });
 
+// ── POST /api/v1/license/issue ────────────────────────────────────────────
+export const LicenseIssueRequestSchema = z.object({
+  tenantId: z.string({ error: 'tenantId is required' })
+    .min(1, 'tenantId is required')
+    .max(200, 'tenantId too long (max 200 chars)'),
+  tier: z.enum(['free', 'pro', 'enterprise'], {
+    error: "tier must be one of: 'free', 'pro', 'enterprise'",
+  }),
+  features: z.array(z.string().min(1)).optional(),
+  customLimits: z.object({
+    seats: z.number().int().min(0).optional(),
+    events_pm: z.number().int().min(0).optional(),
+    offline_grace_days: z.number().int().min(0).optional(),
+    audit_retention_days: z.number().int().min(0).optional(),
+  }).optional(),
+  expiresAt: z.string().optional(), // ISO date string; defaults to tier-based expiry
+  stripeSubscriptionId: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+// ── POST /api/v1/license/validate ─────────────────────────────────────────
+export const LicenseValidateRequestSchema = z.object({
+  key: z.string({ error: 'key is required' })
+    .min(1, 'key is required')
+    .refine((v) => v.startsWith('AGKEY-'), { message: "key must start with 'AGKEY-'" }),
+});
+
+// ── POST /api/v1/license/revoke ───────────────────────────────────────────
+export const LicenseRevokeRequestSchema = z.object({
+  tenantId: z.string({ error: 'tenantId is required' })
+    .min(1, 'tenantId is required')
+    .max(200, 'tenantId too long (max 200 chars)'),
+  reason: z.string({ error: 'reason is required' })
+    .min(1, 'reason is required')
+    .max(1000, 'reason too long (max 1000 chars)'),
+});
+
 // ── POST /api/v1/agents/:agentId/children ─────────────────────────────────
 export const SpawnChildAgentRequestSchema = z.object({
   name: z.string({ error: 'name is required' })
@@ -231,6 +268,13 @@ export const PIIScanRequest = PIIScanRequestSchema;
 export const ComplianceGenerateRequest = ComplianceGenerateRequestSchema;
 export const SpawnChildAgentRequest = SpawnChildAgentRequestSchema;
 export const SsoConfigureRequest = SsoConfigureRequestSchema;
+export const LicenseIssueRequest = LicenseIssueRequestSchema;
+export const LicenseValidateRequest = LicenseValidateRequestSchema;
+export const LicenseRevokeRequest = LicenseRevokeRequestSchema;
+
+export type LicenseIssueRequest = z.infer<typeof LicenseIssueRequestSchema>;
+export type LicenseValidateRequest = z.infer<typeof LicenseValidateRequestSchema>;
+export type LicenseRevokeRequest = z.infer<typeof LicenseRevokeRequestSchema>;
 
 export type EvaluateRequest = z.infer<typeof EvaluateRequestSchema>;
 export type SignupRequest = z.infer<typeof SignupRequestSchema>;

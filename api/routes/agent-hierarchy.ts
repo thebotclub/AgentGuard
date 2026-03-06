@@ -20,6 +20,7 @@ import {
   computeChildPolicy,
   type AgentPolicy,
 } from '../lib/policy-inheritance.js';
+import { requireFeature } from '../middleware/feature-gate.js';
 
 function generateAgentKey(): string {
   return 'ag_agent_' + crypto.randomBytes(16).toString('hex');
@@ -56,6 +57,7 @@ export function createAgentHierarchyRoutes(
   router.post(
     '/api/v1/agents/:agentId/children',
     auth.requireTenantAuth,
+    requireFeature('a2a_governance'),
     async (req: Request, res: Response) => {
       const tenantId = req.tenantId!;
       const parentAgentId = req.params['agentId'] as string;
@@ -145,6 +147,7 @@ export function createAgentHierarchyRoutes(
   router.get(
     '/api/v1/agents/:agentId/children',
     auth.requireTenantAuth,
+    requireFeature('a2a_governance'),
     async (req: Request, res: Response) => {
       try {
       const tenantId = req.tenantId!;
@@ -192,6 +195,7 @@ export function createAgentHierarchyRoutes(
   router.delete(
     '/api/v1/agents/:agentId/children/:childId',
     auth.requireTenantAuth,
+    requireFeature('a2a_governance'),
     async (req: Request, res: Response) => {
       try {
       const tenantId = req.tenantId!;

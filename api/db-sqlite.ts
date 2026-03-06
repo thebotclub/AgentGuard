@@ -28,6 +28,9 @@ import type {
   ChildAgentRow,
   UsageAnalytics,
   PlatformAnalytics,
+  LicenseKeyRow,
+  LicenseEventRow,
+  LicenseUsageRow,
 } from './db-interface.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
@@ -205,6 +208,53 @@ const SCHEMA_SQL = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_compliance_reports_tenant ON compliance_reports(tenant_id, generated_at);
+
+  -- License Keys
+  CREATE TABLE IF NOT EXISTS license_keys (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    key_hash TEXT NOT NULL,
+    tier TEXT NOT NULL DEFAULT 'free',
+    features TEXT NOT NULL DEFAULT '[]',
+    limits_json TEXT NOT NULL DEFAULT '{}',
+    offline_grace_days INTEGER NOT NULL DEFAULT 1,
+    issued_at TEXT NOT NULL DEFAULT (datetime('now')),
+    expires_at TEXT NOT NULL,
+    revoked_at TEXT,
+    revoke_reason TEXT,
+    stripe_subscription_id TEXT,
+    metadata TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_license_keys_tenant ON license_keys(tenant_id);
+  CREATE INDEX IF NOT EXISTS idx_license_keys_hash ON license_keys(key_hash);
+
+  -- License Events
+  CREATE TABLE IF NOT EXISTS license_events (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    license_id TEXT,
+    event_type TEXT NOT NULL,
+    details TEXT,
+    ip_address TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_license_events_tenant ON license_events(tenant_id, created_at);
+
+  -- License Usage
+  CREATE TABLE IF NOT EXISTS license_usage (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    month TEXT NOT NULL,
+    event_count INTEGER NOT NULL DEFAULT 0,
+    agent_count INTEGER NOT NULL DEFAULT 0,
+    last_updated TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(tenant_id, month)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_license_usage_tenant ON license_usage(tenant_id, month);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -1185,6 +1235,87 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
 
     async deleteSsoConfig(tenantId: string): Promise<void> {
       db.prepare('DELETE FROM sso_configs WHERE tenant_id = ?').run(tenantId);
+    },
+
+    // ── License Keys ──────────────────────────────────────────────────────────
+    async insertLicenseKey(key: LicenseKeyRow): Promise<LicenseKeyRow> {
+      db.prepare(
+        `INSERT INTO license_keys
+           (id, tenant_id, key_hash, tier, features, limits_json, offline_grace_days,
+            issued_at, expires_at, revoked_at, revoke_reason, stripe_subscription_id, metadata, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(
+        key.id, key.tenant_id, key.key_hash, key.tier, key.features,
+        key.limits_json, key.offline_grace_days, key.issued_at, key.expires_at,
+        key.revoked_at, key.revoke_reason, key.stripe_subscription_id, key.metadata, key.created_at,
+      );
+      return getSync<LicenseKeyRow>('SELECT * FROM license_keys WHERE id = ?', [key.id])!;
+    },
+
+    async getLicenseKeyByTenant(tenantId: string): Promise<LicenseKeyRow | null> {
+      const row = getSync<LicenseKeyRow>(
+        'SELECT * FROM license_keys WHERE tenant_id = ? AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 1',
+        [tenantId]
+      );
+      return row ?? null;
+    },
+
+    async getLicenseKeyByHash(hash: string): Promise<LicenseKeyRow | null> {
+      const row = getSync<LicenseKeyRow>(
+        'SELECT * FROM license_keys WHERE key_hash = ? LIMIT 1',
+        [hash]
+      );
+      return row ?? null;
+    },
+
+    async revokeLicenseKey(id: string, reason: string): Promise<void> {
+      db.prepare(
+        "UPDATE license_keys SET revoked_at = datetime('now'), revoke_reason = ? WHERE id = ?"
+      ).run(reason, id);
+    },
+
+    // ── License Events ─────────────────────────────────────────────────────────
+    async insertLicenseEvent(event: LicenseEventRow): Promise<void> {
+      db.prepare(
+        `INSERT INTO license_events (id, tenant_id, license_id, event_type, details, ip_address, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      ).run(
+        event.id, event.tenant_id, event.license_id, event.event_type,
+        event.details, event.ip_address, event.created_at,
+      );
+    },
+
+    async getLicenseEvents(tenantId: string, limit: number): Promise<LicenseEventRow[]> {
+      return allSync<LicenseEventRow>(
+        'SELECT * FROM license_events WHERE tenant_id = ? ORDER BY created_at DESC LIMIT ?',
+        [tenantId, limit]
+      );
+    },
+
+    // ── License Usage ─────────────────────────────────────────────────────────
+    async upsertLicenseUsage(tenantId: string, month: string, events: number, agents: number): Promise<void> {
+      const existing = getSync<LicenseUsageRow>(
+        'SELECT * FROM license_usage WHERE tenant_id = ? AND month = ?',
+        [tenantId, month]
+      );
+      if (existing) {
+        db.prepare(
+          "UPDATE license_usage SET event_count = event_count + ?, agent_count = ?, last_updated = datetime('now') WHERE tenant_id = ? AND month = ?"
+        ).run(events, agents, tenantId, month);
+      } else {
+        const id = crypto.randomUUID();
+        db.prepare(
+          "INSERT INTO license_usage (id, tenant_id, month, event_count, agent_count, last_updated) VALUES (?, ?, ?, ?, ?, datetime('now'))"
+        ).run(id, tenantId, month, events, agents);
+      }
+    },
+
+    async getLicenseUsage(tenantId: string, month: string): Promise<LicenseUsageRow | null> {
+      const row = getSync<LicenseUsageRow>(
+        'SELECT * FROM license_usage WHERE tenant_id = ? AND month = ?',
+        [tenantId, month]
+      );
+      return row ?? null;
     },
   };
 

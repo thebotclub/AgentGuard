@@ -38,6 +38,9 @@ import { createSlackHitlRoutes } from './routes/slack-hitl.js';
 import { createAgentHierarchyRoutes } from './routes/agent-hierarchy.js';
 import { createSsoRoutes } from './routes/sso.js';
 import { createDocsRoutes } from './routes/docs.js';
+import { createLicenseRoutes } from './routes/license.js';
+import { createStripeWebhookRoutes } from './routes/stripe-webhook.js';
+import { createPricingRoutes } from './routes/pricing.js';
 import type { IDatabase } from './db-interface.js';
 
 // ── Load Templates ─────────────────────────────────────────────────────────
@@ -111,7 +114,7 @@ declare global {
   }
 }
 
-// ── Raw body capture for Slack HMAC signature verification ─────────────────
+// ── Raw body capture for Slack & Stripe HMAC signature verification ────────
 // Must be registered BEFORE express.json so we can read the raw bytes.
 app.use((req: Request, _res: Response, next: NextFunction) => {
   if (req.path === '/api/v1/integrations/slack/callback') {
@@ -140,6 +143,11 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
     next();
   }
 });
+
+// ── Stripe webhook raw body (must come before express.json) ──────────────
+// Stripe requires the raw body for HMAC signature verification.
+// Use express.raw() for this specific path to capture it as a Buffer.
+app.use('/api/v1/webhooks/stripe', express.raw({ type: 'application/json', limit: '1mb' }));
 
 app.use(express.json({ limit: '50kb' }));
 // URL-encoded body parsing (for non-Slack paths, after the raw body middleware)
@@ -379,6 +387,17 @@ async function main(): Promise<void> {
 
   // ── SSO Configuration ─────────────────────────────────────────────────
   app.use(createSsoRoutes(db, auth));
+
+  // ── License API ───────────────────────────────────────────────────────
+  app.use(createLicenseRoutes(db, auth));
+
+  // ── Stripe Webhook Handler ────────────────────────────────────────────
+  // Note: raw body is captured above via express.raw() for this path.
+  // No auth middleware — verified by Stripe HMAC signature.
+  app.use(createStripeWebhookRoutes(db));
+
+  // ── Pricing Page Data ─────────────────────────────────────────────────
+  app.use(createPricingRoutes());
 
   // ── API Documentation (Swagger UI) ────────────────────────────────────
   app.use(createDocsRoutes());

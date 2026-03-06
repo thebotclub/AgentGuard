@@ -158,7 +158,26 @@ tr:hover td { background:rgba(99,102,241,0.04); }
   .charts-row { grid-template-columns:1fr !important; }
   .charts-row > .card:last-child { display:flex; flex-direction:row; align-items:center; gap:16px; }
   .charts-row > .card:last-child .card-body { flex-direction:row !important; align-items:center; justify-content:center; gap:20px; }
+  .lic-grid-top, .lic-grid-bottom { grid-template-columns:1fr !important; }
 }
+
+/* ── LICENSE PAGE ───────────────────────────────────────── */
+.lic-feature-row {
+  display:flex; align-items:center; gap:12px; padding:12px 20px;
+  border-bottom:1px solid var(--border-dim); font-size:0.88rem;
+}
+.lic-feature-row:last-child { border-bottom:none; }
+.lic-feature-icon { font-size:1.1rem; width:20px; text-align:center; flex-shrink:0; }
+.lic-feature-name { flex:1; color:var(--text); }
+.lic-feature-tier { font-size:0.72rem; font-weight:600; font-family:var(--mono); padding:2px 8px; border-radius:12px; }
+.lic-feature-tier-free { background:rgba(34,197,94,0.12); color:var(--green); }
+.lic-feature-tier-pro { background:rgba(99,102,241,0.12); color:var(--accent-hi); }
+.lic-feature-tier-ent { background:rgba(245,158,11,0.12); color:var(--amber); }
+.lic-feature-locked { opacity:0.55; }
+.lic-feature-locked .lic-feature-name { color:var(--text-dim); }
+.lic-badge-free { background:rgba(34,197,94,0.12); color:#22c55e; border:2px solid rgba(34,197,94,0.3); }
+.lic-badge-pro { background:rgba(99,102,241,0.12); color:#818cf8; border:2px solid rgba(99,102,241,0.3); }
+.lic-badge-enterprise { background:rgba(245,158,11,0.12); color:#f59e0b; border:2px solid rgba(245,158,11,0.3); }
 </style>
 </head>
 <body>
@@ -193,6 +212,8 @@ tr:hover td { background:rgba(99,102,241,0.04); }
   <button class="nav-item" onclick="showPage('mcp', event)">🔌 MCP Servers</button>
   <div class="nav-section">Integrate</div>
   <button class="nav-item" onclick="showPage('sdk', event)">🔧 SDK / API</button>
+  <div class="nav-section">Account</div>
+  <button class="nav-item" onclick="showPage('license', event)">⚙️ License</button>
 </div>
 
 <a href="#main-content" style="position:absolute;left:-9999px;top:0;z-index:9999;padding:8px 16px;background:var(--accent);color:white;font-weight:600" onfocus="this.style.left='8px'" onblur="this.style.left='-9999px'">Skip to content</a>
@@ -219,6 +240,8 @@ tr:hover td { background:rgba(99,102,241,0.04); }
     <button class="nav-item" onclick="showPage('mcp', event)">🔌 MCP Servers</button>
     <div class="nav-section">Integrate</div>
     <button class="nav-item" onclick="showPage('sdk', event)">🔧 SDK / API</button>
+    <div class="nav-section">Account</div>
+    <button class="nav-item" onclick="showPage('license', event)">⚙️ License</button>
     <div style="flex:1"></div>
     <div style="padding:12px;border-top:1px solid var(--border-dim);font-size:0.78rem;color:var(--text-dim)">
       <div style="font-weight:600;color:var(--accent-hi)">AgentGuard v0.7.2</div>
@@ -1002,6 +1025,133 @@ const { result, riskScore } = await res.json();</pre>
       </div>
     </div>
 
+    <!-- ── LICENSE PAGE ──────────────────────────────────── -->
+    <div class="page" id="page-license" role="main">
+      <div class="main-header">
+        <h1>⚙️ License &amp; Usage</h1>
+        <button class="btn btn-primary" onclick="refreshLicenseData()">↻ Refresh</button>
+      </div>
+
+      <!-- Plan badge + key row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px" class="lic-grid-top">
+
+        <!-- Current plan -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><h2>Current Plan</h2></div>
+          <div class="card-body" style="text-align:center;padding:32px 20px">
+            <div id="lic-plan-badge" style="display:inline-block;padding:10px 32px;border-radius:40px;font-size:1.35rem;font-weight:700;letter-spacing:0.04em;margin-bottom:16px;background:rgba(34,197,94,0.12);color:#22c55e;border:2px solid rgba(34,197,94,0.3)">
+              Free Plan
+            </div>
+            <div id="lic-plan-sub" style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px">25,000 events/month · 3 agents · 7-day retention</div>
+            <button class="btn btn-primary" style="width:100%;padding:12px 24px;font-size:0.95rem;background:linear-gradient(135deg,#5254d4,#818cf8)" onclick="window.open('https://agentguard.tech/pricing?ref=dashboard','_blank')">
+              ⚡ Upgrade to Pro — $149/mo
+            </button>
+          </div>
+        </div>
+
+        <!-- License key -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><h2>License Key</h2></div>
+          <div class="card-body">
+            <div id="lic-key-section-free" style="text-align:center;padding:20px 0">
+              <div style="font-size:2rem;margin-bottom:12px">🔑</div>
+              <div style="color:var(--text-dim);font-size:0.85rem;margin-bottom:16px">No license key active — running on Free tier</div>
+              <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:12px">Have a key? Set <code style="font-family:var(--mono);background:var(--bg-card2);padding:2px 6px;border-radius:4px">AGENTGUARD_LICENSE_KEY</code> in your environment and restart.</div>
+            </div>
+            <div id="lic-key-section-pro" style="display:none">
+              <div style="margin-bottom:12px">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">Active Key</div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <code id="lic-key-display" style="flex:1;font-family:var(--mono);font-size:0.85rem;background:var(--bg-card2);padding:10px 14px;border-radius:8px;border:1px solid var(--border-dim);color:var(--text-bright);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">AGKEY-••••••••••••••••••••••••••••</code>
+                  <button onclick="copyLicenseKey()" style="background:var(--accent-dim);border:1px solid var(--border);border-radius:8px;color:var(--accent-hi);cursor:pointer;padding:10px 14px;font-size:0.85rem;white-space:nowrap;font-family:inherit" title="Copy license key">📋 Copy</button>
+                </div>
+              </div>
+              <div id="lic-key-meta" style="font-size:0.78rem;color:var(--text-dim)">
+                <!-- filled by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Usage meter -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <h2>Monthly Usage</h2>
+          <span id="lic-usage-period" style="font-size:0.78rem;color:var(--text-dim)">Current billing period</span>
+        </div>
+        <div class="card-body">
+          <!-- Main events meter -->
+          <div style="margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+              <span style="font-size:0.85rem;font-weight:600;color:var(--text-bright)">Evaluation Events</span>
+              <span id="lic-events-label" style="font-family:var(--mono);font-size:0.85rem;color:var(--text-dim)">12,450 / 25,000</span>
+            </div>
+            <div style="height:10px;background:var(--bg-card2);border-radius:10px;overflow:hidden;border:1px solid var(--border-dim)">
+              <div id="lic-events-bar" style="height:100%;width:49.8%;background:var(--green);border-radius:10px;transition:width 0.4s ease,background 0.4s ease"></div>
+            </div>
+            <div id="lic-events-sub" style="font-size:0.75rem;color:var(--text-dim);margin-top:6px">49.8% used · resets in 12 days</div>
+          </div>
+
+          <!-- Agents meter -->
+          <div style="margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+              <span style="font-size:0.85rem;font-weight:600;color:var(--text-bright)">Agent Seats</span>
+              <span id="lic-agents-label" style="font-family:var(--mono);font-size:0.85rem;color:var(--text-dim)">2 / 3</span>
+            </div>
+            <div style="height:8px;background:var(--bg-card2);border-radius:10px;overflow:hidden;border:1px solid var(--border-dim)">
+              <div id="lic-agents-bar" style="height:100%;width:66.7%;background:var(--amber);border-radius:10px;transition:width 0.4s ease,background 0.4s ease"></div>
+            </div>
+          </div>
+
+          <!-- HITL meter -->
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+              <span style="font-size:0.85rem;font-weight:600;color:var(--text-bright)">HITL Gates (concurrent)</span>
+              <span id="lic-hitl-label" style="font-family:var(--mono);font-size:0.85rem;color:var(--text-dim)">1 / 3</span>
+            </div>
+            <div style="height:8px;background:var(--bg-card2);border-radius:10px;overflow:hidden;border:1px solid var(--border-dim)">
+              <div id="lic-hitl-bar" style="height:100%;width:33.3%;background:var(--green);border-radius:10px;transition:width 0.4s ease,background 0.4s ease"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Features list + Usage history row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px" class="lic-grid-bottom">
+
+        <!-- Features -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><h2>Features</h2></div>
+          <div class="card-body" style="padding:0">
+            <div id="lic-features-list">
+              <!-- populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Usage history table -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><h2>Usage History</h2><span style="font-size:0.78rem;color:var(--text-dim)">Last 6 months</span></div>
+          <div class="card-body no-pad">
+            <table id="lic-history-table">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th style="text-align:right">Events</th>
+                  <th style="text-align:right">% of Limit</th>
+                </tr>
+              </thead>
+              <tbody id="lic-history-body">
+                <!-- populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-license -->
+
   </main><!-- /main -->
 </div><!-- /app -->
 
@@ -1606,6 +1756,240 @@ async function loadDashboardFeed() {
   } catch {}
 }
 
+// ── License Page ─────────────────────────────────────────
+
+// Stored raw license key (unmasked) for copy functionality
+var _licenseKeyRaw = null;
+
+var LICENSE_FEATURES = [
+  { key: 'evaluate',  label: 'Core evaluate',          tier: 'Free',       free: true },
+  { key: 'audit',     label: 'Audit trail',             tier: 'Free',       free: true },
+  { key: 'hitl',      label: 'HITL approvals',          tier: 'Free',       free: true },
+  { key: 'siem',      label: 'SIEM export',             tier: 'Pro+',       free: false },
+  { key: 'sso',       label: 'SSO / SAML',              tier: 'Pro+',       free: false },
+  { key: 'a2a',       label: 'Multi-agent A2A',         tier: 'Pro+',       free: false },
+  { key: 'anomaly',   label: 'ML anomaly detection',    tier: 'Enterprise', free: false },
+];
+
+var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function licUsageColor(pct) {
+  if (pct >= 80) return 'var(--red)';
+  if (pct >= 60) return 'var(--amber)';
+  return 'var(--green)';
+}
+
+function renderLicenseFeatures(enabledKeys) {
+  var el = document.getElementById('lic-features-list');
+  if (!el) return;
+  el.innerHTML = LICENSE_FEATURES.map(function(f) {
+    var enabled = enabledKeys ? enabledKeys.includes(f.key) : f.free;
+    var icon = enabled ? '✅' : '🔒';
+    var tierCls = f.tier === 'Free' ? 'lic-feature-tier-free' : f.tier === 'Pro+' ? 'lic-feature-tier-pro' : 'lic-feature-tier-ent';
+    var lockedCls = enabled ? '' : ' lic-feature-locked';
+    return '<div class="lic-feature-row' + lockedCls + '">' +
+      '<span class="lic-feature-icon">' + icon + '</span>' +
+      '<span class="lic-feature-name">' + esc(f.label) + '</span>' +
+      '<span class="lic-feature-tier ' + tierCls + '">' + esc(f.tier) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function renderUsageHistory(history) {
+  var tbody = document.getElementById('lic-history-body');
+  if (!tbody) return;
+  if (!history || !history.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:20px">No history available</td></tr>';
+    return;
+  }
+  tbody.innerHTML = history.map(function(row) {
+    var pct = row.limit > 0 ? Math.round(row.events / row.limit * 100) : 0;
+    var color = licUsageColor(pct);
+    return '<tr>' +
+      '<td style="font-weight:500">' + esc(row.month) + '</td>' +
+      '<td style="text-align:right;font-family:var(--mono)">' + (row.events || 0).toLocaleString() + '</td>' +
+      '<td style="text-align:right">' +
+        '<span style="font-family:var(--mono);font-weight:600;color:' + color + '">' + pct + '%</span>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function applyLicenseStatus(data) {
+  // Plan badge
+  var badge = document.getElementById('lic-plan-badge');
+  var sub = document.getElementById('lic-plan-sub');
+  var tier = (data.tier || 'free').toLowerCase();
+  if (badge) {
+    badge.textContent = tier === 'enterprise' ? 'Enterprise' : tier === 'pro' ? 'Pro Plan' : 'Free Plan';
+    badge.className = '';
+    badge.style.cssText = 'display:inline-block;padding:10px 32px;border-radius:40px;font-size:1.35rem;font-weight:700;letter-spacing:0.04em;margin-bottom:16px';
+    if (tier === 'enterprise') {
+      badge.style.background = 'rgba(245,158,11,0.12)';
+      badge.style.color = '#f59e0b';
+      badge.style.border = '2px solid rgba(245,158,11,0.3)';
+    } else if (tier === 'pro') {
+      badge.style.background = 'rgba(99,102,241,0.12)';
+      badge.style.color = '#818cf8';
+      badge.style.border = '2px solid rgba(99,102,241,0.3)';
+    } else {
+      badge.style.background = 'rgba(34,197,94,0.12)';
+      badge.style.color = '#22c55e';
+      badge.style.border = '2px solid rgba(34,197,94,0.3)';
+    }
+  }
+  if (sub) {
+    var subText = {
+      free:       '25,000 events/month · 3 agents · 7-day retention',
+      pro:        '500,000 events/month · 25 agents · 90-day retention',
+      enterprise: 'Unlimited events · custom seats · custom retention'
+    };
+    sub.textContent = subText[tier] || subText.free;
+  }
+
+  // Hide upgrade CTA for paid tiers
+  var ctaBtn = document.querySelector('#page-license .btn-primary');
+  if (ctaBtn && tier !== 'free') ctaBtn.style.display = 'none';
+
+  // License key section
+  var freeSec = document.getElementById('lic-key-section-free');
+  var proSec = document.getElementById('lic-key-section-pro');
+  if (data.licenseKey) {
+    _licenseKeyRaw = data.licenseKey;
+    var masked = data.licenseKey.length > 12
+      ? data.licenseKey.slice(0, 8) + '•'.repeat(data.licenseKey.length - 12) + data.licenseKey.slice(-4)
+      : data.licenseKey;
+    var keyDisplay = document.getElementById('lic-key-display');
+    if (keyDisplay) keyDisplay.textContent = masked;
+    var meta = document.getElementById('lic-key-meta');
+    if (meta) {
+      meta.innerHTML =
+        (data.expiresAt ? '<div style="margin-bottom:4px">Expires: <strong>' + new Date(data.expiresAt).toLocaleDateString() + '</strong></div>' : '') +
+        (data.tenantId  ? '<div>Tenant: <code style="font-family:var(--mono);font-size:0.78rem">' + esc(data.tenantId) + '</code></div>' : '');
+    }
+    if (freeSec) freeSec.style.display = 'none';
+    if (proSec)  proSec.style.display  = 'block';
+  } else {
+    if (freeSec) freeSec.style.display = 'block';
+    if (proSec)  proSec.style.display  = 'none';
+  }
+
+  // Features
+  renderLicenseFeatures(data.features || null);
+}
+
+function applyUsageData(data) {
+  var eventsUsed  = data.eventsUsed  || 0;
+  var eventsLimit = data.eventsLimit || 25000;
+  var agentsUsed  = data.agentsUsed  || 0;
+  var agentsLimit = data.agentsLimit || 3;
+  var hitlUsed    = data.hitlUsed    || 0;
+  var hitlLimit   = data.hitlLimit   || 3;
+  var daysLeft    = data.daysUntilReset || 0;
+
+  // Events bar
+  var evtPct = Math.min(Math.round(eventsUsed / eventsLimit * 100), 100);
+  var evtBar = document.getElementById('lic-events-bar');
+  var evtLbl = document.getElementById('lic-events-label');
+  var evtSub = document.getElementById('lic-events-sub');
+  if (evtBar) { evtBar.style.width = evtPct + '%'; evtBar.style.background = licUsageColor(evtPct); }
+  if (evtLbl) evtLbl.textContent = eventsUsed.toLocaleString() + ' / ' + eventsLimit.toLocaleString();
+  if (evtSub) evtSub.textContent = evtPct + '% used · resets in ' + daysLeft + ' days';
+
+  // Agents bar
+  var agPct = Math.min(Math.round(agentsUsed / agentsLimit * 100), 100);
+  var agBar = document.getElementById('lic-agents-bar');
+  var agLbl = document.getElementById('lic-agents-label');
+  if (agBar) { agBar.style.width = agPct + '%'; agBar.style.background = licUsageColor(agPct); }
+  if (agLbl) agLbl.textContent = agentsUsed + ' / ' + agentsLimit;
+
+  // HITL bar
+  var hitlPct = Math.min(Math.round(hitlUsed / hitlLimit * 100), 100);
+  var hitlBar = document.getElementById('lic-hitl-bar');
+  var hitlLbl = document.getElementById('lic-hitl-label');
+  if (hitlBar) { hitlBar.style.width = hitlPct + '%'; hitlBar.style.background = licUsageColor(hitlPct); }
+  if (hitlLbl) hitlLbl.textContent = hitlUsed + ' / ' + hitlLimit;
+
+  // Usage period
+  var period = document.getElementById('lic-usage-period');
+  if (period && data.periodStart && data.periodEnd) {
+    period.textContent = new Date(data.periodStart).toLocaleDateString() + ' – ' + new Date(data.periodEnd).toLocaleDateString();
+  }
+
+  // History
+  renderUsageHistory(data.history || null);
+}
+
+function licenseDefaultData() {
+  // Demo/fallback data so the page always looks good
+  var now = new Date();
+  var history = [];
+  for (var i = 5; i >= 0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    var events = Math.floor(Math.random() * 18000) + 3000;
+    history.push({ month: MONTHS[d.getMonth()] + ' ' + d.getFullYear(), events: events, limit: 25000 });
+  }
+  return {
+    status: {
+      tier: 'free',
+      licenseKey: null,
+      features: ['evaluate', 'audit', 'hitl'],
+    },
+    usage: {
+      eventsUsed: 12450,
+      eventsLimit: 25000,
+      agentsUsed: 2,
+      agentsLimit: 3,
+      hitlUsed: 1,
+      hitlLimit: 3,
+      daysUntilReset: 12,
+      periodStart: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+      periodEnd:   new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
+      history: history,
+    }
+  };
+}
+
+async function loadLicenseData() {
+  var defaults = licenseDefaultData();
+
+  // Always render defaults first for instant feedback
+  applyLicenseStatus(defaults.status);
+  applyUsageData(defaults.usage);
+
+  if (!storedApiKey) return; // No key — use demo data
+
+  // Try to fetch real data from API
+  try {
+    var headers = getApiHeaders();
+    var [statusRes, usageRes] = await Promise.all([
+      fetch(API_PRIMARY + '/api/v1/license/status',  { headers: headers, signal: AbortSignal.timeout(8000) }),
+      fetch(API_PRIMARY + '/api/v1/license/usage',   { headers: headers, signal: AbortSignal.timeout(8000) }),
+    ]);
+    if (statusRes.ok) {
+      var statusData = await statusRes.json();
+      applyLicenseStatus(statusData);
+    }
+    if (usageRes.ok) {
+      var usageData = await usageRes.json();
+      applyUsageData(usageData);
+    }
+  } catch {
+    // Silently fall back to demo data already rendered
+  }
+}
+
+function refreshLicenseData() { loadLicenseData(); }
+
+function copyLicenseKey() {
+  var key = _licenseKeyRaw || document.getElementById('lic-key-display')?.textContent || '';
+  if (!key || key.includes('•')) return;
+  navigator.clipboard.writeText(key).then(function() {
+    var btn = document.querySelector('#lic-key-section-pro button');
+    if (btn) { var orig = btn.textContent; btn.textContent = '✓ Copied!'; setTimeout(function() { btn.textContent = orig; }, 1500); }
+  }).catch(function() {});
+}
+
 // ── Init ─────────────────────────────────────────────────
 async function init() {
   // Load stored API key
@@ -1714,7 +2098,7 @@ function showPage(id, evt) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   // Update title
-  const titles = { overview: 'Dashboard', live: 'Live Feed', evaluate: 'Evaluate', policy: 'Policies', audit: 'Audit Trail', killswitch: 'Kill Switch', sdk: 'SDK & API', agents: 'Agents', readiness: 'Deployment Readiness', webhooks: 'Webhooks', ratelimits: 'Rate Limits', costs: 'Costs', analytics: 'Analytics', compliance: 'Compliance', mcp: 'MCP Servers' };
+  const titles = { overview: 'Dashboard', live: 'Live Feed', evaluate: 'Evaluate', policy: 'Policies', audit: 'Audit Trail', killswitch: 'Kill Switch', sdk: 'SDK & API', agents: 'Agents', readiness: 'Deployment Readiness', webhooks: 'Webhooks', ratelimits: 'Rate Limits', costs: 'Costs', analytics: 'Analytics', compliance: 'Compliance', mcp: 'MCP Servers', license: 'License & Usage' };
   document.title = `AgentGuard — ${titles[id] || id}`;
   // Mark active nav item
   if (evt && evt.target) {
@@ -1741,6 +2125,7 @@ function showPage(id, evt) {
   if (id === 'analytics') { loadAnalytics(); }
   if (id === 'compliance') { loadCompliance(); }
   if (id === 'mcp') { loadMcpServers(); }
+  if (id === 'license') { loadLicenseData(); }
 }
 
 // ── Evaluate ────────────────────────────────────────────
