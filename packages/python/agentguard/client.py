@@ -2,19 +2,260 @@
 import json
 import os
 import platform
+import re
 import sys
 import threading
-from typing import Any, Optional
+import time
+from fnmatch import fnmatch
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
 __version__ = "0.7.2"
 
 
+# ─── Local Policy Engine ───────────────────────────────────────────────────────
+
+class _LocalPolicyEngine:
+    """
+    In-process policy evaluator for <5ms local evaluation.
+
+    Consumes a PolicyBundle dict (same shape as GET /api/v1/policy/bundle)
+    and evaluates tool calls without any I/O.
+    """
+
+    _BASE_RISK: Dict[str, int] = {
+        "allow": 0,
+        "monitor": 10,
+        "block": 50,
+        "require_approval": 40,
+    }
+
+    def __init__(self) -> None:
+        self._policy: Optional[Dict] = None
+        self._lock = threading.Lock()
+
+    def is_ready(self) -> bool:
+        with self._lock:
+            return self._policy is not None
+
+    def policy_version(self) -> Optional[str]:
+        with self._lock:
+            return self._policy.get("version") if self._policy else None
+
+    def policy_checksum(self) -> Optional[str]:
+        with self._lock:
+            return self._policy.get("checksum") if self._policy else None
+
+    def load_policy(self, policy_json: str) -> None:
+        bundle = json.loads(policy_json)
+        if not isinstance(bundle, dict) or not isinstance(bundle.get("rules"), list):
+            raise ValueError("_LocalPolicyEngine: invalid policy JSON")
+        with self._lock:
+            self._policy = bundle
+
+    def load_bundle(self, bundle: Dict) -> None:
+        with self._lock:
+            self._policy = bundle
+
+    def evaluate(self, tool: str, params: Optional[Dict] = None) -> Dict:
+        with self._lock:
+            policy = self._policy
+        if policy is None:
+            raise RuntimeError(
+                "_LocalPolicyEngine: no policy loaded. Call sync_policies() first."
+            )
+        start = time.perf_counter()
+        result = self._evaluate(tool, params or {}, policy)
+        result["duration_ms"] = (time.perf_counter() - start) * 1000
+        return result
+
+    def _evaluate(self, tool: str, params: Dict, bundle: Dict) -> Dict:
+        tool_index: Dict[str, List[int]] = bundle.get("toolIndex", {})
+        rules: List[Dict] = bundle.get("rules", [])
+
+        exact = tool_index.get(tool, [])
+        wildcard = tool_index.get("*", [])
+        no_tool = tool_index.get("__no_tool__", [])
+
+        candidate_indices = set(exact) | set(wildcard) | set(no_tool)
+        candidates = [rules[i] for i in candidate_indices if i < len(rules)]
+        candidates.sort(key=lambda r: r.get("priority", 100))
+
+        monitor_boost = 0
+        winning_priority: Optional[int] = None
+        terminal_group: List[Dict] = []
+
+        # Pass 1: collect monitor rules (accumulate, never terminate)
+        for rule in candidates:
+            if rule.get("action") != "monitor":
+                continue
+            if self._matches_rule(rule, tool, params):
+                monitor_boost += rule.get("riskBoost", 0)
+
+        # Pass 2: first-match terminal rule
+        for rule in candidates:
+            if rule.get("action") == "monitor":
+                continue
+            if not self._matches_rule(rule, tool, params):
+                continue
+            priority = rule.get("priority", 100)
+            if winning_priority is None:
+                winning_priority = priority
+                terminal_group.append(rule)
+            elif priority == winning_priority:
+                terminal_group.append(rule)
+            else:
+                break
+
+        terminal_rule: Optional[Dict] = None
+        if len(terminal_group) == 1:
+            terminal_rule = terminal_group[0]
+        elif len(terminal_group) > 1:
+            rank = {"block": 3, "require_approval": 2, "monitor": 1, "allow": 0}
+            terminal_rule = max(terminal_group, key=lambda r: rank.get(r.get("action", "allow"), 0))
+
+        if terminal_rule is None:
+            action = bundle.get("defaultAction", "block")
+            if action == "block":
+                reason = "No matching rule — default action is block (fail-closed)"
+            elif action == "monitor":
+                reason = "No matching rule — default action is monitor (unknown tool flagged for review)"
+            else:
+                reason = "No matching rule — default action is allow (fail-open)"
+            matched_rule_id = None
+        else:
+            action = terminal_rule.get("action", "block")
+            matched_rule_id = terminal_rule.get("id")
+            action_labels = {
+                "allow": "Allowed",
+                "block": "Blocked",
+                "monitor": "Monitored",
+                "require_approval": "Human approval required",
+            }
+            label = action_labels.get(action, "Handled")
+            reason = f'{label} by rule "{matched_rule_id}"'
+
+        base = self._BASE_RISK.get(action, 0)
+        risk_score = min(1000, round((base + monitor_boost) * 1.5))
+
+        result: Dict = {
+            "result": action,
+            "risk_score": risk_score,
+            "reason": reason,
+        }
+        if matched_rule_id is not None:
+            result["matched_rule_id"] = matched_rule_id
+        return result
+
+    def _matches_rule(self, rule: Dict, tool: str, params: Dict) -> bool:
+        # Tool condition
+        tc = rule.get("toolCondition")
+        if tc and not self._matches_tool(tc, tool):
+            return False
+        # Param conditions (AND logic)
+        for param_map in rule.get("paramConditions", []):
+            if not self._matches_params(param_map, params):
+                return False
+        return True
+
+    def _matches_tool(self, condition: Dict, tool: str) -> bool:
+        in_list = condition.get("in")
+        if in_list is not None and len(in_list) > 0:
+            if tool not in in_list:
+                return False
+        not_in_list = condition.get("not_in")
+        if not_in_list is not None and len(not_in_list) > 0:
+            if tool in not_in_list:
+                return False
+        matches = condition.get("matches")
+        if matches is not None and len(matches) > 0:
+            if not any(fnmatch(tool, pat) for pat in matches):
+                return False
+        regex = condition.get("regex")
+        if regex is not None:
+            if not re.search(regex, tool):
+                return False
+        return True
+
+    def _matches_params(self, conditions: Dict, params: Dict) -> bool:
+        for field, constraint in conditions.items():
+            value = params.get(field)
+            if value is None and field not in params:
+                c = constraint if isinstance(constraint, dict) else {}
+                if c.get("exists") is False:
+                    continue
+                if c.get("is_null") is True:
+                    continue
+                return False  # absent param cannot satisfy positive constraint
+            if not self._eval_constraint(constraint, value):
+                return False
+        return True
+
+    def _eval_constraint(self, c: Any, value: Any) -> bool:
+        if not isinstance(c, dict):
+            return True
+        if "eq" in c and c["eq"] is not None and value != c["eq"]:
+            return False
+        if "not_eq" in c and c["not_eq"] is not None and value == c["not_eq"]:
+            return False
+        if "gt" in c and c["gt"] is not None:
+            if not isinstance(value, (int, float)) or value <= c["gt"]:
+                return False
+        if "gte" in c and c["gte"] is not None:
+            if not isinstance(value, (int, float)) or value < c["gte"]:
+                return False
+        if "lt" in c and c["lt"] is not None:
+            if not isinstance(value, (int, float)) or value >= c["lt"]:
+                return False
+        if "lte" in c and c["lte"] is not None:
+            if not isinstance(value, (int, float)) or value > c["lte"]:
+                return False
+        if "in" in c and c["in"] is not None:
+            if value not in c["in"]:
+                return False
+        if "not_in" in c and c["not_in"] is not None:
+            if value in c["not_in"]:
+                return False
+        if "contains" in c and c["contains"] is not None:
+            if c["contains"] not in str(value):
+                return False
+        if "contains_any" in c and c["contains_any"] is not None:
+            if not any(s in str(value) for s in c["contains_any"]):
+                return False
+        if "pattern" in c and c["pattern"] is not None:
+            if not fnmatch(str(value), c["pattern"]):
+                return False
+        if "regex" in c and c["regex"] is not None:
+            if not re.search(c["regex"], str(value)):
+                return False
+        if "exists" in c and c["exists"] is not None:
+            exists = value is not None
+            if c["exists"] != exists:
+                return False
+        if "is_null" in c and c["is_null"] is not None:
+            is_null = value is None
+            if c["is_null"] != is_null:
+                return False
+        return True
+
+
+# ─── AgentGuard Client ─────────────────────────────────────────────────────────
+
 class AgentGuard:
     """Client for the AgentGuard API."""
 
-    def __init__(self, api_key: str, base_url: str = "https://api.agentguard.tech", telemetry: bool = True):
+    _AUDIT_BATCH_MAX = 100
+    _AUDIT_FLUSH_INTERVAL = 5.0  # seconds
+
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str = "https://api.agentguard.tech",
+        telemetry: bool = True,
+        local_eval: bool = False,
+        policy_sync_interval_ms: int = 60_000,
+    ):
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         # Disable telemetry if env var set or constructor option is False
@@ -22,6 +263,126 @@ class AgentGuard:
             telemetry and os.environ.get("AGENTGUARD_NO_TELEMETRY") != "1"
         )
         self._telemetry_sent = False
+
+        # Local eval
+        self._local_eval = local_eval
+        self._policy_sync_interval = policy_sync_interval_ms / 1000.0
+        self._local_engine = _LocalPolicyEngine()
+        self._sync_thread: Optional[threading.Thread] = None
+        self._stop_event = threading.Event()
+
+        # Audit batching
+        self._audit_batch: List[Dict] = []
+        self._audit_lock = threading.Lock()
+        self._audit_thread: Optional[threading.Thread] = None
+
+        if self._local_eval:
+            self._start_policy_sync()
+            self._start_audit_flush()
+
+    # ── Background threads ─────────────────────────────────────────────────────
+
+    def _start_policy_sync(self) -> None:
+        """Start the background policy sync thread."""
+        # Non-blocking initial sync
+        t = threading.Thread(target=self._bg_sync_once, daemon=True)
+        t.start()
+        # Periodic background sync
+        self._sync_thread = threading.Thread(target=self._bg_sync_loop, daemon=True)
+        self._sync_thread.start()
+
+    def _bg_sync_once(self) -> None:
+        try:
+            self.sync_policies()
+        except Exception:
+            pass
+
+    def _bg_sync_loop(self) -> None:
+        while not self._stop_event.wait(self._policy_sync_interval):
+            try:
+                self.sync_policies()
+            except Exception:
+                pass
+
+    def _start_audit_flush(self) -> None:
+        """Start the background audit flush thread."""
+        self._audit_thread = threading.Thread(target=self._bg_audit_loop, daemon=True)
+        self._audit_thread.start()
+
+    def _bg_audit_loop(self) -> None:
+        while not self._stop_event.wait(self._AUDIT_FLUSH_INTERVAL):
+            self._flush_audit()
+
+    def destroy(self) -> None:
+        """Stop background threads and flush the audit batch."""
+        self._stop_event.set()
+        self._flush_audit()
+
+    def sync_policies(self) -> None:
+        """Download the tenant's compiled policy bundle and cache it in memory.
+
+        Safe to call manually to force a refresh (e.g. after updating your policy).
+        Failures are swallowed — the existing cached policy remains active.
+        """
+        try:
+            url = f"{self.base_url}/api/v1/policy/bundle"
+            req = Request(
+                url,
+                headers={
+                    "X-API-Key": self.api_key,
+                    "User-Agent": f"agentguard-python/{__version__}",
+                },
+                method="GET",
+            )
+            with urlopen(req, timeout=10) as resp:
+                bundle = json.loads(resp.read().decode())
+                self._local_engine.load_bundle(bundle)
+        except Exception:
+            pass  # Never crash the host process
+
+    # ── Audit batching ─────────────────────────────────────────────────────────
+
+    def _queue_audit_event(self, tool: str, result: str) -> None:
+        with self._audit_lock:
+            self._audit_batch.append({
+                "tool": tool,
+                "result": result,
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            })
+            if len(self._audit_batch) >= self._AUDIT_BATCH_MAX:
+                # Flush immediately (fire-and-forget in a daemon thread)
+                events = self._audit_batch[:]
+                self._audit_batch.clear()
+                t = threading.Thread(target=self._post_audit, args=(events,), daemon=True)
+                t.start()
+
+    def _flush_audit(self) -> None:
+        with self._audit_lock:
+            if not self._audit_batch:
+                return
+            events = self._audit_batch[:]
+            self._audit_batch.clear()
+        self._post_audit(events)
+
+    def _post_audit(self, events: List[Dict]) -> None:
+        try:
+            data = json.dumps({"events": events}).encode()
+            req = Request(
+                f"{self.base_url}/api/v1/audit",
+                data=data,
+                headers={
+                    "X-API-Key": self.api_key,
+                    "Content-Type": "application/json",
+                    "User-Agent": f"agentguard-python/{__version__}",
+                },
+                method="POST",
+            )
+            with urlopen(req, timeout=5) as _:
+                pass
+        except Exception:
+            pass  # Fire-and-forget; never raise
+
+    # ── Telemetry ping ─────────────────────────────────────────────────────────
 
     def _send_telemetry(self) -> None:
         """Fire-and-forget telemetry ping (opt-in, anonymous)."""
@@ -70,15 +431,27 @@ class AgentGuard:
     def evaluate(self, tool: str, params: Optional[dict] = None) -> dict:
         """Evaluate an agent action against the policy engine.
 
+        When ``local_eval=True`` and a policy is cached (via ``sync_policies()``),
+        evaluation runs in-process with <5ms latency. Falls back to HTTP if no
+        policy is cached yet.
+
         Args:
             tool: Name of the tool being called (e.g. "send_email", "read_file")
             params: Optional dict of parameters passed to the tool
 
         Returns:
-            dict with keys: result, riskScore, reason, durationMs, matchedRuleId (optional)
+            dict with keys: result, risk_score, reason, duration_ms, matched_rule_id (optional)
             result is one of: "allow", "block", "monitor", "require_approval"
         """
         self._send_telemetry()
+
+        # ── Local eval path ────────────────────────────────────────────────
+        if self._local_eval and self._local_engine.is_ready():
+            result = self._local_engine.evaluate(tool, params)
+            self._queue_audit_event(tool, result.get("result", ""))
+            return result
+
+        # ── HTTP fallback ──────────────────────────────────────────────────
         return self._request("POST", "/api/v1/evaluate", {"tool": tool, "params": params or {}})
 
     def get_usage(self) -> dict:

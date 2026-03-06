@@ -19,9 +19,13 @@ import type {
   ApprovalRow,
   FeedbackRow,
   ComplianceReportRow,
-  McpServerRow, IntegrationRow,
+  McpServerRow,
+  IntegrationRow,
+  SsoConfigRow,
+  SsoProvider,
   ChildAgentRow,
-  UsageAnalytics, PlatformAnalytics,
+  UsageAnalytics,
+  PlatformAnalytics,
 } from './db-interface.js';
 import { randomUUID } from 'crypto';
 import crypto from 'crypto';
@@ -227,6 +231,17 @@ const SCHEMA_SQL = `
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
   CREATE INDEX IF NOT EXISTS idx_integrations_tenant ON integrations(tenant_id, type);
+
+  CREATE TABLE IF NOT EXISTS sso_configs (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    tenant_id TEXT NOT NULL UNIQUE REFERENCES tenants(id),
+    provider TEXT NOT NULL,
+    domain TEXT NOT NULL,
+    client_id TEXT NOT NULL,
+    client_secret_encrypted TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  CREATE INDEX IF NOT EXISTS idx_sso_configs_tenant ON sso_configs(tenant_id);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -242,9 +257,14 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
 
   const poolConfig: PoolConfig = {
     connectionString,
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    // Hardened pool limits for multi-tenant workloads:
+    // max 20 connections to avoid exhausting DB server resources;
+    // idle timeout 30s to release unused connections promptly.
+    max: 20,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000,
+    // Statement timeout: kill queries running > 5s to trigger graceful degradation
+    // (applied via SET statement_timeout on each acquired client via the 'connect' hook below)
     ssl: {
       // Azure PostgreSQL requires SSL; rejectUnauthorized: false handles self-signed certs
       rejectUnauthorized: false,
@@ -1481,6 +1501,40 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
     },
     async deleteIntegration(tenantId: string, type: 'slack' | 'teams'): Promise<void> {
       await pool.query('DELETE FROM integrations WHERE tenant_id = $1 AND type = $2', [tenantId, type]);
+    },
+
+    // ── SSO Configurations ─────────────────────────────────────────────────────
+    async upsertSsoConfig(
+      tenantId: string,
+      provider: SsoProvider,
+      domain: string,
+      clientId: string,
+      clientSecretEncrypted: string,
+    ): Promise<SsoConfigRow> {
+      const res = await pool.query<SsoConfigRow>(
+        `INSERT INTO sso_configs (tenant_id, provider, domain, client_id, client_secret_encrypted)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (tenant_id) DO UPDATE SET
+           provider = EXCLUDED.provider,
+           domain = EXCLUDED.domain,
+           client_id = EXCLUDED.client_id,
+           client_secret_encrypted = EXCLUDED.client_secret_encrypted
+         RETURNING *`,
+        [tenantId, provider, domain, clientId, clientSecretEncrypted]
+      );
+      return res.rows[0]!;
+    },
+
+    async getSsoConfig(tenantId: string): Promise<SsoConfigRow | undefined> {
+      const res = await pool.query<SsoConfigRow>(
+        'SELECT * FROM sso_configs WHERE tenant_id = $1',
+        [tenantId]
+      );
+      return res.rows[0];
+    },
+
+    async deleteSsoConfig(tenantId: string): Promise<void> {
+      await pool.query('DELETE FROM sso_configs WHERE tenant_id = $1', [tenantId]);
     },
   };
 

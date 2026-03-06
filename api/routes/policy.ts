@@ -6,7 +6,8 @@
  * POST /api/v1/policy/coverage — check coverage of a list of tool names
  */
 import { Router, Request, Response } from 'express';
-import { PolicyEngine } from '../../packages/sdk/src/core/policy-engine.js';
+import { createHash } from 'node:crypto';
+import { PolicyEngine, PolicyCompiler } from '../../packages/sdk/src/core/policy-engine.js';
 import { PolicyRuleSchema, type PolicyDocument, type PolicyRule } from '../../packages/sdk/src/core/types.js';
 import { z } from 'zod';
 import type { IDatabase } from '../db-interface.js';
@@ -129,6 +130,34 @@ export function createPolicyRoutes(
       } catch (e) {
         console.error('[policy] put error:', e);
         res.status(500).json({ error: 'Failed to save policy' });
+      }
+    },
+  );
+
+  // ── GET /api/v1/policy/bundle ─────────────────────────────────────────────
+  // Serves the compiled PolicyBundle optimised for client-side local evaluation.
+  // Auth: tenant API key. Supports ETag-based conditional requests.
+  router.get(
+    '/api/v1/policy/bundle',
+    auth.requireTenantAuth,
+    async (req: Request, res: Response) => {
+      const tenantId = req.tenantId!;
+      try {
+        const policy = await getEffectivePolicy(db, tenantId);
+        const bundle = PolicyCompiler.compile(policy);
+
+        // Build ETag from bundle checksum
+        const etag = `"${bundle.checksum}"`;
+        if (req.headers['if-none-match'] === etag) {
+          return res.status(304).end();
+        }
+
+        res.setHeader('ETag', etag);
+        res.setHeader('Cache-Control', 'private, max-age=60');
+        res.json(bundle);
+      } catch (e) {
+        console.error('[policy] bundle error:', e);
+        res.status(500).json({ error: 'Failed to compile policy bundle' });
       }
     },
   );

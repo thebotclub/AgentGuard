@@ -170,6 +170,19 @@ export interface IntegrationRow {
   created_at: string;
 }
 
+export type SsoProvider = 'auth0' | 'okta' | 'azure_ad';
+
+export interface SsoConfigRow {
+  id: string;
+  tenant_id: string;
+  provider: SsoProvider;
+  domain: string;
+  client_id: string;
+  /** AES-GCM encrypted client secret — never returned raw to callers */
+  client_secret_encrypted: string;
+  created_at: string;
+}
+
 export interface McpServerRow {
   id: string;
   tenant_id: string;
@@ -443,6 +456,17 @@ export interface IDatabase {
   ): Promise<IntegrationRow>;
   getIntegration(tenantId: string, type: 'slack' | 'teams'): Promise<IntegrationRow | undefined>;
   deleteIntegration(tenantId: string, type: 'slack' | 'teams'): Promise<void>;
+
+  // ── SSO Configurations ────────────────────────────────────────────────────
+  upsertSsoConfig(
+    tenantId: string,
+    provider: SsoProvider,
+    domain: string,
+    clientId: string,
+    clientSecretEncrypted: string,
+  ): Promise<SsoConfigRow>;
+  getSsoConfig(tenantId: string): Promise<SsoConfigRow | undefined>;
+  deleteSsoConfig(tenantId: string): Promise<void>;
 
   // ── Health Check ──────────────────────────────────────────────────────────
   ping(): Promise<boolean>;

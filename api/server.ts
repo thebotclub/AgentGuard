@@ -17,7 +17,7 @@ import {
 } from './validation-routes.js';
 import { createDb } from './db-factory.js';
 import { createAuthMiddleware } from './middleware/auth.js';
-import { rateLimitMiddleware } from './middleware/rate-limit.js';
+import { rateLimitMiddleware, bruteForceMiddleware } from './middleware/rate-limit.js';
 import { loadTemplates, DEFAULT_POLICY, templateCache } from './lib/policy-engine-setup.js';
 import { getGlobalKillSwitch } from './routes/audit.js';
 import { createEvaluateRoutes } from './routes/evaluate.js';
@@ -36,6 +36,8 @@ import { createPIIRoutes } from './routes/pii.js';
 import { createMcpPolicyRoutes } from './routes/mcp-policy.js';
 import { createSlackHitlRoutes } from './routes/slack-hitl.js';
 import { createAgentHierarchyRoutes } from './routes/agent-hierarchy.js';
+import { createSsoRoutes } from './routes/sso.js';
+import { createDocsRoutes } from './routes/docs.js';
 import type { IDatabase } from './db-interface.js';
 
 // ── Load Templates ─────────────────────────────────────────────────────────
@@ -92,7 +94,7 @@ app.use(
       }
     },
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'X-API-Key'],
+    allowedHeaders: ['Content-Type', 'X-API-Key', 'Authorization'],
     credentials: false,
   }),
 );
@@ -169,6 +171,11 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 
 // ── IP Rate Limiting ───────────────────────────────────────────────────────
 app.use(rateLimitMiddleware);
+
+// ── Brute-Force Protection ─────────────────────────────────────────────────
+// Applied to auth-sensitive endpoints only (signup, evaluate, key-verification paths)
+// Must run before the auth middleware processes the key.
+app.use(['/api/v1/signup', '/api/v1/evaluate', '/api/v1/mcp/evaluate'], bruteForceMiddleware);
 
 // ── Main: Init DB then start server ───────────────────────────────────────
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
@@ -318,6 +325,30 @@ async function main(): Promise<void> {
     });
   });
 
+  // ── DB Health / Graceful Degradation Middleware ────────────────────────
+  // If the DB is slow (>5s ping), return 503 with Retry-After to prevent
+  // requests from hanging. This acts as a fast-fail before routes attempt queries.
+  const DB_HEALTH_TIMEOUT_MS = 5_000;
+  app.use(async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const pingPromise = db.ping();
+      const timeoutPromise = new Promise<false>((_, reject) =>
+        setTimeout(() => reject(new Error('DB ping timeout')), DB_HEALTH_TIMEOUT_MS),
+      );
+      const ok = await Promise.race([pingPromise, timeoutPromise]).catch(() => false);
+      if (!ok) {
+        res.setHeader('Retry-After', '30');
+        res.status(503).json({ error: 'Database temporarily unavailable. Please retry shortly.' });
+        return;
+      }
+    } catch {
+      res.setHeader('Retry-After', '30');
+      res.status(503).json({ error: 'Database temporarily unavailable. Please retry shortly.' });
+      return;
+    }
+    next();
+  });
+
   // ── Mount Route Modules ────────────────────────────────────────────────
   app.use(createAuthRoutes(db, auth));
   app.use(createEvaluateRoutes(db, auth));
@@ -345,6 +376,12 @@ async function main(): Promise<void> {
 
   // ── Agent Hierarchy (A2A Multi-Agent Policy Propagation) ─────────────
   app.use(createAgentHierarchyRoutes(db, auth));
+
+  // ── SSO Configuration ─────────────────────────────────────────────────
+  app.use(createSsoRoutes(db, auth));
+
+  // ── API Documentation (Swagger UI) ────────────────────────────────────
+  app.use(createDocsRoutes());
 
   // ── Global Error Handler ───────────────────────────────────────────────
   app.use(

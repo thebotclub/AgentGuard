@@ -21,9 +21,13 @@ import type {
   ApprovalRow,
   FeedbackRow,
   ComplianceReportRow,
-  McpServerRow, IntegrationRow,
+  McpServerRow,
+  IntegrationRow,
+  SsoConfigRow,
+  SsoProvider,
   ChildAgentRow,
-  UsageAnalytics, PlatformAnalytics,
+  UsageAnalytics,
+  PlatformAnalytics,
 } from './db-interface.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
@@ -470,6 +474,20 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
           created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
         CREATE INDEX IF NOT EXISTS idx_integrations_tenant ON integrations(tenant_id, type);
+      `);
+
+      // Migration: sso_configs table (Enterprise SSO)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS sso_configs (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          tenant_id TEXT NOT NULL UNIQUE,
+          provider TEXT NOT NULL,
+          domain TEXT NOT NULL,
+          client_id TEXT NOT NULL,
+          client_secret_encrypted TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_sso_configs_tenant ON sso_configs(tenant_id);
       `);
 
       console.log('[db] SQLite schema ready');
@@ -1130,6 +1148,43 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
     },
     async deleteIntegration(tenantId: string, type: 'slack' | 'teams'): Promise<void> {
       db.prepare('DELETE FROM integrations WHERE tenant_id = ? AND type = ?').run(tenantId, type);
+    },
+
+    // ── SSO Configurations ─────────────────────────────────────────────────────
+    async upsertSsoConfig(
+      tenantId: string,
+      provider: SsoProvider,
+      domain: string,
+      clientId: string,
+      clientSecretEncrypted: string,
+    ): Promise<SsoConfigRow> {
+      const existing = db.prepare('SELECT * FROM sso_configs WHERE tenant_id = ?').get(tenantId) as SsoConfigRow | undefined;
+      if (existing) {
+        db.prepare(
+          'UPDATE sso_configs SET provider = ?, domain = ?, client_id = ?, client_secret_encrypted = ? WHERE tenant_id = ?'
+        ).run(provider, domain, clientId, clientSecretEncrypted, tenantId);
+        return {
+          ...existing,
+          provider,
+          domain,
+          client_id: clientId,
+          client_secret_encrypted: clientSecretEncrypted,
+        };
+      }
+      const id = require('crypto').randomUUID();
+      const created_at = new Date().toISOString();
+      db.prepare(
+        'INSERT INTO sso_configs (id, tenant_id, provider, domain, client_id, client_secret_encrypted, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      ).run(id, tenantId, provider, domain, clientId, clientSecretEncrypted, created_at);
+      return { id, tenant_id: tenantId, provider, domain, client_id: clientId, client_secret_encrypted: clientSecretEncrypted, created_at };
+    },
+
+    async getSsoConfig(tenantId: string): Promise<SsoConfigRow | undefined> {
+      return db.prepare('SELECT * FROM sso_configs WHERE tenant_id = ?').get(tenantId) as SsoConfigRow | undefined;
+    },
+
+    async deleteSsoConfig(tenantId: string): Promise<void> {
+      db.prepare('DELETE FROM sso_configs WHERE tenant_id = ?').run(tenantId);
     },
   };
 

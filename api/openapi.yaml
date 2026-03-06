@@ -1,0 +1,2603 @@
+openapi: 3.0.3
+info:
+  title: AgentGuard Policy Engine API
+  description: |
+    **AgentGuard** is a runtime security platform for AI agents. It provides policy-based evaluation,
+    audit trails, PII detection, MCP server governance, agent hierarchy management, and OWASP compliance reporting.
+
+    ## Authentication
+
+    AgentGuard uses three authentication schemes:
+
+    - **API Key** (`x-api-key` header): Your tenant API key, prefixed `ag_live_`. Used for most authenticated endpoints.
+    - **Agent Key** (`x-api-key` header): Agent-scoped key, prefixed `ag_agent_`. Used for evaluate calls from specific agents.
+    - **Admin Key** (`x-admin-key` header or `x-api-key`): Platform admin key. Required for admin-only endpoints.
+
+    ## Rate Limits
+
+    - Unauthenticated: 10 requests/min per IP
+    - Authenticated: 100 requests/min per IP
+    - Signup: 5 per hour per IP
+
+    ## Base URL
+
+    Production: `https://api.agentguard.tech/api/v1`
+  version: 0.7.2
+  contact:
+    name: AgentGuard Support
+    url: https://agentguard.tech
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.agentguard.tech/api/v1
+    description: Production
+  - url: http://localhost:3000/api/v1
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Account creation, login, and API key management
+  - name: Evaluate
+    description: Core policy evaluation engine
+  - name: Agents
+    description: Agent registry and lifecycle management
+  - name: Audit
+    description: Tamper-evident audit trail
+  - name: Webhooks
+    description: Event-driven webhook subscriptions
+  - name: Policy
+    description: Custom policy rule management
+  - name: Approvals
+    description: Human-in-the-loop approval queue
+  - name: Analytics
+    description: Usage and platform analytics
+  - name: Feedback
+    description: User feedback collection
+  - name: Telemetry
+    description: Anonymous SDK telemetry
+  - name: Compliance
+    description: OWASP Agentic Top 10 compliance reports
+  - name: PII
+    description: Personally Identifiable Information detection and redaction
+  - name: MCP
+    description: Model Context Protocol server governance
+  - name: Slack
+    description: Slack HITL (Human-in-the-Loop) integration
+  - name: Agent Hierarchy
+    description: A2A multi-agent policy propagation and child agent management
+  - name: Playground
+    description: Interactive policy testing without full auth
+  - name: Templates
+    description: Pre-built policy templates
+  - name: Kill Switch
+    description: Emergency stop controls
+  - name: Health
+    description: System health and status
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Tenant API key (prefixed `ag_live_`) or agent key (prefixed `ag_agent_`)
+    AdminKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Platform admin key (set via ADMIN_KEY environment variable)
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT bearer token (future use)
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: "Invalid API key"
+        details:
+          type: array
+          items:
+            type: string
+          description: Additional error details (validation errors)
+
+    PolicyDecision:
+      type: object
+      required: [result, riskScore, reason]
+      properties:
+        result:
+          type: string
+          enum: [allow, block, monitor, require_approval]
+          description: Policy decision outcome
+        riskScore:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Computed risk score (0=safe, 1000=maximum risk)
+        reason:
+          type: string
+          description: Human-readable explanation of the decision
+        matchedRuleId:
+          type: string
+          nullable: true
+          description: ID of the policy rule that matched
+        durationMs:
+          type: number
+          description: Evaluation duration in milliseconds
+        approvalId:
+          type: string
+          nullable: true
+          description: Approval request ID (only when result=require_approval)
+        piiDetected:
+          type: boolean
+          description: Whether PII was detected in the request params
+        piiEntityCount:
+          type: integer
+          description: Number of PII entities detected
+
+    AgentObject:
+      type: object
+      required: [id, tenantId, name, active, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Agent unique identifier
+        tenantId:
+          type: string
+          description: Parent tenant ID
+        name:
+          type: string
+          description: Agent display name
+        apiKey:
+          type: string
+          description: Agent API key (only returned on creation)
+        policyScope:
+          type: array
+          items:
+            type: string
+          description: List of tools this agent is scoped to
+        active:
+          type: boolean
+          description: Whether the agent is currently active
+        createdAt:
+          type: string
+          format: date-time
+        framework:
+          type: string
+          description: Agent framework (e.g., "langchain", "autogen")
+        declaredTools:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Tools declared by this agent during validation
+        validationCoverage:
+          type: number
+          nullable: true
+          description: Policy coverage percentage (0-100)
+        certifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    WebhookObject:
+      type: object
+      required: [id, url, events, active, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+            enum: [block, killswitch, hitl, "*"]
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    AuditEntry:
+      type: object
+      required: [id, tool, result, riskScore, timestamp]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tool:
+          type: string
+        result:
+          type: string
+          enum: [allow, block, monitor, require_approval]
+        riskScore:
+          type: integer
+        reason:
+          type: string
+          nullable: true
+        agentId:
+          type: string
+          nullable: true
+        sessionId:
+          type: string
+          nullable: true
+        ruleId:
+          type: string
+          nullable: true
+        durationMs:
+          type: number
+        hash:
+          type: string
+          description: SHA-256 hash of this entry (chained with previous)
+        timestamp:
+          type: string
+          format: date-time
+
+    PolicyRule:
+      type: object
+      required: [id, action, when]
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        action:
+          type: string
+          enum: [allow, block, monitor, require_approval]
+        when:
+          type: array
+          items:
+            type: object
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        tags:
+          type: array
+          items:
+            type: string
+        riskBoost:
+          type: integer
+
+    PolicyDocument:
+      type: object
+      required: [id, name, version, default, rules]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        version:
+          type: string
+        default:
+          type: string
+          enum: [allow, block, monitor]
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyRule'
+
+    ApprovalObject:
+      type: object
+      required: [id, tool, status, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        agentId:
+          type: string
+          nullable: true
+        tool:
+          type: string
+        params:
+          type: object
+          nullable: true
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        resolvedBy:
+          type: string
+          nullable: true
+
+    ComplianceReport:
+      type: object
+      required: [reportId, score, reportType, generatedAt, controls]
+      properties:
+        reportId:
+          type: string
+          format: uuid
+        score:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Compliance score percentage
+        reportType:
+          type: string
+          example: "owasp-agentic-top10"
+        generatedAt:
+          type: string
+          format: date-time
+        controls:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+              status:
+                type: string
+                enum: [pass, fail, partial, not_applicable]
+              score:
+                type: number
+
+    PIIScanResult:
+      type: object
+      required: [entitiesFound, entities, redactedContent]
+      properties:
+        entitiesFound:
+          type: integer
+          description: Total number of PII entities found
+        entities:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                example: "EMAIL"
+              start:
+                type: integer
+              end:
+                type: integer
+              score:
+                type: number
+        redactedContent:
+          type: string
+          description: Input content with PII replaced by [REDACTED_TYPE] placeholders
+        dryRun:
+          type: boolean
+
+    MCPServerObject:
+      type: object
+      required: [id, name, url, active, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        allowedTools:
+          type: array
+          items:
+            type: string
+        blockedTools:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    TemplateObject:
+      type: object
+      required: [id, name, version, ruleCount]
+      properties:
+        id:
+          type: string
+          example: "owasp-agentic"
+        name:
+          type: string
+          example: "OWASP Agentic Top 10"
+        version:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        ruleCount:
+          type: integer
+
+paths:
+  # ── HEALTH ──────────────────────────────────────────────────────────────
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Returns API and database health status. No authentication required.
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, degraded]
+                  version:
+                    type: string
+              example:
+                status: ok
+                version: "0.7.2"
+        '503':
+          description: System degraded (database unreachable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── AUTH ─────────────────────────────────────────────────────────────────
+
+  /signup:
+    post:
+      tags: [Auth]
+      summary: Create tenant account
+      description: |
+        Create a new tenant account and receive an API key. The API key is shown **only once** — store it securely.
+        Rate limited to 5 signups per hour per IP.
+      operationId: signup
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email]
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                  description: Organization or user name
+                  example: "Acme Corp"
+                email:
+                  type: string
+                  format: email
+                  description: Contact email address
+                  example: "security@acme.com"
+            example:
+              name: "Acme Corp"
+              email: "security@acme.com"
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenantId:
+                    type: string
+                    format: uuid
+                  apiKey:
+                    type: string
+                    description: Your API key — store this securely, not shown again
+                    example: "ag_live_a1b2c3d4e5f6..."
+                  dashboard:
+                    type: string
+                    format: uri
+                  message:
+                    type: string
+              example:
+                tenantId: "550e8400-e29b-41d4-a716-446655440000"
+                apiKey: "ag_live_a1b2c3d4e5f67890abcd1234"
+                dashboard: "https://app.agentguard.tech"
+                message: "Account created. Store your API key securely — it will not be shown again."
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Invalid email format"
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /login:
+    post:
+      tags: [Auth]
+      summary: Retrieve API key by email
+      description: |
+        Retrieve an existing tenant's API key using their email address.
+        This is a recovery mechanism — treat responses carefully.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "security@acme.com"
+            example:
+              email: "security@acme.com"
+      responses:
+        '200':
+          description: API key retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenantId:
+                    type: string
+                  apiKey:
+                    type: string
+                  message:
+                    type: string
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No account found for this email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /keys/rotate:
+    post:
+      tags: [Auth]
+      summary: Rotate API key
+      description: Generate a new API key and invalidate the current one. The new key is shown only once.
+      operationId: rotateKey
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: New API key generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiKey:
+                    type: string
+                    description: New API key — store securely
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── EVALUATE ──────────────────────────────────────────────────────────────
+
+  /evaluate:
+    post:
+      tags: [Evaluate]
+      summary: Evaluate an agent action
+      description: |
+        The core evaluation endpoint. Submits an agent action (tool call) to the policy engine
+        and receives a decision: `allow`, `block`, `monitor`, or `require_approval`.
+
+        Authentication is optional — unauthenticated calls use the default policy.
+        Authenticated calls use tenant-specific custom policies.
+      operationId: evaluate
+      security:
+        - ApiKeyAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tool]
+              properties:
+                tool:
+                  type: string
+                  maxLength: 200
+                  pattern: '^[a-zA-Z0-9_.\-:]+$'
+                  description: Tool name being requested
+                  example: "file_read"
+                params:
+                  type: object
+                  description: Tool parameters (key-value pairs)
+                  example:
+                    path: "/etc/config.yaml"
+                agentId:
+                  type: string
+                  description: Agent identifier for scoped evaluation
+                sessionId:
+                  type: string
+                  description: Session identifier for grouping audit events
+                context:
+                  type: object
+                  properties:
+                    userId:
+                      type: string
+                    environment:
+                      type: string
+                      example: "production"
+                messageHistory:
+                  type: array
+                  description: Recent conversation history for context-aware detection
+                  items:
+                    type: object
+                    required: [role, content]
+                    properties:
+                      role:
+                        type: string
+                        enum: [user, assistant, system]
+                      content:
+                        type: string
+            examples:
+              allow_example:
+                summary: File read (typically allowed)
+                value:
+                  tool: "file_read"
+                  params:
+                    path: "/var/log/app.log"
+                  agentId: "my-agent-001"
+              block_example:
+                summary: Shell exec (typically blocked)
+                value:
+                  tool: "shell_exec"
+                  params:
+                    command: "rm -rf /tmp"
+                  agentId: "my-agent-001"
+              approval_example:
+                summary: Sensitive DB query (requires approval)
+                value:
+                  tool: "db_query"
+                  params:
+                    table: "users"
+                  agentId: "my-agent-001"
+      responses:
+        '200':
+          description: Policy decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyDecision'
+              examples:
+                allow:
+                  value:
+                    result: allow
+                    riskScore: 10
+                    reason: "Matched rule: allow-read-operations"
+                    matchedRuleId: "rule-allow-read"
+                    durationMs: 3.2
+                    approvalId: null
+                block:
+                  value:
+                    result: block
+                    riskScore: 500
+                    reason: "Shell execution is blocked by security policy"
+                    matchedRuleId: "rule-block-shell"
+                    durationMs: 2.8
+                    approvalId: null
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── AGENTS ──────────────────────────────────────────────────────────────
+
+  /agents:
+    post:
+      tags: [Agents]
+      summary: Create agent
+      description: |
+        Register a new agent and receive a scoped agent API key.
+        Agent keys (prefixed `ag_agent_`) are scoped to this agent's policy and cannot create tenant accounts.
+      operationId: createAgent
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                  example: "customer-support-bot"
+                framework:
+                  type: string
+                  description: Agent framework
+                  example: "langchain"
+                description:
+                  type: string
+                  maxLength: 1000
+                policyScope:
+                  type: array
+                  items:
+                    type: string
+                  description: Tools this agent is allowed to use
+                  example: ["file_read", "db_read_public"]
+            example:
+              name: "customer-support-bot"
+              framework: "langchain"
+              policyScope: ["file_read", "db_read_public", "send_email"]
+      responses:
+        '201':
+          description: Agent created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentObject'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440001"
+                tenantId: "550e8400-e29b-41d4-a716-446655440000"
+                name: "customer-support-bot"
+                apiKey: "ag_agent_a1b2c3d4e5f67890abcd1234"
+                policyScope: ["file_read", "db_read_public"]
+                active: true
+                createdAt: "2024-01-15T10:00:00Z"
+                note: "Store the apiKey securely — it will not be shown again."
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Agent name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags: [Agents]
+      summary: List agents
+      description: List all active agents for the authenticated tenant.
+      operationId: listAgents
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Agent list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AgentObject'
+              example:
+                agents:
+                  - id: "550e8400-e29b-41d4-a716-446655440001"
+                    name: "customer-support-bot"
+                    active: true
+                    createdAt: "2024-01-15T10:00:00Z"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /agents/{id}:
+    get:
+      tags: [Agents]
+      summary: Get agent
+      description: Retrieve details for a specific agent.
+      operationId: getAgent
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent ID
+      responses:
+        '200':
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentObject'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /agents/{id}/validate:
+    post:
+      tags: [Agents]
+      summary: Validate agent tools
+      description: |
+        Dry-run an agent's declared tools through the policy engine to check coverage.
+        Returns per-tool decisions without logging to the audit trail.
+        Required before certification.
+      operationId: validateAgent
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [declaredTools]
+              properties:
+                declaredTools:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                  minItems: 1
+                  description: List of tool names the agent will use
+                  example: ["file_read", "db_read_public", "send_email"]
+            example:
+              declaredTools: ["file_read", "db_read_public", "send_email"]
+      responses:
+        '200':
+          description: Validation results with coverage percentage
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agentId:
+                    type: string
+                  coverage:
+                    type: number
+                    description: Policy coverage percentage (0-100)
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tool:
+                          type: string
+                        decision:
+                          type: string
+                          enum: [allow, block, monitor, require_approval]
+                        ruleId:
+                          type: string
+                          nullable: true
+                        riskScore:
+                          type: integer
+              example:
+                agentId: "550e8400-e29b-41d4-a716-446655440001"
+                coverage: 100
+                results:
+                  - tool: "file_read"
+                    decision: "allow"
+                    ruleId: "rule-allow-read"
+                    riskScore: 10
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /agents/{id}/certify:
+    post:
+      tags: [Agents]
+      summary: Certify agent
+      description: |
+        Mark an agent as certified after achieving 100% policy coverage during validation.
+        Certified agents appear with a badge in the dashboard.
+      operationId: certifyAgent
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent certified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agentId:
+                    type: string
+                  certified:
+                    type: boolean
+                  certifiedAt:
+                    type: string
+                    format: date-time
+                  message:
+                    type: string
+        '400':
+          description: Agent has not achieved 100% coverage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /agents/{id}/readiness:
+    get:
+      tags: [Agents]
+      summary: Get agent readiness status
+      description: Check an agent's current validation coverage and certification status.
+      operationId: getAgentReadiness
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent readiness status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agentId:
+                    type: string
+                  certified:
+                    type: boolean
+                  certifiedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  validationCoverage:
+                    type: number
+                    nullable: true
+                  lastValidatedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  ready:
+                    type: boolean
+                    description: True if certified and validation coverage is 100%
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── AUDIT ────────────────────────────────────────────────────────────────
+
+  /audit:
+    get:
+      tags: [Audit]
+      summary: Get audit trail
+      description: |
+        Retrieve paginated audit trail entries for the authenticated tenant.
+        Entries are chained with SHA-256 hashes for tamper detection.
+      operationId: getAudit
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: agentId
+          in: query
+          schema:
+            type: string
+          description: Filter by agent ID
+        - name: result
+          in: query
+          schema:
+            type: string
+            enum: [allow, block, monitor, require_approval]
+          description: Filter by decision result
+      responses:
+        '200':
+          description: Audit entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEntry'
+                  total:
+                    type: integer
+                  chainValid:
+                    type: boolean
+                    description: Whether the hash chain is valid
+              example:
+                entries:
+                  - id: "audit-001"
+                    tool: "file_read"
+                    result: "allow"
+                    riskScore: 10
+                    timestamp: "2024-01-15T10:00:01Z"
+                    hash: "abc123..."
+                total: 1
+                chainValid: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /audit/repair:
+    post:
+      tags: [Audit]
+      summary: Repair audit chain
+      description: |
+        Re-compute the hash chain for the tenant's audit trail. Use when hashes are
+        out of sync due to migration or data import.
+        Requires admin key.
+      operationId: repairAuditChain
+      security:
+        - AdminKeyAuth: []
+      responses:
+        '200':
+          description: Audit chain repaired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  repaired:
+                    type: boolean
+                  entriesUpdated:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── WEBHOOKS ─────────────────────────────────────────────────────────────
+
+  /webhooks:
+    post:
+      tags: [Webhooks]
+      summary: Create webhook
+      description: |
+        Register a webhook URL to receive real-time event notifications.
+        Webhook payloads are HMAC-signed with your optional secret.
+        Only HTTPS URLs are accepted; private/internal IPs are rejected (SSRF protection).
+      operationId: createWebhook
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: HTTPS URL to receive webhook POST requests
+                  example: "https://hooks.example.com/agentguard"
+                events:
+                  type: array
+                  items:
+                    type: string
+                    enum: [block, killswitch, hitl, "*"]
+                  description: Events to subscribe to (default: [block, killswitch])
+                secret:
+                  type: string
+                  description: Optional secret for HMAC signature verification
+            example:
+              url: "https://hooks.example.com/agentguard"
+              events: ["block", "killswitch"]
+              secret: "my-webhook-secret"
+      responses:
+        '201':
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookObject'
+        '400':
+          description: Invalid URL or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags: [Webhooks]
+      summary: List webhooks
+      description: List all registered webhooks for the authenticated tenant.
+      operationId: listWebhooks
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Webhook list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhooks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookObject'
+
+  /webhooks/{id}:
+    put:
+      tags: [Webhooks]
+      summary: Update webhook
+      description: Update an existing webhook's URL, events, or secret.
+      operationId: updateWebhook
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                events:
+                  type: array
+                  items:
+                    type: string
+                    enum: [block, killswitch, hitl, "*"]
+                secret:
+                  type: string
+                active:
+                  type: boolean
+            example:
+              active: false
+      responses:
+        '200':
+          description: Webhook updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookObject'
+        '404':
+          description: Webhook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [Webhooks]
+      summary: Delete webhook
+      description: Remove a webhook registration.
+      operationId: deleteWebhook
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  deleted:
+                    type: boolean
+        '404':
+          description: Webhook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── POLICY ──────────────────────────────────────────────────────────────
+
+  /policy:
+    get:
+      tags: [Policy]
+      summary: Get active policy
+      description: Retrieve the tenant's current effective policy (custom or default).
+      operationId: getPolicy
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Current policy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenantId:
+                    type: string
+                  isCustom:
+                    type: boolean
+                  policy:
+                    $ref: '#/components/schemas/PolicyDocument'
+
+    put:
+      tags: [Policy]
+      summary: Update policy
+      description: |
+        Replace the tenant's custom policy with a new set of rules.
+        Accepts either a full PolicyDocument or an array of PolicyRule objects.
+        Maximum 500 rules per policy.
+      operationId: updatePolicy
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/PolicyRule'
+                  description: Array of policy rules
+                - $ref: '#/components/schemas/PolicyDocument'
+            example:
+              rules:
+                - id: "my-rule-001"
+                  description: "Block file deletion"
+                  priority: 100
+                  action: "block"
+                  when:
+                    - tool:
+                        in: ["file_delete", "rm"]
+                  severity: "high"
+      responses:
+        '200':
+          description: Policy updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenantId:
+                    type: string
+                  ruleCount:
+                    type: integer
+                  message:
+                    type: string
+                  policy:
+                    $ref: '#/components/schemas/PolicyDocument'
+        '400':
+          description: Invalid policy rules
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  details:
+                    type: array
+                    items:
+                      type: string
+
+  # ── APPROVALS ────────────────────────────────────────────────────────────
+
+  /approvals:
+    get:
+      tags: [Approvals]
+      summary: List pending approvals
+      description: List all pending human-in-the-loop approval requests for this tenant.
+      operationId: listApprovals
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Pending approvals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  approvals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovalObject'
+              example:
+                approvals:
+                  - id: "approval-001"
+                    tool: "db_query"
+                    params:
+                      table: "users"
+                    status: "pending"
+                    createdAt: "2024-01-15T10:05:00Z"
+
+  /approvals/{id}/resolve:
+    post:
+      tags: [Approvals]
+      summary: Resolve approval
+      description: Approve or reject a pending HITL approval request.
+      operationId: resolveApproval
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision:
+                  type: string
+                  enum: [approve, reject]
+                  description: Resolution decision
+                reason:
+                  type: string
+                  description: Optional reason for the decision
+            example:
+              decision: "approve"
+              reason: "Verified legitimate use case"
+      responses:
+        '200':
+          description: Approval resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalObject'
+        '404':
+          description: Approval not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── ANALYTICS ────────────────────────────────────────────────────────────
+
+  /analytics/usage:
+    get:
+      tags: [Analytics]
+      summary: Usage analytics
+      description: Retrieve evaluation usage analytics for the past 30 days.
+      operationId: getUsageAnalytics
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Usage analytics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalEvaluations:
+                    type: integer
+                  blocked:
+                    type: integer
+                  allowed:
+                    type: integer
+                  monitored:
+                    type: integer
+                  requireApproval:
+                    type: integer
+                  avgResponseMs:
+                    type: number
+                  dailyBreakdown:
+                    type: array
+                    items:
+                      type: object
+
+  /analytics/platform:
+    get:
+      tags: [Analytics]
+      summary: Platform analytics
+      description: |
+        Platform-wide analytics across all tenants.
+        **Requires admin key.**
+      operationId: getPlatformAnalytics
+      security:
+        - AdminKeyAuth: []
+      responses:
+        '200':
+          description: Platform-wide analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalTenants:
+                    type: integer
+                  totalEvaluations:
+                    type: integer
+                  activeAgents:
+                    type: integer
+        '401':
+          description: Admin key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── FEEDBACK ─────────────────────────────────────────────────────────────
+
+  /feedback:
+    post:
+      tags: [Feedback]
+      summary: Submit feedback
+      description: Submit user feedback with a rating (1-5) and optional comment.
+      operationId: submitFeedback
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: Rating from 1 (poor) to 5 (excellent)
+                  example: 5
+                comment:
+                  type: string
+                  maxLength: 2000
+                  example: "Great tool, very easy to integrate"
+                agent_id:
+                  type: string
+                  description: Optional agent this feedback relates to
+            example:
+              rating: 5
+              comment: "Caught a prompt injection that our tests missed!"
+      responses:
+        '201':
+          description: Feedback submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  rating:
+                    type: integer
+                  comment:
+                    type: string
+                    nullable: true
+                  createdAt:
+                    type: string
+                    format: date-time
+
+    get:
+      tags: [Feedback]
+      summary: List all feedback
+      description: |
+        List all feedback submissions across all tenants.
+        **Requires admin key.**
+      operationId: listFeedback
+      security:
+        - AdminKeyAuth: []
+      responses:
+        '200':
+          description: Feedback list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  feedback:
+                    type: array
+                    items:
+                      type: object
+                  count:
+                    type: integer
+
+  # ── TELEMETRY ────────────────────────────────────────────────────────────
+
+  /telemetry:
+    post:
+      tags: [Telemetry]
+      summary: Submit SDK telemetry
+      description: |
+        Anonymous telemetry ping from SDK installations.
+        No authentication required. Rate limited to 5 per minute per IP.
+        Always returns 202 (even for invalid payloads) to avoid breaking SDK integrations.
+      operationId: submitTelemetry
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sdk_version:
+                  type: string
+                  maxLength: 50
+                  example: "1.2.3"
+                language:
+                  type: string
+                  maxLength: 50
+                  example: "python"
+                node_version:
+                  type: string
+                  maxLength: 50
+                  example: "20.0.0"
+                os_platform:
+                  type: string
+                  maxLength: 100
+                  example: "linux"
+            example:
+              sdk_version: "1.2.3"
+              language: "python"
+              os_platform: "linux"
+      responses:
+        '202':
+          description: Telemetry accepted (always)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted:
+                    type: boolean
+
+  # ── COMPLIANCE ───────────────────────────────────────────────────────────
+
+  /compliance/owasp/generate:
+    post:
+      tags: [Compliance]
+      summary: Generate OWASP compliance report
+      description: |
+        Generate an OWASP Agentic Top 10 compliance report based on the tenant's
+        audit history and policy configuration. Reports are persisted and retrievable via GET.
+      operationId: generateOWASPReport
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agentId:
+                  type: string
+                  description: Optional — scope report to a specific agent
+            example:
+              agentId: "my-agent-001"
+      responses:
+        '201':
+          description: Report generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceReport'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /compliance/owasp/latest:
+    get:
+      tags: [Compliance]
+      summary: Get latest OWASP report
+      description: Retrieve the most recently generated OWASP compliance report for this tenant.
+      operationId: getLatestOWASPReport
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Latest compliance report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceReport'
+        '404':
+          description: No report found — generate one first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /compliance/owasp/reports/{id}:
+    get:
+      tags: [Compliance]
+      summary: Get compliance report by ID
+      description: Retrieve a specific OWASP compliance report by its ID.
+      operationId: getOWASPReportById
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Report UUID
+      responses:
+        '200':
+          description: Compliance report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceReport'
+        '404':
+          description: Report not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── PII ──────────────────────────────────────────────────────────────────
+
+  /pii/scan:
+    post:
+      tags: [PII]
+      summary: Scan content for PII
+      description: |
+        Detect and redact personally identifiable information (PII) from text content.
+        Detects: email addresses, phone numbers, credit card numbers, SSNs, IP addresses,
+        dates of birth, names, and more.
+
+        Raw PII text is **never** stored — only entity type, position, and confidence score.
+      operationId: scanPII
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 50000
+                  description: Text content to scan for PII
+                  example: "Customer John Smith (john@example.com) called from 555-123-4567"
+                dryRun:
+                  type: boolean
+                  description: If true, scan but don't log to audit trail
+                  example: false
+            example:
+              content: "Customer John Smith (john@example.com) called from 555-123-4567"
+              dryRun: false
+      responses:
+        '200':
+          description: PII scan results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PIIScanResult'
+              example:
+                entitiesFound: 2
+                entities:
+                  - type: "EMAIL"
+                    start: 21
+                    end: 38
+                    score: 0.99
+                  - type: "PHONE"
+                    start: 51
+                    end: 63
+                    score: 0.95
+                redactedContent: "Customer John Smith ([REDACTED_EMAIL]) called from [REDACTED_PHONE]"
+                dryRun: false
+
+  # ── MCP ──────────────────────────────────────────────────────────────────
+
+  /mcp/evaluate:
+    post:
+      tags: [MCP]
+      summary: Evaluate MCP tool call
+      description: |
+        Evaluate a Model Context Protocol (MCP) tool call against the policy engine with
+        additional SSRF protection — URL arguments are scanned for private network addresses.
+      operationId: evaluateMCPTool
+      security:
+        - ApiKeyAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tool]
+              properties:
+                server:
+                  type: string
+                  maxLength: 200
+                  description: MCP server identifier
+                  example: "filesystem-server"
+                tool:
+                  type: string
+                  maxLength: 200
+                  example: "read_file"
+                arguments:
+                  type: object
+                  description: Tool arguments
+                agentId:
+                  type: string
+                  maxLength: 200
+            example:
+              server: "filesystem-server"
+              tool: "read_file"
+              arguments:
+                path: "/var/log/app.log"
+              agentId: "my-agent-001"
+      responses:
+        '200':
+          description: MCP evaluation decision
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  action:
+                    type: string
+                    enum: [allow, block, monitor, require_approval]
+                  riskScore:
+                    type: integer
+                  reason:
+                    type: string
+                  ssrfBlocked:
+                    type: boolean
+                    description: True if blocked due to SSRF detection
+
+  /mcp/servers:
+    post:
+      tags: [MCP]
+      summary: Register MCP server
+      description: Register an MCP server with allowed and blocked tool lists for policy enforcement.
+      operationId: registerMCPServer
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, url]
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                  example: "production-filesystem"
+                url:
+                  type: string
+                  format: uri
+                  example: "https://mcp.example.com/filesystem"
+                allowedTools:
+                  type: array
+                  items:
+                    type: string
+                  description: Tools explicitly allowed from this server
+                  example: ["read_file", "list_directory"]
+                blockedTools:
+                  type: array
+                  items:
+                    type: string
+                  description: Tools explicitly blocked from this server
+                  example: ["delete_file", "write_file"]
+            example:
+              name: "production-filesystem"
+              url: "https://mcp.example.com/filesystem"
+              allowedTools: ["read_file", "list_directory"]
+              blockedTools: ["delete_file"]
+      responses:
+        '201':
+          description: MCP server registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServerObject'
+
+    get:
+      tags: [MCP]
+      summary: List MCP servers
+      description: List all registered MCP servers for this tenant.
+      operationId: listMCPServers
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: MCP server list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  servers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MCPServerObject'
+
+  /mcp/servers/{id}:
+    delete:
+      tags: [MCP]
+      summary: Delete MCP server
+      description: Remove a registered MCP server.
+      operationId: deleteMCPServer
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  deleted:
+                    type: boolean
+        '404':
+          description: Server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── SLACK ────────────────────────────────────────────────────────────────
+
+  /integrations/slack:
+    post:
+      tags: [Slack]
+      summary: Configure Slack integration
+      description: |
+        Configure Slack HITL (Human-in-the-Loop) integration.
+        When an evaluation returns `require_approval`, a Slack message is sent
+        with Approve/Reject buttons. The response is captured via the callback endpoint.
+      operationId: configureSlack
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [webhookUrl, signingSecret]
+              properties:
+                webhookUrl:
+                  type: string
+                  format: uri
+                  description: Slack Incoming Webhook URL
+                  example: "https://hooks.slack.com/services/T000/B000/xxxx"
+                signingSecret:
+                  type: string
+                  minLength: 10
+                  description: Slack app signing secret for HMAC verification
+                channel:
+                  type: string
+                  maxLength: 100
+                  description: Optional Slack channel override
+                  example: "#security-alerts"
+                autoRejectMinutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 1440
+                  default: 30
+                  description: Auto-reject pending approvals after this many minutes
+            example:
+              webhookUrl: "https://hooks.slack.com/services/T000/B000/xxxx"
+              signingSecret: "my-slack-signing-secret"
+              channel: "#security-alerts"
+              autoRejectMinutes: 30
+      responses:
+        '200':
+          description: Slack integration configured
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured:
+                    type: boolean
+                  channel:
+                    type: string
+                    nullable: true
+
+    get:
+      tags: [Slack]
+      summary: Get Slack configuration
+      description: Retrieve current Slack integration settings. Signing secret is redacted.
+      operationId: getSlackConfig
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Slack configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured:
+                    type: boolean
+                  webhookUrl:
+                    type: string
+                  channel:
+                    type: string
+                    nullable: true
+                  autoRejectMinutes:
+                    type: integer
+        '404':
+          description: No Slack integration configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [Slack]
+      summary: Remove Slack integration
+      description: Remove the Slack HITL integration configuration.
+      operationId: deleteSlackIntegration
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Integration removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+
+  /integrations/slack/callback:
+    post:
+      tags: [Slack]
+      summary: Slack interactive callback
+      description: |
+        Endpoint for receiving Slack interactive component payloads (button clicks).
+        **Not for direct use** — this is called by Slack when users click Approve/Reject buttons.
+        Verifies Slack HMAC signature before processing.
+      operationId: slackCallback
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                payload:
+                  type: string
+                  description: URL-encoded JSON Slack payload
+      responses:
+        '200':
+          description: Callback processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        '401':
+          description: Invalid Slack signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── AGENT HIERARCHY ──────────────────────────────────────────────────────
+
+  /agents/{id}/children:
+    post:
+      tags: [Agent Hierarchy]
+      summary: Spawn child agent
+      description: |
+        Create a child agent with inherited (or more restrictive) policy from the parent.
+        Policy inheritance rules:
+        - `blockedTools`: union of parent + child (monotonically restrictive)
+        - `allowedTools`: intersection of parent + child
+        - `hitlTools`: union of parent + child
+        - TTL and maxToolCalls are enforced by the parent's limits
+      operationId: spawnChildAgent
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Parent agent ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                  example: "data-fetcher-child"
+                allowedTools:
+                  type: array
+                  items:
+                    type: string
+                  description: Tools this child agent may use (intersected with parent's allowed list)
+                blockedTools:
+                  type: array
+                  items:
+                    type: string
+                  description: Tools explicitly blocked for this child
+                hitlTools:
+                  type: array
+                  items:
+                    type: string
+                  description: Tools requiring human approval for this child
+                ttlMinutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 10080
+                  description: Time-to-live in minutes (max 7 days)
+                maxToolCalls:
+                  type: integer
+                  minimum: 1
+                  maximum: 1000000
+                  description: Maximum number of tool calls allowed
+            example:
+              name: "data-fetcher-child"
+              allowedTools: ["file_read", "db_read_public"]
+              blockedTools: ["file_write"]
+              ttlMinutes: 60
+              maxToolCalls: 100
+      responses:
+        '201':
+          description: Child agent created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentObject'
+        '404':
+          description: Parent agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags: [Agent Hierarchy]
+      summary: List child agents
+      description: List all child agents spawned by the specified parent agent.
+      operationId: listChildAgents
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Parent agent ID
+      responses:
+        '200':
+          description: Child agent list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  parentId:
+                    type: string
+                  children:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AgentObject'
+
+  /agents/{id}/children/{childId}:
+    delete:
+      tags: [Agent Hierarchy]
+      summary: Revoke child agent
+      description: Revoke (deactivate) a child agent.
+      operationId: revokeChildAgent
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Parent agent ID
+        - name: childId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Child agent ID
+      responses:
+        '200':
+          description: Child agent revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  revoked:
+                    type: boolean
+        '404':
+          description: Child agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── PLAYGROUND ───────────────────────────────────────────────────────────
+
+  /playground/session:
+    post:
+      tags: [Playground]
+      summary: Create playground session
+      description: |
+        Create an in-memory playground session for testing policy evaluation without
+        full tenant setup. Optionally provide a custom policy for the session.
+        Sessions are ephemeral — they are not persisted to the database.
+      operationId: createPlaygroundSession
+      security:
+        - ApiKeyAuth: []
+        - {}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                policy:
+                  type: object
+                  description: Optional custom policy document for this session
+                  properties:
+                    rules:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/PolicyRule'
+            example:
+              policy:
+                rules:
+                  - id: "test-rule"
+                    action: "block"
+                    when:
+                      - tool:
+                          in: ["dangerous_tool"]
+      responses:
+        '200':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                    format: uuid
+                  expiresIn:
+                    type: integer
+                    description: Session TTL in seconds
+        '503':
+          description: Session limit reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── TEMPLATES ────────────────────────────────────────────────────────────
+
+  /templates:
+    get:
+      tags: [Templates]
+      summary: List policy templates
+      description: |
+        List all available pre-built policy templates. Templates provide curated rule sets
+        for common compliance frameworks (OWASP, SOC2, EU AI Act, APRA CPS234, Financial Services).
+      operationId: listTemplates
+      security: []
+      responses:
+        '200':
+          description: Available templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  templates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TemplateObject'
+              example:
+                templates:
+                  - id: "owasp-agentic"
+                    name: "OWASP Agentic Top 10"
+                    version: "1.0.0"
+                    ruleCount: 12
+                  - id: "soc2-starter"
+                    name: "SOC2 Starter"
+                    version: "1.0.0"
+                    ruleCount: 8
+
+  /templates/{id}:
+    get:
+      tags: [Templates]
+      summary: Get policy template
+      description: Retrieve a specific policy template by its ID.
+      operationId: getTemplate
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Template ID (e.g., "owasp-agentic", "soc2-starter", "eu-ai-act", "financial-services", "apra-cps234")
+          example: "owasp-agentic"
+      responses:
+        '200':
+          description: Template details with full rule set
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  template:
+                    allOf:
+                      - $ref: '#/components/schemas/TemplateObject'
+                      - type: object
+                        properties:
+                          rules:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/PolicyRule'
+        '404':
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /templates/{id}/apply:
+    post:
+      tags: [Templates]
+      summary: Apply policy template
+      description: |
+        Apply a policy template to this tenant's configuration. This records the application
+        in the audit trail and provides the rules for integration into your policy engine.
+      operationId: applyTemplate
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "owasp-agentic"
+      responses:
+        '200':
+          description: Template applied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  applied:
+                    type: boolean
+                  templateId:
+                    type: string
+                  templateName:
+                    type: string
+                  rulesInTemplate:
+                    type: integer
+                  message:
+                    type: string
+        '404':
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── KILL SWITCH ──────────────────────────────────────────────────────────
+
+  /killswitch:
+    post:
+      tags: [Kill Switch]
+      summary: Toggle tenant kill switch
+      description: |
+        Activate or deactivate the tenant-level kill switch.
+        When active, all evaluations for this tenant return `block` immediately.
+        This is an emergency stop mechanism for incident response.
+      operationId: toggleKillswitch
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                active:
+                  type: boolean
+                  description: Set to true to activate, false to deactivate. Omit to toggle.
+            example:
+              active: true
+      responses:
+        '200':
+          description: Kill switch state updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenantId:
+                    type: string
+                  active:
+                    type: boolean
+                  activatedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  message:
+                    type: string
+              example:
+                tenantId: "550e8400-e29b-41d4-a716-446655440000"
+                active: true
+                activatedAt: "2024-01-15T10:30:00Z"
+                message: "Tenant kill switch ACTIVATED — your evaluations will return BLOCK"
+
+  # ── MCP ADMIT ────────────────────────────────────────────────────────────
+
+  /mcp-admit:
+    post:
+      tags: [MCP]
+      summary: MCP server admission check
+      description: |
+        Pre-flight admission check for an MCP server before connecting it to an agent.
+        Evaluates each tool the server exposes against the current policy engine and
+        returns a per-tool admission decision.
+      operationId: mcpAdmit
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [serverUrl, tools]
+              properties:
+                serverUrl:
+                  type: string
+                  description: URL of the MCP server being admitted
+                  example: "https://mcp.example.com/filesystem"
+                tools:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [name]
+                    properties:
+                      name:
+                        type: string
+                        minLength: 1
+                        example: "read_file"
+                      description:
+                        type: string
+                        example: "Read a file from the filesystem"
+                      inputSchema:
+                        type: object
+                        description: JSON Schema for the tool's input parameters
+            example:
+              serverUrl: "https://mcp.example.com/filesystem"
+              tools:
+                - name: "read_file"
+                  description: "Read a file"
+                  inputSchema:
+                    type: object
+                    properties:
+                      path:
+                        type: string
+                - name: "delete_file"
+                  description: "Delete a file"
+      responses:
+        '200':
+          description: Admission check results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serverUrl:
+                    type: string
+                  admitted:
+                    type: boolean
+                    description: True only if all tools are admitted (allowed or monitored)
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tool:
+                          type: string
+                        decision:
+                          type: string
+                          enum: [allow, block, monitor, require_approval]
+                        riskScore:
+                          type: integer
+                        reason:
+                          type: string
+              example:
+                serverUrl: "https://mcp.example.com/filesystem"
+                admitted: false
+                results:
+                  - tool: "read_file"
+                    decision: "allow"
+                    riskScore: 10
+                    reason: "Matched rule: allow-read-operations"
+                  - tool: "delete_file"
+                    decision: "block"
+                    riskScore: 500
+                    reason: "File deletion is blocked by security policy"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

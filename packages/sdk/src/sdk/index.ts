@@ -16,6 +16,8 @@ export type {
 } from './langchain-wrapper.js';
 
 export { AgentGuard } from './client.js';
+export { LocalPolicyEngine } from './local-policy-engine.js';
+export type { EvaluateResult } from './local-policy-engine.js';
 
 // Auto-register exports
 export {

@@ -3,11 +3,20 @@
  *
  * Provides requireTenantAuth, optionalTenantAuth, and requireAdminAuth
  * middleware factories bound to a database instance.
+ *
+ * Auth strategy selection:
+ *   Authorization: Bearer <token>  → JWT auth (dashboard/management API)
+ *   x-api-key: <key>               → API key auth (agent SDK calls)
+ *   Neither                        → 401
  */
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import type { IDatabase, TenantRow, AgentRow } from '../db-interface.js';
+import {
+  extractBearerToken,
+  verifyJwt,
+} from './jwt-auth.js';
 
 // ── Key verification helper ────────────────────────────────────────────────
 
@@ -66,6 +75,31 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
   const ADMIN_KEY = process.env['ADMIN_KEY'];
 
   async function optionalTenantAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
+    // Strategy 1: JWT Bearer token (optional — no error if verification fails or unset)
+    const bearerToken = extractBearerToken(req);
+    if (bearerToken) {
+      const jwksUrl = process.env['JWT_JWKS_URL'];
+      if (jwksUrl) {
+        const result = await verifyJwt(bearerToken, jwksUrl);
+        if (result.ok) {
+          req.jwtClaims = result.claims;
+          req.jwtAuthenticated = true;
+          req.tenantId = result.tenantId;
+          req.tenant = null;
+          req.agent = null;
+          next();
+          return;
+        }
+      }
+      // Invalid/unconfigured JWT in optional mode → fall through to unauthenticated
+      req.tenant = null;
+      req.tenantId = 'demo';
+      req.agent = null;
+      next();
+      return;
+    }
+
+    // Strategy 2: API key
     const apiKey = req.headers['x-api-key'] as string | undefined;
     if (apiKey && apiKey.startsWith('ag_agent_')) {
       const agentRow = await db.getAgentByKey(apiKey);
@@ -93,9 +127,32 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
   }
 
   async function requireTenantAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    // Strategy 1: JWT Bearer token (dashboard/management API — human users)
+    const bearerToken = extractBearerToken(req);
+    if (bearerToken) {
+      const jwksUrl = process.env['JWT_JWKS_URL'];
+      if (!jwksUrl) {
+        res.status(503).json({ error: 'JWT authentication not configured (JWT_JWKS_URL not set)' });
+        return;
+      }
+      const result = await verifyJwt(bearerToken, jwksUrl);
+      if (!result.ok) {
+        res.status(result.status).json({ error: result.message });
+        return;
+      }
+      req.jwtClaims = result.claims;
+      req.jwtAuthenticated = true;
+      req.tenantId = result.tenantId;
+      req.tenant = null; // JWT users don't have a DB tenant row (yet)
+      req.agent = null;
+      next();
+      return;
+    }
+
+    // Strategy 2: API key (agent SDK calls)
     const apiKey = req.headers['x-api-key'] as string | undefined;
     if (!apiKey) {
-      res.status(401).json({ error: 'X-API-Key header required' });
+      res.status(401).json({ error: 'Authentication required. Provide X-API-Key or Authorization: Bearer <token>' });
       return;
     }
     if (apiKey.startsWith('ag_agent_')) {
@@ -117,11 +174,35 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
    * Like requireTenantAuth but also accepts scoped agent keys (ag_agent_*).
    * Used by POST /api/v1/evaluate and POST /api/v1/mcp/evaluate so agents can
    * call the evaluation endpoints with their own scoped keys.
+   * Also accepts JWT Bearer tokens.
    */
   async function requireEvaluateAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    // Strategy 1: JWT Bearer token
+    const bearerToken = extractBearerToken(req);
+    if (bearerToken) {
+      const jwksUrl = process.env['JWT_JWKS_URL'];
+      if (!jwksUrl) {
+        res.status(503).json({ error: 'JWT authentication not configured (JWT_JWKS_URL not set)' });
+        return;
+      }
+      const result = await verifyJwt(bearerToken, jwksUrl);
+      if (!result.ok) {
+        res.status(result.status).json({ error: result.message });
+        return;
+      }
+      req.jwtClaims = result.claims;
+      req.jwtAuthenticated = true;
+      req.tenantId = result.tenantId;
+      req.tenant = null;
+      req.agent = null;
+      next();
+      return;
+    }
+
+    // Strategy 2: API key (including agent keys)
     const apiKey = req.headers['x-api-key'] as string | undefined;
     if (!apiKey) {
-      res.status(401).json({ error: 'X-API-Key header required' });
+      res.status(401).json({ error: 'Authentication required. Provide X-API-Key or Authorization: Bearer <token>' });
       return;
     }
     if (apiKey.startsWith('ag_agent_')) {

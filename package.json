@@ -46,6 +46,7 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "remotion": "^4.0.431",
+    "swagger-ui-dist": "^5.32.0",
     "zod": "^4.3.6"
   }
 }

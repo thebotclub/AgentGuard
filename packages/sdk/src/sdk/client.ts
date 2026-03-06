@@ -1,9 +1,25 @@
 import os from 'os';
+import { LocalPolicyEngine } from './local-policy-engine.js';
+import type { PolicyBundle } from '../core/types.js';
 
 const SDK_VERSION = '0.7.2';
 
+// ─── Telemetry batch event ─────────────────────────────────────────────────
+
+interface AuditBatchEvent {
+  tool: string;
+  result: string;
+  timestamp: string;
+  agent_id?: string;
+}
+
+// ─── AgentGuard Client ─────────────────────────────────────────────────────
+
 /**
- * AgentGuard API Client — connects to the hosted API
+ * AgentGuard API Client — connects to the hosted API.
+ *
+ * Supports optional in-process local evaluation mode (localEval: true)
+ * for <5ms evaluation without HTTP round-trips after initial policy sync.
  */
 export class AgentGuard {
   private apiKey: string;
@@ -11,15 +27,48 @@ export class AgentGuard {
   private telemetryEnabled: boolean;
   private telemetrySent: boolean;
 
-  constructor(options: { apiKey: string; baseUrl?: string; telemetry?: boolean }) {
+  // ── Local eval state ────────────────────────────────────────────────────
+  private readonly localEval: boolean;
+  private readonly policySyncIntervalMs: number;
+  private readonly localEngine: LocalPolicyEngine;
+  private syncTimer: ReturnType<typeof setInterval> | null = null;
+  private syncInFlight = false;
+
+  // ── Telemetry batching (local eval mode) ────────────────────────────────
+  private readonly auditBatch: AuditBatchEvent[] = [];
+  private auditFlushTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly AUDIT_BATCH_MAX = 100;
+  private readonly AUDIT_FLUSH_INTERVAL_MS = 5000;
+
+  constructor(options: {
+    apiKey: string;
+    baseUrl?: string;
+    telemetry?: boolean;
+    /** Enable in-process local evaluation (no HTTP on evaluate()). */
+    localEval?: boolean;
+    /** How often to refresh the policy bundle in ms. Default: 60 000 (60s). */
+    policySyncIntervalMs?: number;
+  }) {
     this.apiKey = options.apiKey;
     this.baseUrl = options.baseUrl || 'https://api.agentguard.tech';
-    // Disable telemetry if env var set or constructor option is false
     this.telemetryEnabled =
       options.telemetry !== false &&
       process.env['AGENTGUARD_NO_TELEMETRY'] !== '1';
     this.telemetrySent = false;
+
+    this.localEval = options.localEval === true;
+    this.policySyncIntervalMs = options.policySyncIntervalMs ?? 60_000;
+    this.localEngine = new LocalPolicyEngine();
+
+    if (this.localEval) {
+      // Start background periodic sync (non-blocking)
+      this._startPolicySync();
+      // Start telemetry batch flush
+      this._startAuditFlush();
+    }
   }
+
+  // ── Telemetry (SDK usage ping) ──────────────────────────────────────────
 
   /**
    * Fire-and-forget telemetry ping (opt-in, anonymous).
@@ -45,6 +94,102 @@ export class AgentGuard {
     }
   }
 
+  // ── Policy Sync ─────────────────────────────────────────────────────────
+
+  /**
+   * Download the tenant's compiled policy bundle and cache it in memory.
+   *
+   * Called automatically on a background timer when `localEval: true`.
+   * Safe to call manually to force a sync (e.g. after updating your policy).
+   *
+   * Failures are swallowed — the existing cached policy remains active.
+   */
+  async syncPolicies(): Promise<void> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/policy/bundle`, {
+        headers: { 'X-API-Key': this.apiKey },
+      });
+      if (!res.ok) {
+        // Non-fatal: keep the previous bundle
+        return;
+      }
+      const bundle = await res.json() as PolicyBundle;
+      this.localEngine.loadBundle(bundle);
+    } catch {
+      // Network failure, parse failure, etc. — never crash the host process
+    }
+  }
+
+  /** Start the background policy refresh timer. */
+  private _startPolicySync(): void {
+    // Kick off an immediate initial sync (non-blocking)
+    this.syncPolicies().catch(() => {});
+
+    this.syncTimer = setInterval(() => {
+      if (this.syncInFlight) return; // skip if already syncing
+      this.syncInFlight = true;
+      this.syncPolicies()
+        .catch(() => {})
+        .finally(() => { this.syncInFlight = false; });
+    }, this.policySyncIntervalMs);
+
+    // Allow the process to exit normally even with the timer running
+    if (this.syncTimer.unref) this.syncTimer.unref();
+  }
+
+  /** Stop background timers (call when tearing down). */
+  destroy(): void {
+    if (this.syncTimer) {
+      clearInterval(this.syncTimer);
+      this.syncTimer = null;
+    }
+    if (this.auditFlushTimer) {
+      clearInterval(this.auditFlushTimer);
+      this.auditFlushTimer = null;
+    }
+    // Best-effort final flush
+    this._flushAudit().catch(() => {});
+  }
+
+  // ── Telemetry Batching (local eval mode) ────────────────────────────────
+
+  private _startAuditFlush(): void {
+    this.auditFlushTimer = setInterval(() => {
+      if (this.auditBatch.length > 0) {
+        this._flushAudit().catch(() => {});
+      }
+    }, this.AUDIT_FLUSH_INTERVAL_MS);
+
+    if (this.auditFlushTimer.unref) this.auditFlushTimer.unref();
+  }
+
+  private _queueAuditEvent(event: AuditBatchEvent): void {
+    this.auditBatch.push(event);
+    if (this.auditBatch.length >= this.AUDIT_BATCH_MAX) {
+      // Fire-and-forget flush when batch is full
+      this._flushAudit().catch(() => {});
+    }
+  }
+
+  private async _flushAudit(): Promise<void> {
+    if (this.auditBatch.length === 0) return;
+    const events = this.auditBatch.splice(0, this.auditBatch.length);
+    try {
+      fetch(`${this.baseUrl}/api/v1/audit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': this.apiKey,
+        },
+        body: JSON.stringify({ events }),
+      }).catch(() => {/* fire-and-forget */});
+    } catch {
+      // Never throw
+    }
+  }
+
+  // ── Core Evaluate ───────────────────────────────────────────────────────
+
   async evaluate(action: { tool: string; params?: Record<string, unknown> }): Promise<{
     result: 'allow' | 'block' | 'monitor' | 'require_approval';
     matchedRuleId?: string;
@@ -53,6 +198,22 @@ export class AgentGuard {
     durationMs: number;
   }> {
     this.sendTelemetry();
+
+    // ── Local eval path ────────────────────────────────────────────────
+    if (this.localEval && this.localEngine.isReady()) {
+      const evalResult = this.localEngine.evaluate(action.tool, action.params);
+
+      // Queue for batched audit
+      this._queueAuditEvent({
+        tool: action.tool,
+        result: evalResult.result,
+        timestamp: new Date().toISOString(),
+      });
+
+      return evalResult;
+    }
+
+    // ── HTTP fallback (also used when localEval=true but policy not yet synced) ─
     const res = await fetch(`${this.baseUrl}/api/v1/evaluate`, {
       method: 'POST',
       headers: {

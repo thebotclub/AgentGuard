@@ -182,6 +182,22 @@ export const ComplianceGenerateRequestSchema = z.object({
   agentId: z.string().max(100).optional(),
 });
 
+// ── POST /api/v1/sso/configure ────────────────────────────────────────────
+export const SsoConfigureRequestSchema = z.object({
+  provider: z.enum(['auth0', 'okta', 'azure_ad'], {
+    error: "provider must be one of: 'auth0', 'okta', 'azure_ad'",
+  }),
+  domain: z.string({ error: 'domain is required' })
+    .min(1, 'domain is required')
+    .max(500, 'domain too long (max 500 chars)'),
+  clientId: z.string({ error: 'clientId is required' })
+    .min(1, 'clientId is required')
+    .max(500, 'clientId too long (max 500 chars)'),
+  clientSecret: z.string({ error: 'clientSecret is required' })
+    .min(1, 'clientSecret is required')
+    .max(2000, 'clientSecret too long (max 2000 chars)'),
+});
+
 // ── POST /api/v1/agents/:agentId/children ─────────────────────────────────
 export const SpawnChildAgentRequestSchema = z.object({
   name: z.string({ error: 'name is required' })
@@ -214,6 +230,7 @@ export const TelemetryRequest = TelemetryRequestSchema;
 export const PIIScanRequest = PIIScanRequestSchema;
 export const ComplianceGenerateRequest = ComplianceGenerateRequestSchema;
 export const SpawnChildAgentRequest = SpawnChildAgentRequestSchema;
+export const SsoConfigureRequest = SsoConfigureRequestSchema;
 
 export type EvaluateRequest = z.infer<typeof EvaluateRequestSchema>;
 export type SignupRequest = z.infer<typeof SignupRequestSchema>;
@@ -234,3 +251,4 @@ export type TelemetryRequest = z.infer<typeof TelemetryRequestSchema>;
 export type PIIScanRequest = z.infer<typeof PIIScanRequestSchema>;
 export type ComplianceGenerateRequest = z.infer<typeof ComplianceGenerateRequestSchema>;
 export type SpawnChildAgentRequest = z.infer<typeof SpawnChildAgentRequestSchema>;
+export type SsoConfigureRequest = z.infer<typeof SsoConfigureRequestSchema>;
