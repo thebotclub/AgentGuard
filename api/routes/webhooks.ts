@@ -125,7 +125,9 @@ export function createWebhookRoutes(
           tenantId,
           url,
           JSON.stringify(eventList),
-          secret && typeof secret === 'string' ? secret : null,
+          secret && typeof secret === 'string'
+            ? require('crypto').createHash('sha256').update(secret).digest('hex')
+            : null,
         );
 
         res.status(201).json({
