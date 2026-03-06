@@ -505,15 +505,26 @@ export function createEvaluateRoutes(
           );
           // Notify Slack if configured (fire-and-forget)
           try {
-            const { getSlackIntegrationConfig, sendSlackApprovalRequest } = await import('../lib/slack-hitl.js');
+            const { sendSlackApprovalRequest } = await import('../lib/slack-hitl.js');
+            const { getSlackIntegrationConfig } = await import('./slack-hitl.js');
             const slackConfig = await getSlackIntegrationConfig(db, tenantId);
-            if (slackConfig) {
-              sendSlackApprovalRequest(slackConfig.webhookUrl, {
-                approvalId: approvalId!,
-                agentId: agentId || 'unknown',
-                tool,
-                params: typeof params === 'object' ? params as Record<string, unknown> : {},
-                reason: decision.matchedRuleId || 'policy',
+            if (slackConfig && approvalId) {
+              sendSlackApprovalRequest({
+                webhookUrl: slackConfig.webhookUrl,
+                approval: {
+                  id: approvalId,
+                  tenant_id: tenantId,
+                  agent_id: agentId || null,
+                  tool,
+                  params_json: typeof params === 'object' ? JSON.stringify(params) : null,
+                  status: 'pending',
+                  created_at: new Date().toISOString(),
+                  resolved_at: null,
+                  resolved_by: null,
+                },
+                agentName: agentId || 'unknown',
+                riskReason: decision.matchedRuleId || 'policy_requires_approval',
+                autoRejectMinutes: slackConfig.autoRejectMinutes || 30,
               }).catch((e: unknown) => console.error('[evaluate] slack notification failed:', e));
             }
           } catch { /* slack module optional */ }

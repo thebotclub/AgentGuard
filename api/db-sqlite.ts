@@ -937,23 +937,23 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
 
     // ── Platform Analytics (admin) ────────────────────────────────────────────
     async getPlatformAnalytics(): Promise<PlatformAnalytics> {
-      const totalTenants = (sdb.prepare('SELECT COUNT(*) as cnt FROM tenants').get() as any)?.cnt ?? 0;
-      const activeTenants30d = (sdb.prepare("SELECT COUNT(DISTINCT tenant_id) as cnt FROM audit_events WHERE created_at >= datetime('now','-30 days')").get() as any)?.cnt ?? 0;
-      const totalEvaluateCalls = (sdb.prepare('SELECT COUNT(*) as cnt FROM audit_events').get() as any)?.cnt ?? 0;
-      const callsLast24h = (sdb.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-1 day')").get() as any)?.cnt ?? 0;
-      const callsLast7d = (sdb.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-7 days')").get() as any)?.cnt ?? 0;
-      const callsLast30d = (sdb.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-30 days')").get() as any)?.cnt ?? 0;
-      const blocked = (sdb.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE result = 'block'").get() as any)?.cnt ?? 0;
+      const totalTenants = (db.prepare('SELECT COUNT(*) as cnt FROM tenants').get() as any)?.cnt ?? 0;
+      const activeTenants30d = (db.prepare("SELECT COUNT(DISTINCT tenant_id) as cnt FROM audit_events WHERE created_at >= datetime('now','-30 days')").get() as any)?.cnt ?? 0;
+      const totalEvaluateCalls = (db.prepare('SELECT COUNT(*) as cnt FROM audit_events').get() as any)?.cnt ?? 0;
+      const callsLast24h = (db.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-1 day')").get() as any)?.cnt ?? 0;
+      const callsLast7d = (db.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-7 days')").get() as any)?.cnt ?? 0;
+      const callsLast30d = (db.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-30 days')").get() as any)?.cnt ?? 0;
+      const blocked = (db.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE result = 'block'").get() as any)?.cnt ?? 0;
       const blockRate = totalEvaluateCalls > 0 ? blocked / totalEvaluateCalls : 0;
-      const topTools = sdb.prepare('SELECT tool, COUNT(*) as cnt FROM audit_events GROUP BY tool ORDER BY cnt DESC LIMIT 20').all() as any[];
-      const topTenants = sdb.prepare("SELECT a.tenant_id, COALESCE(t.email,'unknown') as email, COUNT(*) as cnt FROM audit_events a LEFT JOIN tenants t ON a.tenant_id = t.id GROUP BY a.tenant_id, t.email ORDER BY cnt DESC LIMIT 20").all() as any[];
-      const dailyVolume = sdb.prepare("SELECT DATE(created_at) as date, COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-30 days') GROUP BY date ORDER BY date").all() as any[];
+      const topTools = db.prepare('SELECT tool, COUNT(*) as cnt FROM audit_events GROUP BY tool ORDER BY cnt DESC LIMIT 20').all() as any[];
+      const topTenants = db.prepare("SELECT a.tenant_id, COALESCE(t.email,'unknown') as email, COUNT(*) as cnt FROM audit_events a LEFT JOIN tenants t ON a.tenant_id = t.id GROUP BY a.tenant_id, t.email ORDER BY cnt DESC LIMIT 20").all() as any[];
+      const dailyVolume = db.prepare("SELECT DATE(created_at) as date, COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-30 days') GROUP BY date ORDER BY date").all() as any[];
 
       let sdkTelemetry = { total: 0, last7d: 0, byLanguage: [] as any[] };
       try {
-        const total = (sdb.prepare('SELECT COUNT(*) as cnt FROM telemetry_events').get() as any)?.cnt ?? 0;
-        const last7d = (sdb.prepare("SELECT COUNT(*) as cnt FROM telemetry_events WHERE created_at >= datetime('now','-7 days')").get() as any)?.cnt ?? 0;
-        const byLang = sdb.prepare('SELECT language, COUNT(*) as cnt FROM telemetry_events GROUP BY language ORDER BY cnt DESC').all() as any[];
+        const total = (db.prepare('SELECT COUNT(*) as cnt FROM telemetry_events').get() as any)?.cnt ?? 0;
+        const last7d = (db.prepare("SELECT COUNT(*) as cnt FROM telemetry_events WHERE created_at >= datetime('now','-7 days')").get() as any)?.cnt ?? 0;
+        const byLang = db.prepare('SELECT language, COUNT(*) as cnt FROM telemetry_events GROUP BY language ORDER BY cnt DESC').all() as any[];
         sdkTelemetry = { total, last7d, byLanguage: byLang };
       } catch { /* table may not exist */ }
 
