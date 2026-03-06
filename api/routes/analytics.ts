@@ -30,5 +30,21 @@ export function createAnalyticsRoutes(
     },
   );
 
+  // ── GET /api/v1/analytics/platform ─────────────────────────────────────
+  // Admin-level platform-wide analytics (all tenants)
+  router.get(
+    '/api/v1/analytics/platform',
+    auth.requireAdminAuth,
+    async (_req: Request, res: Response) => {
+      try {
+        const stats = await db.getPlatformAnalytics();
+        res.json(stats);
+      } catch (e) {
+        console.error('[analytics/platform] error:', e);
+        res.status(500).json({ error: 'Failed to fetch platform analytics' });
+      }
+    },
+  );
+
   return router;
 }

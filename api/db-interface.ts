@@ -44,6 +44,11 @@ export interface AuditEventRow {
   hash: string | null;
   created_at: string;
   agent_id: string | null;
+  detection_score: number | null;
+  detection_provider: string | null;
+  detection_category: string | null;
+  /** Number of PII entities detected in this event's input (nullable, default 0) */
+  pii_entities_count: number | null;
 }
 
 export interface SessionRow {
@@ -137,6 +142,15 @@ export interface FeedbackRow {
   created_at: string;
 }
 
+export interface ComplianceReportRow {
+  id: string;
+  tenant_id: string;
+  report_type: string;
+  score: number;
+  controls_json: string;
+  generated_at: string;
+}
+
 export interface TelemetryEventRow {
   id: string;
   sdk_version: string;
@@ -155,6 +169,20 @@ export interface UsageAnalytics {
   topTools: Array<{ tool: string; cnt: number }>;
   blockRate: number;
   dailyVolume: Array<{ date: string; cnt: number }>;
+}
+
+export interface PlatformAnalytics {
+  totalTenants: number;
+  activeTenants30d: number;
+  totalEvaluateCalls: number;
+  callsLast24h: number;
+  callsLast7d: number;
+  callsLast30d: number;
+  blockRate: number;
+  topTools: Array<{ tool: string; cnt: number }>;
+  topTenants: Array<{ tenant_id: string; email: string; cnt: number }>;
+  dailyVolume: Array<{ date: string; cnt: number }>;
+  sdkTelemetry: { total: number; last7d: number; byLanguage: Array<{ language: string; cnt: number }> };
 }
 
 // ── Count/Aggregate helpers ────────────────────────────────────────────────
@@ -220,6 +248,9 @@ export interface IDatabase {
     durationMs: number | null,
     createdAt: string,
     agentId: string | null,
+    detectionScore?: number | null,
+    detectionProvider?: string | null,
+    detectionCategory?: string | null,
   ): Promise<string>;
 
   insertAuditEvent(
@@ -236,6 +267,9 @@ export interface IDatabase {
     hash: string | null,
     createdAt: string,
     agentId: string | null,
+    detectionScore?: number | null,
+    detectionProvider?: string | null,
+    detectionCategory?: string | null,
   ): Promise<void>;
 
   getLastAuditHash(tenantId: string): Promise<string | undefined>;
@@ -304,6 +338,7 @@ export interface IDatabase {
 
   // ── Analytics ─────────────────────────────────────────────────────────────
   getUsageAnalytics(tenantId: string, days: number): Promise<UsageAnalytics>;
+  getPlatformAnalytics(): Promise<PlatformAnalytics>;
 
   // ── Feedback ──────────────────────────────────────────────────────────────
   insertFeedback(
@@ -321,6 +356,16 @@ export interface IDatabase {
     nodeVersion: string | null,
     osPlatform: string | null,
   ): Promise<void>;
+
+  // ── Compliance Reports ────────────────────────────────────────────────────
+  insertComplianceReport(
+    tenantId: string,
+    reportType: string,
+    score: number,
+    controlsJson: string,
+  ): Promise<string>;
+  getComplianceReport(tenantId: string, reportId: string): Promise<ComplianceReportRow | undefined>;
+  getLatestComplianceReport(tenantId: string): Promise<ComplianceReportRow | undefined>;
 
   // ── Health Check ──────────────────────────────────────────────────────────
   ping(): Promise<boolean>;

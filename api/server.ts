@@ -31,6 +31,8 @@ import { createPolicyRoutes } from './routes/policy.js';
 import { createAnalyticsRoutes } from './routes/analytics.js';
 import { createFeedbackRoutes } from './routes/feedback.js';
 import { createTelemetryRoutes } from './routes/telemetry.js';
+import { createComplianceRoutes } from './routes/compliance.js';
+import { createPIIRoutes } from './routes/pii.js';
 import type { IDatabase } from './db-interface.js';
 
 // ── Load Templates ─────────────────────────────────────────────────────────
@@ -268,6 +270,8 @@ async function main(): Promise<void> {
   app.use(createAnalyticsRoutes(db, auth));
   app.use(createFeedbackRoutes(db, auth));
   app.use(createTelemetryRoutes(db));
+  app.use(createComplianceRoutes(db, auth));
+  app.use(createPIIRoutes(db, auth));
 
   // ── Already-extracted route modules ───────────────────────────────────
   app.use(createPhase2Routes(db));

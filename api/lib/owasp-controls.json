@@ -1,0 +1,85 @@
+{
+  "version": "1.0.0",
+  "controls": [
+    {
+      "id": "ASI01",
+      "title": "Agent Goal Hijack",
+      "description": "Protection against prompt injection attacks that attempt to hijack the agent's goals or override its instructions.",
+      "check": "promptInjection",
+      "feature": "Prompt Injection Detection",
+      "notes": "Feature not yet implemented. Requires prompt injection scanning on incoming requests."
+    },
+    {
+      "id": "ASI02",
+      "title": "Tool Misuse",
+      "description": "Enforcement of tool usage policies to prevent agents from invoking tools in unauthorized or unintended ways.",
+      "check": "toolPolicy",
+      "feature": "Tool Policy Engine",
+      "notes": "Covered by AgentGuard policy engine — tool allow/block rules evaluated on every call."
+    },
+    {
+      "id": "ASI03",
+      "title": "Identity & Privilege Abuse",
+      "description": "Controls to verify agent identity and enforce least-privilege access, preventing privilege escalation.",
+      "check": "hitlEnabled",
+      "feature": "Human-in-the-Loop (HITL) Approvals",
+      "notes": "HITL approval workflow provides human oversight for sensitive tool invocations."
+    },
+    {
+      "id": "ASI04",
+      "title": "Supply Chain Vulnerabilities",
+      "description": "Validation and certification of agent dependencies and tool integrations to detect supply chain risks.",
+      "check": "certifications",
+      "feature": "Agent Certification",
+      "notes": "Covered by agent validation and certification workflow — 100% tool coverage required."
+    },
+    {
+      "id": "ASI05",
+      "title": "Data Leakage",
+      "description": "Detection and prevention of sensitive data (PII, secrets) being exposed through agent outputs or tool parameters.",
+      "check": "piiDetection",
+      "feature": "PII Detection",
+      "notes": "Feature not yet implemented. Requires PII scanning on tool parameters and outputs."
+    },
+    {
+      "id": "ASI06",
+      "title": "Data Poisoning",
+      "description": "Integrity verification of audit logs and agent inputs to detect tampering or data poisoning attacks.",
+      "check": "auditHashChain",
+      "feature": "Audit Hash Chain Integrity",
+      "notes": "Covered by SHA-256 hash chain on audit events — tamper detection via /audit/verify."
+    },
+    {
+      "id": "ASI07",
+      "title": "Excessive Autonomy",
+      "description": "Rate limiting and human approval gates to prevent agents from acting autonomously beyond intended scope.",
+      "check": "hitlHighRisk",
+      "feature": "HITL for High-Risk Actions",
+      "notes": "Partial coverage — HITL approvals available but high-risk auto-escalation not yet enforced."
+    },
+    {
+      "id": "ASI08",
+      "title": "Insecure Communication",
+      "description": "Secure webhook delivery with HMAC signing to prevent interception or tampering of agent event notifications.",
+      "check": "webhookSecrets",
+      "feature": "Webhook HMAC Secrets",
+      "notes": "Covered when webhooks are registered with a secret for HMAC-signed delivery."
+    },
+    {
+      "id": "ASI09",
+      "title": "Unmonitored Operations",
+      "description": "Comprehensive audit logging and real-time alerting to ensure all agent actions are tracked and observable.",
+      "check": "auditAndWebhooks",
+      "feature": "Audit Trail + Webhook Alerts",
+      "notes": "Covered by persistent audit trail combined with webhook event delivery."
+    },
+    {
+      "id": "ASI10",
+      "title": "Compliance Gaps",
+      "description": "Formal certification of agent deployments to demonstrate compliance with security policies and standards.",
+      "check": "certifiedDeployments",
+      "feature": "Certified Agent Deployments",
+      "notes": "Covered when at least one agent has been certified with 100% policy validation coverage."
+    }
+  ]
+}

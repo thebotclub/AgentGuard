@@ -18,7 +18,8 @@ import type {
   AgentRow,
   ApprovalRow,
   FeedbackRow,
-  UsageAnalytics,
+  ComplianceReportRow,
+  UsageAnalytics, PlatformAnalytics,
 } from './db-interface.js';
 import { randomUUID } from 'crypto';
 import crypto from 'crypto';
@@ -191,6 +192,17 @@ const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS idx_cost_events_tenant ON cost_events(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_mcp_proxy_tenant ON mcp_proxy_configs(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_approvals_tenant ON approvals(tenant_id, status);
+
+  CREATE TABLE IF NOT EXISTS compliance_reports (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    tenant_id TEXT NOT NULL REFERENCES tenants(id),
+    report_type TEXT NOT NULL DEFAULT 'owasp-agentic-top10',
+    score REAL NOT NULL DEFAULT 0,
+    controls_json TEXT NOT NULL DEFAULT '{}',
+    generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_compliance_reports_tenant ON compliance_reports(tenant_id, generated_at);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -303,6 +315,10 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       hash: (row['hash'] as string | null) ?? null,
       created_at: ts(row['created_at']) ?? new Date().toISOString(),
       agent_id: (row['agent_id'] as string | null) ?? null,
+      detection_score: row['detection_score'] !== null && row['detection_score'] !== undefined ? Number(row['detection_score']) : null,
+      detection_provider: (row['detection_provider'] as string | null) ?? null,
+      detection_category: (row['detection_category'] as string | null) ?? null,
+      pii_entities_count: row['pii_entities_count'] !== null && row['pii_entities_count'] !== undefined ? Number(row['pii_entities_count']) : null,
     };
   }
 
@@ -348,6 +364,17 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         'ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS key_sha256 TEXT',
       ];
       for (const sql of newCols) {
+        try { await pool.query(sql); } catch { /* already exists */ }
+      }
+
+      // Migration: detection columns on audit_events (idempotent)
+      const detectionCols = [
+        'ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS detection_score REAL',
+        'ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS detection_provider VARCHAR(100)',
+        'ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS detection_category VARCHAR(100)',
+        'ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS pii_entities_count INTEGER DEFAULT 0',
+      ];
+      for (const sql of detectionCols) {
         try { await pool.query(sql); } catch { /* already exists */ }
       }
 
@@ -418,6 +445,19 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         );
       `);
 
+      // Migration: compliance_reports table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS compliance_reports (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          tenant_id TEXT NOT NULL,
+          report_type TEXT NOT NULL DEFAULT 'owasp-agentic-top10',
+          score REAL NOT NULL DEFAULT 0,
+          controls_json TEXT NOT NULL DEFAULT '{}',
+          generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_compliance_reports_tenant ON compliance_reports(tenant_id, generated_at);
+      `);
+
       console.log('[pg] schema ready');
     },
 
@@ -481,8 +521,8 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       const keyPrefix = key.substring(0, 12);
       const keySha256 = sha256Hex(key);
       await pool.query(
-        'INSERT INTO api_keys (tenant_id, name, key_hash, key_prefix, key_sha256) VALUES ($1, $2, $3, $4, $5)',
-        [tenantId, name, keyHash, keyPrefix, keySha256]
+        'INSERT INTO api_keys (key, tenant_id, name, key_hash, key_prefix, key_sha256) VALUES ($1, $2, $3, $4, $5, $6)',
+        [key, tenantId, name, keyHash, keyPrefix, keySha256]
       );
     },
 
@@ -522,6 +562,9 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       durationMs: number | null,
       createdAt: string,
       agentId: string | null,
+      detectionScore: number | null = null,
+      detectionProvider: string | null = null,
+      detectionCategory: string | null = null,
     ): Promise<string> {
       // Use advisory lock keyed on a hash of the tenant_id to serialize writes
       // for the same tenant. This prevents concurrent requests from reading the
@@ -550,10 +593,12 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         await client.query(
           `INSERT INTO audit_events
            (tenant_id, session_id, tool, action, result, rule_id, risk_score, reason,
-            duration_ms, previous_hash, hash, created_at, agent_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+            duration_ms, previous_hash, hash, created_at, agent_id,
+            detection_score, detection_provider, detection_category)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
           [tenantId, sessionId, tool, action, result, ruleId, riskScore, reason,
-           durationMs, prevHash, newHash, createdAt, agentId]
+           durationMs, prevHash, newHash, createdAt, agentId,
+           detectionScore, detectionProvider, detectionCategory]
         );
         await client.query('COMMIT');
         return newHash;
@@ -579,14 +624,19 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       hash: string | null,
       createdAt: string,
       agentId: string | null,
+      detectionScore: number | null = null,
+      detectionProvider: string | null = null,
+      detectionCategory: string | null = null,
     ): Promise<void> {
       await pool.query(
         `INSERT INTO audit_events
          (tenant_id, session_id, tool, action, result, rule_id, risk_score, reason,
-          duration_ms, previous_hash, hash, created_at, agent_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+          duration_ms, previous_hash, hash, created_at, agent_id,
+          detection_score, detection_provider, detection_category)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
         [tenantId, sessionId, tool, action, result, ruleId, riskScore, reason,
-         durationMs, previousHash, hash, createdAt, agentId]
+         durationMs, previousHash, hash, createdAt, agentId,
+         detectionScore, detectionProvider, detectionCategory]
       );
     },
 
@@ -1002,6 +1052,79 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       };
     },
 
+    // ── Platform Analytics (admin) ────────────────────────────────────────────
+    async getPlatformAnalytics(): Promise<PlatformAnalytics> {
+      // Total tenants
+      const totalTenantsRow = await pool.query<{ cnt: string }>('SELECT COUNT(*) as cnt FROM tenants');
+      const totalTenants = Number(totalTenantsRow.rows[0]?.cnt ?? 0);
+
+      // Active tenants (had evaluate calls in last 30d)
+      const activeRow = await pool.query<{ cnt: string }>(
+        "SELECT COUNT(DISTINCT tenant_id) as cnt FROM audit_events WHERE created_at >= NOW() - INTERVAL '30 days'"
+      );
+      const activeTenants30d = Number(activeRow.rows[0]?.cnt ?? 0);
+
+      // Total evaluate calls
+      const totalRow = await pool.query<{ cnt: string }>('SELECT COUNT(*) as cnt FROM audit_events');
+      const totalEvaluateCalls = Number(totalRow.rows[0]?.cnt ?? 0);
+
+      // Calls by period
+      const c24h = await pool.query<{ cnt: string }>("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= NOW() - INTERVAL '1 day'");
+      const c7d = await pool.query<{ cnt: string }>("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= NOW() - INTERVAL '7 days'");
+      const c30d = await pool.query<{ cnt: string }>("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= NOW() - INTERVAL '30 days'");
+
+      // Block rate
+      const blockedRow = await pool.query<{ cnt: string }>("SELECT COUNT(*) as cnt FROM audit_events WHERE result = 'block'");
+      const blocked = Number(blockedRow.rows[0]?.cnt ?? 0);
+      const blockRate = totalEvaluateCalls > 0 ? blocked / totalEvaluateCalls : 0;
+
+      // Top tools
+      const topToolsResult = await pool.query<{ tool: string; cnt: string }>(
+        'SELECT tool, COUNT(*) as cnt FROM audit_events GROUP BY tool ORDER BY cnt DESC LIMIT 20'
+      );
+      const topTools = topToolsResult.rows.map(r => ({ tool: r.tool, cnt: Number(r.cnt) }));
+
+      // Top tenants by usage
+      const topTenantsResult = await pool.query<{ tenant_id: string; email: string; cnt: string }>(
+        `SELECT a.tenant_id, COALESCE(t.email, 'unknown') as email, COUNT(*) as cnt
+         FROM audit_events a LEFT JOIN tenants t ON a.tenant_id = t.id
+         GROUP BY a.tenant_id, t.email ORDER BY cnt DESC LIMIT 20`
+      );
+      const topTenants = topTenantsResult.rows.map(r => ({ tenant_id: r.tenant_id, email: r.email, cnt: Number(r.cnt) }));
+
+      // Daily volume (last 30 days)
+      const dailyResult = await pool.query<{ date: string; cnt: string }>(
+        "SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, COUNT(*) as cnt FROM audit_events WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date"
+      );
+      const dailyVolume = dailyResult.rows.map(r => ({ date: r.date, cnt: Number(r.cnt) }));
+
+      // SDK telemetry stats
+      let telemetryTotal = 0, telemetryLast7d = 0;
+      let byLanguage: Array<{ language: string; cnt: number }> = [];
+      try {
+        const tTotal = await pool.query<{ cnt: string }>('SELECT COUNT(*) as cnt FROM telemetry_events');
+        telemetryTotal = Number(tTotal.rows[0]?.cnt ?? 0);
+        const t7d = await pool.query<{ cnt: string }>("SELECT COUNT(*) as cnt FROM telemetry_events WHERE created_at >= NOW() - INTERVAL '7 days'");
+        telemetryLast7d = Number(t7d.rows[0]?.cnt ?? 0);
+        const tLang = await pool.query<{ language: string; cnt: string }>('SELECT language, COUNT(*) as cnt FROM telemetry_events GROUP BY language ORDER BY cnt DESC');
+        byLanguage = tLang.rows.map(r => ({ language: r.language, cnt: Number(r.cnt) }));
+      } catch { /* telemetry table may not exist yet */ }
+
+      return {
+        totalTenants,
+        activeTenants30d,
+        totalEvaluateCalls,
+        callsLast24h: Number(c24h.rows[0]?.cnt ?? 0),
+        callsLast7d: Number(c7d.rows[0]?.cnt ?? 0),
+        callsLast30d: Number(c30d.rows[0]?.cnt ?? 0),
+        blockRate,
+        topTools,
+        topTenants,
+        dailyVolume,
+        sdkTelemetry: { total: telemetryTotal, last7d: telemetryLast7d, byLanguage },
+      };
+    },
+
     // ── Feedback ──────────────────────────────────────────────────────────────
     async insertFeedback(
       tenantId: string,
@@ -1055,6 +1178,60 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         'INSERT INTO telemetry_events (sdk_version, language, platform) VALUES ($1, $2, $3)',
         [sdkVersion, language, osPlatform ?? null]
       );
+    },
+
+    // ── Compliance Reports ────────────────────────────────────────────────────
+    async insertComplianceReport(
+      tenantId: string,
+      reportType: string,
+      score: number,
+      controlsJson: string,
+    ): Promise<string> {
+      const result = await pool.query(
+        `INSERT INTO compliance_reports (tenant_id, report_type, score, controls_json)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id`,
+        [tenantId, reportType, score, controlsJson]
+      );
+      return (result.rows[0] as { id: string }).id;
+    },
+
+    async getComplianceReport(tenantId: string, reportId: string): Promise<ComplianceReportRow | undefined> {
+      const result = await pool.query(
+        'SELECT * FROM compliance_reports WHERE id = $1 AND tenant_id = $2',
+        [reportId, tenantId]
+      );
+      if (!result.rows[0]) return undefined;
+      const r = result.rows[0] as Record<string, unknown>;
+      return {
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        report_type: r['report_type'] as string,
+        score: Number(r['score']),
+        controls_json: r['controls_json'] as string,
+        generated_at: r['generated_at'] instanceof Date
+          ? (r['generated_at'] as Date).toISOString()
+          : String(r['generated_at']),
+      };
+    },
+
+    async getLatestComplianceReport(tenantId: string): Promise<ComplianceReportRow | undefined> {
+      const result = await pool.query(
+        'SELECT * FROM compliance_reports WHERE tenant_id = $1 ORDER BY generated_at DESC LIMIT 1',
+        [tenantId]
+      );
+      if (!result.rows[0]) return undefined;
+      const r = result.rows[0] as Record<string, unknown>;
+      return {
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        report_type: r['report_type'] as string,
+        score: Number(r['score']),
+        controls_json: r['controls_json'] as string,
+        generated_at: r['generated_at'] instanceof Date
+          ? (r['generated_at'] as Date).toISOString()
+          : String(r['generated_at']),
+      };
     },
   };
 

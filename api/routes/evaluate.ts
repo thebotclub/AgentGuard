@@ -19,8 +19,84 @@ import { checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from '..
 import { DEFAULT_POLICY } from '../lib/policy-engine-setup.js';
 import { getGlobalKillSwitch, storeAuditEvent, fireWebhooksAsync } from './audit.js';
 import { createPendingApproval } from './approvals.js';
+import { defaultDetector } from '../lib/pii/regex-detector.js';
+import { DetectionEngine } from '../lib/detection/engine.js';
+import { HeuristicDetectionPlugin } from '../lib/detection/heuristic.js';
+import type { DetectionResult } from '../lib/detection/types.js';
+
 // getLastHash is no longer called directly — storeAuditEvent is now atomic
 const NOOP_PREV_HASH = '';
+
+// Singleton detection engine (heuristic as both primary and fallback)
+const _heuristic = new HeuristicDetectionPlugin();
+const _detectionEngine = new DetectionEngine(_heuristic, _heuristic);
+
+// ── PII helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Check if PII detection is enabled for the tenant by reading their custom
+ * policy JSON for a `piiDetection.enabled` flag.
+ */
+function isPiiEnabled(customPolicyRaw: string | null): boolean {
+  if (!customPolicyRaw) return false;
+  try {
+    const parsed = JSON.parse(customPolicyRaw) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const policy = parsed as Record<string, unknown>;
+      const piiConfig = policy['piiDetection'];
+      if (piiConfig && typeof piiConfig === 'object' && !Array.isArray(piiConfig)) {
+        return (piiConfig as Record<string, unknown>)['enabled'] === true;
+      }
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return false;
+}
+
+/**
+ * Recursively scan all string values in a params object for PII.
+ * Returns the redacted params, total entities found, and the set of PII types.
+ */
+async function scanParamsForPII(
+  params: Record<string, unknown>,
+): Promise<{
+  redactedParams: Record<string, unknown>;
+  totalEntities: number;
+  typeSet: Set<string>;
+}> {
+  const typeSet = new Set<string>();
+  let totalEntities = 0;
+
+  async function redactValue(value: unknown): Promise<unknown> {
+    if (typeof value === 'string') {
+      const result = await defaultDetector.scan(value);
+      if (result.entitiesFound > 0) {
+        totalEntities += result.entitiesFound;
+        for (const e of result.entities) {
+          typeSet.add(e.type);
+        }
+        return result.redactedContent;
+      }
+      return value;
+    }
+    if (Array.isArray(value)) {
+      return Promise.all(value.map(redactValue));
+    }
+    if (value !== null && typeof value === 'object') {
+      const obj = value as Record<string, unknown>;
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(obj)) {
+        out[k] = await redactValue(v);
+      }
+      return out;
+    }
+    return value;
+  }
+
+  const redactedParams = (await redactValue(params)) as Record<string, unknown>;
+  return { redactedParams, totalEntities, typeSet };
+}
 
 export function createEvaluateRoutes(
   db: IDatabase,
@@ -151,8 +227,88 @@ export function createEvaluateRoutes(
         return res.status(400).json({ error: evalParsed.error.issues[0]!.message });
       }
       const { tool, params } = evalParsed.data;
+
+      // ── PII Detection (opt-in via tenant policy piiDetection.enabled) ──────
+      let piiBlock: {
+        entitiesFound: number;
+        types: string[];
+        redactedInput: Record<string, unknown>;
+      } | undefined;
+
+      if (tenantId !== 'demo') {
+        try {
+          const customPolicyRaw = await db.getCustomPolicy(tenantId);
+          const piiEnabled = isPiiEnabled(customPolicyRaw);
+
+          if (piiEnabled && params && typeof params === 'object') {
+            const { redactedParams, totalEntities, typeSet } =
+              await scanParamsForPII(params as Record<string, unknown>);
+
+            if (totalEntities > 0) {
+              piiBlock = {
+                entitiesFound: totalEntities,
+                types: [...typeSet],
+                redactedInput: redactedParams,
+              };
+            }
+          }
+        } catch {
+          // PII scanning is best-effort — never block evaluation on failure
+        }
+      }
       // Note: tool length (max 200) and character validation (alphanumeric/_.-:)
       // are now enforced by the EvaluateRequest Zod schema.
+
+      // ── Prompt Injection Detection ─────────────────────────────────────────
+      // Run before policy evaluation so injections can be caught early.
+      let detectionResult: DetectionResult | undefined;
+      const messageHistory = evalParsed.data.messageHistory;
+
+      try {
+        detectionResult = await _detectionEngine.detect({
+          toolName: tool,
+          toolInput: typeof params === 'object' && params !== null
+            ? (params as Record<string, unknown>)
+            : {},
+          messageHistory,
+        });
+      } catch {
+        // Detection is non-blocking — never fail evaluation because of it
+      }
+
+      // Check if detection should short-circuit evaluation (above threshold + block/hitl)
+      if (detectionResult && _detectionEngine.isAboveThreshold(detectionResult)) {
+        // Determine relevant policy action — peek at default policy action for the tool
+        // We use 'block' as the safe default when injection is detected above threshold.
+        // The operator can configure a lower threshold or "monitor" to just log.
+        const injectionAction = 'block'; // Conservative default
+
+        await storeAuditEvent(
+          db,
+          tenantId,
+          null,
+          tool,
+          injectionAction,
+          'INJECTION_DETECTED',
+          900,
+          `Prompt injection detected (score: ${detectionResult.score.toFixed(2)}, category: ${detectionResult.category})`,
+          0,
+          NOOP_PREV_HASH,
+          agentId,
+          detectionResult.score,
+          detectionResult.provider,
+          detectionResult.category,
+        );
+
+        return res.status(200).json({
+          result: injectionAction,
+          matchedRuleId: 'INJECTION_DETECTED',
+          riskScore: 900,
+          reason: 'Request blocked: prompt injection detected in tool input.',
+          durationMs: 0,
+          ...(agentId ? { agentId } : {}),
+        });
+      }
 
       const engine = new PolicyEngine();
       engine.registerDocument(DEFAULT_POLICY);
@@ -196,7 +352,27 @@ export function createEvaluateRoutes(
         ms,
         NOOP_PREV_HASH,
         agentId,
+        detectionResult?.score ?? null,
+        detectionResult?.provider ?? null,
+        detectionResult?.category ?? null,
       );
+
+      // Log PII detection event to audit trail (redacted content only)
+      if (piiBlock && tenantId !== 'demo') {
+        await storeAuditEvent(
+          db,
+          tenantId,
+          ctx.sessionId,
+          'pii.detect',
+          'monitor',
+          'PII_DETECTED',
+          0,
+          `PII detected in evaluate input: ${piiBlock.entitiesFound} entit${piiBlock.entitiesFound === 1 ? 'y' : 'ies'} (${piiBlock.types.join(', ')}) — input redacted`,
+          0,
+          NOOP_PREV_HASH,
+          agentId,
+        );
+      }
 
       // Increment custom rate limit counter after successful evaluation
       if (tenantId !== 'demo') {
@@ -273,6 +449,7 @@ export function createEvaluateRoutes(
         ...(agentId ? { agentId } : {}),
         ...(approvalId ? { approvalId } : {}),
         ...(warnings.length > 0 ? { warnings } : {}),
+        ...(piiBlock ? { pii: piiBlock } : {}),
       });
     },
   );

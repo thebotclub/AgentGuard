@@ -77,6 +77,9 @@ export async function storeAuditEvent(
   // prevHash is now ignored — the adapter reads it atomically inside a lock
   _prevHash: string,
   agentId?: string | null,
+  detectionScore?: number | null,
+  detectionProvider?: string | null,
+  detectionCategory?: string | null,
 ): Promise<string> {
   const createdAt = new Date().toISOString();
   const effectiveTenantId = tenantId === 'demo' ? null : tenantId;
@@ -94,6 +97,9 @@ export async function storeAuditEvent(
     durationMs,
     createdAt,
     agentId ?? null,
+    detectionScore ?? null,
+    detectionProvider ?? null,
+    detectionCategory ?? null,
   );
 }
 

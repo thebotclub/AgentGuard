@@ -20,7 +20,8 @@ import type {
   AgentRow,
   ApprovalRow,
   FeedbackRow,
-  UsageAnalytics,
+  ComplianceReportRow,
+  UsageAnalytics, PlatformAnalytics,
 } from './db-interface.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
@@ -186,6 +187,18 @@ const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS idx_rate_limits_tenant ON rate_limits(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_cost_events_tenant ON cost_events(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_mcp_proxy_tenant ON mcp_proxy_configs(tenant_id);
+
+  -- Compliance Reports
+  CREATE TABLE IF NOT EXISTS compliance_reports (
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+    tenant_id TEXT NOT NULL REFERENCES tenants(id),
+    report_type TEXT NOT NULL DEFAULT 'owasp-agentic-top10',
+    score REAL NOT NULL DEFAULT 0,
+    controls_json TEXT NOT NULL DEFAULT '{}',
+    generated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_compliance_reports_tenant ON compliance_reports(tenant_id, generated_at);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -255,6 +268,16 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       // ── Backward-compat migrations ──────────────────────────────────────────
       // Migration: add agent_id to audit_events if not present
       try { db.exec('ALTER TABLE audit_events ADD COLUMN agent_id TEXT'); } catch { /* already exists */ }
+
+      // Migration: detection columns on audit_events
+      const detectionCols: Array<{ name: string; type: string }> = [
+        { name: 'detection_score', type: 'REAL' },
+        { name: 'detection_provider', type: 'TEXT' },
+        { name: 'detection_category', type: 'TEXT' },
+      ];
+      for (const col of detectionCols) {
+        try { db.exec(`ALTER TABLE audit_events ADD COLUMN ${col.name} ${col.type}`); } catch { /* already exists */ }
+      }
 
       // Migration: validation/certification columns on agents table
       const validationCols: Array<{ name: string; type: string }> = [
@@ -367,6 +390,9 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         );
       `);
 
+      // Migration: pii_entities_count column on audit_events
+      try { db.exec('ALTER TABLE audit_events ADD COLUMN pii_entities_count INTEGER DEFAULT 0'); } catch { /* already exists */ }
+
       // Migration: feedback and telemetry tables
       db.exec(`
         CREATE TABLE IF NOT EXISTS feedback (
@@ -386,6 +412,19 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
           platform TEXT,
           created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
+      `);
+
+      // Migration: compliance_reports table
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS compliance_reports (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          tenant_id TEXT NOT NULL,
+          report_type TEXT NOT NULL DEFAULT 'owasp-agentic-top10',
+          score REAL NOT NULL DEFAULT 0,
+          controls_json TEXT NOT NULL DEFAULT '{}',
+          generated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_compliance_reports_tenant ON compliance_reports(tenant_id, generated_at);
       `);
 
       console.log('[db] SQLite schema ready');
@@ -438,7 +477,7 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       const keyPrefix = key.substring(0, 12);
       const keySha256 = sha256Hex(key);
       db.prepare(
-        'INSERT INTO api_keys (tenant_id, name, key_hash, key_prefix, key_sha256) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO api_keys (key, tenant_id, name, key_hash, key_prefix, key_sha256) VALUES (?, ?, ?, ?, ?, ?)'
       ).run(key, tenantId, name, keyHash, keyPrefix, keySha256);
     },
 
@@ -475,6 +514,9 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       durationMs: number | null,
       createdAt: string,
       agentId: string | null,
+      detectionScore: number | null = null,
+      detectionProvider: string | null = null,
+      detectionCategory: string | null = null,
     ): Promise<string> {
       // SQLite with better-sqlite3 is synchronous — wrap in exclusive transaction
       // to guarantee atomic read-last-hash + insert (already serialized by the
@@ -489,11 +531,13 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         db.prepare(
           `INSERT INTO audit_events
            (tenant_id, session_id, tool, action, result, rule_id, risk_score, reason,
-            duration_ms, previous_hash, hash, created_at, agent_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            duration_ms, previous_hash, hash, created_at, agent_id,
+            detection_score, detection_provider, detection_category)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).run(
           tenantId, sessionId, tool, action, result, ruleId, riskScore, reason,
-          durationMs, prevHash, newHash, createdAt, agentId
+          durationMs, prevHash, newHash, createdAt, agentId,
+          detectionScore, detectionProvider, detectionCategory,
         );
         return newHash;
       });
@@ -514,15 +558,20 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       hash: string | null,
       createdAt: string,
       agentId: string | null,
+      detectionScore: number | null = null,
+      detectionProvider: string | null = null,
+      detectionCategory: string | null = null,
     ): Promise<void> {
       db.prepare(
         `INSERT INTO audit_events
          (tenant_id, session_id, tool, action, result, rule_id, risk_score, reason,
-          duration_ms, previous_hash, hash, created_at, agent_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          duration_ms, previous_hash, hash, created_at, agent_id,
+          detection_score, detection_provider, detection_category)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
         tenantId, sessionId, tool, action, result, ruleId, riskScore, reason,
-        durationMs, previousHash, hash, createdAt, agentId
+        durationMs, previousHash, hash, createdAt, agentId,
+        detectionScore, detectionProvider, detectionCategory,
       );
     },
 
@@ -841,6 +890,43 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       };
     },
 
+    // ── Platform Analytics (admin) ────────────────────────────────────────────
+    async getPlatformAnalytics(): Promise<PlatformAnalytics> {
+      const totalTenants = (sdb.prepare('SELECT COUNT(*) as cnt FROM tenants').get() as any)?.cnt ?? 0;
+      const activeTenants30d = (sdb.prepare("SELECT COUNT(DISTINCT tenant_id) as cnt FROM audit_events WHERE created_at >= datetime('now','-30 days')").get() as any)?.cnt ?? 0;
+      const totalEvaluateCalls = (sdb.prepare('SELECT COUNT(*) as cnt FROM audit_events').get() as any)?.cnt ?? 0;
+      const callsLast24h = (sdb.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-1 day')").get() as any)?.cnt ?? 0;
+      const callsLast7d = (sdb.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-7 days')").get() as any)?.cnt ?? 0;
+      const callsLast30d = (sdb.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-30 days')").get() as any)?.cnt ?? 0;
+      const blocked = (sdb.prepare("SELECT COUNT(*) as cnt FROM audit_events WHERE result = 'block'").get() as any)?.cnt ?? 0;
+      const blockRate = totalEvaluateCalls > 0 ? blocked / totalEvaluateCalls : 0;
+      const topTools = sdb.prepare('SELECT tool, COUNT(*) as cnt FROM audit_events GROUP BY tool ORDER BY cnt DESC LIMIT 20').all() as any[];
+      const topTenants = sdb.prepare("SELECT a.tenant_id, COALESCE(t.email,'unknown') as email, COUNT(*) as cnt FROM audit_events a LEFT JOIN tenants t ON a.tenant_id = t.id GROUP BY a.tenant_id, t.email ORDER BY cnt DESC LIMIT 20").all() as any[];
+      const dailyVolume = sdb.prepare("SELECT DATE(created_at) as date, COUNT(*) as cnt FROM audit_events WHERE created_at >= datetime('now','-30 days') GROUP BY date ORDER BY date").all() as any[];
+
+      let sdkTelemetry = { total: 0, last7d: 0, byLanguage: [] as any[] };
+      try {
+        const total = (sdb.prepare('SELECT COUNT(*) as cnt FROM telemetry_events').get() as any)?.cnt ?? 0;
+        const last7d = (sdb.prepare("SELECT COUNT(*) as cnt FROM telemetry_events WHERE created_at >= datetime('now','-7 days')").get() as any)?.cnt ?? 0;
+        const byLang = sdb.prepare('SELECT language, COUNT(*) as cnt FROM telemetry_events GROUP BY language ORDER BY cnt DESC').all() as any[];
+        sdkTelemetry = { total, last7d, byLanguage: byLang };
+      } catch { /* table may not exist */ }
+
+      return {
+        totalTenants,
+        activeTenants30d,
+        totalEvaluateCalls,
+        callsLast24h,
+        callsLast7d,
+        callsLast30d,
+        blockRate,
+        topTools: topTools.map(r => ({ tool: r.tool, cnt: r.cnt })),
+        topTenants: topTenants.map(r => ({ tenant_id: r.tenant_id, email: r.email, cnt: r.cnt })),
+        dailyVolume: dailyVolume.map(r => ({ date: r.date, cnt: r.cnt })),
+        sdkTelemetry,
+      };
+    },
+
     // ── Feedback ──────────────────────────────────────────────────────────────
     async insertFeedback(
       tenantId: string,
@@ -874,6 +960,35 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       db.prepare(
         'INSERT INTO telemetry_events (sdk_version, language, platform) VALUES (?, ?, ?)'
       ).run(sdkVersion, language, platform);
+    },
+
+    // ── Compliance Reports ────────────────────────────────────────────────────
+    async insertComplianceReport(
+      tenantId: string,
+      reportType: string,
+      score: number,
+      controlsJson: string,
+    ): Promise<string> {
+      const id = crypto.randomUUID().replace(/-/g, '');
+      db.prepare(
+        `INSERT INTO compliance_reports (id, tenant_id, report_type, score, controls_json)
+         VALUES (?, ?, ?, ?, ?)`
+      ).run(id, tenantId, reportType, score, controlsJson);
+      return id;
+    },
+
+    async getComplianceReport(tenantId: string, reportId: string): Promise<ComplianceReportRow | undefined> {
+      return getSync<ComplianceReportRow>(
+        'SELECT * FROM compliance_reports WHERE id = ? AND tenant_id = ?',
+        [reportId, tenantId]
+      );
+    },
+
+    async getLatestComplianceReport(tenantId: string): Promise<ComplianceReportRow | undefined> {
+      return getSync<ComplianceReportRow>(
+        'SELECT * FROM compliance_reports WHERE tenant_id = ? ORDER BY generated_at DESC LIMIT 1',
+        [tenantId]
+      );
     },
   };
 
