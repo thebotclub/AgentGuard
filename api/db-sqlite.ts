@@ -21,6 +21,8 @@ import type {
   ApprovalRow,
   FeedbackRow,
   ComplianceReportRow,
+  McpServerRow, IntegrationRow,
+  ChildAgentRow,
   UsageAnalytics, PlatformAnalytics,
 } from './db-interface.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
@@ -425,6 +427,49 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
           generated_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
         CREATE INDEX IF NOT EXISTS idx_compliance_reports_tenant ON compliance_reports(tenant_id, generated_at);
+      `);
+
+      // Migration: mcp_servers table (MCP Server Registry)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS mcp_servers (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          tenant_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          url TEXT NOT NULL,
+          allowed_tools TEXT NOT NULL DEFAULT '[]',
+          blocked_tools TEXT NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_mcp_servers_tenant ON mcp_servers(tenant_id);
+      `);
+
+      // Migration: agent_hierarchy table (A2A multi-agent policy propagation)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS agent_hierarchy (
+          id TEXT PRIMARY KEY,
+          parent_agent_id TEXT NOT NULL,
+          child_agent_id TEXT NOT NULL UNIQUE,
+          tenant_id TEXT NOT NULL,
+          policy_snapshot TEXT NOT NULL DEFAULT '{}',
+          ttl_expires_at TEXT,
+          max_tool_calls INTEGER,
+          tool_calls_used INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_agent_hierarchy_parent ON agent_hierarchy(parent_agent_id, tenant_id);
+        CREATE INDEX IF NOT EXISTS idx_agent_hierarchy_child ON agent_hierarchy(child_agent_id);
+      `);
+
+      // Migration: integrations table (Slack/Teams HITL)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS integrations (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL,
+          type TEXT NOT NULL,
+          config_encrypted TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_integrations_tenant ON integrations(tenant_id, type);
       `);
 
       console.log('[db] SQLite schema ready');
@@ -989,6 +1034,102 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         'SELECT * FROM compliance_reports WHERE tenant_id = ? ORDER BY generated_at DESC LIMIT 1',
         [tenantId]
       );
+    },
+
+    // ── Agent Hierarchy (A2A) ──────────────────────────────────────────────────
+    async insertChildAgent(
+      id: string,
+      parentAgentId: string,
+      childAgentId: string,
+      tenantId: string,
+      policySnapshot: string,
+      ttlExpiresAt: string | null,
+      maxToolCalls: number | null,
+    ): Promise<ChildAgentRow> {
+      db.prepare(
+        `INSERT INTO agent_hierarchy
+           (id, parent_agent_id, child_agent_id, tenant_id, policy_snapshot, ttl_expires_at, max_tool_calls)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      ).run(id, parentAgentId, childAgentId, tenantId, policySnapshot, ttlExpiresAt, maxToolCalls);
+      return getSync<ChildAgentRow>(
+        'SELECT * FROM agent_hierarchy WHERE id = ?',
+        [id]
+      )!;
+    },
+
+    async getChildAgent(childAgentId: string): Promise<ChildAgentRow | undefined> {
+      return getSync<ChildAgentRow>(
+        'SELECT * FROM agent_hierarchy WHERE child_agent_id = ?',
+        [childAgentId]
+      );
+    },
+
+    async listChildAgents(parentAgentId: string, tenantId: string): Promise<ChildAgentRow[]> {
+      return allSync<ChildAgentRow>(
+        'SELECT * FROM agent_hierarchy WHERE parent_agent_id = ? AND tenant_id = ? ORDER BY created_at DESC',
+        [parentAgentId, tenantId]
+      );
+    },
+
+    async deleteChildAgent(childAgentId: string, tenantId: string): Promise<void> {
+      db.prepare(
+        'DELETE FROM agent_hierarchy WHERE child_agent_id = ? AND tenant_id = ?'
+      ).run(childAgentId, tenantId);
+    },
+
+    async incrementChildToolCalls(childAgentId: string): Promise<void> {
+      db.prepare(
+        'UPDATE agent_hierarchy SET tool_calls_used = tool_calls_used + 1 WHERE child_agent_id = ?'
+      ).run(childAgentId);
+    },
+
+    // ── MCP Server Registry ───────────────────────────────────────────────────
+    async insertMcpServer(
+      tenantId: string,
+      name: string,
+      url: string,
+      allowedTools: string[],
+      blockedTools: string[],
+    ): Promise<McpServerRow> {
+      const id = crypto.randomUUID().replace(/-/g, '');
+      db.prepare(
+        `INSERT INTO mcp_servers (id, tenant_id, name, url, allowed_tools, blocked_tools)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      ).run(id, tenantId, name, url, JSON.stringify(allowedTools), JSON.stringify(blockedTools));
+      return getSync<McpServerRow>('SELECT * FROM mcp_servers WHERE id = ?', [id])!;
+    },
+
+    async listMcpServers(tenantId: string): Promise<McpServerRow[]> {
+      return allSync<McpServerRow>(
+        'SELECT * FROM mcp_servers WHERE tenant_id = ? ORDER BY created_at ASC',
+        [tenantId]
+      );
+    },
+
+    async getMcpServer(id: string, tenantId: string): Promise<McpServerRow | undefined> {
+      return getSync<McpServerRow>(
+        'SELECT * FROM mcp_servers WHERE id = ? AND tenant_id = ?',
+        [id, tenantId]
+      );
+    },
+
+    async deleteMcpServer(id: string, tenantId: string): Promise<void> {
+      db.prepare('DELETE FROM mcp_servers WHERE id = ? AND tenant_id = ?').run(id, tenantId);
+    },
+
+    // ── Integrations (Slack/Teams) ────────────────────────────────────────────
+    async insertIntegration(tenantId: string, type: 'slack' | 'teams', configEncrypted: string): Promise<IntegrationRow> {
+      const id = require('crypto').randomUUID();
+      db.prepare(
+        'INSERT INTO integrations (id, tenant_id, type, config_encrypted) VALUES (?, ?, ?, ?)'
+      ).run(id, tenantId, type, configEncrypted);
+      return { id, tenant_id: tenantId, type, config_encrypted: configEncrypted, created_at: new Date().toISOString() };
+    },
+    async getIntegration(tenantId: string, type: 'slack' | 'teams'): Promise<IntegrationRow | undefined> {
+      return (db.prepare('SELECT * FROM integrations WHERE tenant_id = ? AND type = ?').get(tenantId, type) as IntegrationRow | undefined);
+    },
+    async deleteIntegration(tenantId: string, type: 'slack' | 'teams'): Promise<void> {
+      db.prepare('DELETE FROM integrations WHERE tenant_id = ? AND type = ?').run(tenantId, type);
     },
   };
 

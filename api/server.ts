@@ -33,6 +33,9 @@ import { createFeedbackRoutes } from './routes/feedback.js';
 import { createTelemetryRoutes } from './routes/telemetry.js';
 import { createComplianceRoutes } from './routes/compliance.js';
 import { createPIIRoutes } from './routes/pii.js';
+import { createMcpPolicyRoutes } from './routes/mcp-policy.js';
+import { createSlackHitlRoutes } from './routes/slack-hitl.js';
+import { createAgentHierarchyRoutes } from './routes/agent-hierarchy.js';
 import type { IDatabase } from './db-interface.js';
 
 // ── Load Templates ─────────────────────────────────────────────────────────
@@ -93,7 +96,50 @@ app.use(
 );
 
 app.disable('x-powered-by');
+
+// ── Extend Express Request type for raw body capture ────────────────────────
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      rawBody?: string;
+    }
+  }
+}
+
+// ── Raw body capture for Slack HMAC signature verification ─────────────────
+// Must be registered BEFORE express.json so we can read the raw bytes.
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (req.path === '/api/v1/integrations/slack/callback') {
+    let data = '';
+    req.on('data', (chunk: Buffer) => {
+      data += chunk.toString('utf8');
+    });
+    req.on('end', () => {
+      req.rawBody = data;
+      // Manually parse URL-encoded body for Slack payload
+      try {
+        const params = new URLSearchParams(data);
+        const payload = params.get('payload');
+        if (payload) {
+          req.body = { payload };
+        } else {
+          req.body = Object.fromEntries(params.entries());
+        }
+      } catch {
+        req.body = {};
+      }
+      next();
+    });
+    req.on('error', () => next());
+  } else {
+    next();
+  }
+});
+
 app.use(express.json({ limit: '50kb' }));
+// URL-encoded body parsing (for non-Slack paths, after the raw body middleware)
+app.use(express.urlencoded({ extended: false, limit: '50kb' }));
 
 // ── Security Headers ───────────────────────────────────────────────────────
 app.use((_req: Request, res: Response, next: NextFunction) => {
@@ -272,11 +318,15 @@ async function main(): Promise<void> {
   app.use(createTelemetryRoutes(db));
   app.use(createComplianceRoutes(db, auth));
   app.use(createPIIRoutes(db, auth));
+  app.use(createSlackHitlRoutes(db, auth));
 
   // ── Already-extracted route modules ───────────────────────────────────
   app.use(createPhase2Routes(db));
   app.use(createMcpRoutes(db));
   app.use(createValidationRoutes(db));
+
+  // ── MCP Server Policy Enforcement (servers registry + SSRF-aware evaluate) ─
+  app.use(createMcpPolicyRoutes(db, auth));
 
   // ── Global Error Handler ───────────────────────────────────────────────
   app.use(

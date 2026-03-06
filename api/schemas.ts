@@ -131,6 +131,28 @@ export const McpConfigRequestSchema = z.object({
   enabled: z.boolean().optional(),
 });
 
+// ── POST /api/v1/mcp/evaluate (mcp-policy) ───────────────────────────────
+export const McpEvaluateRequestSchema = z.object({
+  server: z.string().max(200).optional(),
+  tool: z.string({ error: 'tool is required and must be a string' })
+    .min(1, 'tool is required and must be a string')
+    .max(200, 'tool name too long (max 200 chars)'),
+  arguments: z.record(z.string(), z.unknown()).optional().default({}),
+  agentId: z.string().max(200).optional(),
+});
+
+// ── POST /api/v1/mcp/servers ──────────────────────────────────────────────
+export const RegisterMcpServerRequestSchema = z.object({
+  name: z.string({ error: 'name is required' })
+    .min(1, 'name is required')
+    .max(200, 'name too long (max 200 chars)'),
+  url: z.string({ error: 'url is required' })
+    .min(1, 'url is required')
+    .url('url must be a valid URL'),
+  allowedTools: z.array(z.string().min(1)).optional().default([]),
+  blockedTools: z.array(z.string().min(1)).optional().default([]),
+});
+
 // ── POST /api/v1/pii/scan ─────────────────────────────────────────────────
 export const PIIScanRequestSchema = z.object({
   content: z.string().min(1, 'content is required').max(50000, 'content too long (max 50000 chars)'),
@@ -160,6 +182,18 @@ export const ComplianceGenerateRequestSchema = z.object({
   agentId: z.string().max(100).optional(),
 });
 
+// ── POST /api/v1/agents/:agentId/children ─────────────────────────────────
+export const SpawnChildAgentRequestSchema = z.object({
+  name: z.string({ error: 'name is required' })
+    .min(1, 'name is required')
+    .max(200, 'name too long (max 200 chars)'),
+  allowedTools: z.array(z.string().min(1)).optional(),
+  blockedTools: z.array(z.string().min(1)).optional(),
+  hitlTools: z.array(z.string().min(1)).optional(),
+  ttlMinutes: z.number().int().min(1).max(10080).optional(),
+  maxToolCalls: z.number().int().min(1).max(1000000).optional(),
+});
+
 // ── Type inference helpers ─────────────────────────────────────────────────
 // Export schemas following naming convention: Schema suffix for Zod schema,
 // aliased export for backwards compatibility
@@ -179,6 +213,7 @@ export const FeedbackRequest = FeedbackRequestSchema;
 export const TelemetryRequest = TelemetryRequestSchema;
 export const PIIScanRequest = PIIScanRequestSchema;
 export const ComplianceGenerateRequest = ComplianceGenerateRequestSchema;
+export const SpawnChildAgentRequest = SpawnChildAgentRequestSchema;
 
 export type EvaluateRequest = z.infer<typeof EvaluateRequestSchema>;
 export type SignupRequest = z.infer<typeof SignupRequestSchema>;
@@ -192,7 +227,10 @@ export type PlaygroundSessionRequest = z.infer<typeof PlaygroundSessionRequestSc
 export type RateLimitConfigRequest = z.infer<typeof RateLimitConfigRequestSchema>;
 export type CostTrackRequest = z.infer<typeof CostTrackRequestSchema>;
 export type McpConfigRequest = z.infer<typeof McpConfigRequestSchema>;
+export type McpEvaluateRequest = z.infer<typeof McpEvaluateRequestSchema>;
+export type RegisterMcpServerRequest = z.infer<typeof RegisterMcpServerRequestSchema>;
 export type FeedbackRequest = z.infer<typeof FeedbackRequestSchema>;
 export type TelemetryRequest = z.infer<typeof TelemetryRequestSchema>;
 export type PIIScanRequest = z.infer<typeof PIIScanRequestSchema>;
 export type ComplianceGenerateRequest = z.infer<typeof ComplianceGenerateRequestSchema>;
+export type SpawnChildAgentRequest = z.infer<typeof SpawnChildAgentRequestSchema>;

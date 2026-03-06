@@ -19,6 +19,8 @@ import type {
   ApprovalRow,
   FeedbackRow,
   ComplianceReportRow,
+  McpServerRow, IntegrationRow,
+  ChildAgentRow,
   UsageAnalytics, PlatformAnalytics,
 } from './db-interface.js';
 import { randomUUID } from 'crypto';
@@ -203,6 +205,28 @@ const SCHEMA_SQL = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_compliance_reports_tenant ON compliance_reports(tenant_id, generated_at);
+
+  -- MCP Server Registry
+  CREATE TABLE IF NOT EXISTS mcp_servers (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    tenant_id TEXT NOT NULL REFERENCES tenants(id),
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    allowed_tools TEXT NOT NULL DEFAULT '[]',
+    blocked_tools TEXT NOT NULL DEFAULT '[]',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_mcp_servers_tenant ON mcp_servers(tenant_id);
+
+  CREATE TABLE IF NOT EXISTS integrations (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL REFERENCES tenants(id),
+    type TEXT NOT NULL,
+    config_encrypted TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  CREATE INDEX IF NOT EXISTS idx_integrations_tenant ON integrations(tenant_id, type);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -456,6 +480,37 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
           generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
         CREATE INDEX IF NOT EXISTS idx_compliance_reports_tenant ON compliance_reports(tenant_id, generated_at);
+      `);
+
+      // Migration: mcp_servers table (MCP Server Registry)
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS mcp_servers (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          tenant_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          url TEXT NOT NULL,
+          allowed_tools TEXT NOT NULL DEFAULT '[]',
+          blocked_tools TEXT NOT NULL DEFAULT '[]',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_mcp_servers_tenant ON mcp_servers(tenant_id);
+      `);
+
+      // Migration: agent_hierarchy table (A2A multi-agent policy propagation)
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS agent_hierarchy (
+          id TEXT PRIMARY KEY,
+          parent_agent_id TEXT NOT NULL,
+          child_agent_id TEXT NOT NULL UNIQUE,
+          tenant_id TEXT NOT NULL,
+          policy_snapshot TEXT NOT NULL DEFAULT '{}',
+          ttl_expires_at TIMESTAMPTZ,
+          max_tool_calls INTEGER,
+          tool_calls_used INTEGER NOT NULL DEFAULT 0,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_agent_hierarchy_parent ON agent_hierarchy(parent_agent_id, tenant_id);
+        CREATE INDEX IF NOT EXISTS idx_agent_hierarchy_child ON agent_hierarchy(child_agent_id);
       `);
 
       console.log('[pg] schema ready');
@@ -1232,6 +1287,200 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
           ? (r['generated_at'] as Date).toISOString()
           : String(r['generated_at']),
       };
+    },
+
+    // ── Agent Hierarchy (A2A) ──────────────────────────────────────────────────
+    async insertChildAgent(
+      id: string,
+      parentAgentId: string,
+      childAgentId: string,
+      tenantId: string,
+      policySnapshot: string,
+      ttlExpiresAt: string | null,
+      maxToolCalls: number | null,
+    ): Promise<ChildAgentRow> {
+      const result = await pool.query(
+        `INSERT INTO agent_hierarchy
+           (id, parent_agent_id, child_agent_id, tenant_id, policy_snapshot, ttl_expires_at, max_tool_calls)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [id, parentAgentId, childAgentId, tenantId, policySnapshot, ttlExpiresAt, maxToolCalls]
+      );
+      const r = result.rows[0] as Record<string, unknown>;
+      return {
+        id: r['id'] as string,
+        parent_agent_id: r['parent_agent_id'] as string,
+        child_agent_id: r['child_agent_id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        policy_snapshot: r['policy_snapshot'] as string,
+        ttl_expires_at: r['ttl_expires_at']
+          ? (r['ttl_expires_at'] instanceof Date
+            ? (r['ttl_expires_at'] as Date).toISOString()
+            : String(r['ttl_expires_at']))
+          : null,
+        max_tool_calls: r['max_tool_calls'] != null ? Number(r['max_tool_calls']) : null,
+        tool_calls_used: Number(r['tool_calls_used'] ?? 0),
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+      };
+    },
+
+    async getChildAgent(childAgentId: string): Promise<ChildAgentRow | undefined> {
+      const result = await pool.query(
+        'SELECT * FROM agent_hierarchy WHERE child_agent_id = $1',
+        [childAgentId]
+      );
+      if (result.rows.length === 0) return undefined;
+      const r = result.rows[0] as Record<string, unknown>;
+      return {
+        id: r['id'] as string,
+        parent_agent_id: r['parent_agent_id'] as string,
+        child_agent_id: r['child_agent_id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        policy_snapshot: r['policy_snapshot'] as string,
+        ttl_expires_at: r['ttl_expires_at']
+          ? (r['ttl_expires_at'] instanceof Date
+            ? (r['ttl_expires_at'] as Date).toISOString()
+            : String(r['ttl_expires_at']))
+          : null,
+        max_tool_calls: r['max_tool_calls'] != null ? Number(r['max_tool_calls']) : null,
+        tool_calls_used: Number(r['tool_calls_used'] ?? 0),
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+      };
+    },
+
+    async listChildAgents(parentAgentId: string, tenantId: string): Promise<ChildAgentRow[]> {
+      const result = await pool.query(
+        'SELECT * FROM agent_hierarchy WHERE parent_agent_id = $1 AND tenant_id = $2 ORDER BY created_at DESC',
+        [parentAgentId, tenantId]
+      );
+      return result.rows.map((r: Record<string, unknown>) => ({
+        id: r['id'] as string,
+        parent_agent_id: r['parent_agent_id'] as string,
+        child_agent_id: r['child_agent_id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        policy_snapshot: r['policy_snapshot'] as string,
+        ttl_expires_at: r['ttl_expires_at']
+          ? (r['ttl_expires_at'] instanceof Date
+            ? (r['ttl_expires_at'] as Date).toISOString()
+            : String(r['ttl_expires_at']))
+          : null,
+        max_tool_calls: r['max_tool_calls'] != null ? Number(r['max_tool_calls']) : null,
+        tool_calls_used: Number(r['tool_calls_used'] ?? 0),
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+      }));
+    },
+
+    async deleteChildAgent(childAgentId: string, tenantId: string): Promise<void> {
+      await pool.query(
+        'DELETE FROM agent_hierarchy WHERE child_agent_id = $1 AND tenant_id = $2',
+        [childAgentId, tenantId]
+      );
+    },
+
+    async incrementChildToolCalls(childAgentId: string): Promise<void> {
+      await pool.query(
+        'UPDATE agent_hierarchy SET tool_calls_used = tool_calls_used + 1 WHERE child_agent_id = $1',
+        [childAgentId]
+      );
+    },
+
+    // ── MCP Server Registry ───────────────────────────────────────────────────
+    async insertMcpServer(
+      tenantId: string,
+      name: string,
+      url: string,
+      allowedTools: string[],
+      blockedTools: string[],
+    ): Promise<McpServerRow> {
+      const result = await pool.query(
+        `INSERT INTO mcp_servers (tenant_id, name, url, allowed_tools, blocked_tools)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+        [tenantId, name, url, JSON.stringify(allowedTools), JSON.stringify(blockedTools)]
+      );
+      const r = result.rows[0] as Record<string, unknown>;
+      return {
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        name: r['name'] as string,
+        url: r['url'] as string,
+        allowed_tools: r['allowed_tools'] as string,
+        blocked_tools: r['blocked_tools'] as string,
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+      };
+    },
+
+    async listMcpServers(tenantId: string): Promise<McpServerRow[]> {
+      const result = await pool.query(
+        'SELECT * FROM mcp_servers WHERE tenant_id = $1 ORDER BY created_at ASC',
+        [tenantId]
+      );
+      return result.rows.map((r: Record<string, unknown>) => ({
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        name: r['name'] as string,
+        url: r['url'] as string,
+        allowed_tools: r['allowed_tools'] as string,
+        blocked_tools: r['blocked_tools'] as string,
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+      }));
+    },
+
+    async getMcpServer(id: string, tenantId: string): Promise<McpServerRow | undefined> {
+      const result = await pool.query(
+        'SELECT * FROM mcp_servers WHERE id = $1 AND tenant_id = $2',
+        [id, tenantId]
+      );
+      if (!result.rows[0]) return undefined;
+      const r = result.rows[0] as Record<string, unknown>;
+      return {
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        name: r['name'] as string,
+        url: r['url'] as string,
+        allowed_tools: r['allowed_tools'] as string,
+        blocked_tools: r['blocked_tools'] as string,
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+      };
+    },
+
+    async deleteMcpServer(id: string, tenantId: string): Promise<void> {
+      await pool.query(
+        'DELETE FROM mcp_servers WHERE id = $1 AND tenant_id = $2',
+        [id, tenantId]
+      );
+    },
+
+    // ── Integrations (Slack/Teams) ────────────────────────────────────────────
+    async insertIntegration(tenantId: string, type: 'slack' | 'teams', configEncrypted: string): Promise<IntegrationRow> {
+      const id = require('crypto').randomUUID();
+      await pool.query(
+        'INSERT INTO integrations (id, tenant_id, type, config_encrypted) VALUES ($1, $2, $3, $4)',
+        [id, tenantId, type, configEncrypted]
+      );
+      return { id, tenant_id: tenantId, type, config_encrypted: configEncrypted, created_at: new Date().toISOString() };
+    },
+    async getIntegration(tenantId: string, type: 'slack' | 'teams'): Promise<IntegrationRow | undefined> {
+      const res = await pool.query<IntegrationRow>(
+        'SELECT * FROM integrations WHERE tenant_id = $1 AND type = $2',
+        [tenantId, type]
+      );
+      return res.rows[0];
+    },
+    async deleteIntegration(tenantId: string, type: 'slack' | 'teams'): Promise<void> {
+      await pool.query('DELETE FROM integrations WHERE tenant_id = $1 AND type = $2', [tenantId, type]);
     },
   };
 

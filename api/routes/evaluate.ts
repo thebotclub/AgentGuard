@@ -23,6 +23,7 @@ import { defaultDetector } from '../lib/pii/regex-detector.js';
 import { DetectionEngine } from '../lib/detection/engine.js';
 import { HeuristicDetectionPlugin } from '../lib/detection/heuristic.js';
 import type { DetectionResult } from '../lib/detection/types.js';
+import { evaluateToolAgainstPolicy, type AgentPolicy } from '../lib/policy-inheritance.js';
 
 // getLastHash is no longer called directly — storeAuditEvent is now atomic
 const NOOP_PREV_HASH = '';
@@ -222,11 +223,117 @@ export function createEvaluateRoutes(
         });
       }
 
+      // ── Child Agent Checks (A2A) ───────────────────────────────────────────
+      // If the evaluating agent is a child agent, check TTL + budget + inherited policy
+      let childAgentPolicy: AgentPolicy | null = null;
+      if (agentId) {
+        try {
+          const hierarchyRow = await db.getChildAgent(agentId);
+          if (hierarchyRow) {
+            // TTL check
+            if (hierarchyRow.ttl_expires_at && new Date(hierarchyRow.ttl_expires_at).getTime() < Date.now()) {
+              await storeAuditEvent(
+                db,
+                tenantId,
+                null,
+                req.body?.tool ?? 'unknown',
+                'block',
+                'AGENT_EXPIRED',
+                1000,
+                'Child agent TTL has expired',
+                0,
+                NOOP_PREV_HASH,
+                agentId,
+              );
+              return res.json({
+                result: 'block',
+                matchedRuleId: 'AGENT_EXPIRED',
+                riskScore: 1000,
+                reason: 'Child agent has expired (TTL exceeded).',
+                durationMs: 0,
+                agentId,
+              });
+            }
+
+            // Budget check
+            if (
+              hierarchyRow.max_tool_calls !== null &&
+              hierarchyRow.tool_calls_used >= hierarchyRow.max_tool_calls
+            ) {
+              await storeAuditEvent(
+                db,
+                tenantId,
+                null,
+                req.body?.tool ?? 'unknown',
+                'block',
+                'BUDGET_EXCEEDED',
+                1000,
+                `Child agent tool call budget exhausted (${hierarchyRow.tool_calls_used}/${hierarchyRow.max_tool_calls})`,
+                0,
+                NOOP_PREV_HASH,
+                agentId,
+              );
+              return res.json({
+                result: 'block',
+                matchedRuleId: 'BUDGET_EXCEEDED',
+                riskScore: 1000,
+                reason: `Child agent has exhausted its tool call budget (${hierarchyRow.tool_calls_used}/${hierarchyRow.max_tool_calls}).`,
+                durationMs: 0,
+                agentId,
+              });
+            }
+
+            // Parse and store inherited policy for tool-level check below
+            try {
+              childAgentPolicy = JSON.parse(hierarchyRow.policy_snapshot) as AgentPolicy;
+            } catch {
+              childAgentPolicy = null;
+            }
+          }
+        } catch {
+          // Non-blocking — if hierarchy table doesn't exist yet, skip
+        }
+      }
+
       const evalParsed = EvaluateRequest.safeParse(req.body ?? {});
       if (!evalParsed.success) {
         return res.status(400).json({ error: evalParsed.error.issues[0]!.message });
       }
       const { tool, params } = evalParsed.data;
+
+      // ── Child Agent Policy: tool-level check ───────────────────────────────
+      if (childAgentPolicy && agentId) {
+        const toolCheck = evaluateToolAgainstPolicy(tool, childAgentPolicy);
+        if (!toolCheck.allowed) {
+          await storeAuditEvent(
+            db,
+            tenantId,
+            null,
+            tool,
+            'block',
+            'CHILD_POLICY_VIOLATION',
+            800,
+            toolCheck.reason ?? 'Tool blocked by child agent policy',
+            0,
+            NOOP_PREV_HASH,
+            agentId,
+          );
+          return res.json({
+            result: 'block',
+            matchedRuleId: 'CHILD_POLICY_VIOLATION',
+            riskScore: 800,
+            reason: toolCheck.reason ?? 'Tool blocked by child agent inherited policy.',
+            durationMs: 0,
+            agentId,
+          });
+        }
+        // Increment tool call counter for child agents
+        try {
+          await db.incrementChildToolCalls(agentId);
+        } catch {
+          // Non-blocking
+        }
+      }
 
       // ── PII Detection (opt-in via tenant policy piiDetection.enabled) ──────
       let piiBlock: {

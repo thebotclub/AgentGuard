@@ -121,6 +121,16 @@ export interface McpConfigRow {
   created_at: string;
 }
 
+export interface McpServerRow {
+  id: string;
+  tenant_id: string;
+  name: string;
+  url: string;
+  allowed_tools: string; // JSON array
+  blocked_tools: string; // JSON array
+  created_at: string;
+}
+
 export interface ApprovalRow {
   id: string;
   tenant_id: string;
@@ -149,6 +159,37 @@ export interface ComplianceReportRow {
   score: number;
   controls_json: string;
   generated_at: string;
+}
+
+export interface IntegrationRow {
+  id: string;
+  tenant_id: string;
+  type: 'slack' | 'teams';
+  /** AES-GCM encrypted JSON config — never returned raw to callers */
+  config_encrypted: string;
+  created_at: string;
+}
+
+export interface McpServerRow {
+  id: string;
+  tenant_id: string;
+  name: string;
+  url: string;
+  allowed_tools: string;
+  blocked_tools: string;
+  created_at: string;
+}
+
+export interface ChildAgentRow {
+  id: string;
+  parent_agent_id: string;
+  child_agent_id: string;
+  tenant_id: string;
+  policy_snapshot: string;
+  ttl_expires_at: string | null;
+  max_tool_calls: number | null;
+  tool_calls_used: number;
+  created_at: string;
 }
 
 export interface TelemetryEventRow {
@@ -366,6 +407,42 @@ export interface IDatabase {
   ): Promise<string>;
   getComplianceReport(tenantId: string, reportId: string): Promise<ComplianceReportRow | undefined>;
   getLatestComplianceReport(tenantId: string): Promise<ComplianceReportRow | undefined>;
+
+  // ── MCP Server Registry ───────────────────────────────────────────────────
+  insertMcpServer(
+    tenantId: string,
+    name: string,
+    url: string,
+    allowedTools: string[],
+    blockedTools: string[],
+  ): Promise<McpServerRow>;
+  listMcpServers(tenantId: string): Promise<McpServerRow[]>;
+  getMcpServer(id: string, tenantId: string): Promise<McpServerRow | undefined>;
+  deleteMcpServer(id: string, tenantId: string): Promise<void>;
+
+  // ── Child Agents (A2A) ───────────────────────────────────────────────────
+  insertChildAgent(
+    id: string,
+    parentAgentId: string,
+    childAgentId: string,
+    tenantId: string,
+    policySnapshot: string,
+    ttlExpiresAt: string | null,
+    maxToolCalls: number | null,
+  ): Promise<ChildAgentRow>;
+  getChildAgent(childAgentId: string): Promise<ChildAgentRow | undefined>;
+  listChildAgents(parentAgentId: string, tenantId: string): Promise<ChildAgentRow[]>;
+  deleteChildAgent(childAgentId: string, tenantId: string): Promise<void>;
+  incrementChildToolCalls(childAgentId: string): Promise<void>;
+
+  // ── Integrations (Slack / Teams) ──────────────────────────────────────────
+  insertIntegration(
+    tenantId: string,
+    type: 'slack' | 'teams',
+    configEncrypted: string,
+  ): Promise<IntegrationRow>;
+  getIntegration(tenantId: string, type: 'slack' | 'teams'): Promise<IntegrationRow | undefined>;
+  deleteIntegration(tenantId: string, type: 'slack' | 'teams'): Promise<void>;
 
   // ── Health Check ──────────────────────────────────────────────────────────
   ping(): Promise<boolean>;
