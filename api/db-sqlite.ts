@@ -25,12 +25,15 @@ import type {
   IntegrationRow,
   SsoConfigRow,
   SsoProvider,
+  SiemConfigRow,
   ChildAgentRow,
   UsageAnalytics,
   PlatformAnalytics,
   LicenseKeyRow,
   LicenseEventRow,
   LicenseUsageRow,
+  AnomalyRuleRow,
+  AlertRow,
 } from './db-interface.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
@@ -538,6 +541,52 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
           created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
         CREATE INDEX IF NOT EXISTS idx_sso_configs_tenant ON sso_configs(tenant_id);
+      `);
+
+      // Migration: anomaly_rules and alerts tables
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS anomaly_rules (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          metric TEXT NOT NULL,
+          condition TEXT NOT NULL,
+          threshold REAL NOT NULL,
+          window_minutes INTEGER NOT NULL,
+          severity TEXT NOT NULL DEFAULT 'warning',
+          enabled INTEGER DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_anomaly_rules_tenant ON anomaly_rules(tenant_id);
+
+        CREATE TABLE IF NOT EXISTS alerts (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL,
+          rule_id TEXT NOT NULL,
+          metric TEXT NOT NULL,
+          current_value REAL NOT NULL,
+          threshold REAL NOT NULL,
+          severity TEXT NOT NULL,
+          message TEXT NOT NULL,
+          resolved_at TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_alerts_tenant ON alerts(tenant_id, resolved_at);
+        CREATE INDEX IF NOT EXISTS idx_alerts_rule ON alerts(rule_id, resolved_at);
+      `);
+
+      // Migration: siem_configs table (SIEM export integrations)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS siem_configs (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL UNIQUE,
+          provider TEXT NOT NULL,
+          config_encrypted TEXT NOT NULL,
+          enabled INTEGER DEFAULT 1,
+          last_forwarded_at TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_siem_configs_tenant ON siem_configs(tenant_id);
       `);
 
       console.log('[db] SQLite schema ready');
@@ -1237,6 +1286,40 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       db.prepare('DELETE FROM sso_configs WHERE tenant_id = ?').run(tenantId);
     },
 
+    // ── SIEM Configurations ────────────────────────────────────────────────────
+    async upsertSiemConfig(tenantId: string, provider: 'splunk' | 'sentinel', configEncrypted: string): Promise<SiemConfigRow> {
+      const existing = db.prepare('SELECT * FROM siem_configs WHERE tenant_id = ?').get(tenantId) as SiemConfigRow | undefined;
+      if (existing) {
+        db.prepare(
+          'UPDATE siem_configs SET provider = ?, config_encrypted = ?, enabled = 1 WHERE tenant_id = ?'
+        ).run(provider, configEncrypted, tenantId);
+        return {
+          ...existing,
+          provider,
+          config_encrypted: configEncrypted,
+          enabled: 1,
+        };
+      }
+      const id = crypto.randomUUID();
+      const created_at = new Date().toISOString();
+      db.prepare(
+        'INSERT INTO siem_configs (id, tenant_id, provider, config_encrypted, created_at) VALUES (?, ?, ?, ?, ?)'
+      ).run(id, tenantId, provider, configEncrypted, created_at);
+      return { id, tenant_id: tenantId, provider, config_encrypted: configEncrypted, enabled: 1, last_forwarded_at: null, created_at };
+    },
+
+    async getSiemConfig(tenantId: string): Promise<SiemConfigRow | undefined> {
+      return db.prepare('SELECT * FROM siem_configs WHERE tenant_id = ?').get(tenantId) as SiemConfigRow | undefined;
+    },
+
+    async deleteSiemConfig(tenantId: string): Promise<void> {
+      db.prepare('DELETE FROM siem_configs WHERE tenant_id = ?').run(tenantId);
+    },
+
+    async updateSiemLastForwarded(tenantId: string, at: string): Promise<void> {
+      db.prepare('UPDATE siem_configs SET last_forwarded_at = ? WHERE tenant_id = ?').run(at, tenantId);
+    },
+
     // ── License Keys ──────────────────────────────────────────────────────────
     async insertLicenseKey(key: LicenseKeyRow): Promise<LicenseKeyRow> {
       db.prepare(
@@ -1316,6 +1399,92 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         [tenantId, month]
       );
       return row ?? null;
+    },
+
+    // ── Anomaly Rules ─────────────────────────────────────────────────────────
+    async insertAnomalyRule(rule: AnomalyRuleRow): Promise<AnomalyRuleRow> {
+      db.prepare(
+        `INSERT INTO anomaly_rules (id, tenant_id, name, metric, condition, threshold, window_minutes, severity, enabled, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(
+        rule.id, rule.tenant_id, rule.name, rule.metric, rule.condition,
+        rule.threshold, rule.window_minutes, rule.severity,
+        rule.enabled ?? 1,
+        rule.created_at ?? new Date().toISOString(),
+      );
+      return getSync<AnomalyRuleRow>('SELECT * FROM anomaly_rules WHERE id = ?', [rule.id])!;
+    },
+
+    async getAnomalyRules(tenantId: string): Promise<AnomalyRuleRow[]> {
+      return allSync<AnomalyRuleRow>(
+        'SELECT * FROM anomaly_rules WHERE tenant_id = ? ORDER BY created_at ASC',
+        [tenantId]
+      );
+    },
+
+    async updateAnomalyRule(id: string, tenantId: string, updates: Partial<AnomalyRuleRow>): Promise<AnomalyRuleRow | undefined> {
+      const allowed = ['name', 'metric', 'condition', 'threshold', 'window_minutes', 'severity', 'enabled'] as const;
+      const setClauses: string[] = [];
+      const params: unknown[] = [];
+      for (const key of allowed) {
+        if (key in updates) {
+          setClauses.push(`${key} = ?`);
+          params.push((updates as Record<string, unknown>)[key]);
+        }
+      }
+      if (setClauses.length === 0) return getSync<AnomalyRuleRow>('SELECT * FROM anomaly_rules WHERE id = ? AND tenant_id = ?', [id, tenantId]);
+      params.push(id, tenantId);
+      db.prepare(`UPDATE anomaly_rules SET ${setClauses.join(', ')} WHERE id = ? AND tenant_id = ?`).run(...params);
+      return getSync<AnomalyRuleRow>('SELECT * FROM anomaly_rules WHERE id = ? AND tenant_id = ?', [id, tenantId]);
+    },
+
+    async deleteAnomalyRule(id: string, tenantId: string): Promise<void> {
+      db.prepare('DELETE FROM anomaly_rules WHERE id = ? AND tenant_id = ?').run(id, tenantId);
+    },
+
+    // ── Alerts ────────────────────────────────────────────────────────────────
+    async insertAlert(alert: AlertRow): Promise<AlertRow> {
+      db.prepare(
+        `INSERT INTO alerts (id, tenant_id, rule_id, metric, current_value, threshold, severity, message, resolved_at, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(
+        alert.id, alert.tenant_id, alert.rule_id, alert.metric,
+        alert.current_value, alert.threshold, alert.severity, alert.message,
+        alert.resolved_at ?? null,
+        alert.created_at ?? new Date().toISOString(),
+      );
+      return getSync<AlertRow>('SELECT * FROM alerts WHERE id = ?', [alert.id])!;
+    },
+
+    async getAlerts(tenantId: string, opts?: { severity?: string; resolved?: boolean }): Promise<AlertRow[]> {
+      const conditions: string[] = ['tenant_id = ?'];
+      const params: unknown[] = [tenantId];
+      if (opts?.severity) {
+        conditions.push('severity = ?');
+        params.push(opts.severity);
+      }
+      if (opts?.resolved === false) {
+        conditions.push('resolved_at IS NULL');
+      } else if (opts?.resolved === true) {
+        conditions.push('resolved_at IS NOT NULL');
+      }
+      return allSync<AlertRow>(
+        `SELECT * FROM alerts WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC`,
+        params
+      );
+    },
+
+    async resolveAlert(id: string): Promise<void> {
+      db.prepare(
+        "UPDATE alerts SET resolved_at = datetime('now') WHERE id = ?"
+      ).run(id);
+    },
+
+    async getActiveAlert(tenantId: string, ruleId: string): Promise<AlertRow | undefined> {
+      return getSync<AlertRow>(
+        'SELECT * FROM alerts WHERE tenant_id = ? AND rule_id = ? AND resolved_at IS NULL ORDER BY created_at DESC LIMIT 1',
+        [tenantId, ruleId]
+      );
     },
   };
 

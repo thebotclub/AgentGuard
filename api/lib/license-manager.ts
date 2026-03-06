@@ -111,9 +111,7 @@ async function getRedis(): Promise<RedisLike | null> {
     logger.info('[license-manager] Redis connected for usage tracking');
     return _redis;
   } catch (err) {
-    logger.warn('[license-manager] Redis unavailable, using in-memory usage tracking', {
-      error: err instanceof Error ? err.message : String(err),
-    });
+    logger.warn({ error: err instanceof Error ? err.message : String(err) }, '[license-manager] Redis unavailable, using in-memory usage tracking');
     return null;
   }
 }
@@ -215,33 +213,22 @@ export class LicenseManager {
       const payload = validateLicenseKeyCached(keyString);
 
       if (isExpired(payload)) {
-        logger.warn('[LICENSE] License key is expired — degrading to Free mode', {
-          tier: payload.tier,
-          exp: new Date(payload.exp * 1000).toISOString(),
-        });
+        logger.warn({ tier: payload.tier, exp: new Date(payload.exp * 1000).toISOString() }, '[LICENSE] License key is expired — degrading to Free mode');
         this._context = buildFreeLicenseContext(payload.tid);
         return;
       }
 
       this._context = buildLicenseContext(payload, 'key');
-      logger.info(`[LICENSE] Active — Tier: ${payload.tier.toUpperCase()}, Tenant: ${payload.tid}`, {
-        tier: payload.tier,
-        exp: new Date(payload.exp * 1000).toISOString(),
-        features: payload.features,
-      });
+      logger.info({ tier: payload.tier, exp: new Date(payload.exp * 1000).toISOString(), features: payload.features }, `[LICENSE] Active — Tier: ${payload.tier.toUpperCase()}, Tenant: ${payload.tid}`);
     } catch (err) {
       if (err instanceof InvalidSignatureError) {
-        logger.error('[LICENSE] INVALID SIGNATURE — license key rejected', {
-          error: err.message,
-        });
+        logger.error({ error: err.message }, '[LICENSE] INVALID SIGNATURE — license key rejected');
         if (hardFailOnBadSig) throw err;
         // During background re-validation, keep existing context
         return;
       }
       // Other errors → degrade gracefully
-      logger.warn('[LICENSE] License validation failed — degrading to Free mode', {
-        error: err instanceof Error ? err.message : String(err),
-      });
+      logger.warn({ error: err instanceof Error ? err.message : String(err) }, '[LICENSE] License validation failed — degrading to Free mode');
       this._context = buildFreeLicenseContext('default');
     }
   }

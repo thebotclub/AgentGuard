@@ -210,10 +210,12 @@ tr:hover td { background:rgba(99,102,241,0.04); }
   <button class="nav-item" onclick="showPage('analytics', event)">📈 Analytics</button>
   <button class="nav-item" onclick="showPage('compliance', event)">🛡️ Compliance</button>
   <button class="nav-item" onclick="showPage('mcp', event)">🔌 MCP Servers</button>
+  <button class="nav-item" onclick="showPage('alerts', event)" id="mobile-alerts-nav">🔔 Alerts <span id="mobile-alerts-badge" style="display:none;background:var(--red);color:white;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   <div class="nav-section">Integrate</div>
   <button class="nav-item" onclick="showPage('sdk', event)">🔧 SDK / API</button>
   <div class="nav-section">Account</div>
   <button class="nav-item" onclick="showPage('license', event)">⚙️ License</button>
+  <button class="nav-item" onclick="showPage('siem', event)">📡 SIEM</button>
 </div>
 
 <a href="#main-content" style="position:absolute;left:-9999px;top:0;z-index:9999;padding:8px 16px;background:var(--accent);color:white;font-weight:600" onfocus="this.style.left='8px'" onblur="this.style.left='-9999px'">Skip to content</a>
@@ -238,10 +240,12 @@ tr:hover td { background:rgba(99,102,241,0.04); }
     <button class="nav-item" onclick="showPage('analytics', event)">📈 Analytics</button>
     <button class="nav-item" onclick="showPage('compliance', event)">🛡️ Compliance</button>
     <button class="nav-item" onclick="showPage('mcp', event)">🔌 MCP Servers</button>
+    <button class="nav-item" onclick="showPage('alerts', event)" id="desktop-alerts-nav">🔔 Alerts <span id="desktop-alerts-badge" style="display:none;background:var(--red);color:white;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
     <div class="nav-section">Integrate</div>
     <button class="nav-item" onclick="showPage('sdk', event)">🔧 SDK / API</button>
     <div class="nav-section">Account</div>
     <button class="nav-item" onclick="showPage('license', event)">⚙️ License</button>
+    <button class="nav-item" onclick="showPage('siem', event)">📡 SIEM</button>
     <div style="flex:1"></div>
     <div style="padding:12px;border-top:1px solid var(--border-dim);font-size:0.78rem;color:var(--text-dim)">
       <div style="font-weight:600;color:var(--accent-hi)">AgentGuard v0.7.2</div>
@@ -494,8 +498,23 @@ tr:hover td { background:rgba(99,102,241,0.04); }
     <div class="page" id="page-audit" role="main">
       <div class="main-header">
         <h1>📋 Audit Trail</h1>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-ghost" onclick="verifyIntegrity()" id="verify-btn">🔒 Verify Integrity</button>
+          <!-- Export Controls -->
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <input type="date" id="audit-from" style="padding:7px 10px;background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;color:var(--text-bright);font-size:0.82rem;outline:none" title="From date">
+            <span style="color:var(--text-dim);font-size:0.82rem">→</span>
+            <input type="date" id="audit-to" style="padding:7px 10px;background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;color:var(--text-bright);font-size:0.82rem;outline:none" title="To date">
+            <div style="position:relative">
+              <button class="btn btn-ghost" onclick="toggleExportDropdown()" id="export-btn" style="display:flex;align-items:center;gap:6px">
+                ⬇ Export <span style="font-size:0.75rem">▾</span>
+              </button>
+              <div id="export-dropdown" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:var(--bg-card);border:1px solid var(--border);border-radius:8px;min-width:130px;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+                <button onclick="downloadAuditExport('csv')" style="display:block;width:100%;padding:10px 16px;background:none;border:none;color:var(--text);font-size:0.85rem;cursor:pointer;text-align:left;font-family:inherit" onmouseover="this.style.background='var(--accent-dim)'" onmouseout="this.style.background='none'">📄 CSV</button>
+                <button onclick="downloadAuditExport('json')" style="display:block;width:100%;padding:10px 16px;background:none;border:none;color:var(--text);font-size:0.85rem;cursor:pointer;text-align:left;font-family:inherit;border-top:1px solid var(--border-dim)" onmouseover="this.style.background='var(--accent-dim)'" onmouseout="this.style.background='none'">📋 JSON</button>
+              </div>
+            </div>
+          </div>
           <span style="font-size:0.82rem;color:var(--text-dim)">Hash-chained · Tamper-evident · <span id="audit-count">0</span> events</span>
         </div>
       </div>
@@ -1151,6 +1170,172 @@ const { result, riskScore } = await res.json();</pre>
       </div>
 
     </div><!-- /page-license -->
+
+    <!-- ── ALERTS PAGE ──────────────────────────────────── -->
+    <div class="page" id="page-alerts" role="main">
+      <div class="main-header">
+        <h1>🔔 Alerts</h1>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="alert-filter-severity" onchange="filterAlerts()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.85rem">
+            <option value="all">All Severities</option>
+            <option value="critical">🔴 Critical</option>
+            <option value="warning">🟡 Warning</option>
+            <option value="info">ℹ️ Info</option>
+          </select>
+          <select id="alert-filter-status" onchange="filterAlerts()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.85rem">
+            <option value="active">Active</option>
+            <option value="resolved">Resolved</option>
+            <option value="all">All</option>
+          </select>
+          <button class="btn btn-ghost" onclick="loadAlerts()">↻ Refresh</button>
+          <span id="alerts-auto-refresh-label" style="font-size:0.78rem;color:var(--text-dim)">Auto-refresh: 30s</span>
+        </div>
+      </div>
+
+      <!-- Active Alerts List -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <h2>Active Alerts</h2>
+          <span id="alerts-count-label" style="font-size:0.82rem;color:var(--text-dim)">Loading...</span>
+        </div>
+        <div class="card-body no-pad" id="alerts-list">
+          <div style="padding:24px;text-align:center;color:var(--text-dim)">Loading alerts...</div>
+        </div>
+      </div>
+
+      <!-- Alert Rules Management -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Alert Rules</h2>
+          <button class="btn btn-primary" onclick="toggleCreateRuleForm()">+ Create Rule</button>
+        </div>
+
+        <!-- Create Rule Form -->
+        <div id="create-rule-form" style="display:none;padding:20px;border-bottom:1px solid var(--border-dim);background:var(--bg-card2)">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Metric</label>
+              <input type="text" id="rule-metric" placeholder="block_rate" style="font-family:var(--mono)">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Condition</label>
+              <select id="rule-condition" style="width:100%;padding:10px 14px;background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;color:var(--text-bright);font-size:0.85rem;outline:none">
+                <option value="gt">&gt; Greater than</option>
+                <option value="lt">&lt; Less than</option>
+                <option value="gte">≥ At least</option>
+                <option value="lte">≤ At most</option>
+                <option value="eq">= Equals</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Threshold</label>
+              <input type="number" id="rule-threshold" placeholder="50" style="font-family:var(--mono)">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Window (minutes)</label>
+              <input type="number" id="rule-window" placeholder="5" style="font-family:var(--mono)">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Severity</label>
+              <select id="rule-severity" style="width:100%;padding:10px 14px;background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;color:var(--text-bright);font-size:0.85rem;outline:none">
+                <option value="critical">🔴 Critical</option>
+                <option value="warning">🟡 Warning</option>
+                <option value="info">ℹ️ Info</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-primary" onclick="createAlertRule()">Create Rule</button>
+            <button class="btn btn-ghost" onclick="toggleCreateRuleForm()">Cancel</button>
+          </div>
+          <div id="create-rule-result" style="margin-top:10px"></div>
+        </div>
+
+        <!-- Rules List -->
+        <div class="card-body no-pad" id="alert-rules-list">
+          <div style="padding:24px;text-align:center;color:var(--text-dim)">Loading rules...</div>
+        </div>
+      </div>
+    </div><!-- /page-alerts -->
+
+    <!-- ── SIEM PAGE ──────────────────────────────────────── -->
+    <div class="page" id="page-siem" role="main">
+      <div class="main-header">
+        <h1>📡 SIEM Configuration</h1>
+      </div>
+
+      <!-- Provider Selector -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><h2>SIEM Provider</h2></div>
+        <div class="card-body">
+          <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+            <button class="btn" id="siem-btn-splunk" onclick="selectSiemProvider('splunk')"
+              style="padding:14px 28px;border:2px solid var(--border);border-radius:10px;background:var(--bg-card2);color:var(--text-dim);font-size:0.95rem;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:inherit">
+              🟠 Splunk
+            </button>
+            <button class="btn" id="siem-btn-sentinel" onclick="selectSiemProvider('sentinel')"
+              style="padding:14px 28px;border:2px solid var(--border);border-radius:10px;background:var(--bg-card2);color:var(--text-dim);font-size:0.95rem;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:inherit">
+              🔵 Azure Sentinel
+            </button>
+          </div>
+
+          <!-- Splunk Config -->
+          <div id="siem-splunk-config" style="display:none">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+              <div class="form-group">
+                <label>HEC URL</label>
+                <input type="url" id="splunk-hec-url" placeholder="https://splunk.yourcompany.com:8088/services/collector" style="font-family:var(--mono);font-size:0.82rem">
+              </div>
+              <div class="form-group">
+                <label>HEC Token</label>
+                <input type="password" id="splunk-token" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="font-family:var(--mono);font-size:0.82rem">
+              </div>
+            </div>
+          </div>
+
+          <!-- Sentinel Config -->
+          <div id="siem-sentinel-config" style="display:none">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+              <div class="form-group">
+                <label>Workspace ID</label>
+                <input type="text" id="sentinel-workspace-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="font-family:var(--mono);font-size:0.82rem">
+              </div>
+              <div class="form-group">
+                <label>Shared Key</label>
+                <input type="password" id="sentinel-shared-key" placeholder="Primary or secondary key from Azure portal" style="font-family:var(--mono);font-size:0.82rem">
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions (shown when provider selected) -->
+          <div id="siem-actions" style="display:none">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="saveSiemConfig()">💾 Save Configuration</button>
+              <button class="btn btn-ghost" onclick="testSiemConnection()" id="siem-test-btn">🔌 Test Connection</button>
+              <div style="display:flex;align-items:center;gap:8px">
+                <label style="font-size:0.82rem;color:var(--text-dim)">Enable</label>
+                <button onclick="toggleSiemEnabled()" id="siem-toggle-btn"
+                  style="width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;background:var(--border);transition:background 0.2s" aria-label="Enable SIEM">
+                  <span id="siem-toggle-knob" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:white;transition:left 0.2s"></span>
+                </button>
+              </div>
+            </div>
+            <!-- Status Indicator -->
+            <div id="siem-status-indicator" style="margin-top:16px;padding:12px 16px;border-radius:8px;font-size:0.85rem;display:none"></div>
+          </div>
+
+          <div id="siem-no-provider" style="color:var(--text-dim);font-size:0.9rem">Select a SIEM provider above to configure the integration.</div>
+        </div>
+      </div>
+
+      <!-- Current SIEM Status -->
+      <div class="card">
+        <div class="card-header"><h2>Integration Status</h2></div>
+        <div class="card-body" id="siem-integrations-list">
+          <div style="color:var(--text-dim);text-align:center;padding:24px">Loading SIEM status...</div>
+        </div>
+      </div>
+    </div><!-- /page-siem -->
 
   </main><!-- /main -->
 </div><!-- /app -->
@@ -2098,7 +2283,7 @@ function showPage(id, evt) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   // Update title
-  const titles = { overview: 'Dashboard', live: 'Live Feed', evaluate: 'Evaluate', policy: 'Policies', audit: 'Audit Trail', killswitch: 'Kill Switch', sdk: 'SDK & API', agents: 'Agents', readiness: 'Deployment Readiness', webhooks: 'Webhooks', ratelimits: 'Rate Limits', costs: 'Costs', analytics: 'Analytics', compliance: 'Compliance', mcp: 'MCP Servers', license: 'License & Usage' };
+  const titles = { overview: 'Dashboard', live: 'Live Feed', evaluate: 'Evaluate', policy: 'Policies', audit: 'Audit Trail', killswitch: 'Kill Switch', sdk: 'SDK & API', agents: 'Agents', readiness: 'Deployment Readiness', webhooks: 'Webhooks', ratelimits: 'Rate Limits', costs: 'Costs', analytics: 'Analytics', compliance: 'Compliance', mcp: 'MCP Servers', license: 'License & Usage', alerts: 'Alerts', siem: 'SIEM Configuration' };
   document.title = `AgentGuard — ${titles[id] || id}`;
   // Mark active nav item
   if (evt && evt.target) {
@@ -2126,6 +2311,8 @@ function showPage(id, evt) {
   if (id === 'compliance') { loadCompliance(); }
   if (id === 'mcp') { loadMcpServers(); }
   if (id === 'license') { loadLicenseData(); }
+  if (id === 'alerts') { loadAlerts(); loadAlertRules(); }
+  if (id === 'siem') { loadSiemStatus(); }
 }
 
 // ── Evaluate ────────────────────────────────────────────
@@ -2801,6 +2988,507 @@ async function deleteMcpServer(id) {
   }
 }
 
+
+// ── Audit Export ─────────────────────────────────────────
+function toggleExportDropdown() {
+  var dd = document.getElementById('export-dropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  var dd = document.getElementById('export-dropdown');
+  var btn = document.getElementById('export-btn');
+  if (dd && btn && !btn.contains(e.target) && !dd.contains(e.target)) {
+    dd.style.display = 'none';
+  }
+});
+
+function downloadAuditExport(format) {
+  document.getElementById('export-dropdown').style.display = 'none';
+  if (!storedApiKey) { alert('Please enter your API key first'); return; }
+  var from = document.getElementById('audit-from').value;
+  var to = document.getElementById('audit-to').value;
+  var url = API + '/api/v1/audit/export?format=' + format;
+  if (from) url += '&from=' + encodeURIComponent(from);
+  if (to) url += '&to=' + encodeURIComponent(to + 'T23:59:59Z');
+
+  // Trigger download
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'agentguard-audit-' + new Date().toISOString().slice(0,10) + '.' + format;
+  // Add auth header via fetch + blob for APIs that require auth header
+  fetch(url, { headers: getApiHeaders() }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.blob();
+  }).then(function(blob) {
+    var objUrl = URL.createObjectURL(blob);
+    a.href = objUrl;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(objUrl); }, 2000);
+  }).catch(function(e) {
+    alert('Export failed: ' + e.message + '\n(API may not support this endpoint yet)');
+  });
+}
+
+// ── Alerts ────────────────────────────────────────────────
+var _alertsData = [];
+var _alertsTimer = null;
+var _siemEnabled = false;
+var _siemProvider = null;
+
+function severityIcon(sev) {
+  if (!sev) return 'ℹ️';
+  var s = sev.toLowerCase();
+  if (s === 'critical') return '🔴';
+  if (s === 'warning') return '🟡';
+  return 'ℹ️';
+}
+
+function severityBadgeStyle(sev) {
+  if (!sev) return 'background:rgba(59,130,246,0.12);color:var(--blue)';
+  var s = sev.toLowerCase();
+  if (s === 'critical') return 'background:rgba(239,68,68,0.12);color:var(--red)';
+  if (s === 'warning') return 'background:rgba(245,158,11,0.12);color:var(--amber)';
+  return 'background:rgba(59,130,246,0.12);color:var(--blue)';
+}
+
+async function loadAlerts() {
+  var filterSev = document.getElementById('alert-filter-severity') ? document.getElementById('alert-filter-severity').value : 'all';
+  var filterStatus = document.getElementById('alert-filter-status') ? document.getElementById('alert-filter-status').value : 'active';
+  var listEl = document.getElementById('alerts-list');
+  if (!listEl) return;
+
+  // Clear previous timer
+  if (_alertsTimer) { clearTimeout(_alertsTimer); _alertsTimer = null; }
+
+  var url = API + '/api/v1/alerts?status=' + filterStatus;
+  if (filterSev !== 'all') url += '&severity=' + filterSev;
+
+  var alerts = [];
+  try {
+    var r = await fetch(url, { headers: getApiHeaders(), signal: AbortSignal.timeout(8000) });
+    if (r.ok) {
+      var data = await r.json();
+      alerts = data.alerts || data || [];
+    }
+  } catch {}
+
+  // Fallback: demo data if API unavailable
+  if (!Array.isArray(alerts) || alerts.length === 0) {
+    alerts = getDemoAlerts(filterStatus, filterSev);
+  }
+
+  _alertsData = alerts;
+  renderAlerts(alerts);
+  updateAlertsBadge(alerts);
+
+  // Schedule auto-refresh every 30s
+  _alertsTimer = setTimeout(loadAlerts, 30000);
+}
+
+function getDemoAlerts(filterStatus, filterSev) {
+  var all = [
+    { id:'a1', severity:'critical', metric:'block_rate', currentValue:78, threshold:50, triggeredAt: new Date(Date.now()-180000).toISOString(), agent:'booking-agent', status:'active', message:'Block rate exceeded threshold' },
+    { id:'a2', severity:'warning', metric:'latency_p99', currentValue:420, threshold:300, triggeredAt: new Date(Date.now()-600000).toISOString(), agent:'search-agent', status:'active', message:'P99 latency above threshold' },
+    { id:'a3', severity:'info', metric:'hitl_queue_depth', currentValue:8, threshold:10, triggeredAt: new Date(Date.now()-3600000).toISOString(), agent:'finance-agent', status:'resolved', message:'HITL queue depth high' },
+    { id:'a4', severity:'critical', metric:'eval_error_rate', currentValue:12, threshold:5, triggeredAt: new Date(Date.now()-900000).toISOString(), agent:'data-agent', status:'active', message:'Evaluation error rate critical' },
+  ];
+  var result = all.filter(function(a) {
+    if (filterStatus !== 'all' && a.status !== filterStatus) return false;
+    if (filterSev !== 'all' && a.severity !== filterSev) return false;
+    return true;
+  });
+  return result;
+}
+
+function renderAlerts(alerts) {
+  var listEl = document.getElementById('alerts-list');
+  var countEl = document.getElementById('alerts-count-label');
+  if (!listEl) return;
+
+  if (!alerts || alerts.length === 0) {
+    listEl.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-dim)">✅ No alerts matching current filters</div>';
+    if (countEl) countEl.textContent = '0 alerts';
+    return;
+  }
+
+  if (countEl) countEl.textContent = alerts.length + ' alert' + (alerts.length !== 1 ? 's' : '');
+
+  listEl.innerHTML = alerts.map(function(a) {
+    var icon = severityIcon(a.severity);
+    var badgeStyle = severityBadgeStyle(a.severity);
+    var timeAgo = formatTimeAgo(a.triggeredAt || a.created_at || '');
+    var isActive = (a.status || 'active') === 'active';
+    return '<div style="padding:16px 20px;border-bottom:1px solid var(--border-dim);display:flex;align-items:flex-start;gap:16px">' +
+      '<div style="flex-shrink:0;padding-top:2px">' + icon + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">' +
+          '<span style="font-weight:600;color:var(--text-bright);font-size:0.9rem">' + esc(a.metric || 'unknown') + '</span>' +
+          '<span style="padding:2px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;font-family:var(--mono);' + badgeStyle + '">' + esc(a.severity || 'info') + '</span>' +
+          (isActive ? '<span style="padding:2px 8px;border-radius:20px;font-size:0.72rem;background:rgba(239,68,68,0.1);color:var(--red)">active</span>' : '<span style="padding:2px 8px;border-radius:20px;font-size:0.72rem;background:rgba(34,197,94,0.1);color:var(--green)">resolved</span>') +
+        '</div>' +
+        '<div style="font-size:0.82rem;color:var(--text-dim);margin-bottom:4px">' + esc(a.message || '') + '</div>' +
+        '<div style="display:flex;align-items:center;gap:16px;font-size:0.78rem;color:var(--text-dim);flex-wrap:wrap">' +
+          '<span>Value: <strong style="color:var(--amber);font-family:var(--mono)">' + esc(String(a.currentValue || a.value || '—')) + '</strong> vs threshold <strong style="font-family:var(--mono)">' + esc(String(a.threshold || '—')) + '</strong></span>' +
+          '<span>Triggered: ' + timeAgo + '</span>' +
+          '<span>Agent: <strong style="color:var(--accent-hi)">' + esc(a.agent || a.agentId || '—') + '</strong></span>' +
+        '</div>' +
+      '</div>' +
+      (isActive ? '<button class="btn btn-ghost" onclick="acknowledgeAlert(\'' + esc(a.id) + '\')" style="flex-shrink:0;font-size:0.78rem;padding:6px 12px">Acknowledge</button>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function updateAlertsBadge(alerts) {
+  var critical = (alerts || []).filter(function(a) { return a.severity === 'critical' && (a.status || 'active') === 'active'; }).length;
+  ['desktop-alerts-badge', 'mobile-alerts-badge'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (critical > 0) {
+      el.style.display = 'inline-block';
+      el.textContent = critical;
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
+function filterAlerts() { loadAlerts(); }
+
+async function acknowledgeAlert(id) {
+  try {
+    var r = await fetch(API + '/api/v1/alerts/' + encodeURIComponent(id) + '/acknowledge', {
+      method: 'POST', headers: getApiHeaders(), signal: AbortSignal.timeout(8000)
+    });
+    if (r.ok || r.status === 204) {
+      loadAlerts();
+    } else {
+      // Optimistic UI update even if API not available
+      _alertsData = _alertsData.filter(function(a) { return a.id !== id; });
+      renderAlerts(_alertsData);
+    }
+  } catch {
+    // Optimistic: remove from local data
+    _alertsData = _alertsData.filter(function(a) { return a.id !== id; });
+    renderAlerts(_alertsData);
+  }
+}
+
+async function loadAlertRules() {
+  var listEl = document.getElementById('alert-rules-list');
+  if (!listEl) return;
+
+  var rules = [];
+  try {
+    var r = await fetch(API + '/api/v1/alerts/rules', { headers: getApiHeaders(), signal: AbortSignal.timeout(8000) });
+    if (r.ok) { var data = await r.json(); rules = data.rules || data || []; }
+  } catch {}
+
+  if (!Array.isArray(rules) || rules.length === 0) {
+    rules = getDemoAlertRules();
+  }
+
+  renderAlertRules(rules);
+}
+
+function getDemoAlertRules() {
+  return [
+    { id:'r1', metric:'block_rate', condition:'gt', threshold:50, windowMinutes:5, severity:'critical', enabled:true },
+    { id:'r2', metric:'latency_p99', condition:'gt', threshold:300, windowMinutes:10, severity:'warning', enabled:true },
+    { id:'r3', metric:'eval_error_rate', condition:'gt', threshold:5, windowMinutes:5, severity:'critical', enabled:false },
+    { id:'r4', metric:'hitl_queue_depth', condition:'gt', threshold:10, windowMinutes:1, severity:'info', enabled:true },
+  ];
+}
+
+function renderAlertRules(rules) {
+  var listEl = document.getElementById('alert-rules-list');
+  if (!listEl) return;
+  if (!rules || rules.length === 0) {
+    listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-dim)">No alert rules configured</div>';
+    return;
+  }
+
+  var condLabels = { gt:'>', lt:'<', gte:'≥', lte:'≤', eq:'=' };
+
+  listEl.innerHTML = rules.map(function(rule) {
+    var icon = severityIcon(rule.severity);
+    var enabled = rule.enabled !== false;
+    return '<div style="padding:14px 20px;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+      '<span>' + icon + '</span>' +
+      '<div style="flex:1;min-width:180px">' +
+        '<div style="font-weight:600;color:var(--text-bright);font-size:0.88rem;font-family:var(--mono)">' + esc(rule.metric || '') + '</div>' +
+        '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:2px">' +
+          esc(condLabels[rule.condition] || rule.condition || '') + ' ' + esc(String(rule.threshold)) +
+          ' · window: ' + esc(String(rule.windowMinutes || 5)) + 'min' +
+          ' · ' + esc(rule.severity || '') +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<label style="font-size:0.78rem;color:var(--text-dim)">' + (enabled ? 'Enabled' : 'Disabled') + '</label>' +
+        '<button onclick="toggleAlertRule(\'' + esc(rule.id) + '\',' + !enabled + ')"' +
+          ' style="width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;position:relative;background:' + (enabled ? 'var(--accent)' : 'var(--border)') + ';transition:background 0.2s" aria-label="Toggle rule">' +
+          '<span style="position:absolute;top:2px;left:' + (enabled ? '20px' : '2px') + ';width:18px;height:18px;border-radius:50%;background:white;transition:left 0.2s"></span>' +
+        '</button>' +
+      '</div>' +
+      '<button class="btn btn-danger" onclick="deleteAlertRule(\'' + esc(rule.id) + '\')" style="font-size:0.78rem;padding:5px 12px">Delete</button>' +
+    '</div>';
+  }).join('');
+}
+
+function toggleCreateRuleForm() {
+  var el = document.getElementById('create-rule-form');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function createAlertRule() {
+  var metric = document.getElementById('rule-metric').value.trim();
+  var condition = document.getElementById('rule-condition').value;
+  var threshold = parseFloat(document.getElementById('rule-threshold').value);
+  var window = parseInt(document.getElementById('rule-window').value) || 5;
+  var severity = document.getElementById('rule-severity').value;
+  var resultEl = document.getElementById('create-rule-result');
+
+  if (!metric) { resultEl.innerHTML = '<span style="color:var(--red)">Metric is required</span>'; return; }
+  if (isNaN(threshold)) { resultEl.innerHTML = '<span style="color:var(--red)">Threshold must be a number</span>'; return; }
+
+  var body = { metric, condition, threshold, windowMinutes: window, severity };
+  try {
+    var r = await fetch(API + '/api/v1/alerts/rules', { method: 'POST', headers: getApiHeaders(), body: JSON.stringify(body), signal: AbortSignal.timeout(8000) });
+    if (r.ok || r.status === 201) {
+      resultEl.innerHTML = '<span style="color:var(--green)">✅ Rule created</span>';
+      document.getElementById('rule-metric').value = '';
+      document.getElementById('rule-threshold').value = '';
+      document.getElementById('rule-window').value = '';
+      setTimeout(function() { toggleCreateRuleForm(); document.getElementById('create-rule-result').innerHTML = ''; loadAlertRules(); }, 1200);
+    } else {
+      var d = await r.json().catch(function() { return {}; });
+      resultEl.innerHTML = '<span style="color:var(--red)">❌ ' + esc(d.error || 'Failed to create rule') + '</span>';
+    }
+  } catch(e) {
+    resultEl.innerHTML = '<span style="color:var(--amber)">⚠️ API unavailable — rule not persisted</span>';
+    setTimeout(function() { toggleCreateRuleForm(); loadAlertRules(); }, 1500);
+  }
+}
+
+async function toggleAlertRule(id, enabled) {
+  try {
+    await fetch(API + '/api/v1/alerts/rules/' + encodeURIComponent(id), {
+      method: 'PUT', headers: getApiHeaders(), body: JSON.stringify({ enabled }), signal: AbortSignal.timeout(8000)
+    });
+  } catch {}
+  loadAlertRules();
+}
+
+async function deleteAlertRule(id) {
+  if (!confirm('Delete this alert rule?')) return;
+  try {
+    await fetch(API + '/api/v1/alerts/rules/' + encodeURIComponent(id), { method: 'DELETE', headers: getApiHeaders(), signal: AbortSignal.timeout(8000) });
+  } catch {}
+  loadAlertRules();
+}
+
+function formatTimeAgo(isoString) {
+  if (!isoString) return '—';
+  var diff = Math.round((Date.now() - new Date(isoString).getTime()) / 1000);
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+// ── SIEM ──────────────────────────────────────────────────
+function selectSiemProvider(provider) {
+  _siemProvider = provider;
+  document.getElementById('siem-splunk-config').style.display = provider === 'splunk' ? 'block' : 'none';
+  document.getElementById('siem-sentinel-config').style.display = provider === 'sentinel' ? 'block' : 'none';
+  document.getElementById('siem-actions').style.display = 'block';
+  document.getElementById('siem-no-provider').style.display = 'none';
+
+  // Highlight selected button
+  ['splunk', 'sentinel'].forEach(function(p) {
+    var btn = document.getElementById('siem-btn-' + p);
+    if (!btn) return;
+    if (p === provider) {
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.color = 'var(--accent-hi)';
+      btn.style.background = 'var(--accent-dim)';
+    } else {
+      btn.style.borderColor = 'var(--border)';
+      btn.style.color = 'var(--text-dim)';
+      btn.style.background = 'var(--bg-card2)';
+    }
+  });
+
+  // Load existing config for this provider
+  loadSiemProviderConfig(provider);
+}
+
+async function loadSiemProviderConfig(provider) {
+  try {
+    var r = await fetch(API + '/api/v1/siem/' + provider + '/configure', { headers: getApiHeaders(), signal: AbortSignal.timeout(8000) });
+    if (r.ok) {
+      var data = await r.json();
+      if (provider === 'splunk' && data.hecUrl) {
+        document.getElementById('splunk-hec-url').value = data.hecUrl;
+        document.getElementById('splunk-token').value = data.token ? '••••••••' : '';
+      }
+      if (provider === 'sentinel') {
+        if (data.workspaceId) document.getElementById('sentinel-workspace-id').value = data.workspaceId;
+        if (data.sharedKey) document.getElementById('sentinel-shared-key').value = '••••••••';
+      }
+      if (data.enabled !== undefined) {
+        _siemEnabled = data.enabled;
+        updateSiemToggleUI();
+      }
+    }
+  } catch {}
+}
+
+async function saveSiemConfig() {
+  if (!_siemProvider) { alert('Please select a SIEM provider first'); return; }
+  var body = {};
+  if (_siemProvider === 'splunk') {
+    body.hecUrl = document.getElementById('splunk-hec-url').value.trim();
+    var tok = document.getElementById('splunk-token').value.trim();
+    if (tok && tok !== '••••••••') body.token = tok;
+    if (!body.hecUrl) { alert('HEC URL is required'); return; }
+  } else {
+    body.workspaceId = document.getElementById('sentinel-workspace-id').value.trim();
+    var key = document.getElementById('sentinel-shared-key').value.trim();
+    if (key && key !== '••••••••') body.sharedKey = key;
+    if (!body.workspaceId) { alert('Workspace ID is required'); return; }
+  }
+
+  var indicator = document.getElementById('siem-status-indicator');
+  indicator.style.display = 'block';
+  indicator.style.background = 'rgba(99,102,241,0.08)';
+  indicator.style.border = '1px solid var(--border)';
+  indicator.textContent = '⏳ Saving...';
+
+  try {
+    var r = await fetch(API + '/api/v1/siem/' + _siemProvider + '/configure', {
+      method: 'POST', headers: getApiHeaders(), body: JSON.stringify(body), signal: AbortSignal.timeout(10000)
+    });
+    if (r.ok) {
+      indicator.style.background = 'rgba(34,197,94,0.08)';
+      indicator.style.border = '1px solid rgba(34,197,94,0.25)';
+      indicator.textContent = '✅ Configuration saved';
+      loadSiemStatus();
+    } else {
+      var d = await r.json().catch(function() { return {}; });
+      indicator.style.background = 'rgba(239,68,68,0.08)';
+      indicator.style.border = '1px solid rgba(239,68,68,0.25)';
+      indicator.textContent = '❌ ' + esc(d.error || 'Failed to save');
+    }
+  } catch(e) {
+    indicator.style.background = 'rgba(245,158,11,0.08)';
+    indicator.style.border = '1px solid rgba(245,158,11,0.25)';
+    indicator.textContent = '⚠️ API unavailable — configuration not saved';
+  }
+}
+
+async function testSiemConnection() {
+  if (!_siemProvider) return;
+  var btn = document.getElementById('siem-test-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Testing...';
+  var indicator = document.getElementById('siem-status-indicator');
+  indicator.style.display = 'block';
+
+  try {
+    var r = await fetch(API + '/api/v1/siem/' + _siemProvider + '/test', {
+      method: 'POST', headers: getApiHeaders(), body: JSON.stringify({}), signal: AbortSignal.timeout(15000)
+    });
+    var data = await r.json().catch(function() { return {}; });
+    if (r.ok && (data.success || data.connected)) {
+      indicator.style.background = 'rgba(34,197,94,0.08)';
+      indicator.style.border = '1px solid rgba(34,197,94,0.25)';
+      indicator.style.color = '';
+      indicator.textContent = '✅ Connection successful — SIEM is reachable';
+    } else {
+      indicator.style.background = 'rgba(239,68,68,0.08)';
+      indicator.style.border = '1px solid rgba(239,68,68,0.25)';
+      indicator.style.color = '';
+      indicator.textContent = '❌ Connection failed: ' + esc(data.error || data.message || 'Unknown error');
+    }
+  } catch(e) {
+    indicator.style.background = 'rgba(245,158,11,0.08)';
+    indicator.style.border = '1px solid rgba(245,158,11,0.25)';
+    indicator.textContent = '⚠️ Could not reach API to test connection';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔌 Test Connection';
+  }
+}
+
+function toggleSiemEnabled() {
+  _siemEnabled = !_siemEnabled;
+  updateSiemToggleUI();
+  if (_siemProvider) {
+    fetch(API + '/api/v1/siem/' + _siemProvider + '/configure', {
+      method: 'POST', headers: getApiHeaders(), body: JSON.stringify({ enabled: _siemEnabled })
+    }).catch(function() {});
+  }
+}
+
+function updateSiemToggleUI() {
+  var btn = document.getElementById('siem-toggle-btn');
+  var knob = document.getElementById('siem-toggle-knob');
+  if (!btn || !knob) return;
+  btn.style.background = _siemEnabled ? 'var(--accent)' : 'var(--border)';
+  knob.style.left = _siemEnabled ? '22px' : '2px';
+}
+
+async function loadSiemStatus() {
+  var listEl = document.getElementById('siem-integrations-list');
+  if (!listEl) return;
+
+  var integrations = [];
+  for (var p of ['splunk', 'sentinel']) {
+    try {
+      var r = await fetch(API + '/api/v1/siem/' + p + '/configure', { headers: getApiHeaders(), signal: AbortSignal.timeout(6000) });
+      if (r.ok) {
+        var data = await r.json();
+        data._provider = p;
+        integrations.push(data);
+      }
+    } catch {}
+  }
+
+  if (integrations.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-dim)">No SIEM integrations configured yet. Select a provider above to get started.</div>';
+    return;
+  }
+
+  listEl.innerHTML = integrations.map(function(i) {
+    var providerIcon = i._provider === 'splunk' ? '🟠' : '🔵';
+    var providerName = i._provider === 'splunk' ? 'Splunk' : 'Azure Sentinel';
+    var status = i.status || (i.enabled ? 'connected' : 'disabled');
+    var statusColor = status === 'connected' ? 'var(--green)' : status === 'error' ? 'var(--red)' : 'var(--text-dim)';
+    var statusDot = status === 'connected' ? '🟢' : status === 'error' ? '🔴' : '⚫';
+    return '<div style="display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--border-dim);flex-wrap:wrap">' +
+      '<span style="font-size:1.5rem">' + providerIcon + '</span>' +
+      '<div style="flex:1;min-width:120px">' +
+        '<div style="font-weight:600;color:var(--text-bright)">' + providerName + '</div>' +
+        '<div style="font-size:0.78rem;color:var(--text-dim);margin-top:2px">' + esc(i.hecUrl || i.workspaceId || 'Configured') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:' + statusColor + '">' + statusDot + ' ' + esc(status) + '</div>' +
+      '<button class="btn btn-ghost" onclick="selectSiemProvider(\'' + i._provider + '\')" style="font-size:0.78rem">Configure</button>' +
+      '<button class="btn btn-danger" onclick="deleteSiemConfig(\'' + i._provider + '\')" style="font-size:0.78rem">Remove</button>' +
+    '</div>';
+  }).join('');
+}
+
+async function deleteSiemConfig(provider) {
+  if (!confirm('Remove ' + provider + ' SIEM configuration?')) return;
+  try {
+    await fetch(API + '/api/v1/siem/' + provider + '/configure', { method: 'DELETE', headers: getApiHeaders() });
+  } catch {}
+  loadSiemStatus();
+}
 
 // Boot
 init();

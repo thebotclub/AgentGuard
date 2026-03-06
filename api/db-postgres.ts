@@ -23,12 +23,15 @@ import type {
   IntegrationRow,
   SsoConfigRow,
   SsoProvider,
+  SiemConfigRow,
   ChildAgentRow,
   UsageAnalytics,
   PlatformAnalytics,
   LicenseKeyRow,
   LicenseEventRow,
   LicenseUsageRow,
+  AnomalyRuleRow,
+  AlertRow,
 } from './db-interface.js';
 import { randomUUID } from 'crypto';
 import crypto from 'crypto';
@@ -246,6 +249,18 @@ const SCHEMA_SQL = `
   );
   CREATE INDEX IF NOT EXISTS idx_sso_configs_tenant ON sso_configs(tenant_id);
 
+  -- SIEM Configurations
+  CREATE TABLE IF NOT EXISTS siem_configs (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    tenant_id TEXT NOT NULL UNIQUE,
+    provider TEXT NOT NULL,
+    config_encrypted TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    last_forwarded_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  CREATE INDEX IF NOT EXISTS idx_siem_configs_tenant ON siem_configs(tenant_id);
+
   -- License Keys
   CREATE TABLE IF NOT EXISTS license_keys (
     id TEXT PRIMARY KEY,
@@ -292,6 +307,39 @@ const SCHEMA_SQL = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_license_usage_tenant ON license_usage(tenant_id, month);
+
+  -- Anomaly Rules
+  CREATE TABLE IF NOT EXISTS anomaly_rules (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    metric TEXT NOT NULL,
+    condition TEXT NOT NULL,
+    threshold REAL NOT NULL,
+    window_minutes INTEGER NOT NULL,
+    severity TEXT NOT NULL DEFAULT 'warning',
+    enabled INTEGER DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_anomaly_rules_tenant ON anomaly_rules(tenant_id);
+
+  -- Alerts
+  CREATE TABLE IF NOT EXISTS alerts (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    rule_id TEXT NOT NULL,
+    metric TEXT NOT NULL,
+    current_value REAL NOT NULL,
+    threshold REAL NOT NULL,
+    severity TEXT NOT NULL,
+    message TEXT NOT NULL,
+    resolved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_alerts_tenant ON alerts(tenant_id, resolved_at);
+  CREATE INDEX IF NOT EXISTS idx_alerts_rule ON alerts(rule_id, resolved_at);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -1587,6 +1635,40 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       await pool.query('DELETE FROM sso_configs WHERE tenant_id = $1', [tenantId]);
     },
 
+    // ── SIEM Configurations ────────────────────────────────────────────────────
+    async upsertSiemConfig(tenantId: string, provider: 'splunk' | 'sentinel', configEncrypted: string): Promise<SiemConfigRow> {
+      const res = await pool.query<SiemConfigRow>(
+        `INSERT INTO siem_configs (tenant_id, provider, config_encrypted)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (tenant_id) DO UPDATE SET
+           provider = EXCLUDED.provider,
+           config_encrypted = EXCLUDED.config_encrypted,
+           enabled = 1
+         RETURNING *`,
+        [tenantId, provider, configEncrypted]
+      );
+      return res.rows[0]!;
+    },
+
+    async getSiemConfig(tenantId: string): Promise<SiemConfigRow | undefined> {
+      const res = await pool.query<SiemConfigRow>(
+        'SELECT * FROM siem_configs WHERE tenant_id = $1',
+        [tenantId]
+      );
+      return res.rows[0];
+    },
+
+    async deleteSiemConfig(tenantId: string): Promise<void> {
+      await pool.query('DELETE FROM siem_configs WHERE tenant_id = $1', [tenantId]);
+    },
+
+    async updateSiemLastForwarded(tenantId: string, at: string): Promise<void> {
+      await pool.query(
+        'UPDATE siem_configs SET last_forwarded_at = $1 WHERE tenant_id = $2',
+        [at, tenantId]
+      );
+    },
+
     // ── License Keys ──────────────────────────────────────────────────────────
     async insertLicenseKey(key: LicenseKeyRow): Promise<LicenseKeyRow> {
       const res = await pool.query<LicenseKeyRow>(
@@ -1667,6 +1749,105 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         [tenantId, month]
       );
       return res.rows[0] ?? null;
+    },
+
+    // ── Anomaly Rules ─────────────────────────────────────────────────────────
+    async insertAnomalyRule(rule: AnomalyRuleRow): Promise<AnomalyRuleRow> {
+      const res = await pool.query<AnomalyRuleRow>(
+        `INSERT INTO anomaly_rules (id, tenant_id, name, metric, condition, threshold, window_minutes, severity, enabled, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING *`,
+        [
+          rule.id, rule.tenant_id, rule.name, rule.metric, rule.condition,
+          rule.threshold, rule.window_minutes, rule.severity,
+          rule.enabled ?? 1,
+          rule.created_at ?? new Date().toISOString(),
+        ]
+      );
+      return res.rows[0]!;
+    },
+
+    async getAnomalyRules(tenantId: string): Promise<AnomalyRuleRow[]> {
+      const res = await pool.query<AnomalyRuleRow>(
+        'SELECT * FROM anomaly_rules WHERE tenant_id = $1 ORDER BY created_at ASC',
+        [tenantId]
+      );
+      return res.rows;
+    },
+
+    async updateAnomalyRule(id: string, tenantId: string, updates: Partial<AnomalyRuleRow>): Promise<AnomalyRuleRow | undefined> {
+      const allowed = ['name', 'metric', 'condition', 'threshold', 'window_minutes', 'severity', 'enabled'] as const;
+      const setClauses: string[] = [];
+      const params: unknown[] = [];
+      let idx = 1;
+      for (const key of allowed) {
+        if (key in updates) {
+          setClauses.push(`${key} = $${idx++}`);
+          params.push((updates as Record<string, unknown>)[key]);
+        }
+      }
+      if (setClauses.length === 0) {
+        const res = await pool.query<AnomalyRuleRow>('SELECT * FROM anomaly_rules WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+        return res.rows[0];
+      }
+      params.push(id, tenantId);
+      const res = await pool.query<AnomalyRuleRow>(
+        `UPDATE anomaly_rules SET ${setClauses.join(', ')} WHERE id = $${idx++} AND tenant_id = $${idx++} RETURNING *`,
+        params
+      );
+      return res.rows[0];
+    },
+
+    async deleteAnomalyRule(id: string, tenantId: string): Promise<void> {
+      await pool.query('DELETE FROM anomaly_rules WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    },
+
+    // ── Alerts ────────────────────────────────────────────────────────────────
+    async insertAlert(alert: AlertRow): Promise<AlertRow> {
+      const res = await pool.query<AlertRow>(
+        `INSERT INTO alerts (id, tenant_id, rule_id, metric, current_value, threshold, severity, message, resolved_at, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING *`,
+        [
+          alert.id, alert.tenant_id, alert.rule_id, alert.metric,
+          alert.current_value, alert.threshold, alert.severity, alert.message,
+          alert.resolved_at ?? null,
+          alert.created_at ?? new Date().toISOString(),
+        ]
+      );
+      return res.rows[0]!;
+    },
+
+    async getAlerts(tenantId: string, opts?: { severity?: string; resolved?: boolean }): Promise<AlertRow[]> {
+      const conditions: string[] = ['tenant_id = $1'];
+      const params: unknown[] = [tenantId];
+      let idx = 2;
+      if (opts?.severity) {
+        conditions.push(`severity = $${idx++}`);
+        params.push(opts.severity);
+      }
+      if (opts?.resolved === false) {
+        conditions.push('resolved_at IS NULL');
+      } else if (opts?.resolved === true) {
+        conditions.push('resolved_at IS NOT NULL');
+      }
+      const res = await pool.query<AlertRow>(
+        `SELECT * FROM alerts WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC`,
+        params
+      );
+      return res.rows;
+    },
+
+    async resolveAlert(id: string): Promise<void> {
+      await pool.query('UPDATE alerts SET resolved_at = NOW() WHERE id = $1', [id]);
+    },
+
+    async getActiveAlert(tenantId: string, ruleId: string): Promise<AlertRow | undefined> {
+      const res = await pool.query<AlertRow>(
+        'SELECT * FROM alerts WHERE tenant_id = $1 AND rule_id = $2 AND resolved_at IS NULL ORDER BY created_at DESC LIMIT 1',
+        [tenantId, ruleId]
+      );
+      return res.rows[0];
     },
   };
 

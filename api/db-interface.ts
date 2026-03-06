@@ -277,6 +277,34 @@ export interface PlatformAnalytics {
   sdkTelemetry: { total: number; last7d: number; byLanguage: Array<{ language: string; cnt: number }> };
 }
 
+// ── Anomaly Detection ─────────────────────────────────────────────────────
+
+export interface AnomalyRuleRow {
+  id: string;
+  tenant_id: string;
+  name: string;
+  metric: string;
+  condition: string;
+  threshold: number;
+  window_minutes: number;
+  severity: string;
+  enabled: number;
+  created_at: string;
+}
+
+export interface AlertRow {
+  id: string;
+  tenant_id: string;
+  rule_id: string;
+  metric: string;
+  current_value: number;
+  threshold: number;
+  severity: string;
+  message: string;
+  resolved_at: string | null;
+  created_at: string;
+}
+
 // ── Count/Aggregate helpers ────────────────────────────────────────────────
 
 export interface CountRow {
@@ -285,6 +313,17 @@ export interface CountRow {
 
 export interface AvgRow {
   avg: number | null;
+}
+
+export interface SiemConfigRow {
+  id: string;
+  tenant_id: string;
+  provider: 'splunk' | 'sentinel';
+  /** AES-256-GCM encrypted JSON config — never returned raw to callers */
+  config_encrypted: string;
+  enabled: number;
+  last_forwarded_at: string | null;
+  created_at: string;
 }
 
 // ── Database Interface ─────────────────────────────────────────────────────
@@ -506,6 +545,16 @@ export interface IDatabase {
   getSsoConfig(tenantId: string): Promise<SsoConfigRow | undefined>;
   deleteSsoConfig(tenantId: string): Promise<void>;
 
+  // ── SIEM Configurations ───────────────────────────────────────────────────
+  upsertSiemConfig(
+    tenantId: string,
+    provider: 'splunk' | 'sentinel',
+    configEncrypted: string,
+  ): Promise<SiemConfigRow>;
+  getSiemConfig(tenantId: string): Promise<SiemConfigRow | undefined>;
+  deleteSiemConfig(tenantId: string): Promise<void>;
+  updateSiemLastForwarded(tenantId: string, at: string): Promise<void>;
+
   // ── Health Check ──────────────────────────────────────────────────────────
   ping(): Promise<boolean>;
   countTenants(): Promise<number>;
@@ -524,4 +573,16 @@ export interface IDatabase {
   // ── License Usage ─────────────────────────────────────────────────────────
   upsertLicenseUsage(tenantId: string, month: string, events: number, agents: number): Promise<void>;
   getLicenseUsage(tenantId: string, month: string): Promise<LicenseUsageRow | null>;
+
+  // ── Anomaly Rules ─────────────────────────────────────────────────────────
+  insertAnomalyRule(rule: AnomalyRuleRow): Promise<AnomalyRuleRow>;
+  getAnomalyRules(tenantId: string): Promise<AnomalyRuleRow[]>;
+  updateAnomalyRule(id: string, tenantId: string, updates: Partial<AnomalyRuleRow>): Promise<AnomalyRuleRow | undefined>;
+  deleteAnomalyRule(id: string, tenantId: string): Promise<void>;
+
+  // ── Alerts ────────────────────────────────────────────────────────────────
+  insertAlert(alert: AlertRow): Promise<AlertRow>;
+  getAlerts(tenantId: string, opts?: { severity?: string; resolved?: boolean }): Promise<AlertRow[]>;
+  resolveAlert(id: string): Promise<void>;
+  getActiveAlert(tenantId: string, ruleId: string): Promise<AlertRow | undefined>;
 }

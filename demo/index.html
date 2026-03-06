@@ -786,6 +786,249 @@
     will-change: transform;
   }
 }
+
+/* ══════════════════════════════════════════════════
+   MOBILE POLISH v1.0 — 320px / 375px / 414px
+   ══════════════════════════════════════════════════ */
+
+/* Prevent horizontal scroll everywhere */
+html { overflow-x: hidden; max-width: 100vw; }
+body { overflow-x: hidden; max-width: 100vw; }
+
+/* ─── Core layout for all small screens ─── */
+@media (max-width: 480px) {
+  /* Scene padding — tighter on very small screens */
+  .scene-inner {
+    padding: 52px 14px 80px !important;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+
+  /* Headlines — prevent overflow */
+  .headline, .brand-name, #s9 .brand-big, #s9 .ask-highlight {
+    font-size: clamp(1.6rem, 7vw, 2.4rem) !important;
+    word-break: break-word;
+    hyphens: auto;
+    overflow-wrap: break-word;
+  }
+
+  .subline, .tagline, #s9 .tagline2 {
+    font-size: clamp(0.85rem, 3.5vw, 1rem) !important;
+    line-height: 1.5;
+  }
+
+  /* Stats row — full width cards */
+  #s1 .stats-row {
+    flex-direction: column !important;
+    gap: 12px !important;
+    margin-top: 24px !important;
+    align-items: stretch !important;
+  }
+  .stat-card {
+    min-width: unset !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 16px 20px !important;
+  }
+  .stat-card .stat-num {
+    font-size: 1.4rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stat-card .stat-label { font-size: 0.78rem !important; }
+
+  /* Pillars — wrap to 2-col on 320+ */
+  .pillars {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  .pillar {
+    padding: 10px 12px !important;
+    font-size: 0.82rem !important;
+    text-align: center;
+  }
+
+  /* Split layouts — always single column */
+  #s3 .split, #s4 .scene-inner > div[style*="grid"], #s5 .scene-inner > div[style*="grid"],
+  #s7 .scene-inner > div[style*="grid"] {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    gap: 12px !important;
+  }
+
+  /* Terminal and dashboard boxes */
+  .terminal-box, .dashboard-box {
+    height: 260px !important;
+    max-height: 45vmax !important;
+  }
+  .terminal-body { font-size: 11px !important; line-height: 1.5 !important; padding: 12px !important; }
+  .box-header { padding: 10px 14px !important; font-size: 11px !important; }
+
+  /* Code body */
+  .code-body { font-size: 11px !important; padding: 16px !important; line-height: 1.6 !important; }
+
+  /* Kill switch */
+  .kill-wrap { margin: 20px auto !important; }
+  .kill-btn {
+    width: 120px !important;
+    height: 120px !important;
+    font-size: 36px !important;
+  }
+  .kill-ring { inset: -12px !important; }
+  .kill-ring2 { inset: -24px !important; }
+  .kill-status { font-size: 12px !important; padding: 10px 20px !important; }
+  .kill-tags { gap: 8px !important; margin-top: 16px !important; }
+  .kill-tag { padding: 8px 12px !important; font-size: 11px !important; }
+
+  /* Audit chain */
+  .audit-chain { padding: 16px !important; font-size: 11px !important; }
+  .chain-event { margin-bottom: 6px !important; }
+
+  /* Code tabs */
+  .code-tabs { flex-wrap: wrap !important; gap: 4px !important; }
+  .code-tab { font-size: 11px !important; padding: 6px 10px !important; }
+
+  /* Market counters */
+  .market-counters { grid-template-columns: 1fr 1fr !important; gap: 12px !important; margin: 24px 0 !important; }
+  .mc-card { padding: 16px 12px !important; }
+  .mc-num { font-size: 1.2rem !important; }
+  .mc-label { font-size: 11px !important; }
+
+  /* Contact links — full width on small screens */
+  .contact-links { flex-direction: column !important; align-items: center !important; gap: 12px !important; }
+  .contact-link {
+    width: 100% !important;
+    max-width: 280px !important;
+    text-align: center !important;
+    padding: 14px 24px !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* Controls — larger touch targets */
+  #controls {
+    gap: 8px !important;
+    bottom: 16px !important;
+  }
+  .ctrl-btn {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 16px !important;
+    border-radius: 50%;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  #play-pause-btn {
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 20px !important;
+  }
+
+  /* Scene label */
+  #scene-label { font-size: 10px !important; min-width: 100px !important; }
+
+  /* Scene dots — larger for touch */
+  .dot {
+    width: 8px !important;
+    height: 8px !important;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .dot.active { width: 20px !important; border-radius: 4px !important; }
+
+  /* Fix pillars for s4, s5, s7 right column */
+  .pillars-col { gap: 10px !important; }
+  .pillar-row {
+    padding: 12px 14px !important;
+    gap: 10px !important;
+  }
+  .pillar-icon { font-size: 18px !important; }
+  .pillar-text strong { font-size: 0.85rem !important; }
+  .pillar-text span { font-size: 0.75rem !important; }
+
+  /* Badge list (s7 right col) */
+  .badge-list { gap: 8px !important; margin-top: 16px !important; }
+  .badge-item { padding: 10px 14px !important; gap: 10px !important; }
+  .badge-icon { font-size: 18px !important; }
+  .badge-text strong { font-size: 0.82rem !important; }
+  .badge-text span { font-size: 0.72rem !important; }
+
+  /* Corner logo hidden on mobile to save space */
+  #corner-logo { display: none !important; }
+  #timer { display: none !important; }
+
+  /* Scene dots top positioning */
+  #scene-dots { top: 8px !important; gap: 6px !important; }
+
+  /* Progress bar */
+  #progress-bar-wrap { height: 2px !important; }
+
+  /* s4 right column */
+  #s4 .scene-inner { display: flex !important; flex-direction: column !important; gap: 16px !important; }
+  #s4 .scene-inner > div { width: 100% !important; }
+
+  /* s5 grid layout */
+  #s5 .scene-inner { display: flex !important; flex-direction: column !important; gap: 16px !important; }
+
+  /* s7 grid */
+  #s7 .scene-inner { display: flex !important; flex-direction: column !important; gap: 16px !important; }
+  #s7 .scene-inner > div { width: 100% !important; }
+
+  /* Verify button */
+  .verify-btn {
+    width: 100% !important;
+    max-width: 280px !important;
+    justify-content: center !important;
+    font-size: 13px !important;
+    padding: 12px 20px !important;
+  }
+  .verify-result { font-size: 11px !important; padding: 8px 16px !important; }
+
+  /* Code window */
+  .code-window { overflow-x: auto !important; }
+  .code-body pre { overflow-x: auto !important; white-space: pre-wrap !important; word-break: break-word !important; }
+
+  /* Big Q */
+  #s1 .big-q { font-size: clamp(2rem, 8vw, 3rem) !important; margin: 24px 0 !important; }
+}
+
+/* ─── 375px specific (iPhone SE / standard) ─── */
+@media (min-width: 360px) and (max-width: 414px) {
+  .scene-inner { padding: 56px 16px 84px !important; }
+  .headline { font-size: clamp(1.8rem, 7vw, 2.8rem) !important; }
+  .terminal-box, .dashboard-box { height: 280px !important; }
+  .market-counters { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ─── 414px+ (iPhone Plus / Max) ─── */
+@media (min-width: 415px) and (max-width: 767px) {
+  .scene-inner { padding: 60px 20px 88px !important; }
+  .terminal-box, .dashboard-box { height: 300px !important; }
+  .pillars { grid-template-columns: repeat(3, 1fr) !important; gap: 10px !important; }
+}
+
+/* ─── Touch interaction improvements ─── */
+@media (hover: none) and (pointer: coarse) {
+  /* All interactive elements need 44px minimum touch target */
+  .ctrl-btn, #play-pause-btn, .dot, .code-tab, .verify-btn {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  /* Remove hover effects that don't work on touch */
+  .pillar-row:hover,
+  .badge-item:hover {
+    border-color: var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+  /* Slightly larger touch targets for dots */
+  .dot {
+    padding: 6px;
+    margin: -6px;
+  }
+}
 </style>
 </head>
 <body>
@@ -1449,6 +1692,33 @@ document.addEventListener('keydown', e => {
   if (e.code === 'ArrowRight') nextScene();
   if (e.code === 'ArrowLeft')  prevScene();
 });
+
+// Touch swipe navigation
+(function() {
+  var touchStartX = 0;
+  var touchStartY = 0;
+  var touchEndX = 0;
+  var touchEndY = 0;
+  var MIN_SWIPE = 50; // minimum px to count as swipe
+  var MAX_VERT = 80;  // max vertical drift to consider horizontal
+
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    touchEndX = e.changedTouches[0].screenX;
+    touchEndY = e.changedTouches[0].screenY;
+    var dx = touchEndX - touchStartX;
+    var dy = Math.abs(touchEndY - touchStartY);
+    // Only horizontal swipes that aren't mostly vertical scrolls
+    if (Math.abs(dx) >= MIN_SWIPE && dy < MAX_VERT) {
+      if (dx < 0) nextScene();  // swipe left → next
+      else prevScene();          // swipe right → prev
+    }
+  }, { passive: true });
+})();
 
 // Dot clicks
 document.querySelectorAll('.dot').forEach((d, i) => {

@@ -345,3 +345,24 @@ export async function clearBruteForce(ip: string): Promise<void> {
 export function isRedisAvailable(): boolean {
   return redisAvailable;
 }
+
+/**
+ * Gracefully close the Redis connection (used during server shutdown).
+ * Safe to call even if Redis was never connected.
+ */
+export async function closeRedis(): Promise<void> {
+  if (!redisClient) return;
+  try {
+    // ioredis exposes quit() for graceful close
+    const client = redisClient as unknown as { quit?: () => Promise<void>; disconnect?: () => void };
+    if (typeof client.quit === 'function') {
+      await client.quit();
+    } else if (typeof client.disconnect === 'function') {
+      client.disconnect();
+    }
+    redisAvailable = false;
+    redisClient = null;
+  } catch {
+    // Non-critical — process is exiting anyway
+  }
+}

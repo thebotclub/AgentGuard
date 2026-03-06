@@ -18,6 +18,9 @@ import {
 import { createDb } from './db-factory.js';
 import { createAuthMiddleware } from './middleware/auth.js';
 import { rateLimitMiddleware, bruteForceMiddleware } from './middleware/rate-limit.js';
+import { errorHandler } from './middleware/error-handler.js';
+import { csrfMiddleware } from './middleware/csrf.js';
+import { logger } from './lib/logger.js';
 import { loadTemplates, DEFAULT_POLICY, templateCache } from './lib/policy-engine-setup.js';
 import { getGlobalKillSwitch } from './routes/audit.js';
 import { createEvaluateRoutes } from './routes/evaluate.js';
@@ -37,10 +40,14 @@ import { createMcpPolicyRoutes } from './routes/mcp-policy.js';
 import { createSlackHitlRoutes } from './routes/slack-hitl.js';
 import { createAgentHierarchyRoutes } from './routes/agent-hierarchy.js';
 import { createSsoRoutes } from './routes/sso.js';
+import { createSiemRoutes } from './routes/siem.js';
+import { getSiemForwarder } from './lib/siem-forwarder.js';
 import { createDocsRoutes } from './routes/docs.js';
 import { createLicenseRoutes } from './routes/license.js';
 import { createStripeWebhookRoutes } from './routes/stripe-webhook.js';
 import { createPricingRoutes } from './routes/pricing.js';
+import { createAlertsRoutes } from './routes/alerts.js';
+import { createAnomalyDetector } from './lib/anomaly-detector.js';
 import type { IDatabase } from './db-interface.js';
 
 // ── Load Templates ─────────────────────────────────────────────────────────
@@ -49,12 +56,14 @@ loadTemplates();
 // ── Express App ────────────────────────────────────────────────────────────
 const app = express();
 
-// Request ID middleware
-app.use((req, res, next) => {
+// Request ID middleware — attaches/generates request ID and binds a child logger
+app.use((req: Request, res: Response, next: NextFunction) => {
   const existing = req.headers['x-request-id'];
-  const requestId = Array.isArray(existing) ? existing[0] : existing || require('crypto').randomUUID();
+  const requestId = Array.isArray(existing) ? existing[0] : existing || crypto.randomUUID();
   req.headers['x-request-id'] = requestId;
-  res.setHeader('x-request-id', requestId);
+  res.setHeader('x-request-id', requestId as string);
+  // Attach a child logger scoped to this request (available as req.log in routes)
+  (req as Request & { log: ReturnType<typeof logger.child> }).log = logger.child({ requestId });
   next();
 });
 
@@ -357,6 +366,15 @@ async function main(): Promise<void> {
     next();
   });
 
+  // ── CSRF Protection ───────────────────────────────────────────────────
+  // Mount after DB health check. Auth middleware runs per-route; JWT-flag is
+  // set before CSRF runs because route auth middleware calls next() before
+  // the route handler. For global CSRF enforcement on JWT sessions, we mount
+  // it here so it intercepts state-changing requests after auth populates
+  // req.jwtAuthenticated (the per-route auth middlewares run before CSRF
+  // on their own routes, but csrfMiddleware is a no-op for API-key requests).
+  app.use(csrfMiddleware);
+
   // ── Mount Route Modules ────────────────────────────────────────────────
   app.use(createAuthRoutes(db, auth));
   app.use(createEvaluateRoutes(db, auth));
@@ -388,6 +406,12 @@ async function main(): Promise<void> {
   // ── SSO Configuration ─────────────────────────────────────────────────
   app.use(createSsoRoutes(db, auth));
 
+  // ── SIEM Export ───────────────────────────────────────────────────────
+  app.use(createSiemRoutes(db, auth));
+
+  // ── Start SIEM Forwarder ──────────────────────────────────────────────
+  getSiemForwarder(db);
+
   // ── License API ───────────────────────────────────────────────────────
   app.use(createLicenseRoutes(db, auth));
 
@@ -396,39 +420,17 @@ async function main(): Promise<void> {
   // No auth middleware — verified by Stripe HMAC signature.
   app.use(createStripeWebhookRoutes(db));
 
+  // ── Alerts & Anomaly Rules ────────────────────────────────────────────
+  app.use(createAlertsRoutes(db, auth));
+
   // ── Pricing Page Data ─────────────────────────────────────────────────
   app.use(createPricingRoutes());
 
   // ── API Documentation (Swagger UI) ────────────────────────────────────
   app.use(createDocsRoutes());
 
-  // ── Global Error Handler ───────────────────────────────────────────────
-  app.use(
-    (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-      // Handle JSON parse errors
-      if (
-        err instanceof SyntaxError &&
-        'status' in err &&
-        (err as { status: number }).status === 400
-      ) {
-        return res
-          .status(400)
-          .json({ error: 'Invalid JSON in request body' });
-      }
-      // Handle payload-too-large (express body-parser emits type 'entity.too.large')
-      if (
-        err instanceof Error &&
-        'type' in err &&
-        (err as { type: string }).type === 'entity.too.large'
-      ) {
-        return res
-          .status(413)
-          .json({ error: 'Request body too large. Maximum size is 50kb.' });
-      }
-      console.error('[error]', err instanceof Error ? err.message : err);
-      res.status(500).json({ error: 'Internal server error' });
-    },
-  );
+  // ── Global Error Handler (MUST be last middleware) ────────────────────
+  app.use(errorHandler);
 
   // ── 404 Handler ────────────────────────────────────────────────────────
   app.use((_req: Request, res: Response) => {
@@ -472,7 +474,12 @@ async function main(): Promise<void> {
   }
 
   const ks = await getGlobalKillSwitch(db);
-  app.listen(PORT, '0.0.0.0', () => {
+
+  // ── Anomaly Detection Loop ─────────────────────────────────────────────
+  const detector = createAnomalyDetector(db);
+  detector.start();
+
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🛡️  AgentGuard API v0.2.1 running on port ${PORT}`);
     console.log(
       `   ${DEFAULT_POLICY.rules.length} rules loaded | default: ${DEFAULT_POLICY.default}`,
@@ -487,6 +494,67 @@ async function main(): Promise<void> {
     else console.log(`   Admin key: NOT SET (set ADMIN_KEY env var)`);
     if (SEED_API_KEY) console.log(`   Seed API key: registered`);
   });
+
+  // ── Graceful Shutdown ──────────────────────────────────────────────────
+  // On SIGTERM / SIGINT:
+  //   1. Stop accepting new connections (server.close)
+  //   2. Wait for in-flight requests to complete (30s timeout)
+  //   3. Close database connections
+  //   4. Close Redis connections (if applicable)
+  //   5. Exit cleanly
+
+  const GRACEFUL_SHUTDOWN_TIMEOUT_MS = 30_000;
+  let shuttingDown = false;
+
+  async function gracefulShutdown(signal: string): Promise<void> {
+    if (shuttingDown) return;
+    shuttingDown = true;
+
+    logger.info(`Graceful shutdown initiated (${signal})`);
+
+    // 1. Stop accepting new connections
+    server.close(async (closeErr) => {
+      if (closeErr) {
+        logger.error({ error: String(closeErr) }, 'Error closing HTTP server');
+      } else {
+        logger.info('HTTP server closed — no more incoming connections');
+      }
+
+      // 3. Close database connections
+      try {
+        if (typeof (db as unknown as { close?: () => Promise<void> }).close === 'function') {
+          await (db as unknown as { close: () => Promise<void> }).close();
+          logger.info('Database connection closed');
+        }
+      } catch (e) {
+        logger.error({ error: String(e) }, 'Error closing database');
+      }
+
+      // 4. Close Redis connections (imported lazily to avoid circular deps)
+      try {
+        const { closeRedis } = await import('./lib/redis-rate-limiter.js');
+        if (typeof closeRedis === 'function') {
+          await closeRedis();
+          logger.info('Redis connection closed');
+        }
+      } catch {
+        // Redis may not be configured — not an error
+      }
+
+      // 5. Exit cleanly
+      logger.info('Graceful shutdown complete');
+      process.exit(0);
+    });
+
+    // 2. Force-exit after timeout if in-flight requests don't drain
+    setTimeout(() => {
+      logger.error(`Shutdown timeout (${GRACEFUL_SHUTDOWN_TIMEOUT_MS}ms) exceeded — forcing exit`);
+      process.exit(1);
+    }, GRACEFUL_SHUTDOWN_TIMEOUT_MS).unref();
+  }
+
+  process.once('SIGTERM', () => { gracefulShutdown('SIGTERM').catch(() => process.exit(1)); });
+  process.once('SIGINT',  () => { gracefulShutdown('SIGINT').catch(() => process.exit(1)); });
 }
 
 main().catch((err) => {

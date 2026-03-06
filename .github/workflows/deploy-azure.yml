@@ -34,6 +34,8 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --ignore-scripts
+      - name: Security audit
+        run: npm audit --audit-level=high
       - run: npm run test
       - name: Type check API
         run: npx tsc --noEmit --esModuleInterop --target ES2022 --module nodenext --moduleResolution nodenext api/server.ts 2>&1 || echo "⚠️ Type check had warnings (non-blocking)"
@@ -176,3 +178,11 @@ jobs:
           echo "::warning::Health check did not respond in time — container may still be starting (scale-to-zero cold start)"
           echo "Check manually: curl https://api.agentguard.tech/health"
           exit 0
+
+      - name: Smoke test
+        run: |
+          sleep 30
+          curl -sf https://api.agentguard.tech/health || exit 1
+          curl -sf https://agentguard.tech || exit 1
+          curl -sf https://app.agentguard.tech || exit 1
+          curl -sf https://docs.agentguard.tech || exit 1
