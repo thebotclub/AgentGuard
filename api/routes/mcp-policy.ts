@@ -132,6 +132,13 @@ export function createMcpPolicyRoutes(
 
       const { name, url, allowedTools = [], blockedTools = [] } = parsed.data;
 
+      // SSRF check on server URL
+      const { checkUrl } = await import('../lib/mcp-ssrf.js');
+      const ssrfResult = checkUrl(url);
+      if (!ssrfResult.safe) {
+        return res.status(400).json({ error: `URL blocked: ${ssrfResult.reason}` });
+      }
+
       try {
         const server = await db.insertMcpServer(tenantId, name, url, allowedTools, blockedTools);
         return res.status(201).json({

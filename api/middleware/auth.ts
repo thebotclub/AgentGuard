@@ -154,7 +154,9 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
       return;
     }
     const provided = req.headers['x-api-key'] as string | undefined;
-    if (!provided || !crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(ADMIN_KEY))) {
+    const provBuf = Buffer.from(provided || '');
+    const adminBuf = Buffer.from(ADMIN_KEY);
+    if (!provided || provBuf.length !== adminBuf.length || !crypto.timingSafeEqual(provBuf, adminBuf)) {
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }

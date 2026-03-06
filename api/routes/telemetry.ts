@@ -12,6 +12,16 @@ const telemetryRateMap = new Map<string, { count: number; windowStart: number }>
 const TELEMETRY_WINDOW_MS = 60_000; // 1 minute
 const TELEMETRY_MAX_PER_WINDOW = 5;
 
+// Cleanup stale entries every 5 minutes to prevent memory leak
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of telemetryRateMap) {
+    if (now - entry.windowStart > TELEMETRY_WINDOW_MS * 2) {
+      telemetryRateMap.delete(ip);
+    }
+  }
+}, 5 * 60_000).unref();
+
 function isTelemetryRateLimited(ip: string): boolean {
   const now = Date.now();
   const entry = telemetryRateMap.get(ip);

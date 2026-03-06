@@ -26,7 +26,14 @@ function getEncryptionKey(): Buffer {
     }
     return key;
   }
+  // In production, refuse to start without a proper key
+  if (process.env['NODE_ENV'] === 'production') {
+    throw new Error(
+      'INTEGRATION_ENCRYPTION_KEY is required in production. Generate with: openssl rand -hex 32',
+    );
+  }
   // Dev fallback: derive from a fixed seed (NOT for production)
+  console.warn('[integration-crypto] WARNING: Using dev fallback encryption key. Set INTEGRATION_ENCRYPTION_KEY in production.');
   return crypto
     .createHash('sha256')
     .update('agentguard-dev-integration-key-fallback')

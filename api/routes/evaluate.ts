@@ -503,6 +503,20 @@ export function createEvaluateRoutes(
               ? (params as Record<string, unknown>)
               : {},
           );
+          // Notify Slack if configured (fire-and-forget)
+          try {
+            const { getSlackIntegrationConfig, sendSlackApprovalRequest } = await import('../lib/slack-hitl.js');
+            const slackConfig = await getSlackIntegrationConfig(db, tenantId);
+            if (slackConfig) {
+              sendSlackApprovalRequest(slackConfig.webhookUrl, {
+                approvalId: approvalId!,
+                agentId: agentId || 'unknown',
+                tool,
+                params: typeof params === 'object' ? params as Record<string, unknown> : {},
+                reason: decision.matchedRuleId || 'policy',
+              }).catch((e: unknown) => console.error('[evaluate] slack notification failed:', e));
+            }
+          } catch { /* slack module optional */ }
         } catch (e) {
           console.error('[evaluate] failed to create approval record:', e);
         }

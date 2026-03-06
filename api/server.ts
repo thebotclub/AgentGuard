@@ -46,8 +46,10 @@ const app = express();
 
 // Request ID middleware
 app.use((req, res, next) => {
-  req.headers['x-request-id'] = req.headers['x-request-id'] || require('crypto').randomUUID();
-  res.setHeader('x-request-id', req.headers['x-request-id']);
+  const existing = req.headers['x-request-id'];
+  const requestId = Array.isArray(existing) ? existing[0] : existing || require('crypto').randomUUID();
+  req.headers['x-request-id'] = requestId;
+  res.setHeader('x-request-id', requestId);
   next();
 });
 
@@ -320,13 +322,17 @@ async function main(): Promise<void> {
   app.use(createPIIRoutes(db, auth));
   app.use(createSlackHitlRoutes(db, auth));
 
+  // ── MCP Server Policy Enforcement (servers registry + SSRF-aware evaluate) ─
+  // Must be mounted BEFORE createMcpRoutes so our /mcp/evaluate takes precedence
+  app.use(createMcpPolicyRoutes(db, auth));
+
   // ── Already-extracted route modules ───────────────────────────────────
   app.use(createPhase2Routes(db));
   app.use(createMcpRoutes(db));
   app.use(createValidationRoutes(db));
 
-  // ── MCP Server Policy Enforcement (servers registry + SSRF-aware evaluate) ─
-  app.use(createMcpPolicyRoutes(db, auth));
+  // ── Agent Hierarchy (A2A Multi-Agent Policy Propagation) ─────────────
+  app.use(createAgentHierarchyRoutes(db, auth));
 
   // ── Global Error Handler ───────────────────────────────────────────────
   app.use(

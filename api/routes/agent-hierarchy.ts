@@ -146,6 +146,7 @@ export function createAgentHierarchyRoutes(
     '/api/v1/agents/:agentId/children',
     auth.requireTenantAuth,
     async (req: Request, res: Response) => {
+      try {
       const tenantId = req.tenantId!;
       const parentAgentId = req.params['agentId'] as string;
 
@@ -180,6 +181,10 @@ export function createAgentHierarchyRoutes(
           };
         }),
       });
+      } catch (e) {
+        console.error('[agent-hierarchy] list children error:', e);
+        return res.status(500).json({ error: 'Failed to list child agents' });
+      }
     },
   );
 
@@ -188,6 +193,7 @@ export function createAgentHierarchyRoutes(
     '/api/v1/agents/:agentId/children/:childId',
     auth.requireTenantAuth,
     async (req: Request, res: Response) => {
+      try {
       const tenantId = req.tenantId!;
       const parentAgentId = req.params['agentId'] as string;
       const childId = req.params['childId'] as string;
@@ -213,6 +219,10 @@ export function createAgentHierarchyRoutes(
         parentAgentId,
         revoked: true,
       });
+      } catch (e) {
+        console.error('[agent-hierarchy] delete child error:', e);
+        return res.status(500).json({ error: 'Failed to revoke child agent' });
+      }
     },
   );
 

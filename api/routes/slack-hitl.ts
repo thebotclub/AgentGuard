@@ -21,8 +21,8 @@ export const SlackIntegrationConfigSchema = z.object({
     .string({ error: 'webhookUrl is required' })
     .min(1, 'webhookUrl is required')
     .url('webhookUrl must be a valid URL')
-    .refine((u) => u.startsWith('https://hooks.slack.com/') || u.startsWith('https://'), {
-      message: 'webhookUrl must be a Slack webhook URL',
+    .refine((u) => u.startsWith('https://hooks.slack.com/'), {
+      message: 'webhookUrl must be a Slack webhook URL (https://hooks.slack.com/...)',
     }),
   signingSecret: z
     .string({ error: 'signingSecret is required' })
