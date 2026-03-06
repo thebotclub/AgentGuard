@@ -16,14 +16,15 @@
     "build": "tsc --project tsconfig.json",
     "build:clean": "rm -rf dist && tsc --project tsconfig.json",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/cli.test.js",
+    "test": "node --test test/cli.test.js test/scanner-advanced.test.js",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
     "glob": "^10.4.5",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "ora": "^5.4.1"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

@@ -473,11 +473,11 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
 <div id="social-proof">
   <div class="container">
     <div class="social-inner">
-      <div class="social-stat"><strong>34</strong> API endpoints</div>
+      <div class="social-stat"><strong>51</strong> API endpoints</div>
       <div class="social-divider"></div>
       <div class="social-stat"><strong>TypeScript + Python</strong> SDKs</div>
       <div class="social-divider"></div>
-      <div class="social-stat"><strong>7</strong> built-in policy templates</div>
+      <div class="social-stat"><strong>7</strong> policy templates · <strong>OWASP</strong> mapping</div>
       <div class="social-divider"></div>
       <div class="social-stat"><strong>Sub-ms</strong> local PolicyEngine • ~200ms cloud API</div>
       <div class="social-divider"></div>
@@ -491,6 +491,8 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
         <span class="trust-badge green">📋 OWASP Top 10 for Agentic AI</span>
         <span class="trust-badge amber">🔒 EU AI Act Art. 9, 12, 14</span>
         <span class="trust-badge blue">🚀 GitHub Action included</span>
+        <span class="trust-badge green">🔍 Prompt Injection Detection</span>
+        <span class="trust-badge blue">🛡️ PII Redaction Built-In</span>
       </div>
     </div>
   </div>
@@ -561,6 +563,36 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
         <div style="font-size:1.2rem;margin-bottom:6px">📈</div>
         <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Live Dashboard</div>
         <div style="font-size:.78rem;color:var(--text-dim)">Real-time decision feed, block rates, agent activity</div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid rgba(6,182,212,0.25);border-radius:var(--radius);position:relative">
+        <div style="position:absolute;top:8px;right:8px;font-size:.6rem;font-weight:700;background:rgba(6,182,212,0.15);color:#06b6d4;padding:1px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.06em">New</div>
+        <div style="font-size:1.2rem;margin-bottom:6px">🔍</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Prompt Injection Detection</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Heuristic + Lakera adapter — scan messages before they reach your agent</div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid rgba(6,182,212,0.25);border-radius:var(--radius);position:relative">
+        <div style="position:absolute;top:8px;right:8px;font-size:.6rem;font-weight:700;background:rgba(6,182,212,0.15);color:#06b6d4;padding:1px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.06em">New</div>
+        <div style="font-size:1.2rem;margin-bottom:6px">🛡️</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">PII Detection &amp; Redaction</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Scan for SSN, email, credit cards, addresses — auto-redact before logging</div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid rgba(6,182,212,0.25);border-radius:var(--radius);position:relative">
+        <div style="position:absolute;top:8px;right:8px;font-size:.6rem;font-weight:700;background:rgba(6,182,212,0.15);color:#06b6d4;padding:1px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.06em">New</div>
+        <div style="font-size:1.2rem;margin-bottom:6px">📊</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">OWASP Compliance Reports</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Auto-generate OWASP LLM Top 10 compliance evidence from your audit trail</div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid rgba(6,182,212,0.25);border-radius:var(--radius);position:relative">
+        <div style="position:absolute;top:8px;right:8px;font-size:.6rem;font-weight:700;background:rgba(6,182,212,0.15);color:#06b6d4;padding:1px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.06em">New</div>
+        <div style="font-size:1.2rem;margin-bottom:6px">💬</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Slack HITL Approvals</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Route human review requests to Slack — approve or deny with one click</div>
+      </div>
+      <div style="padding:16px 20px;background:var(--bg-card);border:1px solid rgba(6,182,212,0.25);border-radius:var(--radius);position:relative">
+        <div style="position:absolute;top:8px;right:8px;font-size:.6rem;font-weight:700;background:rgba(6,182,212,0.15);color:#06b6d4;padding:1px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.06em">New</div>
+        <div style="font-size:1.2rem;margin-bottom:6px">🤝</div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Multi-Agent A2A</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Parent/child agent hierarchies with policy inheritance, TTL, and budget caps</div>
       </div>
     </div>
   </div>
@@ -1018,7 +1050,7 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
         <h2>The window is 18 months.</h2>
         <p>No category leader exists yet. Regulation is live. Agents are going to production. The enterprises that enforce security at deploy-time now won't be scrambling when their auditor — or their insurer — asks the hard questions.</p>
         <div class="stat-row" style="margin-top:24px">
-          <div class="stat-item"><strong>34</strong><span>API endpoints</span></div>
+          <div class="stat-item"><strong>51</strong><span>API endpoints</span></div>
           <div class="stat-item"><strong>Aug '26</strong><span>EU AI Act deadline</span></div>
           <div class="stat-item"><strong>Sub-ms</strong><span>Local PolicyEngine latency</span></div>
         </div>

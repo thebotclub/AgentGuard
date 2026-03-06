@@ -13,13 +13,12 @@ import path from 'path';
 import fs from 'fs';
 import chalk from 'chalk';
 
-import { scanDirectory } from './scanner.js';
+import { runValidate } from './commands/validate.js';
 import { AgentGuardApiClient } from './api.js';
-import { render } from './reporter.js';
 import { loadConfig, DEFAULT_CONFIG_CONTENT } from './config.js';
-import type { OutputFormat } from './reporter.js';
+import type { ValidateOptions } from './commands/validate.js';
 
-const VERSION = '0.1.0';
+const VERSION = '0.8.0';
 
 // ── Program ───────────────────────────────────────────────────────────────────
 
@@ -37,123 +36,19 @@ program
   .description('Scan a directory for agent tool usage and check policy coverage')
   .option('-k, --api-key <key>', 'AgentGuard API key (or set AGENTGUARD_API_KEY env var)')
   .option('-u, --api-url <url>', 'AgentGuard API URL', '')
+  .option('--offline', 'Run in offline mode (no API calls)', false)
   .option('-t, --threshold <number>', 'Minimum coverage % required to pass', '')
-  .option('-f, --format <format>', 'Output format: table | json | summary', '')
+  .option('-f, --format <format>', 'Output format: terminal | json | markdown', 'terminal')
+  .option('-o, --output <file>', 'Write output to a file instead of stdout')
   .option('--fail-on-uncovered', 'Fail if any tool has no matching policy rule')
-  .option('--no-fail-on-uncovered', 'Do not fail on uncovered tools (default from config)')
+  .option('--no-fail-on-uncovered', 'Do not fail on uncovered tools')
   .option('-e, --exclude <dirs...>', 'Additional directories to exclude from scanning')
   .option('--verbose', 'Show files scanned and hit details')
-  .action(async (directory: string | undefined, opts: {
-    apiKey?: string;
-    apiUrl?: string;
-    threshold?: string;
-    format?: string;
-    failOnUncovered?: boolean;
-    exclude?: string[];
-    verbose?: boolean;
-  }) => {
+  .action(async (directory: string | undefined, opts: ValidateOptions) => {
     try {
-      // ── Load config file ────────────────────────────────────────────────────
-      const cwd = process.cwd();
-      const config = loadConfig(cwd);
-
-      // ── Resolve options (flags > env > config > defaults) ──────────────────
-      const apiKey =
-        opts.apiKey ??
-        process.env['AGENTGUARD_API_KEY'] ??
-        config.api_key ??
-        '';
-
-      const apiUrl =
-        (opts.apiUrl && opts.apiUrl !== '') ? opts.apiUrl :
-        process.env['AGENTGUARD_API_URL'] ??
-        config.api_url ??
-        'https://api.agentguard.tech';
-
-      const thresholdRaw = opts.threshold !== '' ? opts.threshold : undefined;
-      const threshold = thresholdRaw !== undefined
-        ? Math.max(0, Math.min(100, parseInt(thresholdRaw, 10)))
-        : (config.threshold ?? 100);
-
-      // Commander sets failOnUncovered to true when --fail-on-uncovered is
-      // passed and false when --no-fail-on-uncovered is passed. When neither
-      // is passed, the value is `undefined` (actually Commander uses default
-      // from .option — for boolean flags without explicit default Commander
-      // returns the actual boolean). We fall back to config.
-      const failOnUncoveredFlag: boolean | undefined = opts.failOnUncovered;
-      const failOnUncovered: boolean =
-        failOnUncoveredFlag !== undefined
-          ? failOnUncoveredFlag
-          : (config.fail_on_uncovered ?? true);
-
-      const format: OutputFormat = (['table', 'json', 'summary'].includes(opts.format ?? '')
-        ? opts.format as OutputFormat
-        : 'table');
-
-      const targetDir = path.resolve(cwd, directory ?? '.');
-
-      if (!fs.existsSync(targetDir)) {
-        console.error(chalk.red(`Error: Directory not found: ${targetDir}`));
-        process.exit(1);
-      }
-
-      const excludeDirs = [
-        ...(config.exclude ?? []),
-        ...(opts.exclude ?? []),
-      ];
-
-      // ── Scan ──────────────────────────────────────────────────────────────
-      if (format !== 'json') {
-        console.log(chalk.dim(`Scanning: ${targetDir} ...`));
-      }
-
-      const scanResult = scanDirectory(targetDir, { excludeDirs });
-
-      if (opts.verbose && format !== 'json') {
-        console.log(chalk.dim(`  Files scanned: ${scanResult.filesScanned}`));
-        if (scanResult.filesWithHits.length > 0) {
-          console.log(chalk.dim(`  Files with tool hits:`));
-          for (const f of scanResult.filesWithHits) {
-            console.log(chalk.dim(`    ${path.relative(cwd, f)}`));
-          }
-        }
-      }
-
-      if (scanResult.tools.length === 0 && format !== 'json') {
-        console.log(chalk.yellow('\nNo tool patterns detected in source files.'));
-        console.log(chalk.dim('Make sure your agent code uses recognisable tool name patterns.\n'));
-        process.exit(0);
-      }
-
-      // ── API call (optional) ────────────────────────────────────────────────
-      let apiResult = null;
-
-      if (apiKey) {
-        if (format !== 'json') {
-          console.log(chalk.dim(`Checking coverage via AgentGuard API (${apiUrl}) ...`));
-        }
-        try {
-          const client = new AgentGuardApiClient(apiKey, apiUrl);
-          apiResult = await client.coverageCheck(scanResult.tools);
-        } catch (err) {
-          console.error(chalk.red(`\nAPI error: ${(err as Error).message}`));
-          if (format !== 'json') {
-            console.error(chalk.dim('Falling back to local-only scan output.\n'));
-          }
-        }
-      } else if (format !== 'json') {
-        console.log(chalk.dim('No API key — showing detected tools only (pass --api-key for coverage check).'));
-      }
-
-      // ── Render ─────────────────────────────────────────────────────────────
-      const reportData = render(scanResult.tools, apiResult, { format, threshold, failOnUncovered });
-
-      // ── Exit code ──────────────────────────────────────────────────────────
-      if (apiResult !== null && !reportData.passed) {
-        process.exit(1);
-      }
+      await runValidate(directory, opts);
     } catch (err) {
-      console.error(chalk.red(`\nFatal error: ${(err as Error).message}`));
+      process.stderr.write(chalk.red(`\nFatal error: ${(err as Error).message}\n`));
       process.exit(2);
     }
   });
@@ -221,7 +116,7 @@ program
 
       console.log('');
     } catch (err) {
-      console.error(chalk.red(`Error: ${(err as Error).message}`));
+      process.stderr.write(chalk.red(`Error: ${(err as Error).message}\n`));
       process.exit(1);
     }
   });
