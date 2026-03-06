@@ -143,10 +143,22 @@ app.use(express.json({ limit: '50kb' }));
 // URL-encoded body parsing (for non-Slack paths, after the raw body middleware)
 app.use(express.urlencoded({ extended: false, limit: '50kb' }));
 
-// ── Security Headers ───────────────────────────────────────────────────────
+// ── Security Headers (Helmet.js) ───────────────────────────────────────────
+import helmet from 'helmet';
+app.use(helmet({
+  contentSecurityPolicy: false, // API server, not serving HTML
+  crossOriginEmbedderPolicy: false,
+}));
+
+// Request timeout (30s default, prevents hung connections)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  req.setTimeout(30_000);
+  res.setTimeout(30_000);
+  next();
+});
+
+// Additional headers
 app.use((_req: Request, res: Response, next: NextFunction) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader(
     'Permissions-Policy',
