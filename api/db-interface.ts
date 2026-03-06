@@ -128,6 +128,35 @@ export interface ApprovalRow {
   resolved_by: string | null;
 }
 
+export interface FeedbackRow {
+  id: string;
+  tenant_id: string;
+  agent_id: string | null;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+}
+
+export interface TelemetryEventRow {
+  id: string;
+  sdk_version: string;
+  language: string;
+  platform: string | null;
+  created_at: string;
+}
+
+export interface UsageAnalytics {
+  calls: {
+    last24h: number;
+    last7d: number;
+    last30d: number;
+  };
+  uniqueAgents: number;
+  topTools: Array<{ tool: string; cnt: number }>;
+  blockRate: number;
+  dailyVolume: Array<{ date: string; cnt: number }>;
+}
+
 // ── Count/Aggregate helpers ────────────────────────────────────────────────
 
 export interface CountRow {
@@ -272,6 +301,26 @@ export interface IDatabase {
   // ── Policy ────────────────────────────────────────────────────────────────
   getCustomPolicy(tenantId: string): Promise<string | null>;
   setCustomPolicy(tenantId: string, policyJson: string): Promise<void>;
+
+  // ── Analytics ─────────────────────────────────────────────────────────────
+  getUsageAnalytics(tenantId: string, days: number): Promise<UsageAnalytics>;
+
+  // ── Feedback ──────────────────────────────────────────────────────────────
+  insertFeedback(
+    tenantId: string,
+    agentId: string | null,
+    rating: number,
+    comment: string | null,
+  ): Promise<FeedbackRow>;
+  listFeedback(): Promise<FeedbackRow[]>;
+
+  // ── Telemetry ─────────────────────────────────────────────────────────────
+  insertTelemetryEvent(
+    sdkVersion: string,
+    language: string,
+    nodeVersion: string | null,
+    osPlatform: string | null,
+  ): Promise<void>;
 
   // ── Health Check ──────────────────────────────────────────────────────────
   ping(): Promise<boolean>;

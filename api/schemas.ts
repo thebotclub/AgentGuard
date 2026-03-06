@@ -127,6 +127,24 @@ export const McpConfigRequestSchema = z.object({
   enabled: z.boolean().optional(),
 });
 
+// ── POST /api/v1/feedback ──────────────────────────────────────────────────
+export const FeedbackRequestSchema = z.object({
+  rating: z.number({ error: 'rating is required and must be an integer between 1 and 5' })
+    .int()
+    .min(1, 'rating must be between 1 and 5')
+    .max(5, 'rating must be between 1 and 5'),
+  comment: z.string().max(2000, 'comment too long (max 2000 chars)').optional(),
+  agent_id: z.string().max(100).optional(),
+});
+
+// ── POST /api/v1/telemetry ─────────────────────────────────────────────────
+export const TelemetryRequestSchema = z.object({
+  sdk_version: z.string().max(50).default('unknown'),
+  language: z.string().max(50).default('unknown'),
+  node_version: z.string().max(50).optional(),
+  os_platform: z.string().max(100).optional(),
+});
+
 // ── Type inference helpers ─────────────────────────────────────────────────
 // Export schemas following naming convention: Schema suffix for Zod schema,
 // aliased export for backwards compatibility
@@ -142,6 +160,8 @@ export const PlaygroundSessionRequest = PlaygroundSessionRequestSchema;
 export const RateLimitConfigRequest = RateLimitConfigRequestSchema;
 export const CostTrackRequest = CostTrackRequestSchema;
 export const McpConfigRequest = McpConfigRequestSchema;
+export const FeedbackRequest = FeedbackRequestSchema;
+export const TelemetryRequest = TelemetryRequestSchema;
 
 export type EvaluateRequest = z.infer<typeof EvaluateRequestSchema>;
 export type SignupRequest = z.infer<typeof SignupRequestSchema>;
@@ -155,3 +175,5 @@ export type PlaygroundSessionRequest = z.infer<typeof PlaygroundSessionRequestSc
 export type RateLimitConfigRequest = z.infer<typeof RateLimitConfigRequestSchema>;
 export type CostTrackRequest = z.infer<typeof CostTrackRequestSchema>;
 export type McpConfigRequest = z.infer<typeof McpConfigRequestSchema>;
+export type FeedbackRequest = z.infer<typeof FeedbackRequestSchema>;
+export type TelemetryRequest = z.infer<typeof TelemetryRequestSchema>;

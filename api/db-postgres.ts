@@ -17,6 +17,8 @@ import type {
   WebhookRow,
   AgentRow,
   ApprovalRow,
+  FeedbackRow,
+  UsageAnalytics,
 } from './db-interface.js';
 import { randomUUID } from 'crypto';
 import crypto from 'crypto';
@@ -394,6 +396,27 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
           }
         }
       }
+
+      // Migration: feedback and telemetry tables
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS feedback (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          tenant_id TEXT NOT NULL,
+          agent_id TEXT,
+          rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+          comment TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_feedback_tenant ON feedback(tenant_id);
+
+        CREATE TABLE IF NOT EXISTS telemetry_events (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          sdk_version TEXT NOT NULL DEFAULT 'unknown',
+          language TEXT NOT NULL DEFAULT 'unknown',
+          platform TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+      `);
 
       console.log('[pg] schema ready');
     },
@@ -896,6 +919,141 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
          ON CONFLICT (tenant_id) DO UPDATE
            SET policy_json = EXCLUDED.policy_json, updated_at = NOW()`,
         [tenantId, policyJson]
+      );
+    },
+
+    // ── Analytics ─────────────────────────────────────────────────────────────
+    async getUsageAnalytics(tenantId: string, days: number): Promise<UsageAnalytics> {
+      const now = new Date();
+
+      // Total calls by time window
+      const last24hRow = await pool.query<{ cnt: string }>(
+        "SELECT COUNT(*) as cnt FROM audit_events WHERE tenant_id = $1 AND created_at >= NOW() - INTERVAL '1 day'",
+        [tenantId]
+      );
+      const last24h = Number(last24hRow.rows[0]?.cnt ?? 0);
+
+      const last7dRow = await pool.query<{ cnt: string }>(
+        "SELECT COUNT(*) as cnt FROM audit_events WHERE tenant_id = $1 AND created_at >= NOW() - INTERVAL '7 days'",
+        [tenantId]
+      );
+      const last7d = Number(last7dRow.rows[0]?.cnt ?? 0);
+
+      const last30dRow = await pool.query<{ cnt: string }>(
+        "SELECT COUNT(*) as cnt FROM audit_events WHERE tenant_id = $1 AND created_at >= NOW() - INTERVAL '30 days'",
+        [tenantId]
+      );
+      const last30d = Number(last30dRow.rows[0]?.cnt ?? 0);
+
+      // Unique agents
+      const uniqueAgentsRow = await pool.query<{ cnt: string }>(
+        'SELECT COUNT(DISTINCT agent_id) as cnt FROM audit_events WHERE tenant_id = $1 AND agent_id IS NOT NULL',
+        [tenantId]
+      );
+      const uniqueAgents = Number(uniqueAgentsRow.rows[0]?.cnt ?? 0);
+
+      // Top tools evaluated (last N days)
+      const topToolsResult = await pool.query<{ tool: string; cnt: string }>(
+        `SELECT tool, COUNT(*) as cnt FROM audit_events
+         WHERE tenant_id = $1 AND created_at >= NOW() - INTERVAL '${days} days'
+         GROUP BY tool ORDER BY cnt DESC LIMIT 10`,
+        [tenantId]
+      );
+      const topTools = topToolsResult.rows.map((r) => ({ tool: r.tool, cnt: Number(r.cnt) }));
+
+      // Block rate
+      const blockRateResult = await pool.query<{ total: string; blocked: string }>(
+        `SELECT COUNT(*) as total,
+                SUM(CASE WHEN result = 'block' THEN 1 ELSE 0 END) as blocked
+         FROM audit_events
+         WHERE tenant_id = $1 AND created_at >= NOW() - INTERVAL '${days} days'`,
+        [tenantId]
+      );
+      const total = Number(blockRateResult.rows[0]?.total ?? 0);
+      const blocked = Number(blockRateResult.rows[0]?.blocked ?? 0);
+      const blockRate = total > 0 ? Math.round((blocked / total) * 100 * 100) / 100 : 0;
+
+      // Daily volume (last N days)
+      const dailyResult = await pool.query<{ date: string; cnt: string }>(
+        `SELECT DATE(created_at) as date, COUNT(*) as cnt
+         FROM audit_events
+         WHERE tenant_id = $1 AND created_at >= NOW() - INTERVAL '${days} days'
+         GROUP BY DATE(created_at)
+         ORDER BY date ASC`,
+        [tenantId]
+      );
+      const dailyMap = new Map<string, number>(
+        dailyResult.rows.map((r) => [r.date.slice(0, 10), Number(r.cnt)])
+      );
+      const dailyVolume: Array<{ date: string; cnt: number }> = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
+        dailyVolume.push({ date: dateStr, cnt: dailyMap.get(dateStr) ?? 0 });
+      }
+
+      return {
+        calls: { last24h, last7d, last30d },
+        uniqueAgents,
+        topTools,
+        blockRate,
+        dailyVolume,
+      };
+    },
+
+    // ── Feedback ──────────────────────────────────────────────────────────────
+    async insertFeedback(
+      tenantId: string,
+      agentId: string | null,
+      rating: number,
+      comment: string | null,
+    ): Promise<FeedbackRow> {
+      const result = await pool.query(
+        `INSERT INTO feedback (tenant_id, agent_id, rating, comment)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [tenantId, agentId, rating, comment]
+      );
+      const r = result.rows[0] as Record<string, unknown>;
+      return {
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        agent_id: (r['agent_id'] as string | null) ?? null,
+        rating: Number(r['rating']),
+        comment: (r['comment'] as string | null) ?? null,
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+      };
+    },
+
+    async listFeedback(): Promise<FeedbackRow[]> {
+      const result = await pool.query(
+        'SELECT * FROM feedback ORDER BY created_at DESC'
+      );
+      return result.rows.map((r: Record<string, unknown>) => ({
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        agent_id: (r['agent_id'] as string | null) ?? null,
+        rating: Number(r['rating']),
+        comment: (r['comment'] as string | null) ?? null,
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+      }));
+    },
+
+    // ── Telemetry ─────────────────────────────────────────────────────────────
+    async insertTelemetryEvent(
+      sdkVersion: string,
+      language: string,
+      _nodeVersion: string | null,
+      osPlatform: string | null,
+    ): Promise<void> {
+      await pool.query(
+        'INSERT INTO telemetry_events (sdk_version, language, platform) VALUES ($1, $2, $3)',
+        [sdkVersion, language, osPlatform ?? null]
       );
     },
   };

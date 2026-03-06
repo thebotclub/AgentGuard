@@ -1,5 +1,9 @@
 """AgentGuard Python SDK — Runtime security for AI agents."""
 import json
+import os
+import platform
+import sys
+import threading
 from typing import Any, Optional
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
@@ -10,9 +14,43 @@ __version__ = "0.7.2"
 class AgentGuard:
     """Client for the AgentGuard API."""
 
-    def __init__(self, api_key: str, base_url: str = "https://api.agentguard.tech"):
+    def __init__(self, api_key: str, base_url: str = "https://api.agentguard.tech", telemetry: bool = True):
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
+        # Disable telemetry if env var set or constructor option is False
+        self._telemetry_enabled = (
+            telemetry and os.environ.get("AGENTGUARD_NO_TELEMETRY") != "1"
+        )
+        self._telemetry_sent = False
+
+    def _send_telemetry(self) -> None:
+        """Fire-and-forget telemetry ping (opt-in, anonymous)."""
+        if not self._telemetry_enabled or self._telemetry_sent:
+            return
+        self._telemetry_sent = True
+
+        def _ping():
+            try:
+                payload = {
+                    "sdk_version": __version__,
+                    "language": "python",
+                    "node_version": f"python/{sys.version.split()[0]}",
+                    "os_platform": platform.system().lower(),
+                }
+                data = json.dumps(payload).encode()
+                req = Request(
+                    f"{self.base_url}/api/v1/telemetry",
+                    data=data,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urlopen(req, timeout=3) as _:
+                    pass
+            except Exception:
+                pass  # Silently ignore all errors
+
+        t = threading.Thread(target=_ping, daemon=True)
+        t.start()
 
     def _request(self, method: str, path: str, body: Optional[dict] = None) -> dict:
         url = f"{self.base_url}{path}"
@@ -40,6 +78,7 @@ class AgentGuard:
             dict with keys: result, riskScore, reason, durationMs, matchedRuleId (optional)
             result is one of: "allow", "block", "monitor", "require_approval"
         """
+        self._send_telemetry()
         return self._request("POST", "/api/v1/evaluate", {"tool": tool, "params": params or {}})
 
     def get_usage(self) -> dict:

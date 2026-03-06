@@ -19,6 +19,8 @@ import type {
   WebhookRow,
   AgentRow,
   ApprovalRow,
+  FeedbackRow,
+  UsageAnalytics,
 } from './db-interface.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
@@ -362,6 +364,27 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
           tenant_id TEXT PRIMARY KEY,
           policy_json TEXT NOT NULL,
           updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `);
+
+      // Migration: feedback and telemetry tables
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS feedback (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          tenant_id TEXT NOT NULL,
+          agent_id TEXT,
+          rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+          comment TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_feedback_tenant ON feedback(tenant_id);
+
+        CREATE TABLE IF NOT EXISTS telemetry_events (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          sdk_version TEXT NOT NULL DEFAULT 'unknown',
+          language TEXT NOT NULL DEFAULT 'unknown',
+          platform TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
       `);
 
@@ -740,6 +763,117 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
     async countActiveAgents(): Promise<number> {
       const row = getSync<{ n: number }>('SELECT COUNT(*) as n FROM agents WHERE active = 1');
       return row?.n ?? 0;
+    },
+
+    // ── Analytics ─────────────────────────────────────────────────────────────
+    async getUsageAnalytics(tenantId: string, days: number): Promise<UsageAnalytics> {
+      const now = new Date();
+
+      // Total calls by time window
+      const last24h = getSync<{ cnt: number }>(
+        "SELECT COUNT(*) as cnt FROM audit_events WHERE tenant_id = ? AND created_at >= datetime('now', '-1 day')",
+        [tenantId]
+      )?.cnt ?? 0;
+
+      const last7d = getSync<{ cnt: number }>(
+        "SELECT COUNT(*) as cnt FROM audit_events WHERE tenant_id = ? AND created_at >= datetime('now', '-7 days')",
+        [tenantId]
+      )?.cnt ?? 0;
+
+      const last30d = getSync<{ cnt: number }>(
+        "SELECT COUNT(*) as cnt FROM audit_events WHERE tenant_id = ? AND created_at >= datetime('now', '-30 days')",
+        [tenantId]
+      )?.cnt ?? 0;
+
+      // Unique agents
+      const uniqueAgentsRow = getSync<{ cnt: number }>(
+        'SELECT COUNT(DISTINCT agent_id) as cnt FROM audit_events WHERE tenant_id = ? AND agent_id IS NOT NULL',
+        [tenantId]
+      );
+      const uniqueAgents = uniqueAgentsRow?.cnt ?? 0;
+
+      // Top tools evaluated (last 30 days)
+      const topTools = allSync<{ tool: string; cnt: number }>(
+        `SELECT tool, COUNT(*) as cnt FROM audit_events
+         WHERE tenant_id = ? AND created_at >= datetime('now', '-${days} days')
+         GROUP BY tool ORDER BY cnt DESC LIMIT 10`,
+        [tenantId]
+      );
+
+      // Block rate
+      const totalRow = getSync<{ total: number; blocked: number }>(
+        `SELECT COUNT(*) as total,
+                SUM(CASE WHEN result = 'block' THEN 1 ELSE 0 END) as blocked
+         FROM audit_events
+         WHERE tenant_id = ? AND created_at >= datetime('now', '-${days} days')`,
+        [tenantId]
+      );
+      const total = totalRow?.total ?? 0;
+      const blocked = totalRow?.blocked ?? 0;
+      const blockRate = total > 0 ? Math.round((blocked / total) * 100 * 100) / 100 : 0;
+
+      // Daily volume (last 30 days)
+      const dailyRows = allSync<{ date: string; cnt: number }>(
+        `SELECT date(created_at) as date, COUNT(*) as cnt
+         FROM audit_events
+         WHERE tenant_id = ? AND created_at >= datetime('now', '-${days} days')
+         GROUP BY date(created_at)
+         ORDER BY date ASC`,
+        [tenantId]
+      );
+
+      // Fill in missing days with 0
+      const dailyMap = new Map<string, number>(dailyRows.map((r) => [r.date, r.cnt]));
+      const dailyVolume: Array<{ date: string; cnt: number }> = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
+        dailyVolume.push({ date: dateStr, cnt: dailyMap.get(dateStr) ?? 0 });
+      }
+
+      return {
+        calls: { last24h, last7d, last30d },
+        uniqueAgents,
+        topTools,
+        blockRate,
+        dailyVolume,
+      };
+    },
+
+    // ── Feedback ──────────────────────────────────────────────────────────────
+    async insertFeedback(
+      tenantId: string,
+      agentId: string | null,
+      rating: number,
+      comment: string | null,
+    ): Promise<FeedbackRow> {
+      const row = db.prepare<[string, string | null, number, string | null]>(
+        `INSERT INTO feedback (tenant_id, agent_id, rating, comment)
+         VALUES (?, ?, ?, ?)
+         RETURNING *`
+      ).get(tenantId, agentId, rating, comment) as FeedbackRow;
+      return row;
+    },
+
+    async listFeedback(): Promise<FeedbackRow[]> {
+      return allSync<FeedbackRow>(
+        'SELECT * FROM feedback ORDER BY created_at DESC'
+      );
+    },
+
+    // ── Telemetry ─────────────────────────────────────────────────────────────
+    async insertTelemetryEvent(
+      sdkVersion: string,
+      language: string,
+      nodeVersion: string | null,
+      osPlatform: string | null,
+    ): Promise<void> {
+      // Store node_version concatenated into platform field if provided
+      const platform = osPlatform ?? null;
+      db.prepare(
+        'INSERT INTO telemetry_events (sdk_version, language, platform) VALUES (?, ?, ?)'
+      ).run(sdkVersion, language, platform);
     },
   };
 

@@ -28,6 +28,9 @@ import { createAuthRoutes } from './routes/auth.js';
 import { createPlaygroundRoutes } from './routes/playground.js';
 import { createApprovalRoutes } from './routes/approvals.js';
 import { createPolicyRoutes } from './routes/policy.js';
+import { createAnalyticsRoutes } from './routes/analytics.js';
+import { createFeedbackRoutes } from './routes/feedback.js';
+import { createTelemetryRoutes } from './routes/telemetry.js';
 import type { IDatabase } from './db-interface.js';
 
 // ── Load Templates ─────────────────────────────────────────────────────────
@@ -262,6 +265,9 @@ async function main(): Promise<void> {
   app.use(createPlaygroundRoutes(db, auth));
   app.use(createApprovalRoutes(db, auth));
   app.use(createPolicyRoutes(db, auth));
+  app.use(createAnalyticsRoutes(db, auth));
+  app.use(createFeedbackRoutes(db, auth));
+  app.use(createTelemetryRoutes(db));
 
   // ── Already-extracted route modules ───────────────────────────────────
   app.use(createPhase2Routes(db));

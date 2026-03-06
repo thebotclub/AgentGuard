@@ -1,13 +1,48 @@
+import os from 'os';
+
+const SDK_VERSION = '0.7.2';
+
 /**
  * AgentGuard API Client — connects to the hosted API
  */
 export class AgentGuard {
   private apiKey: string;
   private baseUrl: string;
+  private telemetryEnabled: boolean;
+  private telemetrySent: boolean;
 
-  constructor(options: { apiKey: string; baseUrl?: string }) {
+  constructor(options: { apiKey: string; baseUrl?: string; telemetry?: boolean }) {
     this.apiKey = options.apiKey;
     this.baseUrl = options.baseUrl || 'https://api.agentguard.tech';
+    // Disable telemetry if env var set or constructor option is false
+    this.telemetryEnabled =
+      options.telemetry !== false &&
+      process.env['AGENTGUARD_NO_TELEMETRY'] !== '1';
+    this.telemetrySent = false;
+  }
+
+  /**
+   * Fire-and-forget telemetry ping (opt-in, anonymous).
+   * Sends once per SDK instance lifetime on the first evaluate() call.
+   */
+  private sendTelemetry(): void {
+    if (!this.telemetryEnabled || this.telemetrySent) return;
+    this.telemetrySent = true;
+    try {
+      const payload = {
+        sdk_version: SDK_VERSION,
+        language: 'node',
+        node_version: process.version,
+        os_platform: os.platform(),
+      };
+      fetch(`${this.baseUrl}/api/v1/telemetry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(() => {/* silently ignore */});
+    } catch {
+      // Never throw from telemetry
+    }
   }
 
   async evaluate(action: { tool: string; params?: Record<string, unknown> }): Promise<{
@@ -17,6 +52,7 @@ export class AgentGuard {
     reason: string;
     durationMs: number;
   }> {
+    this.sendTelemetry();
     const res = await fetch(`${this.baseUrl}/api/v1/evaluate`, {
       method: 'POST',
       headers: {
