@@ -22,7 +22,7 @@ info:
     ## Base URL
 
     Production: `https://api.agentguard.tech/api/v1`
-  version: 0.7.2
+  version: 0.8.0
   contact:
     name: AgentGuard Support
     url: https://agentguard.tech

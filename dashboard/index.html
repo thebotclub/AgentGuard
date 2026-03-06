@@ -253,6 +253,65 @@ tr:hover td { background:rgba(99,102,241,0.04); }
         </div>
       </div>
 
+      <!-- ── QUICK START CARDS (shown after onboarding) ── -->
+      <div id="quickstart-cards" style="display:none;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px">
+        <div class="card" style="margin-bottom:0;cursor:default">
+          <div class="card-body" style="padding:20px">
+            <div style="font-size:1.5rem;margin-bottom:10px">📦</div>
+            <div style="font-weight:600;color:var(--text-bright);margin-bottom:6px">Install SDK</div>
+            <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:12px">Add AgentGuard to your project in seconds</div>
+            <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:6px;padding:10px 12px;font-family:var(--mono);font-size:0.78rem;color:var(--accent-hi);display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <span id="sdk-install-cmd" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">npm install @agentguard/sdk</span>
+              <button onclick="copyToClipboard('sdk-install-cmd',this)" style="background:var(--accent-dim);border:none;border-radius:4px;color:var(--accent-hi);cursor:pointer;padding:3px 8px;font-size:0.72rem;flex-shrink:0" title="Copy">📋</button>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:6px">
+              <button onclick="switchSdkLang('npm')" id="sdk-btn-npm" class="btn btn-ghost" style="font-size:0.72rem;padding:4px 10px;border-color:var(--accent)">npm</button>
+              <button onclick="switchSdkLang('pip')" id="sdk-btn-pip" class="btn btn-ghost" style="font-size:0.72rem;padding:4px 10px">pip</button>
+              <button onclick="switchSdkLang('curl')" id="sdk-btn-curl" class="btn btn-ghost" style="font-size:0.72rem;padding:4px 10px">curl</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0;cursor:default">
+          <div class="card-body" style="padding:20px">
+            <div style="font-size:1.5rem;margin-bottom:10px">⚙️</div>
+            <div style="font-weight:600;color:var(--text-bright);margin-bottom:6px">Add to CI/CD</div>
+            <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:12px">Run policy checks in your GitHub Actions pipeline</div>
+            <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:6px;padding:10px 12px;font-family:var(--mono);font-size:0.72rem;color:var(--accent-hi);max-height:88px;overflow:hidden;position:relative">
+              <pre id="cicd-snippet" style="margin:0;white-space:pre-wrap;word-break:break-all">- name: AgentGuard Policy Check
+  uses: agentguard/action@v1
+  with:
+    api-key: $\{{ secrets.AG_API_KEY }}</pre>
+              <div style="position:absolute;bottom:0;right:0;padding:4px 8px">
+                <button onclick="copyToClipboard('cicd-snippet',this)" style="background:var(--accent-dim);border:none;border-radius:4px;color:var(--accent-hi);cursor:pointer;padding:3px 8px;font-size:0.72rem" title="Copy">📋</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0;cursor:pointer" onclick="showPage('policy')">
+          <div class="card-body" style="padding:20px">
+            <div style="font-size:1.5rem;margin-bottom:10px">📜</div>
+            <div style="font-weight:600;color:var(--text-bright);margin-bottom:6px">Configure Policy</div>
+            <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:12px">Customise which tools your agents can use</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--accent-hi)">
+              <span>Open Policy Editor</span><span>→</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0;cursor:pointer" onclick="showPage('compliance')">
+          <div class="card-body" style="padding:20px">
+            <div style="font-size:1.5rem;margin-bottom:10px">🛡️</div>
+            <div style="font-weight:600;color:var(--text-bright);margin-bottom:6px">View Compliance</div>
+            <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:12px">OWASP Agentic Top 10 compliance report</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--accent-hi)">
+              <span>Generate Report</span><span>→</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-card">
           <div class="label">Total Evaluations</div>
@@ -2360,6 +2419,315 @@ async function deleteMcpServer(id) {
 
 // Boot
 init();
+
+// ── Onboarding Wizard ──────────────────────────────────────────────────────
+
+var ONBOARDING_KEY = 'ag_onboarding_complete';
+var onboardingStep = 1;
+var totalSteps = 4;
+
+function isOnboardingComplete() {
+  try {
+    return !!localStorage.getItem(ONBOARDING_KEY);
+  } catch { return false; }
+}
+
+function markOnboardingComplete() {
+  try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch {}
+}
+
+function maybeShowOnboarding() {
+  if (!isOnboardingComplete() && !storedApiKey) {
+    showOnboarding();
+  } else {
+    showQuickStart();
+  }
+}
+
+function showOnboarding() {
+  document.getElementById('onboarding-overlay').style.display = 'flex';
+  setOnboardingStep(1);
+}
+
+function closeOnboarding(complete) {
+  document.getElementById('onboarding-overlay').style.display = 'none';
+  if (complete) {
+    markOnboardingComplete();
+  }
+  showQuickStart();
+}
+
+function showQuickStart() {
+  document.getElementById('quickstart-cards').style.display = 'grid';
+}
+
+function setOnboardingStep(step) {
+  onboardingStep = Math.max(1, Math.min(step, totalSteps));
+  // Hide all steps
+  for (var i = 1; i <= totalSteps; i++) {
+    var el = document.getElementById('ob-step-' + i);
+    if (el) el.style.display = 'none';
+  }
+  var current = document.getElementById('ob-step-' + onboardingStep);
+  if (current) current.style.display = 'block';
+  // Update progress dots
+  for (var i = 1; i <= totalSteps; i++) {
+    var dot = document.getElementById('ob-dot-' + i);
+    if (dot) {
+      dot.style.background = i === onboardingStep ? 'var(--accent)' : 'var(--border)';
+      dot.style.width = i === onboardingStep ? '24px' : '8px';
+    }
+  }
+  // Update nav buttons
+  var prevBtn = document.getElementById('ob-prev');
+  var nextBtn = document.getElementById('ob-next');
+  var skipBtn = document.getElementById('ob-skip');
+  if (prevBtn) prevBtn.style.display = onboardingStep > 1 ? 'inline-flex' : 'none';
+  if (nextBtn) {
+    nextBtn.textContent = onboardingStep === totalSteps ? 'Go to Dashboard →' : 'Next →';
+  }
+  if (skipBtn) skipBtn.style.display = onboardingStep < totalSteps ? 'inline-block' : 'none';
+
+  // Step-specific logic
+  if (onboardingStep === 3) updateEvalCurl();
+}
+
+function onboardingNext() {
+  if (onboardingStep === 2) {
+    // Validate API key on step 2
+    var keyInput = document.getElementById('ob-api-key');
+    var key = keyInput ? keyInput.value.trim() : '';
+    if (!key) {
+      var err = document.getElementById('ob-key-error');
+      if (err) { err.textContent = 'Please enter your API key'; err.style.display = 'block'; }
+      return;
+    }
+    if (!key.startsWith('ag_live_') && !key.startsWith('ag_agent_')) {
+      var err = document.getElementById('ob-key-error');
+      if (err) { err.textContent = 'API keys start with ag_live_... — check your signup email'; err.style.display = 'block'; }
+      return;
+    }
+    saveApiKey(key);
+    var err = document.getElementById('ob-key-error');
+    if (err) err.style.display = 'none';
+  }
+  if (onboardingStep < totalSteps) {
+    setOnboardingStep(onboardingStep + 1);
+  } else {
+    closeOnboarding(true);
+  }
+}
+
+function onboardingPrev() {
+  if (onboardingStep > 1) setOnboardingStep(onboardingStep - 1);
+}
+
+function updateEvalCurl() {
+  var key = storedApiKey || 'YOUR_API_KEY';
+  var cmd = 'curl -X POST https://api.agentguard.tech/api/v1/evaluate \\\n  -H "x-api-key: ' + key + '" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"tool":"file_read","params":{"path":"/var/log/app.log"}}\'';
+  var el = document.getElementById('ob-curl-cmd');
+  if (el) el.textContent = cmd;
+}
+
+function copyOnboardingCurl() {
+  var el = document.getElementById('ob-curl-cmd');
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(function() {
+    var btn = document.getElementById('ob-curl-copy');
+    if (btn) { btn.textContent = '✅ Copied!'; setTimeout(function() { btn.textContent = '📋 Copy'; }, 2000); }
+  });
+}
+
+function copyToClipboard(elemId, btn) {
+  var el = document.getElementById(elemId);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent || el.innerText).then(function() {
+    if (btn) { var orig = btn.textContent; btn.textContent = '✅'; setTimeout(function() { btn.textContent = orig; }, 2000); }
+  });
+}
+
+function switchSdkLang(lang) {
+  var cmds = {
+    npm: 'npm install @agentguard/sdk',
+    pip: 'pip install agentguard',
+    curl: 'curl https://api.agentguard.tech/health'
+  };
+  var el = document.getElementById('sdk-install-cmd');
+  if (el) el.textContent = cmds[lang] || cmds.npm;
+  ['npm','pip','curl'].forEach(function(l) {
+    var btn = document.getElementById('sdk-btn-' + l);
+    if (btn) {
+      btn.style.borderColor = l === lang ? 'var(--accent)' : 'var(--border)';
+      btn.style.color = l === lang ? 'var(--accent-hi)' : 'var(--text-dim)';
+    }
+  });
+}
+
+// Call after init so onboarding check happens after API key is loaded
+setTimeout(maybeShowOnboarding, 100);
 </script>
+
+<!-- ── ONBOARDING WIZARD OVERLAY ─────────────────────────────────────────── -->
+<div id="onboarding-overlay" role="dialog" aria-modal="true" aria-label="AgentGuard Setup Wizard"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.6)">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,rgba(82,84,212,0.3),rgba(99,102,241,0.1));padding:24px 28px 20px;border-bottom:1px solid var(--border-dim)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:1.3rem;font-weight:700;color:var(--text-bright)">🛡️ AgentGuard Setup</div>
+        <button onclick="closeOnboarding(false)" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:1.2rem;line-height:1;padding:4px" aria-label="Close wizard">✕</button>
+      </div>
+      <!-- Progress dots -->
+      <div style="display:flex;align-items:center;gap:6px">
+        <div id="ob-dot-1" style="height:8px;border-radius:4px;transition:all 0.2s;background:var(--accent);width:24px"></div>
+        <div id="ob-dot-2" style="height:8px;border-radius:4px;transition:all 0.2s;background:var(--border);width:8px"></div>
+        <div id="ob-dot-3" style="height:8px;border-radius:4px;transition:all 0.2s;background:var(--border);width:8px"></div>
+        <div id="ob-dot-4" style="height:8px;border-radius:4px;transition:all 0.2s;background:var(--border);width:8px"></div>
+        <span style="margin-left:8px;font-size:0.75rem;color:var(--text-dim)" id="ob-step-label">Step 1 of 4</span>
+      </div>
+    </div>
+
+    <!-- Step content -->
+    <div style="padding:28px">
+
+      <!-- Step 1: Welcome -->
+      <div id="ob-step-1">
+        <div style="font-size:2.5rem;margin-bottom:16px;text-align:center">🚀</div>
+        <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-bright);margin-bottom:12px;text-align:center">Welcome to AgentGuard</h2>
+        <p style="color:var(--text-dim);font-size:0.9rem;line-height:1.7;margin-bottom:20px;text-align:center">
+          AgentGuard provides real-time security guardrails for your AI agents — evaluating every tool call against your security policy before it executes.
+        </p>
+        <div style="display:grid;gap:12px">
+          <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:8px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px">
+            <span style="font-size:1.2rem;flex-shrink:0">🔍</span>
+            <div>
+              <div style="font-weight:600;color:var(--text-bright);font-size:0.88rem;margin-bottom:3px">Policy Engine</div>
+              <div style="font-size:0.8rem;color:var(--text-dim)">Allow, block, or flag tool calls based on customisable rules</div>
+            </div>
+          </div>
+          <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:8px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px">
+            <span style="font-size:1.2rem;flex-shrink:0">📋</span>
+            <div>
+              <div style="font-weight:600;color:var(--text-bright);font-size:0.88rem;margin-bottom:3px">Tamper-Evident Audit Trail</div>
+              <div style="font-size:0.8rem;color:var(--text-dim)">Every decision is logged with SHA-256 chained hashes</div>
+            </div>
+          </div>
+          <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:8px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px">
+            <span style="font-size:1.2rem;flex-shrink:0">🛡️</span>
+            <div>
+              <div style="font-weight:600;color:var(--text-bright);font-size:0.88rem;margin-bottom:3px">OWASP Compliance</div>
+              <div style="font-size:0.8rem;color:var(--text-dim)">Built-in checks for the OWASP Agentic Top 10 framework</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: API Key -->
+      <div id="ob-step-2" style="display:none">
+        <div style="font-size:2.5rem;margin-bottom:16px;text-align:center">🔑</div>
+        <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-bright);margin-bottom:8px;text-align:center">Enter Your API Key</h2>
+        <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px;text-align:center">
+          Don't have one? <a href="#" onclick="closeOnboarding(false);document.getElementById('api-key-input').focus();return false" style="color:var(--accent-hi)">Sign up free</a> to get your key.
+        </p>
+        <div style="margin-bottom:16px">
+          <label style="display:block;font-size:0.78rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">API Key</label>
+          <div style="position:relative">
+            <input id="ob-api-key" type="password" placeholder="ag_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              style="width:100%;padding:12px 44px 12px 14px;background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;color:var(--text-bright);font-family:var(--mono);font-size:0.85rem;outline:none;transition:border-color 0.15s"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+              onkeydown="if(event.key==='Enter')onboardingNext()">
+            <button onclick="var i=document.getElementById('ob-api-key');i.type=i.type==='password'?'text':'password'" 
+              style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:0.9rem" title="Toggle visibility">👁</button>
+          </div>
+          <div id="ob-key-error" style="display:none;color:var(--red);font-size:0.78rem;margin-top:6px"></div>
+        </div>
+        <div style="background:rgba(82,84,212,0.08);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:0.8rem;color:var(--text-dim)">
+          💡 Your key is stored only in your browser's localStorage and is never sent to any third party.
+        </div>
+      </div>
+
+      <!-- Step 3: First Evaluate Call -->
+      <div id="ob-step-3" style="display:none">
+        <div style="font-size:2.5rem;margin-bottom:16px;text-align:center">⚡</div>
+        <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-bright);margin-bottom:8px;text-align:center">Your First Evaluate Call</h2>
+        <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px;text-align:center">
+          Run this in your terminal to test the policy engine:
+        </p>
+        <div style="background:#0d0d20;border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;position:relative">
+          <pre id="ob-curl-cmd" style="margin:0;font-family:var(--mono);font-size:0.75rem;color:#a5b4fc;white-space:pre-wrap;word-break:break-all;line-height:1.6"></pre>
+          <button id="ob-curl-copy" onclick="copyOnboardingCurl()" 
+            style="position:absolute;top:10px;right:10px;background:var(--accent-dim);border:1px solid var(--border);border-radius:6px;color:var(--accent-hi);cursor:pointer;padding:5px 10px;font-size:0.75rem">📋 Copy</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:8px;padding:12px">
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em">Expected: Allow</div>
+            <code style="font-family:var(--mono);font-size:0.78rem;color:var(--green)">{"result":"allow"}</code>
+          </div>
+          <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:8px;padding:12px">
+            <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em">Try Blocking</div>
+            <code style="font-family:var(--mono);font-size:0.78rem;color:var(--red)">"tool":"shell_exec"</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Ready -->
+      <div id="ob-step-4" style="display:none">
+        <div style="font-size:3rem;margin-bottom:16px;text-align:center">🎉</div>
+        <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-bright);margin-bottom:8px;text-align:center">You're All Set!</h2>
+        <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px;text-align:center">
+          Your AgentGuard dashboard is ready. Here's what to explore next:
+        </p>
+        <div style="display:grid;gap:10px">
+          <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+            <span style="font-size:1.1rem">📊</span>
+            <div style="flex:1">
+              <div style="font-weight:600;color:var(--text-bright);font-size:0.85rem">Overview</div>
+              <div style="font-size:0.78rem;color:var(--text-dim)">Real-time stats and live decision feed</div>
+            </div>
+            <span style="color:var(--text-dim)">→</span>
+          </div>
+          <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+            <span style="font-size:1.1rem">🤖</span>
+            <div style="flex:1">
+              <div style="font-weight:600;color:var(--text-bright);font-size:0.85rem">Register Agents</div>
+              <div style="font-size:0.78rem;color:var(--text-dim)">Create scoped API keys for each of your agents</div>
+            </div>
+            <span style="color:var(--text-dim)">→</span>
+          </div>
+          <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+            <span style="font-size:1.1rem">📜</span>
+            <div style="flex:1">
+              <div style="font-weight:600;color:var(--text-bright);font-size:0.85rem">Customise Policy</div>
+              <div style="font-size:0.78rem;color:var(--text-dim)">Fine-tune which tool calls are allowed or blocked</div>
+            </div>
+            <span style="color:var(--text-dim)">→</span>
+          </div>
+          <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+            <span style="font-size:1.1rem">🛡️</span>
+            <div style="flex:1">
+              <div style="font-weight:600;color:var(--text-bright);font-size:0.85rem">OWASP Compliance</div>
+              <div style="font-size:0.78rem;color:var(--text-dim)">Generate your first compliance report</div>
+            </div>
+            <span style="color:var(--text-dim)">→</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end step content -->
+
+    <!-- Footer nav -->
+    <div style="padding:16px 28px 24px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border-dim)">
+      <button id="ob-skip" onclick="closeOnboarding(true)"
+        style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:0.82rem;padding:4px 8px">Skip setup</button>
+      <div style="display:flex;gap:10px">
+        <button id="ob-prev" onclick="onboardingPrev()"
+          style="display:none;background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-weight:600;font-size:0.85rem;cursor:pointer;padding:10px 18px;font-family:inherit">← Back</button>
+        <button id="ob-next" onclick="onboardingNext()"
+          style="background:var(--accent);border:none;border-radius:8px;color:white;font-weight:600;font-size:0.85rem;cursor:pointer;padding:10px 20px;font-family:inherit;display:inline-flex;align-items:center;gap:6px">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
