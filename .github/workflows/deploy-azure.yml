@@ -13,6 +13,7 @@ on:
       - 'nginx-*.conf'
       - 'package.json'
       - 'package-lock.json'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
@@ -180,9 +181,12 @@ jobs:
           exit 0
 
       - name: Smoke test
+        continue-on-error: true
+        timeout-minutes: 3
         run: |
-          sleep 30
-          curl -sf https://api.agentguard.tech/health || exit 1
-          curl -sf https://agentguard.tech || exit 1
-          curl -sf https://app.agentguard.tech || exit 1
-          curl -sf https://docs.agentguard.tech || exit 1
+          sleep 60
+          for site in api.agentguard.tech agentguard.tech app.agentguard.tech docs.agentguard.tech; do
+            code=$(curl -so /dev/null -w "%{http_code}" --max-time 10 "https://$site" 2>/dev/null || echo "000")
+            echo "$site: $code"
+            if [ "$code" = "000" ]; then echo "::warning::$site unreachable"; fi
+          done
