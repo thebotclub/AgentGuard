@@ -218,7 +218,7 @@ async function main(): Promise<void> {
     const ks = await getGlobalKillSwitch(db);
     res.json({
       name: 'AgentGuard Policy Engine API',
-      version: '0.7.2',
+      version: '0.8.0',
       status: 'online',
       killSwitch: { active: ks.active, activatedAt: ks.at },
       endpoints: {
@@ -310,7 +310,7 @@ async function main(): Promise<void> {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.status(dbOk ? 200 : 503).json({
       status: dbOk ? 'ok' : 'degraded',
-      version: '0.7.2',
+      version: '0.8.0',
     });
   });
 
@@ -332,7 +332,7 @@ async function main(): Promise<void> {
     res.status(dbOk ? 200 : 503).json({
       status: dbOk ? 'ok' : 'degraded',
       engine: 'agentguard',
-      version: '0.7.2',
+      version: '0.8.0',
       uptime: Math.floor(process.uptime()),
       killSwitch: ks.active,
       db: dbOk ? db.type : 'error',
@@ -480,7 +480,7 @@ async function main(): Promise<void> {
   detector.start();
 
   const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🛡️  AgentGuard API v0.2.1 running on port ${PORT}`);
+    console.log(`🛡️  AgentGuard API v0.8.0 running on port ${PORT}`);
     console.log(
       `   ${DEFAULT_POLICY.rules.length} rules loaded | default: ${DEFAULT_POLICY.default}`,
     );
