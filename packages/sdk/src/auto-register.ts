@@ -740,7 +740,7 @@ export interface AutoRegisterOptions {
   /**
    * Callback when key is created (useful for logging).
    */
-  onKeyCreated?: (key: string, tenantId: string) => void;
+  onKeyCreated?: (key: string, agentId: string) => void | Promise<void>;
 }
 
 export interface AgentGuardOptions {
@@ -749,7 +749,7 @@ export interface AgentGuardOptions {
   autoRegister?: boolean;
   agentId?: string;
   keyStorage?: 'memory' | 'file';
-  onKeyCreated?: (key: string, tenantId: string) => void;
+  onKeyCreated?: (key: string, agentId: string) => void | Promise<void>;
 }
 
 // Free tier limits
@@ -786,7 +786,7 @@ export async function provisionAgentAccount(
     throw new Error(`Failed to provision agent account: ${response.status} ${error}`);
   }
   
-  const data = await response.json();
+  const data = await response.json() as { apiKey: string; tenantId: string };
   return {
     apiKey: data.apiKey,
     tenantId: data.tenantId,
