@@ -74,9 +74,22 @@ function isInternalHost(hostname: string): boolean {
   }
   // IPv6 literal
   if (bare.includes(':')) {
-    // IPv4-mapped IPv6 ::ffff:x.x.x.x
+    // IPv4-mapped IPv6 ::ffff:x.x.x.x (standard form)
     const v4mapped = bare.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/i);
     if (v4mapped) return PRIVATE_IPV4_PATTERNS.some((p) => p.test(v4mapped[1]!));
+
+    // IPv4-mapped IPv6 full form 0:0:0:0:0:ffff:XXYY:ZZWW (hex-encoded IPv4)
+    const v4mappedFull = bare.match(/^(?:0+:){5}ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+    if (v4mappedFull) {
+      const hi = parseInt(v4mappedFull[1]!, 16);
+      const lo = parseInt(v4mappedFull[2]!, 16);
+      const ipv4 = `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
+      return PRIVATE_IPV4_PATTERNS.some((p) => p.test(ipv4));
+    }
+
+    // Block ANY IPv4-mapped/compatible prefix to be safe
+    if (/^(?:0+:)*:?ffff:/i.test(bare)) return true;
+
     return PRIVATE_IPV6_PATTERNS.some((p) => p.test(bare));
   }
   return false;

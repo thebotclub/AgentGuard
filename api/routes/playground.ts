@@ -250,13 +250,14 @@ export function createPlaygroundRoutes(
   );
 
   // ── GET /api/v1/playground/policy ─────────────────────────────────────────
-  router.get('/api/v1/playground/policy', (_req: Request, res: Response) => {
+  router.get('/api/v1/playground/policy', auth.requireEvaluateAuth, (_req: Request, res: Response) => {
     res.json({ policy: DEFAULT_POLICY });
   });
 
   // ── GET /api/v1/playground/scenarios ──────────────────────────────────────
   router.get(
     '/api/v1/playground/scenarios',
+    auth.requireEvaluateAuth,
     (_req: Request, res: Response) => {
       res.json({
         scenarios: [
