@@ -3,31 +3,83 @@
  *
  * Scans URL-like string values in MCP tool arguments for SSRF risks:
  *  - Internal/private IP ranges (10.x, 172.16-31.x, 192.168.x, 127.x, ::1)
- *  - Localhost
- *  - file:// protocol
+ *  - Localhost and hostname aliases (localtest.me, nip.io, hex IPs)
+ *  - CGNAT range (100.64.0.0/10)
+ *  - IPv6 link-local (fe80::/10), ULA (fc00::/7), loopback
+ *  - file://, ftp:// protocols
  *  - Configurable domain allowlist for external URLs
  */
 
 // ── Internal IP / hostname detection ────────────────────────────────────────
 
-const PRIVATE_IP_PATTERNS: RegExp[] = [
-  /^127\.\d+\.\d+\.\d+$/,          // 127.0.0.0/8 loopback
-  /^10\.\d+\.\d+\.\d+$/,           // 10.0.0.0/8 private
-  /^192\.168\.\d+\.\d+$/,          // 192.168.0.0/16 private
-  /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/, // 172.16.0.0/12 private
-  /^::1$/,                          // IPv6 loopback
-  /^fc[0-9a-f]{2}:/i,              // IPv6 ULA
-  /^fd[0-9a-f]{2}:/i,              // IPv6 ULA
+const PRIVATE_IPV4_PATTERNS: RegExp[] = [
+  /^0\.0\.0\.0$/,                              // 0.0.0.0
+  /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,         // 127.0.0.0/8 loopback
+  /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,          // 10.0.0.0/8 private
+  /^192\.168\.\d{1,3}\.\d{1,3}$/,             // 192.168.0.0/16 private
+  /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/, // 172.16.0.0/12 private
+  /^169\.254\.\d{1,3}\.\d{1,3}$/,             // 169.254.0.0/16 link-local
+  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d{1,3}\.\d{1,3}$/, // 100.64.0.0/10 CGNAT
 ];
 
-const BLOCKED_HOSTNAMES = new Set(['localhost', 'ip6-localhost', 'ip6-loopback', '0.0.0.0', '[::]']);
+const PRIVATE_IPV6_PATTERNS: RegExp[] = [
+  /^::1$/,                            // IPv6 loopback
+  /^::$/,                             // IPv6 all-zeros
+  /^fe[89ab][0-9a-f]:/i,             // fe80::/10 link-local (fe80, fe90, fea0, feb0)
+  /^fe80:/i,                          // fe80::/10 link-local (explicit)
+  /^fc[0-9a-f]{2}:/i,                // IPv6 ULA fc00::/7
+  /^fd[0-9a-f]{2}:/i,                // IPv6 ULA fd00::/7
+];
+
+/** Hostname patterns that commonly bypass SSRF filters */
+const BLOCKED_HOSTNAME_PATTERNS: RegExp[] = [
+  /^localhost$/i,
+  /\.local$/i,
+  /\.internal$/i,
+  /\.localhost$/i,
+  /^local$/i,
+  /^internal$/i,
+  /\.localtest\.me$/i,   // resolves to 127.0.0.1
+  /^localtest\.me$/i,
+  /\.nip\.io$/i,         // DNS rebinding / IP-in-hostname
+  /\.xip\.io$/i,
+  /\.sslip\.io$/i,
+  /^0x[0-9a-f]+$/i,      // hex-encoded IP e.g. 0x7f000001
+  /^0\d+\.\d/,           // octal-encoded first octet e.g. 0177.0.0.1
+];
+
+const BLOCKED_HOSTNAMES_EXACT = new Set([
+  'localhost',
+  'ip6-localhost',
+  'ip6-loopback',
+  '0.0.0.0',
+  '[::]',
+  '::',
+  '::1',
+]);
 
 function isInternalHost(hostname: string): boolean {
   const lower = hostname.toLowerCase();
-  if (BLOCKED_HOSTNAMES.has(lower)) return true;
+  // Exact matches
+  if (BLOCKED_HOSTNAMES_EXACT.has(lower)) return true;
+  // Pattern-based hostname checks
+  for (const pattern of BLOCKED_HOSTNAME_PATTERNS) {
+    if (pattern.test(lower)) return true;
+  }
   // Strip IPv6 brackets
   const bare = lower.startsWith('[') && lower.endsWith(']') ? lower.slice(1, -1) : lower;
-  return PRIVATE_IP_PATTERNS.some((p) => p.test(bare));
+  // IPv4 literal
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(bare)) {
+    return PRIVATE_IPV4_PATTERNS.some((p) => p.test(bare));
+  }
+  // IPv6 literal
+  if (bare.includes(':')) {
+    // IPv4-mapped IPv6 ::ffff:x.x.x.x
+    const v4mapped = bare.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/i);
+    if (v4mapped) return PRIVATE_IPV4_PATTERNS.some((p) => p.test(v4mapped[1]!));
+    return PRIVATE_IPV6_PATTERNS.some((p) => p.test(bare));
+  }
+  return false;
 }
 
 // ── SSRF check result ────────────────────────────────────────────────────────
@@ -64,9 +116,12 @@ export function checkUrl(raw: string, options: SsrfCheckOptions = {}): SsrfCheck
     return { safe: true };
   }
 
-  // Block file:// and other dangerous protocols
+  // Block dangerous protocols: file://, ftp://, etc.
   if (parsed.protocol === 'file:') {
     return { safe: false, reason: 'file:// URLs are not allowed in MCP tool arguments', blockedUrl: raw };
+  }
+  if (parsed.protocol === 'ftp:') {
+    return { safe: false, reason: 'ftp:// URLs are not allowed in MCP tool arguments', blockedUrl: raw };
   }
 
   // Only evaluate http/https further for SSRF

@@ -417,8 +417,26 @@ export function createEvaluateRoutes(
         });
       }
 
+      // Load the effective policy for this tenant (custom if set, else default)
+      let effectivePolicy = DEFAULT_POLICY;
+      if (tenantId !== 'demo') {
+        try {
+          const customPolicyRaw = await db.getCustomPolicy(tenantId);
+          if (customPolicyRaw) {
+            const parsed = JSON.parse(customPolicyRaw) as unknown;
+            if (Array.isArray(parsed)) {
+              effectivePolicy = { ...DEFAULT_POLICY, rules: parsed as typeof DEFAULT_POLICY['rules'] };
+            } else if (parsed && typeof parsed === 'object') {
+              effectivePolicy = parsed as typeof DEFAULT_POLICY;
+            }
+          }
+        } catch {
+          // Fall back to default policy if custom policy is corrupt/unavailable
+        }
+      }
+
       const engine = new PolicyEngine();
-      engine.registerDocument(DEFAULT_POLICY);
+      engine.registerDocument(effectivePolicy);
 
       const resolvedAgentId = req.agent ? req.agent.name : 'quick-eval';
       const actionRequest: ActionRequest = {
@@ -441,7 +459,7 @@ export function createEvaluateRoutes(
       const start = performance.now();
       let decision: PolicyDecision;
       try {
-        decision = engine.evaluate(actionRequest, ctx, DEFAULT_POLICY.id);
+        decision = engine.evaluate(actionRequest, ctx, effectivePolicy.id);
       } catch (_e: unknown) {
         return res.status(500).json({ error: 'Evaluation failed. Please try again.' });
       }

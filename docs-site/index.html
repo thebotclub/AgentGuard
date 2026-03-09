@@ -11,8 +11,9 @@
 <meta property="og:description" content="AgentGuard developer documentation. API reference, TypeScript & Python SDK guides, policy engine, compliance templates.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://docs.agentguard.tech">
-<meta property="og:image" content="https://agentguard.tech/icon-512.png">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://agentguard.tech/social-og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://agentguard.tech/social-og.png">
 <meta name="twitter:title" content="AgentGuard Docs">
 <meta name="twitter:description" content="API reference, SDK guides, and integration examples for AgentGuard.">
 <link rel="canonical" href="https://docs.agentguard.tech">
@@ -216,6 +217,8 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
     <div class="nav-group">
       <div class="nav-group-title">Resources</div>
       <a href="#sdk-telemetry" class="nav-link">SDK Telemetry <span class="badge-new">NEW</span></a>
+      <a href="#field-reference" class="nav-link">Field Reference</a>
+      <a href="#self-hosted" class="nav-link">Self-Hosted</a>
       <a href="#errors" class="nav-link">Error Handling</a>
       <a href="#playground" class="nav-link">Playground</a>
       <a href="https://agentguard.tech" class="nav-link">← Back to site</a>
@@ -260,7 +263,11 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 <div class="code-header"><span>curl</span></div>
 <pre><code>curl -X POST https://api.agentguard.tech/api/v1/signup \
   -H "Content-Type: application/json" \
-  -d '{"name": "Acme Corp", "email": "security@acme.com"}'</code></pre>
+  -d '{
+    "name": "My Company",
+    "email": "security@acme.com",
+    "password": "your-secure-password"
+  }'</code></pre>
 <p>Response includes your <code>apiKey</code> (format: <code>ag_live_</code> + 32 hex chars). <strong>Store it securely — it's only shown once.</strong></p>
 <p>Your <code>ag_live_*</code> tenant key works directly with <code>/api/v1/evaluate</code> — you can start evaluating immediately without any additional setup.</p>
 
@@ -550,6 +557,15 @@ guard.get_analytics_usage(period="7d", group_by="agent")
 # Feedback (v0.8.0)
 guard.submit_feedback(evaluation_id="...", rating=5, comment="Accurate block")</code></pre>
 
+<h3>Local Evaluation Mode</h3>
+<p>Enable <code>localEval: true</code> to run policy evaluation in-process without a network call. Requires a locally loaded policy file. Useful for offline environments, CI, and minimising latency.</p>
+<pre><code>import { AgentGuard } from '@the-bot-club/agentguard';
+
+const guard = new AgentGuard({
+  apiKey: 'ag_live_...',
+  localEval: true   // evaluate against local policy, no API call for evaluate
+});</code></pre>
+
 <div class="callout callout-info"><strong>CJS + ESM supported.</strong> The TypeScript SDK works with both <code>require()</code> and <code>import</code>.</div>
 
 
@@ -573,7 +589,16 @@ guard.submit_feedback(evaluation_id="...", rating=5, comment="Accurate block")</
       <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
       <tr><td>name</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Company or project name</td></tr>
       <tr><td>email</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Contact email</td></tr>
+      <tr><td>password</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Account password (min 8 chars)</td></tr>
     </table>
+    <h4>Example — curl</h4>
+<pre><code>curl -X POST https://api.agentguard.tech/api/v1/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Company",
+    "email": "security@mycompany.com",
+    "password": "your-secure-password"
+  }'</code></pre>
     <h4>Response — 201</h4>
 <pre><code>{
   "tenantId": "a80dd96c-...",
@@ -1297,11 +1322,12 @@ jobs:
     <h4>Request Body</h4>
     <table class="params">
       <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
-      <tr><td>text</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Text to scan for PII (max 100,000 chars)</td></tr>
-      <tr><td>policy</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td><code>detect</code> | <code>redact</code> | <code>mask</code> — default: <code>detect</code></td></tr>
+      <tr><td>content</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Text to scan for PII (max 100,000 chars). Also accepted as <code>text</code> for backwards compatibility.</td></tr>
+      <tr><td>mode</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td><code>detect</code> | <code>redact</code> — default: <code>detect</code>. Use <code>redact</code> to replace PII with type tags.</td></tr>
       <tr><td>entities</td><td><span class="param-type">string[]</span></td><td><span class="param-opt">optional</span></td><td>Limit scan to specific entity types (e.g. <code>["SSN", "EMAIL"]</code>)</td></tr>
       <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Associate scan with a registered agent</td></tr>
     </table>
+    <div class="callout callout-info"><strong>Field name note.</strong> The API accepts both <code>content</code> (preferred) and <code>text</code> (accepted for backwards compatibility). New integrations should use <code>content</code>.</div>
     <h4>Response — 200 (detect mode)</h4>
 <pre><code>{
   "piiDetected": true,
@@ -1342,8 +1368,8 @@ jobs:
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
-    "text": "Customer John Smith, SSN 123-45-6789, called from +1-555-123-4567.",
-    "policy": "redact",
+    "content": "Customer John Smith, SSN 123-45-6789, called from +1-555-123-4567.",
+    "mode": "redact",
     "entities": ["SSN", "PHONE", "NAME"]
   }'</code></pre>
     <div class="callout callout-info"><strong>PII policy config.</strong> Configure auto-PII scanning on all evaluations by setting <code>pii_scan: true</code> in your tenant policy. When enabled, AgentGuard automatically scans all <code>params</code> objects on every <code>/api/v1/evaluate</code> call and appends PII findings to the response.</div>
@@ -1724,16 +1750,17 @@ jobs:
     <h4>Request Body</h4>
     <table class="params">
       <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
-      <tr><td>evaluationId</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>The <code>id</code> from an audit event (from <code>GET /api/v1/audit</code>)</td></tr>
-      <tr><td>verdict</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td><code>correct</code> | <code>false_positive</code> | <code>false_negative</code></td></tr>
+      <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>The agent ID this feedback relates to</td></tr>
+      <tr><td>rating</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td><code>positive</code> | <code>negative</code> — primary field. Also accepted as <code>verdict</code> for backwards compatibility.</td></tr>
       <tr><td>comment</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Reviewer notes (max 500 chars)</td></tr>
-      <tr><td>suggestedAction</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td><code>allow</code> | <code>block</code> | <code>monitor</code> | <code>require_approval</code></td></tr>
+      <tr><td>evaluationId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>The <code>id</code> from an audit event (from <code>GET /api/v1/audit</code>)</td></tr>
     </table>
+    <div class="callout callout-info"><strong>Field name note.</strong> The API accepts both <code>rating</code> (preferred, values: <code>"positive"</code> | <code>"negative"</code>) and <code>verdict</code> (accepted for backwards compatibility, values: <code>"correct"</code> | <code>"false_positive"</code> | <code>"false_negative"</code>). New integrations should use <code>rating</code>.</div>
     <h4>Response — 201</h4>
 <pre><code>{
   "feedbackId": "fb_abc123",
-  "evaluationId": "evt_...",
-  "verdict": "false_positive",
+  "agentId": "booking-agent",
+  "rating": "negative",
   "comment": "This domain is on our approved vendor list",
   "createdAt": "2026-03-06T14:00:00.000Z",
   "note": "Feedback logged. Policy coverage gap flagged for review."
@@ -1743,10 +1770,9 @@ jobs:
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
-    "evaluationId": "evt_block_xyz",
-    "verdict": "false_positive",
-    "comment": "vendor.com is on our approved API allowlist",
-    "suggestedAction": "allow"
+    "agentId": "booking-agent",
+    "rating": "negative",
+    "comment": "vendor.com is on our approved API allowlist"
   }'</code></pre>
   </div>
 </div>
@@ -2514,6 +2540,106 @@ guard.verify_audit_chain()
 
 
 <!-- ────────────────────────────────────────────────── -->
+<!-- API FIELD REFERENCE -->
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="field-reference">API Field Reference</h2>
+<p>Quick reference for common request field names across core endpoints.</p>
+
+<h3>POST /api/v1/signup</h3>
+<table class="params">
+  <tr><th>Field</th><th>Type</th><th></th><th>Notes</th></tr>
+  <tr><td>email</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Contact email address</td></tr>
+  <tr><td>password</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Account password (min 8 chars)</td></tr>
+  <tr><td>name</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Company or project name</td></tr>
+</table>
+
+<h3>POST /api/v1/evaluate</h3>
+<table class="params">
+  <tr><th>Field</th><th>Type</th><th></th><th>Notes</th></tr>
+  <tr><td>tool</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Action being attempted (e.g. <code>file_read</code>, <code>http_post</code>)</td></tr>
+  <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Associate evaluation with a registered agent</td></tr>
+  <tr><td>params</td><td><span class="param-type">object</span></td><td><span class="param-opt">optional</span></td><td>Tool parameters to evaluate</td></tr>
+  <tr><td>messageHistory</td><td><span class="param-type">array</span></td><td><span class="param-opt">optional</span></td><td>Recent message history for context (role/content pairs)</td></tr>
+</table>
+
+<h3>POST /api/v1/pii/scan</h3>
+<table class="params">
+  <tr><th>Field</th><th>Type</th><th></th><th>Notes</th></tr>
+  <tr><td>content</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Text to scan. Also accepted as <code>text</code> (backwards compat)</td></tr>
+  <tr><td>mode</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td><code>"detect"</code> | <code>"redact"</code> — default: <code>"detect"</code></td></tr>
+</table>
+
+<h3>POST /api/v1/feedback</h3>
+<table class="params">
+  <tr><th>Field</th><th>Type</th><th></th><th>Notes</th></tr>
+  <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Agent this feedback relates to</td></tr>
+  <tr><td>rating</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td><code>"positive"</code> | <code>"negative"</code>. Also accepted as <code>verdict</code> (backwards compat)</td></tr>
+  <tr><td>comment</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Reviewer notes (max 500 chars)</td></tr>
+</table>
+
+
+<!-- ────────────────────────────────────────────────── -->
+<!-- SELF-HOSTED DEPLOYMENT -->
+<!-- ────────────────────────────────────────────────── -->
+<h2 id="self-hosted">Self-Hosted Deployment</h2>
+<p>Run AgentGuard on your own infrastructure. All features — policy enforcement, audit trail, HITL approvals, and the dashboard — run on your hardware. Self-hosted configuration files live in the <code>self-hosted/</code> directory of the repo.</p>
+
+<div class="callout callout-tip"><strong>Free tier included.</strong> Self-hosted is free for up to 25,000 evaluation events/month with 3 agent seats. No license key required to get started.</div>
+
+<h3>Prerequisites</h3>
+<ul style="color:var(--text-dim);margin-left:24px;margin-bottom:16px;line-height:2">
+  <li><strong>Docker</strong> ≥ 24.0 — <a href="https://docs.docker.com/get-docker/" target="_blank" rel="noopener">Install Docker</a></li>
+  <li><strong>Docker Compose</strong> ≥ 2.20 — included with Docker Desktop</li>
+  <li><strong>Port 8080</strong> open for the AgentGuard API + Dashboard</li>
+  <li>Minimum: 1 CPU core, 512 MB RAM (2 GB recommended for production)</li>
+</ul>
+
+<h3>Quick Start</h3>
+<pre><code># Clone the repo (or just download the self-hosted/ directory)
+git clone https://github.com/0nebot/agentguard.git
+cd agentguard/self-hosted
+
+# Configure environment
+cp .env.example .env
+# Edit .env — set a strong PG_PASSWORD at minimum
+
+# Start all services
+docker compose up -d</code></pre>
+
+<p>Docker pulls the images, starts Postgres and Redis with health checks, then starts AgentGuard once the database is ready (~30–60 seconds on first run). Open <strong>http://localhost:8080</strong> to access the dashboard.</p>
+
+<h3>Free Tier</h3>
+<table class="params">
+  <tr><th>Feature</th><th>Free Limit</th></tr>
+  <tr><td>API evaluation events</td><td><strong>25,000 / month</strong></td></tr>
+  <tr><td>Agent seats</td><td>3</td></tr>
+  <tr><td>Concurrent HITL gates</td><td>3</td></tr>
+  <tr><td>Audit log retention</td><td>7 days</td></tr>
+  <tr><td>Policy engine</td><td>✅ Full rules-based</td></tr>
+  <tr><td>Dashboard</td><td>✅ Full access</td></tr>
+</table>
+
+<h3>License Key Setup (Pro / Enterprise)</h3>
+<p>Purchase a license at <a href="https://agentguard.tech/pricing" target="_blank" rel="noopener">agentguard.tech/pricing</a>, then add your key to <code>.env</code>:</p>
+<pre><code>AGENTGUARD_LICENSE_KEY=AGKEY-xxxx...xxxx</code></pre>
+<pre><code># Restart to activate
+docker compose restart agentguard</code></pre>
+<p>License is validated locally (Ed25519 signature) — no internet required after initial activation.</p>
+
+<h3>Configuration Reference</h3>
+<table class="params">
+  <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+  <tr><td>DATABASE_URL</td><td><em>auto-set</em></td><td>Full Postgres connection string (set automatically from <code>PG_PASSWORD</code>)</td></tr>
+  <tr><td>REDIS_URL</td><td><em>auto-set</em></td><td>Redis connection URL (set automatically)</td></tr>
+  <tr><td>AGENTGUARD_LICENSE_KEY</td><td><em>empty</em></td><td>License key — leave blank for Free tier</td></tr>
+  <tr><td>PG_PASSWORD</td><td><em>required</em></td><td>PostgreSQL password — use <code>openssl rand -hex 32</code> to generate</td></tr>
+  <tr><td>NODE_ENV</td><td><code>production</code></td><td>Runtime environment</td></tr>
+</table>
+
+<div class="callout callout-info"><strong>Full self-hosted docs</strong> are in <code>self-hosted/README.md</code> in the repo — includes troubleshooting, security hardening, backup guidance, and custom port configuration.</div>
+
+
+<!-- ────────────────────────────────────────────────── -->
 <!-- ERRORS -->
 <!-- ────────────────────────────────────────────────── -->
 <h2 id="errors">Error Handling</h2>
@@ -2588,7 +2714,7 @@ guard.verify_audit_chain()
   <div>AgentGuard © 2026 — Built by <a href="https://linkedin.com/in/hanikashi" style="color:var(--accent-hi)">Hani Kashi</a></div>
   <div style="display:flex;gap:20px">
     <a href="https://agentguard.tech" style="color:#6b7280">Home</a>
-    <a href="https://github.com/AgentGuard-tech/agentguard" style="color:#6b7280">GitHub</a>
+    <a href="https://github.com/0nebot" style="color:#6b7280">GitHub</a>
     <a href="mailto:hello@agentguard.tech" style="color:#6b7280">Contact</a>
   </div>
 </div>

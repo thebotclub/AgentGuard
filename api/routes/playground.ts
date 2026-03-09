@@ -27,7 +27,7 @@ export function createPlaygroundRoutes(
   // ── POST /api/v1/playground/session ──────────────────────────────────────
   router.post(
     '/api/v1/playground/session',
-    auth.optionalTenantAuth,
+    auth.requireEvaluateAuth,
     async (req: Request, res: Response) => {
       if (sessions.size >= MAX_SESSIONS) {
         return res
@@ -85,7 +85,7 @@ export function createPlaygroundRoutes(
   // ── POST /api/v1/playground/evaluate ─────────────────────────────────────
   router.post(
     '/api/v1/playground/evaluate',
-    auth.optionalTenantAuth,
+    auth.requireEvaluateAuth,
     async (req: Request, res: Response) => {
       const ks = await getGlobalKillSwitch(db);
       const tenantId = req.tenantId ?? 'demo';
@@ -233,6 +233,7 @@ export function createPlaygroundRoutes(
   // ── GET /api/v1/playground/audit/:sessionId ───────────────────────────────
   router.get(
     '/api/v1/playground/audit/:sessionId',
+    auth.requireEvaluateAuth,
     (req: Request, res: Response) => {
       const sid = req.params['sessionId'] as string;
       if (!sid || typeof sid !== 'string' || sid.length > 100) {

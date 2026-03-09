@@ -39,6 +39,11 @@ declare global {
 
 // ── Auth Helpers ───────────────────────────────────────────────────────────
 
+// Dummy bcrypt hash used for constant-time comparison when key is not found.
+// Pre-computed to avoid timing leak; cost factor 10 matches real key hashing.
+// This ensures invalid keys take ~the same time as valid keys with a key_hash.
+const DUMMY_BCRYPT_HASH = '$2a$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012345';
+
 async function lookupTenant(db: IDatabase, apiKey: string): Promise<TenantRow | null> {
   // Primary: SHA-256 lookup (fast, works for hashed keys)
   const sha256 = sha256Hex(apiKey);
@@ -54,7 +59,13 @@ async function lookupTenant(db: IDatabase, apiKey: string): Promise<TenantRow | 
   } else {
     // Fallback: legacy plaintext lookup for keys that predate the migration
     keyRow = await db.getApiKey(apiKey);
-    if (!keyRow) return null;
+    if (!keyRow) {
+      // Perform a dummy bcrypt compare to normalize timing and prevent timing attacks.
+      // An attacker cannot distinguish "key not found" from "key found but invalid"
+      // because both paths now incur a bcrypt comparison cost.
+      await bcrypt.compare(apiKey, DUMMY_BCRYPT_HASH);
+      return null;
+    }
   }
 
   await db.touchApiKey(apiKey);

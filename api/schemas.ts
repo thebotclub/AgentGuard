@@ -39,13 +39,53 @@ export const SignupRequestSchema = z.object({
     .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format'),
 });
 
+// ── Agent name sanitization ────────────────────────────────────────────────
+// Allowlist: alphanumeric, spaces, hyphens, underscores, dots, parentheses
+// Rejects HTML tags, script injections, SQL injection patterns
+// Deliberately excludes: <, >, ", ', `, ;, :, /, \, =, (, ) for security
+const SAFE_AGENT_NAME_RE = /^[a-zA-Z0-9 \-_.()]+$/;
+
+// Patterns that indicate XSS / injection attempts — reject before allowlist check
+const DANGEROUS_NAME_PATTERNS: RegExp[] = [
+  /[<>]/,                    // HTML tags
+  /javascript\s*:/i,         // javascript: protocol
+  /on\w+\s*=/i,              // event handlers like onerror=
+  /['";`]/,                  // SQL injection delimiters
+  /--/,                      // SQL comment
+  /\/\*/,                    // SQL block comment
+  /union\s+select/i,         // SQL UNION SELECT
+  /drop\s+table/i,           // SQL DROP TABLE
+  /script/i,                 // "script" keyword itself
+  /eval\s*\(/i,              // eval()
+  /expression\s*\(/i,        // CSS expression()
+];
+
+function sanitizeAgentName(name: string): string {
+  // Strip HTML tags
+  const stripped = name.replace(/<[^>]*>/g, '').trim();
+  return stripped;
+}
+
+function isValidAgentName(name: string): boolean {
+  // Check for dangerous patterns in the ORIGINAL name (before stripping)
+  // This catches cases like <script>alert(1)</script> → strips to "alert(1)"
+  // We want to reject the original if it contained script-like content
+  return SAFE_AGENT_NAME_RE.test(name) && !DANGEROUS_NAME_PATTERNS.some((p) => p.test(name));
+}
+
 // ── POST /api/v1/agents ───────────────────────────────────────────────────
 export const CreateAgentRequestSchema = z.object({
   name: z.string({ error: 'name is required' })
     .min(1, 'name is required')
-    .max(200, 'name too long (max 200 chars)'),
+    .max(200, 'name too long (max 200 chars)')
+    .refine(
+      (v) => isValidAgentName(v.trim()),
+      'Agent name contains invalid characters. Use only letters, digits, spaces, hyphens, underscores, and dots.',
+    )
+    .transform((v) => v.trim()),
   framework: z.string().optional(),
-  description: z.string().max(1000).optional(),
+  description: z.string().max(1000).optional()
+    .transform((v) => v ? v.replace(/<[^>]*>/g, '').replace(/javascript\s*:/gi, '').trim() : v),
   policyScope: z.array(z.string()).optional(),
   // legacy snake_case alias used in existing routes
   policy_scope: z.array(z.string()).optional(),
@@ -155,18 +195,27 @@ export const RegisterMcpServerRequestSchema = z.object({
 
 // ── POST /api/v1/pii/scan ─────────────────────────────────────────────────
 export const PIIScanRequestSchema = z.object({
-  content: z.string().min(1, 'content is required').max(50000, 'content too long (max 50000 chars)'),
+  content: z.string().min(1).max(50000, 'content too long (max 50000 chars)').optional(),
+  text: z.string().min(1).max(50000, 'text too long (max 50000 chars)').optional(), // alias for content
   dryRun: z.boolean().optional(),
+}).refine((data) => data.content || data.text, {
+  message: 'content is required',
+  path: ['content'],
 });
 
 // ── POST /api/v1/feedback ──────────────────────────────────────────────────
 export const FeedbackRequestSchema = z.object({
-  rating: z.number({ error: 'rating is required and must be an integer between 1 and 5' })
+  rating: z.number()
     .int()
     .min(1, 'rating must be between 1 and 5')
-    .max(5, 'rating must be between 1 and 5'),
+    .max(5, 'rating must be between 1 and 5')
+    .optional(),
+  verdict: z.enum(['positive', 'negative', 'neutral']).optional(), // deprecated alias for rating
   comment: z.string().max(2000, 'comment too long (max 2000 chars)').optional(),
   agent_id: z.string().max(100).optional(),
+}).refine((data) => data.rating !== undefined || data.verdict !== undefined, {
+  message: 'rating is required and must be an integer between 1 and 5',
+  path: ['rating'],
 });
 
 // ── POST /api/v1/telemetry ─────────────────────────────────────────────────

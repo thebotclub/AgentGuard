@@ -6,15 +6,96 @@
  * DELETE /api/v1/webhooks/:id  — remove a webhook
  */
 import { Router, Request, Response } from 'express';
+import dns from 'node:dns/promises';
+import crypto from 'node:crypto';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 
 // ── SSRF URL Validation ────────────────────────────────────────────────────
+
+/**
+ * Check if an IPv4 address string is in a private/reserved range.
+ */
+function isPrivateIPv4(ip: string): boolean {
+  const m = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!m) return false;
+  const a = parseInt(m[1]!, 10);
+  const b = parseInt(m[2]!, 10);
+  const c = parseInt(m[3]!, 10);
+  return (
+    a === 0 ||                               // 0.0.0.0/8
+    a === 10 ||                              // 10.0.0.0/8 private
+    a === 127 ||                             // 127.0.0.0/8 loopback
+    (a === 100 && b >= 64 && b <= 127) ||   // 100.64.0.0/10 CGNAT
+    (a === 169 && b === 254) ||              // 169.254.0.0/16 link-local
+    (a === 172 && b >= 16 && b <= 31) ||    // 172.16.0.0/12 private
+    (a === 192 && b === 168)                 // 192.168.0.0/16 private
+  );
+}
+
+/**
+ * Check if an IPv6 address string is in a private/reserved range.
+ * Input should be the bare address (brackets stripped).
+ */
+function isPrivateIPv6(addr: string): boolean {
+  const lower = addr.toLowerCase();
+  // Loopback
+  if (lower === '::1' || lower === '0:0:0:0:0:0:0:1') return true;
+  // Link-local: fe80::/10
+  if (/^fe[89ab][0-9a-f]:/i.test(lower) || lower.startsWith('fe80:')) return true;
+  // ULA: fc00::/7 (fc and fd prefixes)
+  if (/^f[cd][0-9a-f]{2}:/i.test(lower)) return true;
+  // IPv4-mapped IPv6 ::ffff:x.x.x.x
+  const v4mapped = lower.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (v4mapped) return isPrivateIPv4(v4mapped[1]!);
+  return false;
+}
+
+/**
+ * Check if a resolved IP (v4 or v6) is private/internal.
+ */
+function isPrivateIP(ip: string): boolean {
+  // Detect IPv6 by presence of ':' 
+  if (ip.includes(':')) return isPrivateIPv6(ip);
+  return isPrivateIPv4(ip);
+}
+
+/**
+ * Patterns for hostname-based bypass attempts.
+ * Blocks: localtest.me, nip.io, sslip.io, xip.io, hex IPs like 0x7f000001, octal IPs.
+ */
+const BLOCKED_HOSTNAME_PATTERNS: RegExp[] = [
+  /^localhost$/i,
+  /\.local$/i,
+  /\.internal$/i,
+  /\.localhost$/i,
+  /^local$/i,
+  /^internal$/i,
+  /\.localtest\.me$/i,       // localtest.me resolves to 127.0.0.1
+  /^localtest\.me$/i,
+  /\.nip\.io$/i,             // nip.io / xip.io DNS rebinding
+  /\.xip\.io$/i,
+  /\.sslip\.io$/i,
+  /^0x[0-9a-f]+$/i,          // hex IP like 0x7f000001
+  /^0\d+\.\d+\.\d+\.\d+$/,  // octal first octet like 0177.0.0.1
+  /^::$/,                    // IPv6 all-zeros
+  /^\[::\]$/,
+];
+
+const BLOCKED_HOSTNAMES_EXACT = new Set([
+  '0.0.0.0',
+  '[::]',
+  '::',
+  'ip6-localhost',
+  'ip6-loopback',
+]);
+
 /**
  * Validate a webhook URL for SSRF prevention.
  * Returns null on success, or an error message string on failure.
+ * This is an async function to support DNS resolution checks.
  */
-function validateWebhookUrl(rawUrl: string): string | null {
+async function validateWebhookUrl(rawUrl: string): Promise<string | null> {
   // 1. Parse URL
   let parsed: URL;
   try {
@@ -30,50 +111,56 @@ function validateWebhookUrl(rawUrl: string): string | null {
 
   const hostname = parsed.hostname.toLowerCase();
 
-  // 3. Reject private/internal hostnames by name
-  const privateHostnamePatterns = [
-    /^localhost$/,
-    /\.local$/,
-    /\.internal$/,
-    /\.localhost$/,
-    /^local$/,
-    /^internal$/,
-  ];
-  for (const pattern of privateHostnamePatterns) {
+  // 3. Reject exact blocked hostnames
+  if (BLOCKED_HOSTNAMES_EXACT.has(hostname)) {
+    return 'url must not point to a private or internal network address';
+  }
+
+  // 4. Reject private/internal hostnames by pattern
+  for (const pattern of BLOCKED_HOSTNAME_PATTERNS) {
     if (pattern.test(hostname)) {
       return 'url must not point to a private or internal network address';
     }
   }
 
-  // 4. Reject IPv4 literals in private ranges
-  const ipv4Literal = hostname.match(
-    /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$|^::ffff:(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/,
-  );
-  if (ipv4Literal) {
-    const a = parseInt(ipv4Literal[1] ?? ipv4Literal[5]!, 10);
-    const b = parseInt(ipv4Literal[2] ?? ipv4Literal[6]!, 10);
-    const c = parseInt(ipv4Literal[3] ?? ipv4Literal[7]!, 10);
+  // 5. Strip IPv6 brackets and check IPv6 literals directly
+  const bareHostname = hostname.startsWith('[') && hostname.endsWith(']')
+    ? hostname.slice(1, -1)
+    : hostname;
 
-    const isPrivate =
-      a === 10 ||
-      a === 127 ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      (a === 0);
-
-    if (isPrivate) {
+  // Check if it's an IPv4 literal
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(bareHostname)) {
+    if (isPrivateIPv4(bareHostname)) {
       return 'url must not point to a private or internal network address';
     }
+    // Public IPv4 literal — no DNS needed, but still pass through DNS block check below
+    return null;
   }
 
-  // 5. Reject IPv6 loopback and ULA
-  const ipv6 = hostname.replace(/^\[|\]$/g, '');
-  if (ipv6 === '::1' || ipv6 === '0:0:0:0:0:0:0:1') {
-    return 'url must not point to a private or internal network address';
+  // Check if it's an IPv6 literal
+  if (bareHostname.includes(':')) {
+    if (isPrivateIPv6(bareHostname)) {
+      return 'url must not point to a private or internal network address';
+    }
+    // Public IPv6 literal
+    return null;
   }
-  if (/^(fc|fd)[0-9a-f]{0,2}:/i.test(ipv6)) {
-    return 'url must not point to a private or internal network address';
+
+  // 6. DNS resolution check — resolve hostname and verify all IPs are public
+  // This prevents DNS rebinding attacks and hostname alias bypasses
+  try {
+    const records = await dns.lookup(hostname, { all: true });
+    if (!records || records.length === 0) {
+      return 'url hostname could not be resolved';
+    }
+    for (const record of records) {
+      if (isPrivateIP(record.address)) {
+        return `url resolves to a private or internal IP address (${record.address})`;
+      }
+    }
+  } catch {
+    // DNS resolution failed — reject to be safe
+    return 'url hostname could not be resolved';
   }
 
   return null; // valid
@@ -102,7 +189,7 @@ export function createWebhookRoutes(
         return res.status(400).json({ error: 'url too long (max 2000 chars)' });
       }
 
-      const urlValidationError = validateWebhookUrl(url);
+      const urlValidationError = await validateWebhookUrl(url);
       if (urlValidationError) {
         return res.status(400).json({ error: urlValidationError });
       }
@@ -126,7 +213,7 @@ export function createWebhookRoutes(
           url,
           JSON.stringify(eventList),
           secret && typeof secret === 'string'
-            ? require('crypto').createHash('sha256').update(secret).digest('hex')
+            ? crypto.createHash('sha256').update(secret).digest('hex')
             : null,
         );
 

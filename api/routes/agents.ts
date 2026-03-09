@@ -95,6 +95,34 @@ export function createAgentRoutes(
     },
   );
 
+  // ── GET /api/v1/agents/:id ────────────────────────────────────────────────
+  router.get(
+    '/api/v1/agents/:id',
+    auth.requireTenantAuth,
+    async (req: Request, res: Response) => {
+      const tenantId = req.tenantId!;
+      const agentRowId = req.params['id'] as string;
+
+      if (!agentRowId || typeof agentRowId !== 'string') {
+        return res.status(400).json({ error: 'Invalid agent id' });
+      }
+
+      const existing = await db.getAgentById(agentRowId, tenantId);
+      if (!existing) {
+        return res.status(404).json({ error: 'Agent not found' });
+      }
+
+      return res.json({
+        id: existing.id,
+        tenantId: existing.tenant_id,
+        name: existing.name,
+        policyScope: JSON.parse(existing.policy_scope) as string[],
+        active: existing.active === 1,
+        createdAt: existing.created_at,
+      });
+    },
+  );
+
   // ── DELETE /api/v1/agents/:id ─────────────────────────────────────────────
   router.delete(
     '/api/v1/agents/:id',

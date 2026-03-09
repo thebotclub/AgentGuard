@@ -27,7 +27,15 @@ export function createFeedbackRoutes(
         return res.status(400).json({ error: parsed.error.issues[0]!.message });
       }
 
-      const { rating, comment, agent_id } = parsed.data;
+      const { rating: ratingField, verdict, comment, agent_id } = parsed.data;
+
+      // Map verdict to numeric rating for backward compatibility
+      function verdictToRating(v: string): number {
+        if (v === 'positive') return 5;
+        if (v === 'negative') return 1;
+        return 3; // neutral
+      }
+      const rating = ratingField ?? verdictToRating(verdict!);
 
       try {
         const row = await db.insertFeedback(tenantId, agent_id ?? null, rating, comment ?? null);

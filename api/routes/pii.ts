@@ -28,12 +28,13 @@ export function createPIIRoutes(
 
       const parsed = PIIScanRequestSchema.safeParse(req.body ?? {});
       if (!parsed.success) {
-        return res.status(400).json({ error: parsed.data ?? parsed.error.issues[0]!.message });
+        return res.status(400).json({ error: parsed.error.issues[0]!.message });
       }
 
-      const { content, dryRun } = parsed.data;
+      const { content, text, dryRun } = parsed.data;
+      const inputText = (content ?? text)!; // at least one is guaranteed by the refine() check
 
-      const result = await defaultDetector.scan(content);
+      const result = await defaultDetector.scan(inputText);
 
       // Omit raw entity text from response — callers see type/position/score only
       const safeEntities = result.entities.map(({ text: _text, ...rest }) => rest);
