@@ -12,7 +12,7 @@
  */
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import { SignupRequest } from '../schemas.js';
+import { SignupRequest, KillswitchRequestSchema } from '../schemas.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { signupRateLimit } from '../middleware/rate-limit.js';
@@ -187,14 +187,17 @@ export function createAuthRoutes(
     auth.requireTenantAuth,
     async (req: Request, res: Response) => {
       const tenant = req.tenant!;
-      const { active } = req.body ?? {};
 
-      let newState: boolean;
-      if (typeof active === 'boolean') {
-        newState = active;
-      } else {
-        newState = tenant.kill_switch_active === 0;
+      // Strict validation: only accept {"active": true} or {"active": false}
+      const parsed = KillswitchRequestSchema.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: parsed.error.issues[0]?.message ?? 'Invalid request body',
+          expected: 'Body must be {"active": true} or {"active": false}',
+        });
       }
+
+      const newState = parsed.data.active;
 
       const at = newState ? new Date().toISOString() : null;
       await db.updateTenantKillSwitch(tenant.id, newState ? 1 : 0, at);
@@ -219,15 +222,17 @@ export function createAuthRoutes(
     '/api/v1/admin/killswitch',
     auth.requireAdminAuth,
     async (req: Request, res: Response) => {
-      const { active } = req.body ?? {};
-      const ks = await getGlobalKillSwitch(db);
-
-      let newState: boolean;
-      if (typeof active === 'boolean') {
-        newState = active;
-      } else {
-        newState = !ks.active;
+      // Strict validation: only accept {"active": true} or {"active": false}
+      const parsed = KillswitchRequestSchema.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: parsed.error.issues[0]?.message ?? 'Invalid request body',
+          expected: 'Body must be {"active": true} or {"active": false}',
+        });
       }
+
+      const newState = parsed.data.active;
+      const ks = await getGlobalKillSwitch(db);
 
       await setGlobalKillSwitch(db, newState);
       console.log(`[admin/killswitch] global: ${ks.active} → ${newState}`);

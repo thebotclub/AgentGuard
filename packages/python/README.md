@@ -371,6 +371,122 @@ for a in activity["agents"]:
 
 ---
 
+## Framework Integrations
+
+One-liner guards for popular Python AI agent frameworks.
+
+### LangChain
+
+```python
+from agentguard.integrations import langchain_guard
+
+handler = langchain_guard(api_key="ag_...")
+
+# Pass as a callback to AgentExecutor — every tool call is evaluated automatically:
+executor = AgentExecutor.from_agent_and_tools(
+    agent=agent,
+    tools=tools,
+    callbacks=[handler],
+)
+```
+
+Blocked tool calls raise `AgentGuardBlockError`:
+
+```python
+from agentguard.integrations import langchain_guard, AgentGuardBlockError
+
+handler = langchain_guard(api_key="ag_...", agent_id="my-agent")
+try:
+    handler.on_tool_start({"name": "exec"}, '{"cmd": "rm -rf /"}')
+except AgentGuardBlockError as e:
+    print(f"Blocked: {e.reason}")
+    print(f"Try instead: {e.alternatives}")
+    print(f"Docs: {e.docs}")
+```
+
+---
+
+### OpenAI
+
+```python
+from openai import OpenAI
+from agentguard.integrations import openai_guard
+
+client = OpenAI(api_key="sk-...")
+guarded = openai_guard(client, api_key="ag_...")
+
+# Use `guarded` exactly like the regular OpenAI client:
+response = guarded.chat.completions.create(
+    model="gpt-4o",
+    messages=[...],
+    tools=[...],
+)
+
+# Check which tool calls were blocked before executing them:
+if response._agentguard and response._agentguard["has_blocks"]:
+    for decision in response._agentguard["decisions"]:
+        if decision["decision"] == "block":
+            print(f"Blocked {decision['tool']}: {decision['reason']}")
+            print(f"Suggestion: {decision['suggestion']}")
+```
+
+---
+
+### CrewAI
+
+```python
+from agentguard.integrations import crewai_guard, AgentGuardBlockError
+
+guard = crewai_guard(api_key="ag_...")
+
+# In your agent tool execution hook — raises on block:
+try:
+    guard.before_tool_execution("send_email", {"to": "boss@example.com"})
+    # Safe to execute if we reach here
+    result = send_email(to="boss@example.com")
+except AgentGuardBlockError as e:
+    print(f"Blocked: {e.reason}")
+    print(f"Suggestion: {e.suggestion}")
+
+# Batch evaluate (no raise — caller handles blocks):
+results = guard.evaluate_batch([
+    {"tool": "file_read", "args": {"path": "/data/report.csv"}},
+    {"tool": "send_email", "args": {"to": "boss@example.com"}},
+])
+blocked = [r for r in results if r["decision"] == "block"]
+print(f"{len(blocked)}/{len(results)} tool calls blocked")
+```
+
+---
+
+### Batch Evaluate
+
+Evaluate multiple tool calls with a single API call:
+
+```python
+from agentguard import AgentGuard
+
+guard = AgentGuard(api_key="ag_...")
+
+# The core client supports batch evaluation directly:
+from agentguard.integrations import crewai_guard
+
+batch_guard = crewai_guard(api_key="ag_...")
+results = batch_guard.evaluate_batch([
+    {"tool": "file_read",  "args": {"path": "/data/report.csv"}},
+    {"tool": "send_email", "args": {"to": "boss@example.com"}},
+    {"tool": "exec",       "args": {"cmd": "rm -rf /"}},
+])
+
+for r in results:
+    status = "✅" if r["decision"] == "allow" else "🚫"
+    print(f"{status} {r['tool']}: {r['decision']}")
+    if r["decision"] == "block":
+        print(f"   Reason: {r['reason']}")
+```
+
+---
+
 ## Complete Example — LangChain-style Agent
 
 ```python

@@ -19,6 +19,34 @@ export { AgentGuard } from './client.js';
 export { LocalPolicyEngine } from './local-policy-engine.js';
 export type { EvaluateResult } from './local-policy-engine.js';
 
+// ─── Framework Integrations ───────────────────────────────────────────────────
+
+export { langchainGuard, AgentGuardCallbackHandler } from '../integrations/langchain.js';
+export type { LangChainGuardOptions } from '../integrations/langchain.js';
+
+export { openaiGuard } from '../integrations/openai.js';
+export type {
+  OpenAIGuardOptions,
+  AgentGuardToolDecision,
+  AgentGuardBatchResult,
+} from '../integrations/openai.js';
+
+export { crewaiGuard } from '../integrations/crewai.js';
+export type {
+  CrewAIGuardOptions,
+  CrewAIGuard,
+  CrewAIGuardResult,
+} from '../integrations/crewai.js';
+
+export {
+  expressMiddleware,
+  fastifyMiddleware,
+  connectMiddleware,
+} from '../integrations/express.js';
+export type { ExpressMiddlewareOptions } from '../integrations/express.js';
+
+export { AgentGuardBlockError } from '../integrations/errors.js';
+
 // Auto-register exports
 export {
   autoRegister,

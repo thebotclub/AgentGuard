@@ -143,7 +143,8 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     if (bearerToken) {
       const jwksUrl = process.env['JWT_JWKS_URL'];
       if (!jwksUrl) {
-        res.status(503).json({ error: 'JWT authentication not configured (JWT_JWKS_URL not set)' });
+        // 401 is correct — the auth method is not available, not a server error
+        res.status(401).json({ error: 'JWT authentication not configured. Use X-API-Key instead.' });
         return;
       }
       const result = await verifyJwt(bearerToken, jwksUrl);
@@ -209,7 +210,8 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     if (bearerToken) {
       const jwksUrl = process.env['JWT_JWKS_URL'];
       if (!jwksUrl) {
-        res.status(503).json({ error: 'JWT authentication not configured (JWT_JWKS_URL not set)' });
+        // 401 is correct — the auth method is not available, not a server error
+        res.status(401).json({ error: 'JWT authentication not configured. Use X-API-Key instead.' });
         return;
       }
       const result = await verifyJwt(bearerToken, jwksUrl);

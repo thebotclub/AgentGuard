@@ -10,6 +10,7 @@ import dns from 'node:dns/promises';
 import crypto from 'node:crypto';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
+import { WEBHOOK_EVENT_NAMES } from '../schemas.js';
 
 // ── SSRF URL Validation ────────────────────────────────────────────────────
 
@@ -208,15 +209,15 @@ export function createWebhookRoutes(
         return res.status(400).json({ error: urlValidationError });
       }
 
+      const validEvents: readonly string[] = WEBHOOK_EVENT_NAMES;
       let eventList: string[] = ['block', 'killswitch'];
       if (Array.isArray(events)) {
-        const valid = ['block', 'killswitch', 'hitl', '*'];
         eventList = (events as unknown[]).filter(
-          (e) => typeof e === 'string' && valid.includes(e),
+          (e) => typeof e === 'string' && validEvents.includes(e),
         ) as string[];
         if (eventList.length === 0) {
           return res.status(400).json({
-            error: 'events must be a non-empty array of: block, killswitch, hitl, *',
+            error: `events must be a non-empty array of valid event names: ${WEBHOOK_EVENT_NAMES.join(', ')}`,
           });
         }
       }

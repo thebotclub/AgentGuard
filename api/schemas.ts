@@ -138,23 +138,47 @@ export const McpAdmitRequestSchema = z.object({
 });
 
 // ── POST /api/v1/killswitch (tenant & admin) ──────────────────────────────
-export const KillswitchRequestSchema = z.object({
-  active: z.boolean().optional(),
-});
+// Strictly only accepts {"active": true} or {"active": false}.
+// Unknown fields (e.g. action: "status") are rejected with 400.
+export const KillswitchRequestSchema = z
+  .object({
+    active: z.boolean({ error: '"active" must be a boolean (true or false)' }),
+  })
+  .strict({ message: 'Unknown fields are not allowed. Body must be {"active": true} or {"active": false}' });
+
+// ── Webhook event names ───────────────────────────────────────────────────
+// Accepted values: "all" (alias for "*"), "evaluate", "block", "allow",
+// "flag", "approval", "killswitch", "hitl", "*"
+export const WEBHOOK_EVENT_NAMES = [
+  'all',        // alias for "*" — receive all events
+  'evaluate',   // every evaluate call (allow & block)
+  'block',      // tool call blocked by policy
+  'allow',      // tool call allowed by policy
+  'flag',       // tool call flagged / monitored
+  'approval',   // HITL approval requested or resolved
+  'killswitch', // kill switch toggled
+  'hitl',       // human-in-the-loop event (alias for approval)
+  '*',          // wildcard — same as "all"
+] as const;
+export type WebhookEventName = (typeof WEBHOOK_EVENT_NAMES)[number];
 
 // ── POST /api/v1/webhooks ─────────────────────────────────────────────────
 export const CreateWebhookRequestSchema = z.object({
   url: z.string({ error: 'url is required' })
     .min(1, 'url is required')
     .max(2000, 'url too long (max 2000 chars)'),
-  events: z.array(z.enum(['block', 'killswitch', 'hitl', '*'])).optional(),
+  events: z.array(z.enum(WEBHOOK_EVENT_NAMES, {
+    error: `events must contain valid event names: ${WEBHOOK_EVENT_NAMES.join(', ')}`,
+  })).optional(),
   secret: z.string().optional(),
 });
 
 // ── PUT /api/v1/webhooks/:id ─────────────────────────────────────────────
 export const UpdateWebhookRequestSchema = z.object({
   url: z.string().min(1).max(2000, 'url too long (max 2000 chars)').optional(),
-  events: z.array(z.enum(['block', 'killswitch', 'hitl', '*'])).optional(),
+  events: z.array(z.enum(WEBHOOK_EVENT_NAMES, {
+    error: `events must contain valid event names: ${WEBHOOK_EVENT_NAMES.join(', ')}`,
+  })).optional(),
   secret: z.string().optional(),
   active: z.boolean().optional(),
 });
@@ -233,17 +257,20 @@ export const PIIScanRequestSchema = z.object({
 });
 
 // ── POST /api/v1/feedback ──────────────────────────────────────────────────
+// rating accepts:
+//   - string: "positive" | "negative" | "neutral"  (primary, per docs)
+//   - number: 1–5 integer                           (legacy numeric format)
+// verdict is a deprecated alias for string rating (kept for backwards compatibility)
 export const FeedbackRequestSchema = z.object({
-  rating: z.number()
-    .int()
-    .min(1, 'rating must be between 1 and 5')
-    .max(5, 'rating must be between 1 and 5')
-    .optional(),
+  rating: z.union([
+    z.enum(['positive', 'negative', 'neutral']),
+    z.number().int().min(1, 'rating must be between 1 and 5').max(5, 'rating must be between 1 and 5'),
+  ]).optional(),
   verdict: z.enum(['positive', 'negative', 'neutral']).optional(), // deprecated alias for rating
   comment: z.string().max(2000, 'comment too long (max 2000 chars)').optional(),
   agent_id: z.string().max(100).optional(),
 }).refine((data) => data.rating !== undefined || data.verdict !== undefined, {
-  message: 'rating is required and must be an integer between 1 and 5',
+  message: 'rating is required ("positive", "negative", or "neutral")',
   path: ['rating'],
 });
 

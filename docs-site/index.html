@@ -148,7 +148,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 <aside class="sidebar">
   <div class="sidebar-header">
     <a href="https://agentguard.tech" class="sidebar-logo"><img src="/agentguard-logo.svg?v=3" alt="" style="height:40px;width:40px"> AgentGuard</a>
-    <div class="sidebar-version">v0.8.0 · docs</div>
+    <div class="sidebar-version">v0.9.0 · docs</div>
   </div>
   <nav>
     <div class="nav-group">
@@ -194,6 +194,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
     </div>
     <div class="nav-group">
       <div class="nav-group-title">🤝 Integrations</div>
+      <a href="#framework-integrations" class="nav-link">Framework Integrations</a>
       <a href="#slack-hitl" class="nav-link"><span class="method method-post">POST</span> Slack HITL <span class="badge-new">NEW</span></a>
       <a href="#multi-agent" class="nav-link"><span class="method method-post">POST</span> Multi-Agent A2A <span class="badge-new">NEW</span></a>
     </div>
@@ -244,7 +245,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
   </div>
   <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
     <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">VERSION</div>
-    <div style="font-size:1.1rem;font-weight:700;color:var(--accent-hi)">v0.8.0</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--accent-hi)">v0.9.0</div>
   </div>
   <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
     <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">ENDPOINTS</div>
@@ -455,28 +456,28 @@ await guard.getDashboardStats();
 await guard.getDashboardFeed({ limit });
 await guard.getDashboardAgents();
 
-// Prompt Injection Detection (v0.8.0)
+// Prompt Injection Detection (v0.9.0)
 await guard.scanPromptInjection({ messages: [...], messageHistory: [...] });
 
-// PII Detection & Redaction (v0.8.0)
+// PII Detection & Redaction (v0.9.0)
 await guard.scanPII({ text, policy: 'redact' });
 
-// OWASP Compliance (v0.8.0)
+// OWASP Compliance (v0.9.0)
 await guard.generateOWASPReport({ agentId, controls: [...] });
 
-// MCP Policy Enforcement (v0.8.0)
+// MCP Policy Enforcement (v0.9.0)
 await guard.evaluateMCPPolicy({ serverId, toolName, arguments: {} });
 
-// Slack HITL Integration (v0.8.0)
+// Slack HITL Integration (v0.9.0)
 await guard.createSlackIntegration({ webhookUrl, channel, events });
 
-// Multi-Agent A2A (v0.8.0)
+// Multi-Agent A2A (v0.9.0)
 await guard.registerChildAgent(parentId, { name, policyInherit, ttl, budget });
 
-// Analytics (v0.8.0)
+// Analytics (v0.9.0)
 await guard.getAnalyticsUsage({ period, groupBy });
 
-// Feedback (v0.8.0)
+// Feedback (v0.9.0)
 await guard.submitFeedback({ evaluationId, rating, comment });</code></pre>
 
 <h3>Python</h3>
@@ -533,28 +534,28 @@ guard.get_cost_summary(period="24h", group_by="agent")
 # Dashboard
 guard.get_dashboard_stats()
 
-# Prompt Injection Detection (v0.8.0)
+# Prompt Injection Detection (v0.9.0)
 guard.scan_prompt_injection(messages=[...], message_history=[...])
 
-# PII Detection & Redaction (v0.8.0)
+# PII Detection & Redaction (v0.9.0)
 guard.scan_pii(text="...", policy="redact")
 
-# OWASP Compliance (v0.8.0)
+# OWASP Compliance (v0.9.0)
 guard.generate_owasp_report(agent_id="...", controls=[...])
 
-# MCP Policy Enforcement (v0.8.0)
+# MCP Policy Enforcement (v0.9.0)
 guard.evaluate_mcp_policy(server_id="...", tool_name="...", arguments={})
 
-# Slack HITL Integration (v0.8.0)
+# Slack HITL Integration (v0.9.0)
 guard.create_slack_integration(webhook_url="...", channel="#security-alerts")
 
-# Multi-Agent A2A (v0.8.0)
+# Multi-Agent A2A (v0.9.0)
 guard.register_child_agent(parent_id="...", name="child-1", policy_inherit=True, ttl=3600, budget=100)
 
-# Analytics (v0.8.0)
+# Analytics (v0.9.0)
 guard.get_analytics_usage(period="7d", group_by="agent")
 
-# Feedback (v0.8.0)
+# Feedback (v0.9.0)
 guard.submit_feedback(evaluation_id="...", rating=5, comment="Accurate block")</code></pre>
 
 <h3>Local Evaluation Mode</h3>
@@ -568,6 +569,98 @@ const guard = new AgentGuard({
 
 <div class="callout callout-info"><strong>CJS + ESM supported.</strong> The TypeScript SDK works with both <code>require()</code> and <code>import</code>.</div>
 
+<!-- ────────────────────────────────────────────────── -->
+<!-- FRAMEWORK INTEGRATIONS -->
+<!-- ────────────────────────────────────────────────── -->
+
+<h2 id="framework-integrations">Framework Integrations</h2>
+
+<p>Add AgentGuard to any agent framework with a single import. No peer dependencies required — all integrations are bundled in the SDK.</p>
+
+<div class="callout callout-tip"><strong>One-liner adoption.</strong> Drop AgentGuard into LangChain, OpenAI, CrewAI, or Express without restructuring your agent code.</div>
+
+<h3>LangChain (TypeScript)</h3>
+<pre><code>import { langchainGuard } from '@the-bot-club/agentguard';
+
+// Every tool call is evaluated before execution — blocks throw AgentGuardBlockError
+const executor = AgentExecutor.fromAgentAndTools({
+  agent,
+  tools,
+  callbacks: [langchainGuard({ apiKey: 'ag_...' })],
+});</code></pre>
+
+<h3>OpenAI (TypeScript)</h3>
+<pre><code>import { openaiGuard } from '@the-bot-club/agentguard';
+import OpenAI from 'openai';
+
+const guarded = openaiGuard(new OpenAI({ apiKey: 'sk-...' }), { apiKey: 'ag_...' });
+
+const response = await guarded.chat.completions.create({ model: 'gpt-4o', messages, tools });
+
+// Check _agentguard before executing tool calls:
+if (response._agentguard?.hasBlocks) {
+  response._agentguard.decisions
+    .filter(d => d.decision === 'block')
+    .forEach(d => console.log(`Blocked ${d.tool}: ${d.reason}`));
+}</code></pre>
+
+<h3>CrewAI (TypeScript)</h3>
+<pre><code>import { crewaiGuard } from '@the-bot-club/agentguard';
+
+const guard = crewaiGuard({ apiKey: 'ag_...' });
+
+// Throws AgentGuardBlockError if blocked; resolves otherwise:
+await guard.beforeToolExecution('send_email', { to: 'boss@example.com' });</code></pre>
+
+<h3>Express / Fastify</h3>
+<pre><code>import { expressMiddleware } from '@the-bot-club/agentguard';
+
+app.use(expressMiddleware({ apiKey: 'ag_...' }));
+
+// req.agentguard is now available in all route handlers:
+app.post('/run-agent', async (req, res) => {
+  const decision = await req.agentguard.evaluate({ tool: req.body.tool, params: req.body.params });
+  if (decision.result !== 'allow') return res.status(403).json({ error: decision.reason });
+});</code></pre>
+
+<h3>LangChain (Python)</h3>
+<pre><code>from agentguard.integrations import langchain_guard
+
+executor = AgentExecutor.from_agent_and_tools(
+    agent=agent, tools=tools,
+    callbacks=[langchain_guard(api_key="ag_...")]
+)</code></pre>
+
+<h3>OpenAI (Python)</h3>
+<pre><code>from openai import OpenAI
+from agentguard.integrations import openai_guard
+
+guarded = openai_guard(OpenAI(api_key="sk-..."), api_key="ag_...")
+response = guarded.chat.completions.create(model="gpt-4o", messages=messages, tools=tools)
+
+if response._agentguard and response._agentguard["has_blocks"]:
+    for d in response._agentguard["decisions"]:
+        if d["decision"] == "block":
+            print(f"Blocked {d['tool']}: {d['reason']}")</code></pre>
+
+<h3>CrewAI (Python)</h3>
+<pre><code>from agentguard.integrations import crewai_guard
+
+guard = crewai_guard(api_key="ag_...")
+guard.before_tool_execution("send_email", {"to": "boss@example.com"})  # raises on block</code></pre>
+
+<h3>Batch Evaluate (TypeScript)</h3>
+<pre><code>const batch = await guard.evaluateBatch({
+  agentId: 'my-agent',
+  calls: [
+    { tool: 'file_read',  params: { path: '/data/report.csv' } },
+    { tool: 'send_email', params: { to: 'boss@example.com' } },
+    { tool: 'exec',       params: { cmd: 'rm -rf /' } },
+  ],
+});
+
+// { batchId, results: [{index, tool, decision, riskScore, reason, suggestion, ...}], summary }
+console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</code></pre>
 
 <!-- ────────────────────────────────────────────────── -->
 <!-- CORE API -->
@@ -1238,7 +1331,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- PROMPT INJECTION DETECTION -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="prompt-injection">Prompt Injection Detection <span class="badge-new">NEW in v0.8.0</span></h2>
+<h2 id="prompt-injection">Prompt Injection Detection <span class="badge-new">NEW in v0.9.0</span></h2>
 <p>AgentGuard's prompt injection detection layer scans incoming messages and conversation histories for adversarial patterns before they reach your agent. Detection combines fast heuristic rules with an optional <a href="https://lakera.ai" target="_blank" rel="noopener">Lakera Guard</a> adapter for deep semantic analysis.</p>
 
 <h3>How It Works</h3>
@@ -1309,7 +1402,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- PII DETECTION & REDACTION -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="pii-detection">PII Detection &amp; Redaction <span class="badge-new">NEW in v0.8.0</span></h2>
+<h2 id="pii-detection">PII Detection &amp; Redaction <span class="badge-new">NEW in v0.9.0</span></h2>
 <p>Scan text for personally identifiable information (PII) before it enters agent context or is written to logs. Supports three modes: <code>detect</code> (identify only), <code>redact</code> (replace with type tag), and <code>mask</code> (partial masking, e.g. last 4 digits).</p>
 
 <div class="endpoint">
@@ -1380,7 +1473,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- OWASP COMPLIANCE -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="owasp-compliance">OWASP Compliance <span class="badge-new">NEW in v0.8.0</span></h2>
+<h2 id="owasp-compliance">OWASP Compliance <span class="badge-new">NEW in v0.9.0</span></h2>
 <p>Generate structured compliance reports mapped to the <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" target="_blank" rel="noopener">OWASP Top 10 for LLM Applications</a> and the emerging OWASP Agentic AI framework. Reports include per-control evidence drawn from your audit trail.</p>
 
 <div class="endpoint">
@@ -1467,7 +1560,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- MCP POLICY ENFORCEMENT -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="mcp-policy">MCP Policy Enforcement <span class="badge-new">NEW in v0.8.0</span></h2>
+<h2 id="mcp-policy">MCP Policy Enforcement <span class="badge-new">NEW in v0.9.0</span></h2>
 <p>Advanced policy enforcement for <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> servers. Go beyond basic tool evaluation — register MCP servers in a central registry, enforce SSRF protection, and apply per-server policy rules before any tool call reaches the upstream.</p>
 
 <div class="callout callout-info"><strong>MCP Server Registry.</strong> Register your MCP servers once via <code>PUT /api/v1/mcp/config</code>. AgentGuard maintains a registry of approved servers and their allowed tool sets. Calls to unregistered servers are blocked by default.</div>
@@ -1529,7 +1622,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- SLACK HITL INTEGRATION -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="slack-hitl">Slack HITL Integration <span class="badge-new">NEW in v0.8.0</span></h2>
+<h2 id="slack-hitl">Slack HITL Integration <span class="badge-new">NEW in v0.9.0</span></h2>
 <p>Route human-in-the-loop approval requests directly to Slack. When an evaluation returns <code>require_approval</code>, AgentGuard sends a rich Block Kit message to your configured Slack channel. Reviewers approve or deny with one click — no dashboard login required.</p>
 
 <h3>Callback Flow</h3>
@@ -1614,7 +1707,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- MULTI-AGENT A2A -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="multi-agent">Multi-Agent A2A <span class="badge-new">NEW in v0.8.0</span></h2>
+<h2 id="multi-agent">Multi-Agent A2A <span class="badge-new">NEW in v0.9.0</span></h2>
 <p>Model agent-to-agent (A2A) relationships with parent/child hierarchies. Child agents automatically inherit the parent's policy scope — with configurable TTL and budget caps — giving you fine-grained control over orchestrated multi-agent workflows.</p>
 
 <div class="callout callout-info"><strong>Policy Inheritance.</strong> Child agents inherit the parent's policy rules plus any additional restrictions you specify. Children can never have <em>more permissive</em> policies than their parent — only equal or more restricted.</div>
@@ -1679,7 +1772,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- ANALYTICS -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="analytics">Analytics <span class="badge-new">NEW in v0.8.0</span></h2>
+<h2 id="analytics">Analytics <span class="badge-new">NEW in v0.9.0</span></h2>
 <p>Platform-level analytics for multi-agent fleets. Get time-series usage data, trend analysis, and per-dimension breakdowns across your entire tenant.</p>
 
 <div class="endpoint">
@@ -1737,7 +1830,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- FEEDBACK -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="feedback">Feedback <span class="badge-new">NEW in v0.8.0</span></h2>
+<h2 id="feedback">Feedback <span class="badge-new">NEW in v0.9.0</span></h2>
 <p>Submit feedback on evaluation decisions to improve policy accuracy over time. Feedback is logged in the audit trail and can be used to tune policy rules and risk scoring.</p>
 
 <div class="endpoint">
@@ -1781,7 +1874,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- SDK TELEMETRY -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="sdk-telemetry">SDK Telemetry <span class="badge-new">NEW in v0.8.0</span></h2>
+<h2 id="sdk-telemetry">SDK Telemetry <span class="badge-new">NEW in v0.9.0</span></h2>
 <p>The AgentGuard SDK collects anonymous usage telemetry to help prioritise feature development. Telemetry is <strong>opt-in</strong> — it is disabled by default and never includes API keys, policy content, tool parameters, or any user data.</p>
 
 <h3>What Is Collected (when opted in)</h3>
@@ -2274,19 +2367,19 @@ await guard.mcpEvaluate({ toolName: 'read_file', arguments: { path: '/etc/hosts'
 await guard.getMcpConfigForAgent(agentId);
 await guard.putMcpConfig({ name: 'my-mcp', upstreamUrl: 'https://mcp.example.com', transport: 'sse' });
 
-// v0.8.0: Prompt Injection
+// v0.9.0: Prompt Injection
 const injectionResult = await guard.scanPromptInjection({ messages: [{ role: 'user', content: 'Ignore previous instructions...' }] });
 
-// v0.8.0: PII Detection
+// v0.9.0: PII Detection
 const piiResult = await guard.scanPII({ text: 'My SSN is 123-45-6789', policy: 'redact' });
 
-// v0.8.0: OWASP Compliance
+// v0.9.0: OWASP Compliance
 const owaspReport = await guard.generateOWASPReport({ agentId });
 
-// v0.8.0: Analytics
+// v0.9.0: Analytics
 const usage = await guard.getAnalyticsUsage({ period: '7d', groupBy: 'agent' });
 
-// v0.8.0: Feedback
+// v0.9.0: Feedback
 await guard.submitFeedback({ evaluationId: 'evt_...', rating: 5, comment: 'Correct block' });
 
 // Audit chain
@@ -2327,19 +2420,19 @@ coverage = guard.coverage_check(tools=["shell_exec", "file_read", "send_sms"])
 # Key Rotation
 new_key = guard.rotate_key()  # old key is now invalid
 
-# v0.8.0: Prompt Injection Detection
+# v0.9.0: Prompt Injection Detection
 injection = guard.scan_prompt_injection(messages=[{"role": "user", "content": "Ignore previous instructions..."}])
 
-# v0.8.0: PII Detection & Redaction
+# v0.9.0: PII Detection & Redaction
 pii = guard.scan_pii(text="My SSN is 123-45-6789", policy="redact")
 
-# v0.8.0: OWASP Compliance Report
+# v0.9.0: OWASP Compliance Report
 report = guard.generate_owasp_report(agent_id="booking-agent")
 
-# v0.8.0: Analytics
+# v0.9.0: Analytics
 usage = guard.get_analytics_usage(period="7d", group_by="agent")
 
-# v0.8.0: Feedback
+# v0.9.0: Feedback
 guard.submit_feedback(evaluation_id="evt_...", rating=5, comment="Correct block")
 
 # Audit chain

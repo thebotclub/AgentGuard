@@ -190,6 +190,98 @@ export class AgentGuard {
 
   // ── Core Evaluate ───────────────────────────────────────────────────────
 
+  // ── Batch Evaluate ──────────────────────────────────────────────────────────
+
+  /**
+   * Evaluate multiple tool calls in a single HTTP round-trip.
+   *
+   * Agents running pipelines (e.g. ReAct loops, plan-and-execute) can
+   * pre-screen a sequence of tool calls without paying N × latency.
+   *
+   * @param request  Batch request with `calls` array (1–50 items)
+   * @returns        Batch response with per-call results and a summary
+   *
+   * @example
+   * const batch = await guard.evaluateBatch({
+   *   agentId: 'my-agent',
+   *   calls: [
+   *     { tool: 'file_read', params: { path: '/data/report.csv' } },
+   *     { tool: 'send_email', params: { to: 'boss@example.com' } },
+   *   ],
+   * });
+   * for (const result of batch.results) {
+   *   if (result.decision === 'block') {
+   *     console.error(`Blocked ${result.tool}: ${result.reason}`);
+   *   }
+   * }
+   */
+  async evaluateBatch(request: {
+    agentId?: string;
+    sessionId?: string;
+    calls: Array<{ tool: string; params?: Record<string, unknown> }>;
+  }): Promise<{
+    batchId: string;
+    results: Array<{
+      index: number;
+      tool: string;
+      decision: 'allow' | 'block' | 'monitor' | 'require_approval';
+      riskScore: number;
+      matchedRuleId?: string;
+      durationMs: number;
+      reason?: string;
+      suggestion?: string;
+      docs?: string;
+      alternatives?: string[];
+      approvalId?: string;
+      approvalUrl?: string;
+      warnings?: string[];
+    }>;
+    summary: {
+      total: number;
+      allowed: number;
+      monitored: number;
+      blocked: number;
+      requireApproval: number;
+    };
+    batchDurationMs: number;
+  }> {
+    const res = await fetch(`${this.baseUrl}/api/v1/evaluate/batch`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{
+      batchId: string;
+      results: Array<{
+        index: number;
+        tool: string;
+        decision: 'allow' | 'block' | 'monitor' | 'require_approval';
+        riskScore: number;
+        matchedRuleId?: string;
+        durationMs: number;
+        reason?: string;
+        suggestion?: string;
+        docs?: string;
+        alternatives?: string[];
+        approvalId?: string;
+        approvalUrl?: string;
+        warnings?: string[];
+      }>;
+      summary: {
+        total: number;
+        allowed: number;
+        monitored: number;
+        blocked: number;
+        requireApproval: number;
+      };
+      batchDurationMs: number;
+    }>;
+  }
+
   async evaluate(action: { tool: string; params?: Record<string, unknown> }): Promise<{
     result: 'allow' | 'block' | 'monitor' | 'require_approval';
     matchedRuleId?: string;

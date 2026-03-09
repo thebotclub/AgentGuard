@@ -13,7 +13,7 @@ AgentGuard gives you production-grade guardrails for AI agents:
 - 📋 **Audit Trail** — append-only, tamper-evident hash chain of every action
 - 🔴 **Kill Switch** — instantly halt one agent or all agents
 - 🌐 **Cloud API Client** — connect to the hosted AgentGuard API
-- 🔗 **LangChain Integration** — drop-in wrapper for LangChain tools
+- 🔗 **Framework Integrations** — one-liner guards for LangChain, OpenAI, CrewAI, Express, and Fastify
 
 ---
 
@@ -307,7 +307,150 @@ ks.haltAgent('agent-1', 'Exceeded rate limit');
 
 ---
 
-## LangChain Integration
+## Framework Integrations
+
+One-liner guards for popular AI agent frameworks. No peer dependencies required.
+
+### LangChain
+
+```typescript
+import { langchainGuard } from '@the-bot-club/agentguard';
+
+// Pass as a callback to AgentExecutor — every tool call is evaluated automatically:
+const executor = AgentExecutor.fromAgentAndTools({
+  agent,
+  tools,
+  callbacks: [langchainGuard({ apiKey: 'ag_...' })],
+});
+```
+
+Blocked tool calls throw `AgentGuardBlockError` — LangChain surfaces this as a tool execution error:
+
+```typescript
+import { AgentGuardCallbackHandler, AgentGuardBlockError } from '@the-bot-club/agentguard';
+
+const handler = new AgentGuardCallbackHandler({ apiKey: 'ag_...', agentId: 'my-agent' });
+try {
+  await handler.handleToolStart({ name: 'exec' }, '{"cmd":"rm -rf /"}');
+} catch (err) {
+  if (err instanceof AgentGuardBlockError) {
+    console.log('Blocked:', err.reason);
+    console.log('Try instead:', err.alternatives);
+  }
+}
+```
+
+---
+
+### OpenAI
+
+```typescript
+import OpenAI from 'openai';
+import { openaiGuard } from '@the-bot-club/agentguard';
+
+const client = new OpenAI({ apiKey: 'sk-...' });
+const guarded = openaiGuard(client, { apiKey: 'ag_...' });
+
+// Use `guarded` exactly like the regular OpenAI client:
+const response = await guarded.chat.completions.create({
+  model: 'gpt-4o',
+  messages: [...],
+  tools: [...],
+});
+
+// Check which tool calls were blocked before executing them:
+if (response._agentguard?.hasBlocks) {
+  for (const d of response._agentguard.decisions) {
+    if (d.decision === 'block') {
+      console.log(`Blocked ${d.tool}: ${d.reason}`);
+      console.log(`Suggestion: ${d.suggestion}`);
+    }
+  }
+}
+```
+
+---
+
+### CrewAI
+
+```typescript
+import { crewaiGuard } from '@the-bot-club/agentguard';
+
+const guard = crewaiGuard({ apiKey: 'ag_...' });
+
+// In your agent tool execution hook — throws on block:
+await guard.beforeToolExecution('send_email', { to: 'boss@example.com' });
+
+// Batch evaluate (no throw — caller handles blocks):
+const results = await guard.evaluateBatch([
+  { tool: 'file_read', args: { path: '/data/report.csv' } },
+  { tool: 'send_email', args: { to: 'boss@example.com' } },
+]);
+```
+
+---
+
+### Express / Fastify
+
+```typescript
+import express from 'express';
+import { expressMiddleware } from '@the-bot-club/agentguard';
+
+const app = express();
+app.use(expressMiddleware({ apiKey: 'ag_...' }));
+
+// `req.agentguard` is now available in all route handlers:
+app.post('/run-agent', async (req, res) => {
+  const decision = await req.agentguard.evaluate({
+    tool: req.body.tool,
+    params: req.body.params,
+  });
+  if (decision.result !== 'allow') {
+    return res.status(403).json({ error: 'blocked', reason: decision.reason });
+  }
+  // ... proceed
+});
+```
+
+Fastify:
+
+```typescript
+import { fastifyMiddleware } from '@the-bot-club/agentguard';
+app.addHook('preHandler', fastifyMiddleware({ apiKey: 'ag_...' }));
+```
+
+---
+
+### Batch Evaluate
+
+Evaluate multiple tool calls in a single round-trip (1–50 calls):
+
+```typescript
+const batch = await guard.evaluateBatch({
+  agentId: 'my-agent',
+  calls: [
+    { tool: 'file_read', params: { path: '/data/report.csv' } },
+    { tool: 'send_email', params: { to: 'boss@example.com' } },
+    { tool: 'exec', params: { cmd: 'rm -rf /' } },
+  ],
+});
+
+console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);
+
+for (const result of batch.results) {
+  if (result.decision === 'block') {
+    console.log(`[${result.tool}] BLOCKED: ${result.reason}`);
+    console.log(`  Suggestion: ${result.suggestion}`);
+    console.log(`  Docs: ${result.docs}`);
+  }
+}
+```
+
+---
+
+## LangChain Integration (Core Wrapper)
+
+For local in-process policy enforcement with a full `PolicyEngine`, use the lower-level `AgentGuardToolWrapper`:
 
 ```typescript
 import { AgentGuardToolWrapper } from '@the-bot-club/agentguard';

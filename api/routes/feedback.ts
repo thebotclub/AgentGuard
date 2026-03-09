@@ -29,13 +29,17 @@ export function createFeedbackRoutes(
 
       const { rating: ratingField, verdict, comment, agent_id } = parsed.data;
 
-      // Map verdict to numeric rating for backward compatibility
-      function verdictToRating(v: string): number {
+      // Map string/verdict rating to numeric for DB storage
+      function toNumericRating(v: string | number | undefined): number {
+        if (typeof v === 'number') return v;
         if (v === 'positive') return 5;
         if (v === 'negative') return 1;
-        return 3; // neutral
+        if (v === 'neutral') return 3;
+        return 3;
       }
-      const rating = ratingField ?? verdictToRating(verdict!);
+      const rating = typeof ratingField !== 'undefined'
+        ? toNumericRating(ratingField)
+        : toNumericRating(verdict!);
 
       try {
         const row = await db.insertFeedback(tenantId, agent_id ?? null, rating, comment ?? null);
