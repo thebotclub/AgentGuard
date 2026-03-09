@@ -61,7 +61,7 @@ const PRICING_DATA = {
       price: 0,
       interval: null,
       limits: {
-        eventsPerMonth: TIER_LIMITS.free.eventsPerMonth,    // 25_000
+        eventsPerMonth: TIER_LIMITS.free.eventsPerMonth,    // 100_000
         agentsMax: TIER_LIMITS.free.agentsMax,              // 5
         retentionDays: TIER_LIMITS.free.retentionDays,      // 30
         hitlConcurrent: TIER_LIMITS.free.hitlConcurrent,   // 3

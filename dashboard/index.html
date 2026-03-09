@@ -1063,7 +1063,7 @@ const { result, riskScore } = await res.json();</pre>
             <div id="lic-plan-badge" style="display:inline-block;padding:10px 32px;border-radius:40px;font-size:1.35rem;font-weight:700;letter-spacing:0.04em;margin-bottom:16px;background:rgba(34,197,94,0.12);color:#22c55e;border:2px solid rgba(34,197,94,0.3)">
               Free Plan
             </div>
-            <div id="lic-plan-sub" style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px">25,000 events/month · 3 agents · 7-day retention</div>
+            <div id="lic-plan-sub" style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px">100,000 events/month · 3 agents · 30-day retention</div>
             <button class="btn btn-primary" style="width:100%;padding:12px 24px;font-size:0.95rem;background:linear-gradient(135deg,#5254d4,#818cf8)" onclick="window.open('https://agentguard.tech/pricing?ref=dashboard','_blank')">
               ⚡ Upgrade to Pro — $149/mo
             </button>
@@ -1106,7 +1106,7 @@ const { result, riskScore } = await res.json();</pre>
           <div style="margin-bottom:20px">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
               <span style="font-size:0.85rem;font-weight:600;color:var(--text-bright)">Evaluation Events</span>
-              <span id="lic-events-label" style="font-family:var(--mono);font-size:0.85rem;color:var(--text-dim)">12,450 / 25,000</span>
+              <span id="lic-events-label" style="font-family:var(--mono);font-size:0.85rem;color:var(--text-dim)">12,450 / 100,000</span>
             </div>
             <div style="height:10px;background:var(--bg-card2);border-radius:10px;overflow:hidden;border:1px solid var(--border-dim)">
               <div id="lic-events-bar" style="height:100%;width:49.8%;background:var(--green);border-radius:10px;transition:width 0.4s ease,background 0.4s ease"></div>
@@ -2027,7 +2027,7 @@ function applyLicenseStatus(data) {
   }
   if (sub) {
     var subText = {
-      free:       '25,000 events/month · 3 agents · 7-day retention',
+      free:       '100,000 events/month · 3 agents · 30-day retention',
       pro:        '500,000 events/month · 25 agents · 90-day retention',
       enterprise: 'Unlimited events · custom seats · custom retention'
     };

@@ -178,7 +178,7 @@ async function upsertLicenseFromSubscription(
   },
 ): Promise<void> {
   const tierLimits: Record<string, { eventsPerMonth: number; agentsMax: number }> = {
-    free: { eventsPerMonth: 25_000, agentsMax: 5 },
+    free: { eventsPerMonth: 100_000, agentsMax: 5 },
     pro: { eventsPerMonth: 500_000, agentsMax: 100 },
     enterprise: { eventsPerMonth: -1, agentsMax: -1 },
   };

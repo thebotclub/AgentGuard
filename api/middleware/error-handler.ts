@@ -63,12 +63,22 @@ export function errorHandler(
       method: req.method,
       errors: err.issues,
     }, 'Validation error');
+    const firstIssue = err.issues[0];
     res.status(400).json({
       error: 'Validation failed',
+      code: 'VALIDATION_ERROR',
       details: err.issues.map((e: any) => ({
-        path: e.path.join('.'),
+        field: e.path.join('.') || 'body',
         message: e.message,
+        expected: e.expected ?? undefined,
+        path: e.path.join('.'),
       })),
+      // Convenience top-level fields for the first issue
+      ...(firstIssue ? {
+        field: firstIssue.path.join('.') || 'body',
+        expected: firstIssue.message,
+      } : {}),
+      docs: 'https://agentguard.tech/docs/api',
       requestId,
     });
     return;
@@ -83,7 +93,14 @@ export function errorHandler(
       message: err.message,
     }, 'Auth error');
     res.status(401).json({
-      error: err.message || 'Unauthorized',
+      error: 'unauthorized',
+      code: 'AUTH_REQUIRED',
+      message: err.message || 'Authentication required',
+      acceptedAuth: [
+        'Header: X-API-Key: ag_<key>',
+        'Header: Authorization: Bearer <jwt>',
+      ],
+      docs: 'https://agentguard.tech/docs/authentication',
       requestId,
     });
     return;
@@ -96,7 +113,15 @@ export function errorHandler(
     (err as { status: number }).status === 400
   ) {
     logger.warn({ requestId, path: req.path }, 'JSON parse error');
-    res.status(400).json({ error: 'Invalid JSON in request body', requestId });
+    res.status(400).json({
+      error: 'Validation failed',
+      code: 'VALIDATION_ERROR',
+      field: 'body',
+      expected: 'valid JSON',
+      received: 'malformed JSON',
+      docs: 'https://agentguard.tech/docs/api',
+      requestId,
+    });
     return;
   }
 

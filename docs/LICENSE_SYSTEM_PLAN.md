@@ -160,7 +160,7 @@ See the full [Tier/Pricing Matrix](#4-tier--pricing-matrix) section.
 Key decisions:
 - **No endpoint lockouts** — all 51 endpoints available on all tiers
 - **Volume gating** via monthly event counters in Redis
-- **Free:** 25,000 events/month, 3 agent seats, 7-day audit retention, 3 concurrent HITL gates
+- **Free:** 100,000 events/month, 3 agent seats, 30-day audit retention, 3 concurrent HITL gates
 - **Pro ($149/mo):** 500,000 events/month, 25 seats, 90-day retention, unlimited HITL, SIEM, anomaly detection
 - **Enterprise (custom):** Unlimited, air-gap support, custom data residency, SLA, SSO
 - **All tiers self-hostable** (BSL 1.1 constraint honored)
@@ -1385,7 +1385,7 @@ licenseRouter.get('/crl', async (c) => {
 | | **Free** | **Pro** | **Enterprise** |
 |---|---|---|---|
 | **Agent Seats** | 3 | 25 | Unlimited |
-| **Evaluations/month** | 25,000 | 500,000 | Unlimited |
+| **Evaluations/month** | 100,000 | 500,000 | Unlimited |
 | **HITL Concurrent Gates** | 3 | Unlimited | Unlimited |
 | **Policy Versions Retained** | 10 | 100 | Unlimited |
 | **Audit Log Retention** | 7 days | 90 days | 1 year (upgradeable to 7yr) |

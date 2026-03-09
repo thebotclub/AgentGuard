@@ -57,8 +57,10 @@ export function requireFeature(feature: LicenseFeature) {
         feature,
         message: `This feature requires a ${minTier} plan or higher.`,
         currentTier: tier,
+        requiredTier: minTier.toLowerCase(),
+        pricingUrl: 'https://agentguard.tech/pricing',
         upgradeUrl: 'https://agentguard.tech/pricing',
-        upgrade_url: 'https://agentguard.tech/pricing', // both casings for compat
+        upgrade_url: 'https://agentguard.tech/pricing', // keep for backward compat
       });
       return;
     }
@@ -110,8 +112,11 @@ export function requireLimit(limitKey: 'eventsPerMonth' | 'agentsMax') {
           current: used,
           limit,
           tier: license.tier,
+          currentTier: license.tier,
+          requiredTier: 'pro',
+          pricingUrl: 'https://agentguard.tech/pricing',
           upgradeUrl: 'https://agentguard.tech/pricing',
-          upgrade_url: 'https://agentguard.tech/pricing',
+          upgrade_url: 'https://agentguard.tech/pricing', // keep for backward compat
         });
         return;
       }

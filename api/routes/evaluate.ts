@@ -24,6 +24,7 @@ import { DetectionEngine } from '../lib/detection/engine.js';
 import { HeuristicDetectionPlugin } from '../lib/detection/heuristic.js';
 import type { DetectionResult } from '../lib/detection/types.js';
 import { evaluateToolAgainstPolicy, type AgentPolicy } from '../lib/policy-inheritance.js';
+import { enrichDecision } from '../lib/decision-enricher.js';
 
 // getLastHash is no longer called directly — storeAuditEvent is now atomic
 const NOOP_PREV_HASH = '';
@@ -297,7 +298,17 @@ export function createEvaluateRoutes(
 
       const evalParsed = EvaluateRequest.safeParse(req.body ?? {});
       if (!evalParsed.success) {
-        return res.status(400).json({ error: evalParsed.error.issues[0]!.message });
+        const firstIssue = evalParsed.error.issues[0]!;
+        const fieldPath = firstIssue.path.join('.') || 'body';
+        return res.status(400).json({
+          error: 'validation_error',
+          field: fieldPath,
+          expected: firstIssue.message,
+          received: fieldPath === 'body'
+            ? typeof req.body
+            : typeof (req.body as Record<string, unknown>)[fieldPath],
+          docs: 'https://agentguard.tech/docs/api#evaluate',
+        });
       }
       const { tool, params } = evalParsed.data;
 
@@ -590,14 +601,25 @@ export function createEvaluateRoutes(
         );
       }
 
+      // Enrich block/require_approval decisions with actionable context (Feature 2)
+      const enriched = (decision.result === 'block' || decision.result === 'require_approval')
+        ? enrichDecision(decision, tool, effectivePolicy)
+        : {};
+
       res.json({
         result: decision.result,
         matchedRuleId: decision.matchedRuleId,
         riskScore: decision.riskScore,
         reason: decision.reason,
         durationMs: ms,
+        // Actionable enrichment fields — only present on block/require_approval
+        ...(enriched.suggestion ? { suggestion: enriched.suggestion } : {}),
+        ...(enriched.docs ? { docs: enriched.docs } : {}),
+        ...(enriched.alternatives !== undefined ? { alternatives: enriched.alternatives } : {}),
+        // Existing optional fields
         ...(agentId ? { agentId } : {}),
         ...(approvalId ? { approvalId } : {}),
+        ...(approvalId ? { approvalUrl: `https://app.agentguard.tech/approvals/${approvalId}` } : {}),
         ...(warnings.length > 0 ? { warnings } : {}),
         ...(piiBlock ? { pii: piiBlock } : {}),
       });

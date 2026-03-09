@@ -87,8 +87,8 @@ before(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('LicenseTypes — Free tier defaults', () => {
-  it('has correct eventsPerMonth (25000)', () => {
-    assert.equal(FREE_TIER_DEFAULTS.limits.eventsPerMonth, 25_000);
+  it('has correct eventsPerMonth (100000)', () => {
+    assert.equal(FREE_TIER_DEFAULTS.limits.eventsPerMonth, 100_000);
   });
 
   it('has correct agentsMax (5)', () => {
@@ -237,7 +237,7 @@ describe('LicenseKeygen — tier defaults', () => {
 
   it('free key gets free limits', () => {
     const { payload } = generateFreeTierKey('tenant-free', TEST_PRIV_PEM);
-    assert.equal(payload.limits.eventsPerMonth, 25_000);
+    assert.equal(payload.limits.eventsPerMonth, 100_000);
     assert.equal(payload.limits.agentsMax, 5);
   });
 
@@ -580,7 +580,7 @@ describe('LicenseValidator — buildFreeLicenseContext', () => {
 
   it('limits match free tier defaults', () => {
     const ctx = buildFreeLicenseContext();
-    assert.equal(ctx.limits.eventsPerMonth, 25_000);
+    assert.equal(ctx.limits.eventsPerMonth, 100_000);
     assert.equal(ctx.limits.agentsMax, 5);
     assert.equal(ctx.limits.retentionDays, 30);
     assert.equal(ctx.limits.hitlConcurrent, 3);
@@ -773,12 +773,12 @@ describe('LicenseManager — checkLimit eventsPerMonth', () => {
     assert.equal(result.allowed, true);
   });
 
-  it('returns limit of 25000 for free tier', async () => {
+  it('returns limit of 100000 for free tier', async () => {
     delete process.env['AGENTGUARD_LICENSE_KEY'];
     const mgr = LicenseManager.getInstance();
     await mgr.initialize();
     const result = await mgr.checkLimit('eventsPerMonth');
-    assert.equal(result.limit, 25_000);
+    assert.equal(result.limit, 100_000);
   });
 
   it('returns allowed:true and limit=-1 for enterprise unlimited', async () => {

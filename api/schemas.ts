@@ -29,6 +29,35 @@ export const EvaluateRequestSchema = z.object({
   })).optional(),
 });
 
+// ── POST /api/v1/evaluate/batch ──────────────────────────────────────────
+
+const BatchCallSchema = z.object({
+  tool: z.string({ error: 'tool is required and must be a string' })
+    .min(1, 'tool is required and must be a string')
+    .max(200, 'tool name too long (max 200 chars)')
+    .regex(
+      /^[a-zA-Z0-9_.\-:]+$/,
+      'tool name may only contain letters, digits, underscore, hyphen, dot, or colon',
+    ),
+  params: z.record(z.string(), z.unknown()).optional().default({}),
+  context: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const BatchEvaluateRequestSchema = z.object({
+  agentId: z.string().max(200).optional(),
+  sessionId: z.string().max(200).optional(),
+  messageHistory: z.array(z.object({
+    role: z.string(),
+    content: z.string(),
+  })).optional(),
+  calls: z.array(BatchCallSchema)
+    .min(1, 'calls must contain at least 1 item')
+    .max(50, 'calls must contain at most 50 items (max batch size)'),
+});
+
+export type BatchEvaluateRequest = z.infer<typeof BatchEvaluateRequestSchema>;
+export const BatchEvaluateRequest = BatchEvaluateRequestSchema;
+
 // ── POST /api/v1/signup ───────────────────────────────────────────────────
 export const SignupRequestSchema = z.object({
   name: z.string({ error: 'name is required' })

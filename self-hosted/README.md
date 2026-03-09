@@ -72,7 +72,7 @@ No license key required to get started. Free tier includes:
 
 | Feature | Limit |
 |---|---|
-| API evaluation events | **25,000 / month** |
+| API evaluation events | **100,000 / month** |
 | Agent seats | **3** |
 | Concurrent HITL gates | **3** |
 | Audit log retention | **7 days** |

@@ -24,6 +24,7 @@ import { logger } from './lib/logger.js';
 import { loadTemplates, DEFAULT_POLICY, templateCache } from './lib/policy-engine-setup.js';
 import { getGlobalKillSwitch } from './routes/audit.js';
 import { createEvaluateRoutes } from './routes/evaluate.js';
+import { createBatchEvaluateRoutes } from './routes/evaluate-batch.js';
 import { createAuditRoutes } from './routes/audit.js';
 import { createAgentRoutes } from './routes/agents.js';
 import { createWebhookRoutes } from './routes/webhooks.js';
@@ -192,7 +193,7 @@ app.use(rateLimitMiddleware);
 // ── Brute-Force Protection ─────────────────────────────────────────────────
 // Applied to auth-sensitive endpoints only (signup, evaluate, key-verification paths)
 // Must run before the auth middleware processes the key.
-app.use(['/api/v1/signup', '/api/v1/evaluate', '/api/v1/mcp/evaluate'], bruteForceMiddleware);
+app.use(['/api/v1/signup', '/api/v1/evaluate', '/api/v1/evaluate/batch', '/api/v1/mcp/evaluate'], bruteForceMiddleware);
 
 // ── Main: Init DB then start server ───────────────────────────────────────
 const PORT = parseInt(process.env['PORT'] || '3000', 10);
@@ -225,6 +226,8 @@ async function main(): Promise<void> {
         'POST /api/v1/signup': 'Create tenant account and get API key',
         'POST /api/v1/evaluate':
           'Evaluate an agent action against the policy engine',
+        'POST /api/v1/evaluate/batch':
+          'Evaluate multiple tool calls in one request (max 50)',
         'POST /api/v1/playground/session': 'Create a playground session',
         'POST /api/v1/playground/evaluate':
           'Evaluate with session tracking + audit trail',
@@ -377,6 +380,7 @@ async function main(): Promise<void> {
 
   // ── Mount Route Modules ────────────────────────────────────────────────
   app.use(createAuthRoutes(db, auth));
+  app.use(createBatchEvaluateRoutes(db, auth));
   app.use(createEvaluateRoutes(db, auth));
   app.use(createAuditRoutes(db, auth));
   app.use(createAgentRoutes(db, auth));

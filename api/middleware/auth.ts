@@ -163,7 +163,15 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     // Strategy 2: API key (agent SDK calls)
     const apiKey = req.headers['x-api-key'] as string | undefined;
     if (!apiKey) {
-      res.status(401).json({ error: 'Authentication required. Provide X-API-Key or Authorization: Bearer <token>' });
+      res.status(401).json({
+        error: 'unauthorized',
+        message: 'Authentication required. Provide X-API-Key or Authorization: Bearer <token>',
+        acceptedAuth: [
+          'Header: X-API-Key: ag_<key>',
+          'Header: Authorization: Bearer <jwt>',
+        ],
+        docs: 'https://agentguard.tech/docs/authentication',
+      });
       return;
     }
     if (apiKey.startsWith('ag_agent_')) {
@@ -172,7 +180,15 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     }
     const tenant = await lookupTenant(db, apiKey);
     if (!tenant) {
-      res.status(401).json({ error: 'Invalid or inactive API key' });
+      res.status(401).json({
+        error: 'unauthorized',
+        message: 'Invalid or inactive API key',
+        acceptedAuth: [
+          'Header: X-API-Key: ag_<key>',
+          'Header: Authorization: Bearer <jwt>',
+        ],
+        docs: 'https://agentguard.tech/docs/authentication',
+      });
       return;
     }
     req.tenant = tenant;
@@ -213,13 +229,31 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     // Strategy 2: API key (including agent keys)
     const apiKey = req.headers['x-api-key'] as string | undefined;
     if (!apiKey) {
-      res.status(401).json({ error: 'Authentication required. Provide X-API-Key or Authorization: Bearer <token>' });
+      res.status(401).json({
+        error: 'unauthorized',
+        message: 'Authentication required. Provide X-API-Key or Authorization: Bearer <token>',
+        acceptedAuth: [
+          'Header: X-API-Key: ag_<key>',
+          'Header: X-API-Key: ag_agent_<key>',
+          'Header: Authorization: Bearer <jwt>',
+        ],
+        docs: 'https://agentguard.tech/docs/authentication',
+      });
       return;
     }
     if (apiKey.startsWith('ag_agent_')) {
       const agentRow = await db.getAgentByKey(apiKey);
       if (!agentRow) {
-        res.status(401).json({ error: 'Invalid or inactive agent key' });
+        res.status(401).json({
+          error: 'unauthorized',
+          message: 'Invalid or inactive agent key',
+          acceptedAuth: [
+            'Header: X-API-Key: ag_<key>',
+            'Header: X-API-Key: ag_agent_<key>',
+            'Header: Authorization: Bearer <jwt>',
+          ],
+          docs: 'https://agentguard.tech/docs/authentication',
+        });
         return;
       }
       const tenant = await db.getTenant(agentRow.tenant_id);
@@ -231,7 +265,16 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     }
     const tenant = await lookupTenant(db, apiKey);
     if (!tenant) {
-      res.status(401).json({ error: 'Invalid or inactive API key' });
+      res.status(401).json({
+        error: 'unauthorized',
+        message: 'Invalid or inactive API key',
+        acceptedAuth: [
+          'Header: X-API-Key: ag_<key>',
+          'Header: X-API-Key: ag_agent_<key>',
+          'Header: Authorization: Bearer <jwt>',
+        ],
+        docs: 'https://agentguard.tech/docs/authentication',
+      });
       return;
     }
     req.tenant = tenant;
@@ -249,7 +292,12 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     const provBuf = Buffer.from(provided || '');
     const adminBuf = Buffer.from(ADMIN_KEY);
     if (!provided || provBuf.length !== adminBuf.length || !crypto.timingSafeEqual(provBuf, adminBuf)) {
-      res.status(401).json({ error: 'Unauthorized' });
+      res.status(401).json({
+        error: 'unauthorized',
+        message: 'Valid admin API key required',
+        acceptedAuth: ['Header: X-API-Key: <admin-key>'],
+        docs: 'https://agentguard.tech/docs/authentication#admin',
+      });
       return;
     }
     next();

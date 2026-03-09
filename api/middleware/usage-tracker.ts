@@ -149,7 +149,7 @@ export function createUsageTrackerMiddleware() {
     const license: LicenseContext | undefined = req.license;
     const agentId = req.agent?.id ?? req.body?.agentId ?? 'unknown';
 
-    const eventsLimit = license?.limits.eventsPerMonth ?? 25_000;
+    const eventsLimit = license?.limits.eventsPerMonth ?? 100_000;
     const agentsLimit = license?.limits.agentsMax ?? 5;
 
     // Fire-and-forget — do not await, never block the request

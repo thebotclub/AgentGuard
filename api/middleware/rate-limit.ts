@@ -83,12 +83,15 @@ export function rateLimitMiddleware(req: Request, res: Response, next: NextFunct
       res.setHeader('X-RateLimit-Remaining', String(result.remaining));
 
       if (!result.allowed) {
-        if (result.retryAfter) {
-          res.setHeader('Retry-After', String(result.retryAfter));
-        }
-        res
-          .status(429)
-          .json({ error: `Too many requests. Limit: ${result.limit} per minute.` });
+        const retryAfter = result.retryAfter ?? 60;
+        res.setHeader('Retry-After', String(retryAfter));
+        res.status(429).json({
+          error: 'rate_limit_exceeded',
+          retryAfter,
+          message: `Too many requests. Limit: ${result.limit} per minute. Retry after ${retryAfter} seconds.`,
+          limit: result.limit,
+          window: '1m',
+        });
         return;
       }
       next();
@@ -110,11 +113,14 @@ export function bruteForceMiddleware(req: Request, res: Response, next: NextFunc
   checkBruteForce(ip)
     .then((result) => {
       if (result.blocked) {
-        if (result.retryAfter) {
-          res.setHeader('Retry-After', String(result.retryAfter));
-        }
+        const retryAfter = result.retryAfter ?? 1800;
+        res.setHeader('Retry-After', String(retryAfter));
         res.status(429).json({
-          error: 'Too many failed authentication attempts. Please try again later.',
+          error: 'rate_limit_exceeded',
+          retryAfter,
+          message: 'Too many failed authentication attempts. Please try again later.',
+          limit: 10,
+          window: '15m',
         });
         return;
       }

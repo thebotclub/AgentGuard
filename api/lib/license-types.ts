@@ -36,7 +36,7 @@ export interface LicensePayload {
   features: string[];
   /** Resource limits */
   limits: {
-    /** Monthly evaluation events: 25000 free, 500000 pro, -1 unlimited */
+    /** Monthly evaluation events: 100000 free, 500000 pro, -1 unlimited */
     eventsPerMonth: number;
     /** Max agent seats: 5 free, 100 pro, -1 unlimited */
     agentsMax: number;
@@ -91,7 +91,7 @@ export const FREE_TIER_DEFAULTS: Omit<LicenseContext, 'validatedAt'> = {
   tenantId: 'default',
   features: new Set<string>(),
   limits: {
-    eventsPerMonth: 25_000,
+    eventsPerMonth: 100_000,
     agentsMax: 5,
     retentionDays: 30,
     hitlConcurrent: 3,
@@ -105,7 +105,7 @@ export const FREE_TIER_DEFAULTS: Omit<LicenseContext, 'validatedAt'> = {
 
 export const TIER_LIMITS: Record<LicenseTier, LicensePayload['limits']> = {
   free: {
-    eventsPerMonth: 25_000,
+    eventsPerMonth: 100_000,
     agentsMax: 5,
     retentionDays: 30,
     hitlConcurrent: 3,
