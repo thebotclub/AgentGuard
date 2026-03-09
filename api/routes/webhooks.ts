@@ -45,9 +45,23 @@ function isPrivateIPv6(addr: string): boolean {
   if (/^fe[89ab][0-9a-f]:/i.test(lower) || lower.startsWith('fe80:')) return true;
   // ULA: fc00::/7 (fc and fd prefixes)
   if (/^f[cd][0-9a-f]{2}:/i.test(lower)) return true;
-  // IPv4-mapped IPv6 ::ffff:x.x.x.x
+
+  // IPv4-mapped IPv6 — dotted decimal form: ::ffff:127.0.0.1
   const v4mapped = lower.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
   if (v4mapped) return isPrivateIPv4(v4mapped[1]!);
+
+  // IPv4-mapped IPv6 — hex form: ::ffff:7f00:1 (Node normalizes to this)
+  const v4hex = lower.match(/^(?:0+:)*::?ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (v4hex) {
+    const hi = parseInt(v4hex[1]!, 16);
+    const lo = parseInt(v4hex[2]!, 16);
+    const ipv4 = `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
+    return isPrivateIPv4(ipv4);
+  }
+
+  // Catch-all: block ANY address containing :ffff: segment (IPv4-mapped)
+  if (/(?:^|:)ffff:[0-9a-f]/i.test(lower)) return true;
+
   return false;
 }
 

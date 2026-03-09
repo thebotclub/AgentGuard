@@ -25,9 +25,9 @@ import {
 const TIER_DEFAULTS = {
   free: {
     seats: 3,
-    events_pm: 25000,
+    events_pm: 100000,
     offline_grace_days: 1,
-    audit_retention_days: 7,
+    audit_retention_days: 30,
     features: ['hitl'],
     expiry_days: 30,
   },
