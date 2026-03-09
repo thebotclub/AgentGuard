@@ -18,7 +18,7 @@ import { AgentGuardApiClient } from './api.js';
 import { loadConfig, DEFAULT_CONFIG_CONTENT } from './config.js';
 import type { ValidateOptions } from './commands/validate.js';
 
-const VERSION = '0.8.0';
+const VERSION = '0.9.0';
 
 // ── Program ───────────────────────────────────────────────────────────────────
 

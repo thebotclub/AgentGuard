@@ -5,7 +5,7 @@
   
   <p>
     <a href="https://agentguard.tech"><img src="https://img.shields.io/badge/Website-Live-brightgreen"></a>
-    <a href="https://docs.agentguard.tech"><img src="https://img.shields.io/badge/Docs-v0.8.0-blue"></a>
+    <a href="https://docs.agentguard.tech"><img src="https://img.shields.io/badge/Docs-v0.9.0-blue"></a>
     <a href="https://demo.agentguard.tech"><img src="https://img.shields.io/badge/Demo-Live-green"></a>
     <img src="https://img.shields.io/badge/API-51%20endpoints-blue">
     <img src="https://img.shields.io/badge/Tests-66%20passing-green">
@@ -14,7 +14,7 @@
 
 ---
 
-## What's New in v0.8.0
+## What's New in v0.9.0
 
 **51 API endpoints** (+9 new capability areas):
 
@@ -93,11 +93,12 @@ AI agents are deploying into production **without security guardrails**. Unlike 
 Block unsafe agent deployments before they reach production:
 ```yaml
 - name: AgentGuard Policy Check
-  uses: agentguard/agentguard-action@v1
-  with:
-    api-key: ${{ secrets.AGENTGUARD_API_KEY }}
-    tools: [database_query, http_post, shell_exec]
-    fail-on: block
+  run: |
+    curl -sf -X POST https://api.agentguard.tech/api/v1/evaluate/batch \
+      -H "X-API-Key: ${{ secrets.AGENTGUARD_API_KEY }}" \
+      -H "Content-Type: application/json" \
+      -d '{"calls":[{"tool":"database_query"},{"tool":"http_post"},{"tool":"shell_exec"}]}' \
+      | jq -e '.summary.blocked == 0'
 ```
 
 ### ⚡ Sub-Millisecond Local Engine

@@ -26,7 +26,7 @@ import { AgentGuardApiClient } from '../api.js';
 import { loadConfig } from '../config.js';
 import type { OutputFormat, ToolStatus } from '../formatters.js';
 
-const VERSION = '0.8.0';
+const VERSION = '0.9.0';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

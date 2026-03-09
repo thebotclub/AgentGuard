@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
-__version__ = "0.7.2"
+__version__ = "0.9.0"
 
 
 # ─── Local Policy Engine ───────────────────────────────────────────────────────

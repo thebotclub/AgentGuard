@@ -250,4 +250,4 @@ See [API Reference → SIEM](/docs/api/siem) for full documentation.
 
 ---
 
-*Last updated: 2026-03 | AgentGuard v0.8.0*
+*Last updated: 2026-03 | AgentGuard v0.9.0*

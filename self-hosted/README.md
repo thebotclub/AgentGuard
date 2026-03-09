@@ -57,7 +57,7 @@ curl http://localhost:8080/health
 
 Expected response:
 ```json
-{"status":"ok","version":"0.7.x","db":"connected","redis":"connected"}
+{"status":"ok","version":"0.9.0","db":"connected","redis":"connected"}
 ```
 
 ### 5. Open the dashboard

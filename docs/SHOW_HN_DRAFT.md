@@ -33,12 +33,12 @@ AgentGuard adds three enforcement points:
 
 We also have a CLI (`npx @the-bot-club/agentguard validate .`) for local scanning, MCP middleware for Model Context Protocol servers, and SDKs for TypeScript and Python.
 
-The whole thing is 34 API endpoints running on Express + PostgreSQL. Free to use. Would love feedback on whether this solves a real problem for you.
+The whole thing is 60+ API endpoints running on Express + PostgreSQL. Free to use. Would love feedback on whether this solves a real problem for you.
 
 Live: https://agentguard.tech
 Docs: https://docs.agentguard.tech
 Dashboard: https://app.agentguard.tech
-GitHub: https://github.com/AgentGuard-tech/agentguard
+GitHub: https://github.com/0nebot/agentguard
 
 ---
 
