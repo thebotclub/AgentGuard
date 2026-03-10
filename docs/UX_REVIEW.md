@@ -216,7 +216,7 @@ Responsive breakpoints at 900px and 768px look complete. The hamburger menu, sin
 
 ### 1.9 Minor Issues
 
-- The GitHub links all point to `https://github.com/0nebot` (a personal profile), not a repo URL. Should link to `https://github.com/0nebot/agentguard` or the actual repo path.
+- The GitHub links all point to `https://github.com/thebotclub` (a personal profile), not a repo URL. Should link to `https://github.com/thebotclub/AgentGuard` or the actual repo path.
 - The hero video (`agentguard-explainer.mp4?v=1`) — verify this file is deployed, or the video element will show a broken placeholder.
 - `AutoGen` listed as a supported framework in the hero badge row, but it's not documented in the docs-site or SDK README integrations sections.
 
@@ -464,7 +464,7 @@ The npm page README is polished and comprehensive. Coverage of all SDK features 
 ```markdown
 - 📦 [GitHub](https://github.com/koshaji/agentguard)
 ```
-Landing page uses `https://github.com/0nebot` and `about/` page uses `github.com/0nebot`. SHOW_HN uses `AgentGuard-tech/agentguard`. Decide the canonical GitHub URL and apply it everywhere. If the repo is currently private/personal, this needs to be resolved before public launch.
+Landing page uses `https://github.com/thebotclub` and `about/` page uses `github.com/thebotclub`. SHOW_HN uses `AgentGuard-tech/agentguard`. Decide the canonical GitHub URL and apply it everywhere. If the repo is currently private/personal, this needs to be resolved before public launch.
 
 ### 7.3 `packages/python/README.md` — ISSUES
 
@@ -598,9 +598,9 @@ Minor: `agentguard-data:/data` volume is mounted but not discussed in the "Persi
 
 **P0 — Issue #4:** GitHub URL in the post:
 ```
-GitHub: https://github.com/AgentGuard-tech/agentguard
+GitHub: https://github.com/thebotclub/AgentGuard
 ```
-Landing page uses `github.com/0nebot`. SDK READMEs use `github.com/koshaji/agentguard`. `about/` uses `github.com/0nebot`. The Show HN post has a completely different URL. HN users will check this URL immediately. A 404 on the GitHub link in your Show HN post is a credibility killer.
+Landing page uses `github.com/thebotclub`. SDK READMEs use `github.com/koshaji/agentguard`. `about/` uses `github.com/thebotclub`. The Show HN post has a completely different URL. HN users will check this URL immediately. A 404 on the GitHub link in your Show HN post is a credibility killer.
 
 Decide on one canonical GitHub URL before posting. Options:
 - `https://github.com/koshaji/agentguard` (existing personal repo)

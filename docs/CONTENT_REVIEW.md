@@ -79,7 +79,7 @@
 ```
 **Recommended:**
 ```markdown
-- 📦 [GitHub](https://github.com/0nebot/agentguard)
+- 📦 [GitHub](https://github.com/thebotclub/AgentGuard)
 ```
 **Priority:** P0 — This IS the npm page. Every developer who installs the package sees this. `koshaji` is the personal GitHub (Hani's handle), not the org. The org is `0nebot` (zero not O). Wrong link on npm = broken trust for developers.
 
@@ -96,7 +96,7 @@ MIT
 **Recommended:**
 ```markdown
 ## License
-[Business Source License 1.1](https://github.com/0nebot/agentguard/blob/main/LICENSE)
+[Business Source License 1.1](https://github.com/thebotclub/AgentGuard/blob/main/LICENSE)
 ```
 **Priority:** P0 — npm page shows MIT. Actual license is BSL 1.1. This is a legal misrepresentation. Enterprise legal teams will immediately flag this as misrepresentation and reject the vendor. Also update the badge on line 6 from `License-MIT` to `License-BSL_1.1`.
 
@@ -111,7 +111,7 @@ MIT
 ```
 **Recommended:**
 ```markdown
-- 📦 [GitHub](https://github.com/0nebot/agentguard)
+- 📦 [GitHub](https://github.com/thebotclub/AgentGuard)
 ```
 **Priority:** P0 — This IS the PyPI page. Same issue as npm page above.
 
@@ -143,7 +143,7 @@ MIT
 **Recommended:**
 ```markdown
 ## License
-[Business Source License 1.1](https://github.com/0nebot/agentguard/blob/main/LICENSE)
+[Business Source License 1.1](https://github.com/thebotclub/AgentGuard/blob/main/LICENSE)
 ```
 **Priority:** P0 — Same legal issue as npm SDK README. Also update the badge on line 7.
 
@@ -154,11 +154,11 @@ MIT
 **Line:** 41  
 **Current:**
 ```
-GitHub: https://github.com/AgentGuard-tech/agentguard
+GitHub: https://github.com/thebotclub/AgentGuard
 ```
 **Recommended:**
 ```
-GitHub: https://github.com/0nebot/agentguard
+GitHub: https://github.com/thebotclub/AgentGuard
 ```
 **Priority:** P0 — If this is posted as-is, the link is broken. HN readers who try to star/fork the repo get a 404. This kills launch momentum — you only get one shot at Show HN.
 

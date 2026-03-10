@@ -216,7 +216,7 @@ We are not pitching a lifestyle business. We are building the governance infrast
 | **Product** | https://agentguard.tech |
 | **Dashboard** | https://app.agentguard.tech |
 | **API** | https://api.agentguard.tech |
-| **GitHub** | https://github.com/AgentGuard-tech/agentguard *(private — access on request)* |
+| **GitHub** | https://github.com/thebotclub/AgentGuard *(private — access on request)* |
 
 ---
 

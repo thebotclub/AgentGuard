@@ -66,7 +66,7 @@
 | Endpoint count | ⚠️ WARN | **No endpoint count** shown (API actually has 40 live endpoints, not 51+) |
 | Feature descriptions | ✅ PASS | YAML policy engine, CI/CD gate, audit trail — all accurate |
 | Placeholder text | ⚠️ WARN | HTML `placeholder` attributes on form inputs (e.g., "Alex Chen", "alex@company.com", "Acme Corp") — these are form placeholders, not content placeholders. Acceptable. |
-| Broken links | ⚠️ FAIL | **GitHub link broken** — `https://github.com/AgentGuard-tech/agentguard` returns **404**. Both casing variants fail. |
+| Broken links | ⚠️ FAIL | **GitHub link broken** — `https://github.com/thebotclub/AgentGuard` returns **404**. Both casing variants fail. |
 | Email links | ⚠️ WARN | Emails are Cloudflare-obfuscated (`/cdn-cgi/l/email-protection#...`) — may cause issues for some users |
 | Form submission | ✅ PASS | Forms call `/api/v1/signup` with fallback logic |
 | API_BASE config | ⚠️ WARN | `API_BASE = API_FALLBACK` (Azure URL) set as default instead of `API_PRIMARY` (api.agentguard.tech). Forms hit Azure container directly. |
@@ -75,7 +75,7 @@
 - https://docs.agentguard.tech → ✅ 200
 - https://app.agentguard.tech → ✅ 200
 - https://demo.agentguard.tech → ✅ 200
-- https://github.com/AgentGuard-tech/agentguard → ❌ **404**
+- https://github.com/thebotclub/AgentGuard → ❌ **404**
 - https://about.agentguard.tech → ✅ 200
 
 ### 1.5 Mobile Responsiveness
@@ -491,7 +491,7 @@ overview, quickstart, authentication, sdk, signup, evaluate, audit, audit-verify
 
 ### 🔴 Critical (Fix Immediately)
 
-1. **GitHub link broken (404)** — `https://github.com/AgentGuard-tech/agentguard` returns 404 on landing page. Either repo doesn't exist or URL casing is wrong. Appears in footer and multiple CTA sections. *Impact: Credibility damage for developer audience.*
+1. **GitHub link broken (404)** — `https://github.com/thebotclub/AgentGuard` returns 404 on landing page. Either repo doesn't exist or URL casing is wrong. Appears in footer and multiple CTA sections. *Impact: Credibility damage for developer audience.*
 
 2. **API /api/docs returns 404** — No Swagger or ReDoc UI at `https://api.agentguard.tech/api/docs`. Developers expect interactive API documentation. *Impact: Developer experience failure.*
 

@@ -40,8 +40,8 @@
 | **F-DX-06** | Signup docs don't mention `password` field (accepted but entirely undocumented) | DX | DX/Docs Gap | MEDIUM |
 | **F-DX-07** | Demo code in docs uses `ag_agent_*` key for evaluate curl example, but quickstart says use `ag_live_*` | DX | DX/Docs Gap | MEDIUM |
 | **F-DX-08** | SDK package name vs import name mismatch: npm `@the-bot-club/agentguard` imported as `AgentGuard`; PyPI `agentguard-tech` imported as `agentguard` | DX | DX Issue | LOW |
-| **F-CONTENT-01** | GitHub repo link (`https://github.com/AgentGuard-tech/agentguard`) returns 404 on main site + about | FRONTEND | Content Gap | HIGH |
-| **F-CONTENT-02** | GitHub org link (`https://github.com/AgentGuard-tech`) returns 404 on about page | FRONTEND | Content Gap | HIGH |
+| **F-CONTENT-01** | GitHub repo link (`https://github.com/thebotclub/AgentGuard`) returns 404 on main site + about | FRONTEND | Content Gap | HIGH |
+| **F-CONTENT-02** | GitHub org link (`https://github.com/thebotclub`) returns 404 on about page | FRONTEND | Content Gap | HIGH |
 | **F-CONTENT-03** | `twitter:image` meta tag missing on all 5 HTML sites | FRONTEND | Content Gap | MEDIUM |
 | **F-CONTENT-04** | `about.agentguard.tech` og:url set to `https://agentguard.tech/about` instead of `https://about.agentguard.tech` | FRONTEND | Content Gap | LOW |
 | **F-CONTENT-05** | demo.agentguard.tech and about.agentguard.tech have older Last-Modified dates (2026-03-03) vs v0.8.0 release | FRONTEND | Content Gap | LOW |
@@ -498,10 +498,10 @@ logger.info({ tenantId }, 'Policy cache invalidated after update');
 - `agentguard.tech` HTML — footer section (remove or replace GitHub org link and repo link)
 - `about.agentguard.tech` HTML — team/footer section  
 **Instructions:**
-1. Search for `github.com/AgentGuard-tech` in all HTML source files.
+1. Search for `github.com/thebotclub` in all HTML source files.
 2. Choose one of:
    - **Option A (quick):** Remove all GitHub links entirely until repo is public.
-   - **Option B (best):** Create the GitHub org at `github.com/AgentGuard-tech` (free, 5 minutes) and pin a public repo or set a public profile. Then the link works.
+   - **Option B (best):** Create the GitHub org at `github.com/thebotclub` (free, 5 minutes) and pin a public repo or set a public profile. Then the link works.
    - **Option C:** Replace with a coming-soon message: `<a href="/roadmap">Open source coming soon</a>`
 3. In JSON-LD structured data on agentguard.tech, also remove the GitHub URL from `sameAs` or `url` fields if present.
 4. Test: click all GitHub-referencing links, confirm no 404s.

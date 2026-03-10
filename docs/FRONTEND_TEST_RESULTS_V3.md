@@ -78,8 +78,8 @@
 - `/favicon-32.png` and `/favicon-16.png` referenced
 
 ### GitHub Links ⚠️
-- Found reference to `github.com/0nebot` (footer link)
-- **`github.com/0nebot/agentguard` → 404** ❌
+- Found reference to `github.com/thebotclub` (footer link)
+- **`github.com/thebotclub/AgentGuard` → 404** ❌
 - No `agentguard-tech` org repos found (both `/agentguard` and `/validate` → 404)
 
 ### 404 Behavior ⚠️
@@ -233,7 +233,7 @@
 - All references present
 
 ### GitHub Links ⚠️
-- References `github.com/0nebot/agentguard` → **404**
+- References `github.com/thebotclub/AgentGuard` → **404**
 
 ### 404 Behavior ⚠️
 - Returns HTTP 200 with full docs page (soft 404, SPA catch-all)
@@ -265,7 +265,7 @@
 
 | # | Issue | Affected Sites | Impact |
 |---|-------|---------------|--------|
-| 1 | **GitHub repo links → 404** | agentguard.tech, docs.agentguard.tech | `github.com/0nebot/agentguard` returns 404. Breaks open-source credibility. | 
+| 1 | **GitHub repo links → 404** | agentguard.tech, docs.agentguard.tech | `github.com/thebotclub/AgentGuard` returns 404. Breaks open-source credibility. | 
 | 2 | **Soft 404s (HTTP 200 for missing pages)** | agentguard.tech, docs.agentguard.tech, app.agentguard.tech | SEO pollution, crawl budget waste, poor error UX |
 | 3 | **app.agentguard.tech extremely slow** | app.agentguard.tech | >15s page load — likely unusable for users |
 

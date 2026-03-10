@@ -277,7 +277,7 @@ The risk is not "will anyone ever need this" — it's "how long until they're re
 | Developer dashboard | https://app.agentguard.tech |
 | API endpoint | https://api.agentguard.tech |
 | Investor demo | https://demo.agentguard.tech |
-| GitHub (private) | https://github.com/AgentGuard-tech/agentguard |
+| GitHub (private) | https://github.com/thebotclub/AgentGuard |
 
 ---
 

@@ -210,5 +210,5 @@ Common causes:
 ## 📞 Support
 
 - **Docs:** [docs.agentguard.tech](https://docs.agentguard.tech)
-- **Issues:** [github.com/0nebot/agentguard/issues](https://github.com/0nebot/agentguard/issues)
+- **Issues:** [github.com/thebotclub/AgentGuard/issues](https://github.com/thebotclub/AgentGuard/issues)
 - **Pro support:** [agentguard.tech/support](https://agentguard.tech/support)

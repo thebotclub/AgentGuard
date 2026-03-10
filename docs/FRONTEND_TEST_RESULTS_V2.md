@@ -64,7 +64,7 @@
 | https://demo.agentguard.tech | ✅ 200 |
 | https://about.agentguard.tech | ✅ 200 |
 | https://app.agentguard.tech (footer) | ✅ 200 |
-| https://github.com/AgentGuard-tech/agentguard | ❌ 404 — **GitHub repo is private or non-existent** |
+| https://github.com/thebotclub/AgentGuard | ❌ 404 — **GitHub repo is private or non-existent** |
 
 ### SEO
 | Check | Result | Detail |
@@ -80,7 +80,7 @@
 
 **Issues:**
 - ⚠️ `twitter:image` meta tag is missing on the main page (has og:image but not twitter:image)
-- ❌ GitHub repo link (https://github.com/AgentGuard-tech/agentguard) returns 404
+- ❌ GitHub repo link (https://github.com/thebotclub/AgentGuard) returns 404
 
 ---
 
@@ -380,7 +380,7 @@ All 11 expected pages present (18 total nav items).
 | https://agentguard.tech | ✅ 200 |
 | https://linkedin.com/in/hanikashi | ⚠️ 999 (LinkedIn blocks curl — expected) |
 | https://linkedin.com/company/agentguard | ⚠️ 999 (LinkedIn blocks curl — expected) |
-| https://github.com/AgentGuard-tech | ❌ 404 — **GitHub org page not found** |
+| https://github.com/thebotclub | ❌ 404 — **GitHub org page not found** |
 
 ### SEO
 | Check | Result | Detail |
@@ -397,7 +397,7 @@ All 11 expected pages present (18 total nav items).
 - ❌ **Missing CSP header**
 - ❌ **Missing HSTS header**
 - ❌ **Missing Permissions-Policy**
-- ❌ GitHub org link (https://github.com/AgentGuard-tech) returns 404
+- ❌ GitHub org link (https://github.com/thebotclub) returns 404
 - ⚠️ `og:url` mismatch: value is `https://agentguard.tech/about` but the canonical is `https://about.agentguard.tech`
 - ⚠️ `twitter:image` missing
 - ⚠️ Last-Modified is pre-v0.8.0 release date
@@ -435,7 +435,7 @@ All 5 HTML sites are missing `<meta name="twitter:image" ...>`. The `og:image` i
    - Impact: HIGH — visible to every user who logs in; contradicts the v0.8.0 release
 
 2. **GitHub repo link returns 404 everywhere**
-   - URLs: `https://github.com/AgentGuard-tech/agentguard` and `https://github.com/AgentGuard-tech`
+   - URLs: `https://github.com/thebotclub/AgentGuard` and `https://github.com/thebotclub`
    - Impact: HIGH — appears in structured data, footer of main site, and about page
    - Fix: Either make the repo public, create the GitHub org, or remove/replace the link
 

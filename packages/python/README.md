@@ -545,9 +545,9 @@ except RuntimeError as e:
 
 - 🌐 [agentguard.tech](https://agentguard.tech)
 - 🎮 [Live Demo](https://demo.agentguard.tech)
-- 📦 [GitHub](https://github.com/0nebot/agentguard)
+- 📦 [GitHub](https://github.com/thebotclub/AgentGuard)
 - 📘 [npm SDK](https://www.npmjs.com/package/@the-bot-club/agentguard)
 
 ## License
 
-[Business Source License 1.1](https://github.com/0nebot/agentguard/blob/main/LICENSE)
+[Business Source License 1.1](https://github.com/thebotclub/AgentGuard/blob/main/LICENSE)

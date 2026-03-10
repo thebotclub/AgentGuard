@@ -173,7 +173,7 @@ The EU AI Act begins enforcement in August 2026, creating global compliance dema
 - **Dashboard:** https://app.agentguard.tech
 - **Documentation:** https://docs.agentguard.tech
 - **Demo:** https://demo.agentguard.tech
-- **GitHub:** https://github.com/AgentGuard-tech/agentguard
+- **GitHub:** https://github.com/thebotclub/AgentGuard
 - **npm SDK:** https://www.npmjs.com/package/@the-bot-club/agentguard
 - **PyPI SDK:** https://pypi.org/project/agentguard-tech/
 - **Terms of Service:** https://about.agentguard.tech/legal/terms.html
