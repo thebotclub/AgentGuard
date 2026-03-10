@@ -1,48 +1,82 @@
 # Show HN Draft
 
-> Post this after landing page refresh + CLI are deployed.
+## Posting Checklist
+- [ ] Repo is public
+- [ ] README polished ✅
+- [ ] All sites live ✅ (agentguard.tech, docs, demo, app, api)
+- [ ] npm + PyPI at v0.9.0 ✅
+- [ ] Demo playground working ✅
+- [ ] Hani available to respond to comments for first 2 hours
+- [ ] Best time: Tuesday–Thursday, 8-10am EST (13:00-15:00 UTC)
 
 ---
 
-**Title:** Show HN: AgentGuard – Deployment enforcement for AI agents
+**Title:** Show HN: AgentGuard – Runtime security layer for AI agents (open source)
 
-**URL:** https://agentguard.tech
+**URL:** https://github.com/thebotclub/AgentGuard
 
 **Text:**
 
 Hi HN,
 
-We built AgentGuard because we noticed a gap: everyone's building AI agents, but nobody's scanning them before deploy.
+AI agents are shipping to production with access to databases, APIs, shell commands, and file systems — but no security layer between the agent's decision and the action. We built AgentGuard to fix that.
 
-If you deploy a container, it goes through vulnerability scanning, policy checks, and approval gates. If you deploy an AI agent? It goes straight to production with whatever tools it has access to — file writes, shell commands, HTTP requests, database queries — no review.
+AgentGuard evaluates every tool call against configurable policies before execution. Think of it as a firewall for AI agent actions.
 
-AgentGuard adds three enforcement points:
+**What it does:**
 
-**1. CI/CD Gate** — A GitHub Action that scans your agent code for tool usage, validates every tool has a matching security policy, and blocks the pipeline if coverage is below your threshold.
+- Policy engine evaluates tool calls in <1ms (runs in-process, no network round-trip)
+- Kill switch halts every agent in your tenant with one API call
+- Hash-chained audit trail — tamper-evident, SHA-256 linked, verifiable
+- Prompt injection detection (heuristic + Lakera adapter)
+- PII detection & redaction (9 entity types, detect/redact/mask)
+- Batch evaluate — 50 tool calls in one request
+- Pre-built compliance templates (EU AI Act, SOC 2, OWASP Top 10, APRA)
 
-```yaml
-- uses: agentguard-tech/validate@v1
-  with:
-    api-key: ${{ secrets.AGENTGUARD_KEY }}
-    policy-coverage: 100%
+**Integrations:**
+
+Drop-in support for LangChain, CrewAI, OpenAI, Vercel AI SDK, Express/Fastify middleware. TypeScript and Python SDKs.
+
+```typescript
+import { AgentGuard } from '@the-bot-club/agentguard';
+const guard = new AgentGuard({ apiKey: process.env.AG_API_KEY });
+
+const decision = await guard.evaluate({
+  tool: 'database_query',
+  action: 'execute',
+  input: { query: 'DROP TABLE users' }
+});
+// → { result: 'block', reason: 'Destructive SQL operation', riskScore: 95 }
 ```
 
-**2. Runtime Enforcement** — Every tool call is evaluated against your YAML security policy in real-time. Sub-millisecond latency. Block dangerous actions, monitor risky ones, require human approval for sensitive operations.
+**Stack:** Express, PostgreSQL, Zod validation on all endpoints, bcrypt key hashing, 60+ API endpoints, 193 tests passing.
 
-**3. Audit Trail** — Tamper-evident log with SHA-256 hash chain. Every evaluation is recorded with the full decision context. Useful for compliance (EU AI Act, SOC 2).
+**Pricing:** Free tier at 100K events/month. Pro ($149/mo) and Enterprise ($499/mo) for SSO, SIEM export, and SLA.
 
-We also have a CLI (`npx @the-bot-club/agentguard validate .`) for local scanning, MCP middleware for Model Context Protocol servers, and SDKs for TypeScript and Python.
+We're a small team in Australia. The repo has been private while we built it — this is our first public release. Would genuinely appreciate feedback on whether this solves a real problem for you, and what's missing.
 
-The whole thing is 60+ API endpoints running on Express + PostgreSQL. Free to use. Would love feedback on whether this solves a real problem for you.
-
-Live: https://agentguard.tech
+Try the interactive demo: https://demo.agentguard.tech
 Docs: https://docs.agentguard.tech
-Dashboard: https://app.agentguard.tech
-GitHub: https://github.com/thebotclub/AgentGuard
+npm: `npm install @the-bot-club/agentguard`
 
 ---
 
-## Timing Notes
-- Best posting times for HN: Tuesday–Thursday, 8-10am EST (13:00-15:00 UTC)
-- Keep refreshing and responding to comments in the first 2 hours
-- Have the demo playground ready (demo.agentguard.tech)
+## Anticipated HN Questions & Answers
+
+**"How is this different from just writing policy checks in my code?"**
+You could. But AgentGuard gives you a centralized policy engine, audit trail, kill switch, compliance templates, and framework integrations out of the box. Same reason you use a WAF instead of writing HTTP validation by hand.
+
+**"What about latency?"**
+The local PolicyEngine runs in-process in <1ms. Cloud API is ~150ms. For most agent workflows, this is negligible — your LLM calls take 1-10 seconds.
+
+**"Is this just prompt scanning?"**
+No. We evaluate *actions* (tool calls), not just inputs. Prompt injection scanning is one feature, but the core value is blocking dangerous tool executions before they happen.
+
+**"BSL 1.1 isn't open source"**
+Correct — it's source-available. You can read, modify, and self-host. The license converts to Apache 2.0 after 4 years. We chose BSL (same model as HashiCorp, Sentry, MariaDB) because we're bootstrapped and need to sustain development.
+
+**"Why not just use guardrails.ai / Rebuff / LLM Guard?"**
+Those focus on prompt/output validation. AgentGuard focuses on *tool call security* — what happens after the LLM decides to act. Different layer, complementary.
+
+**"EU AI Act — is this actually required?"**
+For high-risk AI systems (Article 6), yes — technical documentation, human oversight, and risk management are mandatory from August 2026. AgentGuard's audit trail and compliance reports directly address Articles 9, 12, and 14.
