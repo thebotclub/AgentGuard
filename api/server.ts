@@ -435,7 +435,7 @@ async function main(): Promise<void> {
   app.use(createAlertsRoutes(db, auth));
 
   // ── Billing (Stripe Checkout + Portal) ─────────────────────────────────
-  app.use(createBillingRoutes(db));
+  app.use(createBillingRoutes(db, auth));
 
   // ── Pricing Page Data ─────────────────────────────────────────────────
   app.use(createPricingRoutes());

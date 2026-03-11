@@ -10,6 +10,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import type { IDatabase } from '../db-interface.js';
+import type { AuthMiddleware } from '../middleware/auth.js';
 import { logger } from '../lib/logger.js';
 
 // ── Stripe API helper (no SDK dependency — raw fetch) ─────────────────────
@@ -68,7 +69,7 @@ const checkoutSchema = z.object({
 
 // ── Route factory ─────────────────────────────────────────────────────────
 
-export function createBillingRoutes(db: IDatabase): Router {
+export function createBillingRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   const router = Router();
 
   /**
@@ -80,7 +81,7 @@ export function createBillingRoutes(db: IDatabase): Router {
    * Body: { plan: "pro" | "enterprise", successUrl?, cancelUrl? }
    * Auth: requires tenant API key (X-API-Key header)
    */
-  router.post('/api/v1/billing/checkout', async (req: Request, res: Response) => {
+  router.post('/api/v1/billing/checkout', auth.requireTenantAuth, async (req: Request, res: Response) => {
     try {
       const parsed = checkoutSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -93,13 +94,8 @@ export function createBillingRoutes(db: IDatabase): Router {
       }
 
       const { plan, successUrl, cancelUrl } = parsed.data;
-      const tenantId = (req as unknown as { tenantId?: string }).tenantId;
+      const tenantId = req.tenantId!;
       const tenantEmail = (req as unknown as { tenantEmail?: string }).tenantEmail;
-
-      if (!tenantId) {
-        res.status(401).json({ error: 'Authentication required' });
-        return;
-      }
 
       const priceId = PRICE_MAP[plan];
       if (!priceId) {
@@ -158,13 +154,9 @@ export function createBillingRoutes(db: IDatabase): Router {
    * Body: { returnUrl? }
    * Auth: requires tenant API key
    */
-  router.post('/api/v1/billing/portal', async (req: Request, res: Response) => {
+  router.post('/api/v1/billing/portal', auth.requireTenantAuth, async (req: Request, res: Response) => {
     try {
-      const tenantId = (req as unknown as { tenantId?: string }).tenantId;
-      if (!tenantId) {
-        res.status(401).json({ error: 'Authentication required' });
-        return;
-      }
+      const tenantId = req.tenantId!;
 
       // Look up the Stripe customer ID for this tenant
       const customerId = await getStripeCustomerId(db, tenantId);
@@ -205,13 +197,9 @@ export function createBillingRoutes(db: IDatabase): Router {
    * Returns the current subscription status for the authenticated tenant.
    * Auth: requires tenant API key
    */
-  router.get('/api/v1/billing/status', async (req: Request, res: Response) => {
+  router.get('/api/v1/billing/status', auth.requireTenantAuth, async (req: Request, res: Response) => {
     try {
-      const tenantId = (req as unknown as { tenantId?: string }).tenantId;
-      if (!tenantId) {
-        res.status(401).json({ error: 'Authentication required' });
-        return;
-      }
+      const tenantId = req.tenantId!;
 
       // Get subscription info from database
       const subscription = await getTenantSubscription(db, tenantId);
