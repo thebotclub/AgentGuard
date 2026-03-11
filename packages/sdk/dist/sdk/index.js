@@ -10,6 +10,7 @@ export { LocalPolicyEngine } from './local-policy-engine.js';
 export { langchainGuard, AgentGuardCallbackHandler } from '../integrations/langchain.js';
 export { openaiGuard } from '../integrations/openai.js';
 export { crewaiGuard } from '../integrations/crewai.js';
+export { createAutoGenGuard, AutoGenToolGuard } from '../integrations/autogen.js';
 export { expressMiddleware, fastifyMiddleware, connectMiddleware, } from '../integrations/express.js';
 export { AgentGuardBlockError } from '../integrations/errors.js';
 // Auto-register exports

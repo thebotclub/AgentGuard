@@ -38,6 +38,13 @@ export type {
   CrewAIGuardResult,
 } from '../integrations/crewai.js';
 
+export { createAutoGenGuard, AutoGenToolGuard } from '../integrations/autogen.js';
+export type {
+  AutoGenGuardOptions,
+  AutoGenBlockInfo,
+  AutoGenAllowInfo,
+} from '../integrations/autogen.js';
+
 export {
   expressMiddleware,
   fastifyMiddleware,

@@ -14,6 +14,8 @@ export { openaiGuard } from '../integrations/openai.js';
 export type { OpenAIGuardOptions, AgentGuardToolDecision, AgentGuardBatchResult, } from '../integrations/openai.js';
 export { crewaiGuard } from '../integrations/crewai.js';
 export type { CrewAIGuardOptions, CrewAIGuard, CrewAIGuardResult, } from '../integrations/crewai.js';
+export { createAutoGenGuard, AutoGenToolGuard } from '../integrations/autogen.js';
+export type { AutoGenGuardOptions, AutoGenBlockInfo, AutoGenAllowInfo, } from '../integrations/autogen.js';
 export { expressMiddleware, fastifyMiddleware, connectMiddleware, } from '../integrations/express.js';
 export type { ExpressMiddlewareOptions } from '../integrations/express.js';
 export { AgentGuardBlockError } from '../integrations/errors.js';

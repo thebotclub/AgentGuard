@@ -16,6 +16,8 @@ package does not require any framework to be installed.
 from .langchain import AgentGuardCallbackHandler, langchain_guard
 from .openai import openai_guard
 from .crewai import crewai_guard, AgentGuardBlockError
+from .autogen import AutoGenGuard, create_guarded_agent
+from .a2a import A2AGuard
 
 __all__ = [
     "AgentGuardCallbackHandler",
@@ -23,4 +25,7 @@ __all__ = [
     "openai_guard",
     "crewai_guard",
     "AgentGuardBlockError",
+    "AutoGenGuard",
+    "create_guarded_agent",
+    "A2AGuard",
 ]
