@@ -104,7 +104,10 @@ jobs:
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_NAME }}.azurecr.io/agentguard-api:${{ github.sha }} \
             --min-replicas 1 \
-            --max-replicas 3
+            --max-replicas 3 \
+            --set-env-vars \
+              "STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}" \
+              "STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}"
           echo "✅ API deployed (min 1 replica — no cold start): ${{ github.sha }}"
 
       - name: Build & deploy Landing

@@ -47,6 +47,7 @@ import { createDocsRoutes } from './routes/docs.js';
 import { createLicenseRoutes } from './routes/license.js';
 import { createStripeWebhookRoutes } from './routes/stripe-webhook.js';
 import { createPricingRoutes } from './routes/pricing.js';
+import { createBillingRoutes } from './routes/billing.js';
 import { createAlertsRoutes } from './routes/alerts.js';
 import { createAnomalyDetector } from './lib/anomaly-detector.js';
 import type { IDatabase } from './db-interface.js';
@@ -297,6 +298,12 @@ async function main(): Promise<void> {
           'Certify agent after 100% coverage validation (requires API key)',
         'POST /api/v1/mcp/admit':
           'MCP server pre-flight admission check (requires API key)',
+        'POST /api/v1/billing/checkout':
+          'Create Stripe Checkout session for Pro/Enterprise upgrade (requires API key)',
+        'POST /api/v1/billing/portal':
+          'Create Stripe Customer Portal session to manage subscription (requires API key)',
+        'GET  /api/v1/billing/status':
+          'Get current subscription status (requires API key)',
       },
       docs: 'https://agentguard.tech',
       dashboard: 'https://app.agentguard.tech',
@@ -426,6 +433,9 @@ async function main(): Promise<void> {
 
   // ── Alerts & Anomaly Rules ────────────────────────────────────────────
   app.use(createAlertsRoutes(db, auth));
+
+  // ── Billing (Stripe Checkout + Portal) ─────────────────────────────────
+  app.use(createBillingRoutes(db));
 
   // ── Pricing Page Data ─────────────────────────────────────────────────
   app.use(createPricingRoutes());

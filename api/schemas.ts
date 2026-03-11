@@ -144,7 +144,7 @@ export const KillswitchRequestSchema = z
   .object({
     active: z.boolean({ error: '"active" must be a boolean (true or false)' }),
   })
-  .strict({ message: 'Unknown fields are not allowed. Body must be {"active": true} or {"active": false}' });
+  .strict();
 
 // ── Webhook event names ───────────────────────────────────────────────────
 // Accepted values: "all" (alias for "*"), "evaluate", "block", "allow",
