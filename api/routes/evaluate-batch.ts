@@ -114,6 +114,12 @@ export function createBatchEvaluateRoutes(db: IDatabase, auth: AuthMiddleware): 
                 (new Date(rateLimitResult.resetAt ?? Date.now() + 60000).getTime() - Date.now()) / 1000,
               ),
               message: 'Rate limit exceeded. Please wait before retrying.',
+              signup: {
+                hint: 'Sign up for a free API key to get higher rate limits',
+                method: 'POST',
+                url: 'https://api.agentguard.tech/api/v1/signup',
+                body: { name: 'Your Agent Name' },
+              },
             });
           }
         } catch {

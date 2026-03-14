@@ -143,6 +143,12 @@ export function createEvaluateRoutes(
               error: 'Rate limit exceeded',
               remaining: 0,
               resetAt: rateLimitResult.resetAt,
+              signup: {
+                hint: 'Sign up for a free API key to get higher rate limits',
+                method: 'POST',
+                url: 'https://api.agentguard.tech/api/v1/signup',
+                body: { name: 'Your Agent Name' },
+              },
             });
           }
         } catch {
@@ -606,6 +612,11 @@ export function createEvaluateRoutes(
         ? enrichDecision(decision, tool, effectivePolicy)
         : {};
 
+      // Add transparency notice when allowed by the default catch-all rule
+      const isCatchAllAllow = decision.result === 'allow' &&
+        typeof decision.matchedRuleId === 'string' &&
+        decision.matchedRuleId.includes('allow-all');
+
       res.json({
         result: decision.result,
         matchedRuleId: decision.matchedRuleId,
@@ -616,6 +627,8 @@ export function createEvaluateRoutes(
         ...(enriched.suggestion ? { suggestion: enriched.suggestion } : {}),
         ...(enriched.docs ? { docs: enriched.docs } : {}),
         ...(enriched.alternatives !== undefined ? { alternatives: enriched.alternatives } : {}),
+        // Transparency notice for default catch-all allow
+        ...(isCatchAllAllow ? { notice: 'Allowed by default policy. Configure a custom policy for production use at PUT /api/v1/policy.' } : {}),
         // Existing optional fields
         ...(agentId ? { agentId } : {}),
         ...(approvalId ? { approvalId } : {}),

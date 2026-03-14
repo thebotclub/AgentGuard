@@ -15,7 +15,7 @@ import crypto from 'crypto';
 import { SignupRequest, KillswitchRequestSchema } from '../schemas.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
-import { signupRateLimit } from '../middleware/rate-limit.js';
+import { signupRateLimit, recoveryRateLimit } from '../middleware/rate-limit.js';
 import {
   templateCache,
   DEFAULT_POLICY,
@@ -69,17 +69,50 @@ export function createAuthRoutes(
     if (!signupRateLimit(ip)) {
       return res
         .status(429)
-        .json({ error: 'Too many signups. Limit: 5 per hour per IP.' });
+        .json({
+          error: 'Too many signups. Limit: 5 per hour per IP.',
+          signup: {
+            hint: 'Sign up for a free API key to get higher rate limits',
+            method: 'POST',
+            url: 'https://api.agentguard.tech/api/v1/signup',
+            body: { name: 'Your Agent Name' },
+          },
+        });
     }
 
     const normalizedEmail = email ? email.trim().toLowerCase() : '';
     const cleanName = name.trim().substring(0, 200);
 
-    // Only check for duplicates if an email was provided
+    // Idempotent signup: if email exists, rotate key and return new one
     if (normalizedEmail) {
       const existing = await db.getTenantByEmail(normalizedEmail);
       if (existing) {
-        return res.status(409).json({ error: 'Email already registered' });
+        try {
+          // Deactivate all existing active keys for this tenant
+          const activeKeys = await db.all<{ key_sha256: string }>(
+            'SELECT key_sha256 FROM api_keys WHERE tenant_id = ? AND is_active = 1 AND key_sha256 IS NOT NULL',
+            [existing.id],
+          );
+          for (const k of activeKeys) {
+            await db.deactivateApiKeyBySha256(k.key_sha256);
+          }
+
+          // Generate new key
+          const newKey = generateApiKey();
+          await db.createApiKey(newKey, existing.id, 'recovered');
+
+          console.log(`[signup] recovered tenant: ${existing.id} (${normalizedEmail})`);
+
+          return res.status(200).json({
+            tenantId: existing.id,
+            apiKey: newKey,
+            recovered: true,
+            message: 'Existing account found. New API key generated (previous key invalidated).',
+          });
+        } catch (e: unknown) {
+          console.error('[signup] recovery error:', e instanceof Error ? e.message : e);
+          return res.status(500).json({ error: 'Failed to recover account' });
+        }
       }
     }
 
@@ -115,6 +148,68 @@ export function createAuthRoutes(
         },
       },
     });
+  });
+
+  // ── POST /api/v1/signup/recover ─────────────────────────────────────────
+  // Recover access to an existing account by email. Issues a new API key
+  // and invalidates all previous keys. Rate limited to 2/hour per IP.
+  router.post('/api/v1/signup/recover', async (req: Request, res: Response) => {
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.socket.remoteAddress ||
+      'unknown';
+
+    if (!recoveryRateLimit(ip)) {
+      return res
+        .status(429)
+        .json({ error: 'Too many recovery attempts. Limit: 2 per hour per IP.' });
+    }
+
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required for account recovery.' });
+    }
+
+    const existing = await db.getTenantByEmail(email);
+    if (!existing) {
+      // Don't reveal whether the email exists — return generic message
+      return res.status(404).json({ error: 'No account found for this email.' });
+    }
+
+    try {
+      // Deactivate all existing active keys for this tenant
+      const activeKeys = await db.all<{ key_sha256: string }>(
+        'SELECT key_sha256 FROM api_keys WHERE tenant_id = ? AND is_active = 1 AND key_sha256 IS NOT NULL',
+        [existing.id],
+      );
+      for (const k of activeKeys) {
+        await db.deactivateApiKeyBySha256(k.key_sha256);
+      }
+
+      // Generate new key
+      const newKey = generateApiKey();
+      await db.createApiKey(newKey, existing.id, 'recovered');
+
+      // Audit trail (non-blocking)
+      try {
+        await storeAuditEvent(
+          db, existing.id, null, 'key_recover', 'allow', null, 0,
+          'API key recovered via email — old keys invalidated', 0, '', null,
+        );
+      } catch (e) {
+        console.warn('[signup/recover] audit event failed (non-blocking):', e);
+      }
+
+      console.log(`[signup/recover] tenant ${existing.id}: key recovered via email`);
+
+      res.json({
+        apiKey: newKey,
+        message: 'New key generated. Previous key invalidated.',
+      });
+    } catch (e: unknown) {
+      console.error('[signup/recover] error:', e instanceof Error ? e.message : e);
+      res.status(500).json({ error: 'Failed to recover key' });
+    }
   });
 
   // ── POST /api/v1/keys/rotate ────────────────────────────────────────────

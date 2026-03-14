@@ -22,7 +22,7 @@ info:
     ## Base URL
 
     Production: `https://api.agentguard.tech/api/v1`
-  version: 0.8.0
+  version: 0.9.0
   contact:
     name: AgentGuard Support
     url: https://agentguard.tech
@@ -463,6 +463,140 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  # ── SETUP ────────────────────────────────────────────────────────────────
+
+  /setup:
+    get:
+      tags: [Auth]
+      summary: Agent-readable setup guide
+      description: |
+        Returns a step-by-step guide any AI agent can follow to integrate AgentGuard.
+        No authentication required. This is the zero-friction onboarding path: an agent
+        reads this endpoint and does the rest.
+      operationId: getSetupGuide
+      security: []
+      responses:
+        '200':
+          description: Setup guide
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: "AgentGuard"
+                  tagline:
+                    type: string
+                  instructions:
+                    type: string
+                  tryNow:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                      url:
+                        type: string
+                      headers:
+                        type: object
+                      body:
+                        type: object
+                      expectedResult:
+                        type: object
+                      note:
+                        type: string
+                  fullSetup:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        step:
+                          type: integer
+                        action:
+                          type: string
+                        method:
+                          type: string
+                        url:
+                          type: string
+                        headers:
+                          type: object
+                        body:
+                          type: object
+                        note:
+                          type: string
+                  defaultPolicy:
+                    type: object
+                  sdks:
+                    type: object
+                  links:
+                    type: object
+
+  /health/detailed:
+    get:
+      tags: [Health]
+      summary: Detailed health check
+      description: |
+        Returns component-level health status including database latency, uptime,
+        and version information. Designed for k8s liveness/readiness probes and
+        monitoring dashboards. No authentication required.
+      operationId: healthCheckDetailed
+      security: []
+      responses:
+        '200':
+          description: All components healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, degraded]
+                  version:
+                    type: string
+                  uptime:
+                    type: integer
+                    description: Server uptime in seconds
+                  components:
+                    type: object
+                    properties:
+                      database:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum: [ok, error]
+                          latencyMs:
+                            type: integer
+                  timestamp:
+                    type: string
+                    format: date-time
+              example:
+                status: "ok"
+                version: "0.9.0"
+                uptime: 86400
+                components:
+                  database:
+                    status: "ok"
+                    latencyMs: 2
+                timestamp: "2024-01-15T10:00:00Z"
+        '503':
+          description: System degraded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [degraded]
+                  version:
+                    type: string
+                  components:
+                    type: object
+
   # ── AUTH ─────────────────────────────────────────────────────────────────
 
   /signup:
@@ -728,6 +862,174 @@ paths:
                     approvalId: null
         '400':
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /evaluate/batch:
+    post:
+      tags: [Evaluate]
+      summary: Batch evaluate agent actions
+      description: |
+        Evaluate up to 50 tool calls in a single request. Each call is evaluated in parallel
+        against the same effective policy. Individual call failures do not fail the batch.
+        Returns per-call decisions plus an aggregate summary.
+      operationId: evaluateBatch
+      security:
+        - ApiKeyAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [calls]
+              properties:
+                agentId:
+                  type: string
+                  maxLength: 200
+                  description: Agent identifier (applied to all calls)
+                sessionId:
+                  type: string
+                  maxLength: 200
+                  description: Session identifier for grouping audit events
+                messageHistory:
+                  type: array
+                  items:
+                    type: object
+                    required: [role, content]
+                    properties:
+                      role:
+                        type: string
+                        enum: [user, assistant, system]
+                      content:
+                        type: string
+                calls:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  description: Tool calls to evaluate (1–50)
+                  items:
+                    type: object
+                    required: [tool]
+                    properties:
+                      tool:
+                        type: string
+                        maxLength: 200
+                        pattern: '^[a-zA-Z0-9_.\-:]+$'
+                      params:
+                        type: object
+                      context:
+                        type: object
+            example:
+              agentId: "my-agent-001"
+              calls:
+                - tool: "file_read"
+                  params:
+                    path: "/var/log/app.log"
+                - tool: "shell_exec"
+                  params:
+                    command: "rm -rf /tmp"
+                - tool: "db_query"
+                  params:
+                    table: "users"
+      responses:
+        '200':
+          description: Batch evaluation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batchId:
+                    type: string
+                    format: uuid
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: integer
+                        tool:
+                          type: string
+                        decision:
+                          type: string
+                          enum: [allow, block, monitor, require_approval]
+                        riskScore:
+                          type: integer
+                        matchedRuleId:
+                          type: string
+                          nullable: true
+                        durationMs:
+                          type: number
+                        reason:
+                          type: string
+                        suggestion:
+                          type: string
+                        docs:
+                          type: string
+                        alternatives:
+                          type: array
+                          items:
+                            type: string
+                        approvalId:
+                          type: string
+                        approvalUrl:
+                          type: string
+                        warnings:
+                          type: array
+                          items:
+                            type: string
+                  summary:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      allowed:
+                        type: integer
+                      monitored:
+                        type: integer
+                      blocked:
+                        type: integer
+                      requireApproval:
+                        type: integer
+                  batchDurationMs:
+                    type: number
+              example:
+                batchId: "550e8400-e29b-41d4-a716-446655440099"
+                results:
+                  - index: 0
+                    tool: "file_read"
+                    decision: "allow"
+                    riskScore: 10
+                    matchedRuleId: "rule-allow-read"
+                    durationMs: 2.1
+                  - index: 1
+                    tool: "shell_exec"
+                    decision: "block"
+                    riskScore: 500
+                    matchedRuleId: "rule-block-shell"
+                    durationMs: 1.8
+                    reason: "Shell execution is blocked by security policy"
+                    suggestion: "Use a safer alternative like file_read or file_write"
+                summary:
+                  total: 2
+                  allowed: 1
+                  monitored: 0
+                  blocked: 1
+                  requireApproval: 0
+                batchDurationMs: 5.4
+        '400':
+          description: Validation error
           content:
             application/json:
               schema:
@@ -1117,6 +1419,71 @@ paths:
                     hash: "abc123..."
                 total: 1
                 chainValid: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /audit/events:
+    get:
+      tags: [Audit]
+      summary: Cursor-based paginated audit events
+      description: |
+        Retrieve audit events using cursor-based pagination. More efficient than offset-based
+        pagination for large audit trails. Use the `nextCursor` value from the response as the
+        `before` parameter in subsequent requests.
+      operationId: getAuditEvents
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+          description: Number of events to return (1–200)
+        - name: before
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Cursor — return events before this ISO 8601 timestamp
+      responses:
+        '200':
+          description: Paginated audit events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEntry'
+                  nextCursor:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Cursor for the next page (null if no more events)
+              example:
+                events:
+                  - id: "audit-001"
+                    tool: "file_read"
+                    result: "allow"
+                    riskScore: 10
+                    timestamp: "2024-01-15T10:00:01Z"
+                    hash: "abc123..."
+                nextCursor: "2024-01-15T10:00:01Z"
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized
           content:
@@ -1538,6 +1905,75 @@ paths:
                     type: integer
         '401':
           description: Admin key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── USAGE ──────────────────────────────────────────────────────────────
+
+  /usage:
+    get:
+      tags: [Analytics]
+      summary: Usage statistics
+      description: |
+        Retrieve evaluation usage statistics for the authenticated tenant.
+        Includes total evaluations, breakdowns by result, last 24h count,
+        top blocked tools, and average response time.
+      operationId: getUsageStats
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Usage statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenantId:
+                    type: string
+                  totalEvaluations:
+                    type: integer
+                  blocked:
+                    type: integer
+                  allowed:
+                    type: integer
+                  monitored:
+                    type: integer
+                  requireApproval:
+                    type: integer
+                  last24h:
+                    type: integer
+                    description: Evaluations in the last 24 hours
+                  topBlockedTools:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tool:
+                          type: string
+                        count:
+                          type: integer
+                  avgResponseMs:
+                    type: number
+                    description: Average evaluation response time in milliseconds
+              example:
+                tenantId: "550e8400-e29b-41d4-a716-446655440000"
+                totalEvaluations: 1250
+                blocked: 42
+                allowed: 1100
+                monitored: 95
+                requireApproval: 13
+                last24h: 87
+                topBlockedTools:
+                  - tool: "shell_exec"
+                    count: 25
+                  - tool: "eval_code"
+                    count: 12
+                avgResponseMs: 3.45
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:

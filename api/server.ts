@@ -117,6 +117,38 @@ app.use(
 
 app.disable('x-powered-by');
 
+// ── llms.txt — plain-text agent discovery (mounted before body parsers) ───
+app.get('/llms.txt', (_req: Request, res: Response) => {
+  res.set('Content-Type', 'text/plain; charset=utf-8');
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.send(`# AgentGuard
+> Runtime security for AI agents. Evaluate tool calls before execution.
+
+## Setup
+For AI agents: GET https://api.agentguard.tech/api/v1/setup
+For humans: https://agentguard.tech/docs
+
+## Try Without Signup
+POST https://api.agentguard.tech/api/v1/evaluate
+Content-Type: application/json
+{"tool": "read_file", "params": {"path": "/etc/passwd"}}
+
+## Sign Up (free, no email required)
+POST https://api.agentguard.tech/api/v1/signup
+Content-Type: application/json
+{"name": "My Agent"}
+
+## SDKs
+- Python: pip install agentguard
+- Node.js: npm install @the-bot-club/agentguard
+
+## Links
+- API: https://api.agentguard.tech
+- Docs: https://agentguard.tech/docs
+- GitHub: https://github.com/thebotclub/AgentGuard
+`);
+});
+
 // ── Extend Express Request type for raw body capture ────────────────────────
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -382,7 +414,7 @@ async function main(): Promise<void> {
         method: 'POST',
         url: 'https://api.agentguard.tech/api/v1/evaluate',
         headers: { 'Content-Type': 'application/json' },
-        body: { tool: 'shell_exec', params: { command: 'rm -rf /' } },
+        body: { tool: 'shell_exec', params: { command: 'cat /etc/shadow' } },
         expectedResult: { result: 'block', reason: 'Blocked by rule...' },
         note: 'Works without auth. Rate limited to 10 requests/min. Uses default security policy.',
       },
@@ -394,10 +426,19 @@ async function main(): Promise<void> {
           url: 'https://api.agentguard.tech/api/v1/signup',
           headers: { 'Content-Type': 'application/json' },
           body: { name: 'Your Agent Name' },
-          note: 'Returns an apiKey (starts with ag_live_). Store it as an environment variable AGENTGUARD_API_KEY or in your config.',
+          note: 'Returns an apiKey (starts with ag_live_). Store it securely — you cannot retrieve it again.',
         },
         {
           step: 2,
+          action: 'Store the API key securely',
+          method: 'SET',
+          url: 'N/A — local configuration step',
+          headers: {},
+          body: {},
+          note: 'Set AGENTGUARD_API_KEY as an environment variable or store in your framework config. See keyStorage below for framework-specific instructions.',
+        },
+        {
+          step: 3,
           action: 'Before executing any tool, check it against AgentGuard',
           method: 'POST',
           url: 'https://api.agentguard.tech/api/v1/evaluate',
@@ -410,7 +451,22 @@ async function main(): Promise<void> {
             require_approval: 'Pause and ask a human for approval before executing',
           },
         },
+        {
+          step: 4,
+          action: 'Optionally configure a custom policy for your use case',
+          method: 'PUT',
+          url: 'https://api.agentguard.tech/api/v1/policy',
+          headers: { 'X-API-Key': 'ag_live_<your key>', 'Content-Type': 'application/json' },
+          body: { rules: ['<see docs for policy rule format>'] },
+          note: 'The default policy blocks dangerous tools and allows everything else. Customise it for production.',
+        },
       ],
+      keyStorage: {
+        env: 'Set AGENTGUARD_API_KEY environment variable',
+        openclaw: 'Write to your workspace: echo the key to TOOLS.md or a config file',
+        langchain: 'Add AGENTGUARD_API_KEY to your .env file',
+        general: 'Store the API key securely. You cannot retrieve it from the API again.',
+      },
       defaultPolicy: {
         description: 'New accounts ship with a sensible default. No configuration needed.',
         blocked: ['shell_exec', 'sudo', 'chmod', 'chown', 'rm', 'rmdir', 'eval_code', 'system_command'],
@@ -429,6 +485,43 @@ async function main(): Promise<void> {
       },
     });
   });
+
+  // ── OpenAPI Spec Endpoints ──────────────────────────────────────────────
+  // Serve before auth middleware so the spec is publicly accessible.
+  {
+    const { readFileSync } = await import('fs');
+    const { join, dirname } = await import('path');
+    const { fileURLToPath } = await import('url');
+    const jsYaml = await import('js-yaml');
+    const __fn = fileURLToPath(import.meta.url);
+    const __dn = dirname(__fn);
+    const specPath = join(__dn, '..', 'openapi.yaml');
+
+    app.get('/api/v1/openapi.yaml', (_req: Request, res: Response) => {
+      try {
+        const yaml = readFileSync(specPath, 'utf8');
+        res.setHeader('Content-Type', 'text/yaml');
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.send(yaml);
+      } catch {
+        res.status(500).json({ error: 'Could not load OpenAPI spec' });
+      }
+    });
+
+    app.get('/api/v1/openapi.json', (_req: Request, res: Response) => {
+      try {
+        const yamlContent = readFileSync(specPath, 'utf8');
+        const jsonSpec = jsYaml.load(yamlContent);
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.json(jsonSpec);
+      } catch {
+        res.status(500).json({ error: 'Could not load OpenAPI spec' });
+      }
+    });
+  }
 
   // ── DB Health / Graceful Degradation Middleware ────────────────────────
   // If the DB is slow (>5s ping), return 503 with Retry-After to prevent

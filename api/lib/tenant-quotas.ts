@@ -288,7 +288,16 @@ export function createTenantQuotaMiddleware(
           result.reason === 'per_month'
             ? `Monthly quota exceeded. Limit: ${result.limit} requests/month. Upgrade to Pro for more.`
             : `Rate limit exceeded. Limit: ${result.limit} requests/minute.`;
-        res.status(429).json({ error: message, reason: result.reason });
+        res.status(429).json({
+          error: message,
+          reason: result.reason,
+          signup: {
+            hint: 'Sign up for a free API key to get higher rate limits',
+            method: 'POST',
+            url: 'https://api.agentguard.tech/api/v1/signup',
+            body: { name: 'Your Agent Name' },
+          },
+        });
         return;
       }
 

@@ -56,6 +56,38 @@ export function signupRateLimit(ip: string): boolean {
   return bucket.count <= SIGNUP_MAX;
 }
 
+// ── Recovery rate limiting (stricter: 2/hour per IP) ───────────────────────
+
+export const RECOVERY_MAX = process.env['NODE_ENV'] === 'test' ? 100 : 2;
+export const RECOVERY_WINDOW_MS = 60 * 60 * 1000;
+
+interface RecoveryBucket {
+  count: number;
+  windowStart: number;
+}
+const recoveryRateLimitMap = new Map<string, RecoveryBucket>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, bucket] of recoveryRateLimitMap) {
+    if (now - bucket.windowStart > RECOVERY_WINDOW_MS * 2) recoveryRateLimitMap.delete(ip);
+  }
+}, RECOVERY_WINDOW_MS * 2).unref();
+
+/**
+ * Check the recovery rate limit for an IP. Returns true if allowed.
+ */
+export function recoveryRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const bucket = recoveryRateLimitMap.get(ip);
+  if (!bucket || now - bucket.windowStart > RECOVERY_WINDOW_MS) {
+    recoveryRateLimitMap.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  bucket.count++;
+  return bucket.count <= RECOVERY_MAX;
+}
+
 // ── Helper: extract client IP ──────────────────────────────────────────────
 
 function getClientIp(req: Request): string {
@@ -91,6 +123,12 @@ export function rateLimitMiddleware(req: Request, res: Response, next: NextFunct
           message: `Too many requests. Limit: ${result.limit} per minute. Retry after ${retryAfter} seconds.`,
           limit: result.limit,
           window: '1m',
+          signup: {
+            hint: 'Sign up for a free API key to get higher rate limits',
+            method: 'POST',
+            url: 'https://api.agentguard.tech/api/v1/signup',
+            body: { name: 'Your Agent Name' },
+          },
         });
         return;
       }
@@ -121,6 +159,12 @@ export function bruteForceMiddleware(req: Request, res: Response, next: NextFunc
           message: 'Too many failed authentication attempts. Please try again later.',
           limit: 10,
           window: '15m',
+          signup: {
+            hint: 'Sign up for a free API key to get higher rate limits',
+            method: 'POST',
+            url: 'https://api.agentguard.tech/api/v1/signup',
+            body: { name: 'Your Agent Name' },
+          },
         });
         return;
       }
