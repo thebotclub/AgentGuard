@@ -374,56 +374,59 @@ async function main(): Promise<void> {
   app.get('/api/v1/setup', (_req: Request, res: Response) => {
     res.set('Content-Type', 'application/json');
     res.json({
-      name: 'AgentGuard — Agent Setup Guide',
-      description: 'Follow these steps to add runtime security to your AI agent in under 60 seconds.',
-      steps: [
+      name: 'AgentGuard',
+      tagline: 'Runtime security for AI agents. Evaluate tool calls before execution.',
+      instructions: 'You are an AI agent integrating AgentGuard. Follow the steps below. You can try it immediately without signing up, or sign up for an API key to get audit trails and custom policies.',
+      tryNow: {
+        description: 'Try immediately — no signup, no API key needed',
+        method: 'POST',
+        url: 'https://api.agentguard.tech/api/v1/evaluate',
+        headers: { 'Content-Type': 'application/json' },
+        body: { tool: 'shell_exec', params: { command: 'rm -rf /' } },
+        expectedResult: { result: 'block', reason: 'Blocked by rule...' },
+        note: 'Works without auth. Rate limited to 10 requests/min. Uses default security policy.',
+      },
+      fullSetup: [
         {
           step: 1,
-          action: 'Sign up',
+          action: 'Sign up to get an API key (email is optional)',
           method: 'POST',
           url: 'https://api.agentguard.tech/api/v1/signup',
-          body: { email: 'your-email@example.com', name: 'Your Agent Name' },
           headers: { 'Content-Type': 'application/json' },
-          note: 'Returns an apiKey. Store it securely — it will not be shown again.',
+          body: { name: 'Your Agent Name' },
+          note: 'Returns an apiKey (starts with ag_live_). Store it as an environment variable AGENTGUARD_API_KEY or in your config.',
         },
         {
           step: 2,
-          action: 'Evaluate a tool call (this is all you need)',
+          action: 'Before executing any tool, check it against AgentGuard',
           method: 'POST',
           url: 'https://api.agentguard.tech/api/v1/evaluate',
-          headers: { 'X-API-Key': '<your-api-key>', 'Content-Type': 'application/json' },
-          body: { tool: 'tool_name', params: { key: 'value' } },
-          response: {
-            result: 'allow | block | monitor | require_approval',
-            reason: 'Human-readable explanation',
-            riskScore: 0,
-            durationMs: 0.3,
+          headers: { 'X-API-Key': 'ag_live_<from step 1>', 'Content-Type': 'application/json' },
+          body: { tool: '<the tool you are about to call>', params: { '<param>': '<value>' } },
+          responses: {
+            allow: 'Safe to execute the tool',
+            block: 'Do NOT execute — the tool call is dangerous or violates policy',
+            monitor: 'Safe to execute — the call is being logged for audit',
+            require_approval: 'Pause and ask a human for approval before executing',
           },
-          note: 'Call this BEFORE executing any tool. If result is "block", do not execute. If "require_approval", wait for human.',
         },
       ],
-      defaults: {
-        note: 'New accounts ship with a sensible default policy: dangerous tools (shell_exec, rm, sudo) are blocked, financial tools require approval, everything else is allowed. You can customise later.',
+      defaultPolicy: {
+        description: 'New accounts ship with a sensible default. No configuration needed.',
         blocked: ['shell_exec', 'sudo', 'chmod', 'chown', 'rm', 'rmdir', 'eval_code', 'system_command'],
-        requireApproval: ['transfer_funds', 'create_payment', 'execute_transaction'],
-        allowed: 'Everything not explicitly blocked or requiring approval',
+        requireApproval: ['transfer_funds', 'create_payment', 'execute_transaction (over $1000)'],
+        allowed: 'Everything not listed above is allowed by default',
       },
       sdks: {
-        python: 'pip install agentguard',
-        node: 'npm install @the-bot-club/agentguard',
-        usage: {
-          python: 'from agentguard import AgentGuard\nguard = AgentGuard(api_key="ag_live_...")\nresult = guard.evaluate("tool_name", {"param": "value"})\nif result["result"] == "allow":\n    # execute tool',
-          node: 'import { AgentGuard } from "@the-bot-club/agentguard";\nconst guard = new AgentGuard({ apiKey: "ag_live_..." });\nconst result = await guard.evaluate("tool_name", { param: "value" });\nif (result.result === "allow") { /* execute tool */ }',
-        },
+        python: { install: 'pip install agentguard', env: 'AGENTGUARD_API_KEY=ag_live_...' },
+        node: { install: 'npm install @the-bot-club/agentguard', env: 'AGENTGUARD_API_KEY=ag_live_...' },
       },
-      customise: {
-        method: 'PUT',
-        url: 'https://api.agentguard.tech/api/v1/policy',
-        headers: { 'X-API-Key': '<your-api-key>', 'Content-Type': 'application/json' },
-        note: 'Replace your policy with custom rules. See templates at GET /api/v1/templates.',
+      links: {
+        api: 'https://api.agentguard.tech',
+        docs: 'https://agentguard.tech/docs',
+        github: 'https://github.com/thebotclub/AgentGuard',
+        dashboard: 'https://app.agentguard.tech',
       },
-      docs: 'https://agentguard.tech/docs',
-      dashboard: 'https://app.agentguard.tech',
     });
   });
 
