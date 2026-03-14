@@ -1552,7 +1552,7 @@ paths:
                   items:
                     type: string
                     enum: [block, killswitch, hitl, "*"]
-                  description: Events to subscribe to (default: [block, killswitch])
+                  description: "Events to subscribe to (default: [block, killswitch])"
                 secret:
                   type: string
                   description: Optional secret for HMAC signature verification
