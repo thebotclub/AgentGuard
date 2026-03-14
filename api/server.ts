@@ -468,10 +468,17 @@ async function main(): Promise<void> {
         general: 'Store the API key securely. You cannot retrieve it from the API again.',
       },
       defaultPolicy: {
-        description: 'New accounts ship with a sensible default. No configuration needed.',
-        blocked: ['shell_exec', 'sudo', 'chmod', 'chown', 'rm', 'rmdir', 'eval_code', 'system_command'],
-        requireApproval: ['transfer_funds', 'create_payment', 'execute_transaction (over $1000)'],
-        allowed: 'Everything not listed above is allowed by default',
+        description: 'New accounts ship with a comprehensive default policy. No configuration needed.',
+        blocked: [
+          'shell_exec, sudo, chmod, chown, system_command (privilege escalation)',
+          'rm, rmdir, unlink, file_delete, drop_table (destructive ops)',
+          'eval, eval_code, exec_code, run_code (code execution)',
+          'send_email, upload_file, post_webhook, scp (data exfiltration)',
+          'read_file /etc/shadow, .pem, .key, .env, .ssh/, .aws/credentials (sensitive file reads)',
+        ],
+        monitored: ['file reads from /etc/, /var/log/, /proc/, /sys/ (system paths)'],
+        requireApproval: ['transfer_funds, create_payment, execute_transaction (over $1000)'],
+        allowed: 'Safe read operations and anything not matched above',
       },
       sdks: {
         python: { install: 'pip install agentguard', env: 'AGENTGUARD_API_KEY=ag_live_...' },

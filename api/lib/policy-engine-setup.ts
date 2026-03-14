@@ -163,6 +163,84 @@ export const DEFAULT_POLICY: PolicyDocument = {
       riskBoost: 200,
     },
     {
+      id: 'block-sensitive-file-reads',
+      description: 'Block reads of sensitive system files (credentials, keys, shadow, passwd)',
+      priority: 7,
+      action: 'block',
+      severity: 'critical',
+      when: [
+        {
+          tool: {
+            in: ['file_read', 'read_file', 'cat', 'read', 'get_file', 'open_file', 'load_file', 'view_file'],
+          },
+        },
+        {
+          params: {
+            path: {
+              regex: '(/etc/(shadow|passwd|sudoers|ssh|ssl|pki|security|gshadow|login\\.defs)|\\.(pem|key|pfx|p12|jks|keystore|env|htpasswd|netrc|pgpass|my\\.cnf|docker/config\\.json)|/\\.ssh/|/\\.gnupg/|/\\.aws/(credentials|config)|id_rsa|id_ed25519|private[_-]?key|secret[_-]?key|master\\.key|credentials\\.json|service[_-]?account|token\\.json)',
+            },
+          },
+        },
+      ],
+      tags: ['security', 'credential-protection', 'data-protection'],
+      riskBoost: 350,
+    },
+    {
+      id: 'monitor-sensitive-path-reads',
+      description: 'Monitor reads from system directories (/etc, /var/log, /proc, /sys)',
+      priority: 9,
+      action: 'monitor',
+      severity: 'medium',
+      when: [
+        {
+          tool: {
+            in: ['file_read', 'read_file', 'cat', 'read', 'get_file', 'open_file', 'load_file', 'view_file'],
+          },
+        },
+        {
+          params: {
+            path: {
+              regex: '^/(etc|var/log|proc|sys)/',
+            },
+          },
+        },
+      ],
+      tags: ['security', 'observability'],
+      riskBoost: 50,
+    },
+    {
+      id: 'block-code-execution',
+      description: 'Block dynamic code execution and eval-like operations',
+      priority: 6,
+      action: 'block',
+      severity: 'critical',
+      when: [
+        {
+          tool: {
+            in: ['eval', 'eval_code', 'exec_code', 'execute_code', 'run_code', 'compile', 'exec_python', 'exec_javascript', 'exec_script'],
+          },
+        },
+      ],
+      tags: ['security', 'code-execution'],
+      riskBoost: 300,
+    },
+    {
+      id: 'block-network-exfiltration',
+      description: 'Block outbound network calls to unknown destinations',
+      priority: 11,
+      action: 'block',
+      severity: 'high',
+      when: [
+        {
+          tool: {
+            in: ['send_email', 'send_message', 'post_webhook', 'upload_file', 'ftp_upload', 'scp', 'rsync'],
+          },
+        },
+      ],
+      tags: ['data-protection', 'exfiltration'],
+      riskBoost: 200,
+    },
+    {
       id: 'allow-read-operations',
       description: 'Explicitly allow read-only operations',
       priority: 100,
@@ -171,7 +249,7 @@ export const DEFAULT_POLICY: PolicyDocument = {
       when: [
         {
           tool: {
-            in: ['file_read', 'db_read_public', 'get_config', 'list_files'],
+            in: ['file_read', 'read_file', 'db_read_public', 'get_config', 'list_files', 'cat', 'read', 'get_file', 'view_file'],
           },
         },
       ],
