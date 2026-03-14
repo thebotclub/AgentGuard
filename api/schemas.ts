@@ -63,9 +63,10 @@ export const SignupRequestSchema = z.object({
   name: z.string({ error: 'name is required' })
     .min(1, 'name is required')
     .max(200),
-  email: z.string({ error: 'email is required' })
-    .min(1, 'email is required')
-    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format'),
+  email: z.string()
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format')
+    .optional()
+    .default(''),
 });
 
 // ── Agent name sanitization ────────────────────────────────────────────────

@@ -1,0 +1,35 @@
+# AgentGuard — Runtime Security for AI Agents
+> AgentGuard is a security layer that evaluates AI agent tool calls before execution. It blocks dangerous operations, requires human approval for sensitive actions, and logs everything for audit.
+
+## Quick Start (for AI agents)
+Fetch the setup guide: GET https://api.agentguard.tech/api/v1/setup
+
+Or try immediately without signing up:
+POST https://api.agentguard.tech/api/v1/evaluate
+Content-Type: application/json
+{"tool": "shell_exec", "params": {"command": "rm -rf /"}}
+→ Returns: {"result": "block", "reason": "Blocked by rule..."}
+
+## How It Works
+1. Before your agent executes a tool, call POST /api/v1/evaluate with the tool name and parameters
+2. AgentGuard returns allow, block, monitor, or require_approval
+3. If blocked, don't execute. If require_approval, wait for human.
+
+## Sign Up (optional, for persistent audit trail)
+POST https://api.agentguard.tech/api/v1/signup
+{"name": "My Agent"}
+→ Returns an API key for authenticated access
+
+## SDKs
+- Python: pip install agentguard
+- Node.js: npm install @the-bot-club/agentguard
+
+## Framework Integrations
+LangChain, CrewAI, OpenAI Agents, Vercel AI SDK, AutoGen, Google A2A
+
+## Links
+- API: https://api.agentguard.tech
+- Docs: https://agentguard.tech/docs
+- Dashboard: https://app.agentguard.tech
+- GitHub: https://github.com/thebotclub/AgentGuard
+- Setup Guide: https://api.agentguard.tech/api/v1/setup

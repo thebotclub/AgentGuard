@@ -72,12 +72,15 @@ export function createAuthRoutes(
         .json({ error: 'Too many signups. Limit: 5 per hour per IP.' });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = email ? email.trim().toLowerCase() : '';
     const cleanName = name.trim().substring(0, 200);
 
-    const existing = await db.getTenantByEmail(normalizedEmail);
-    if (existing) {
-      return res.status(409).json({ error: 'Email already registered' });
+    // Only check for duplicates if an email was provided
+    if (normalizedEmail) {
+      const existing = await db.getTenantByEmail(normalizedEmail);
+      if (existing) {
+        return res.status(409).json({ error: 'Email already registered' });
+      }
     }
 
     const tenantId = uuid();

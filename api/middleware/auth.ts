@@ -231,16 +231,13 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     // Strategy 2: API key (including agent keys)
     const apiKey = req.headers['x-api-key'] as string | undefined;
     if (!apiKey) {
-      res.status(401).json({
-        error: 'unauthorized',
-        message: 'Authentication required. Provide X-API-Key or Authorization: Bearer <token>',
-        acceptedAuth: [
-          'Header: X-API-Key: ag_<key>',
-          'Header: X-API-Key: ag_agent_<key>',
-          'Header: Authorization: Bearer <jwt>',
-        ],
-        docs: 'https://agentguard.tech/docs/authentication',
-      });
+      // Allow anonymous evaluate requests — they use the default 'demo' policy.
+      // This enables zero-friction onboarding: agents can try AgentGuard
+      // before signing up. Rate-limited by IP via the global rate limiter.
+      req.tenantId = undefined; // evaluate route defaults to 'demo'
+      req.tenant = null;
+      req.agent = null;
+      next();
       return;
     }
     if (apiKey.startsWith('ag_agent_')) {
