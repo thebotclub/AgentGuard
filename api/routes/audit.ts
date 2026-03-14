@@ -139,22 +139,24 @@ export function fireWebhooksAsync(
 ): void {
   setTimeout(async () => {
     const webhooks = await db.getActiveWebhooksForTenant(tenantId);
-    for (const wh of webhooks) {
-      let eventList: string[] = [];
-      try {
-        eventList = JSON.parse(wh.events) as string[];
-      } catch {
-        eventList = [];
-      }
-      if (!eventList.includes(eventType) && !eventList.includes('*')) continue;
+    await Promise.all(
+      webhooks.map(async (wh) => {
+        let eventList: string[] = [];
+        try {
+          eventList = JSON.parse(wh.events) as string[];
+        } catch {
+          eventList = [];
+        }
+        if (!eventList.includes(eventType) && !eventList.includes('*')) return;
 
-      const ok = await deliverWebhook(wh, eventType, payload);
-      if (!ok) {
-        setTimeout(async () => {
-          await deliverWebhook(wh, eventType, payload);
-        }, 5000);
-      }
-    }
+        const ok = await deliverWebhook(wh, eventType, payload);
+        if (!ok) {
+          setTimeout(async () => {
+            await deliverWebhook(wh, eventType, payload);
+          }, 5000);
+        }
+      }),
+    );
   }, 0);
 }
 

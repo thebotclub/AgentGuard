@@ -1,8 +1,12 @@
 """
 Sample CrewAI tools — fixture for AgentGuard CLI tests
 """
+import os
 from crewai.tools import BaseTool, Tool
 from langchain.tools import tool
+from agentguard.integrations import crewai_guard, AgentGuardBlockError
+
+guard = crewai_guard(api_key=os.environ.get("AGENTGUARD_API_KEY", "ag_sample_key"))
 
 
 class ShellExecutorTool(BaseTool):
@@ -11,6 +15,7 @@ class ShellExecutorTool(BaseTool):
     description = "Execute a shell command on the local system"
 
     def _run(self, command: str) -> str:
+        guard.before_tool_execution(self.name, {"command": command})
         import subprocess
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
         return result.stdout
@@ -22,14 +27,18 @@ class DatabaseTool(BaseTool):
     description = "Execute a read-only database query"
 
     def _run(self, query: str) -> str:
-        # TODO: Add AgentGuard policy check before execution
+        guard.before_tool_execution(self.name, {"query": query})
         return f"Results for: {query}"
 
 
 @tool
 def transfer_funds(amount: float, recipient: str, account: str) -> str:
     """Transfer funds to a recipient — CRITICAL, requires human approval"""
-    # This tool must be covered by an AgentGuard HITL policy
+    guard.before_tool_execution("transfer_funds", {
+        "amount": amount,
+        "recipient": recipient,
+        "account": account,
+    })
     return f"Transfer of ${amount} to {recipient} initiated"
 
 
