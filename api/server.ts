@@ -8,6 +8,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
+import './types.js' // Request.requestId augmentation
 import { createPhase2Routes } from './phase2-routes.js';
 import { createMcpRoutes } from './mcp-routes.js';
 import {
@@ -43,6 +44,7 @@ import { createAgentHierarchyRoutes } from './routes/agent-hierarchy.js';
 import { createSsoRoutes } from './routes/sso.js';
 import { createSiemRoutes } from './routes/siem.js';
 import { getSiemForwarder } from './lib/siem-forwarder.js';
+import { createHealthRoutes } from './routes/health.js';
 import { createDocsRoutes } from './routes/docs.js';
 import { createLicenseRoutes } from './routes/license.js';
 import { createStripeWebhookRoutes } from './routes/stripe-webhook.js';
@@ -154,6 +156,13 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
     next();
   }
 });
+
+// ── Request ID tracing ───────────────────────────────────────────────────
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  req.requestId = (req.headers['x-request-id'] as string) || crypto.randomUUID()
+  _res.setHeader('x-request-id', req.requestId)
+  next()
+})
 
 // ── Stripe webhook raw body (must come before express.json) ──────────────
 // Stripe requires the raw body for HMAC signature verification.
@@ -323,6 +332,9 @@ async function main(): Promise<void> {
       version: '0.9.0',
     });
   });
+
+  // ── Detailed health (unauthenticated) ──────────────────────────────────
+  app.use(createHealthRoutes(db));
 
   // ── Admin health (authenticated) ───────────────────────────────────────
   const adminAuth = createAuthMiddleware(db);

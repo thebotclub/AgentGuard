@@ -6,6 +6,16 @@
 import { Request } from 'express';
 import type { TenantRow, AgentRow } from './db-interface.js';
 
+// ── Request ID augmentation ────────────────────────────────────────────────
+
+declare global {
+  namespace Express {
+    interface Request {
+      requestId?: string
+    }
+  }
+}
+
 // ── Extended Request Types ─────────────────────────────────────────────────
 
 /**
