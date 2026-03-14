@@ -102,6 +102,15 @@ export function createAuthRoutes(
       dashboard: 'https://app.agentguard.tech',
       message:
         'Account created. Store your API key securely — it will not be shown again.',
+      quickstart: {
+        evaluate: {
+          method: 'POST',
+          url: 'https://api.agentguard.tech/api/v1/evaluate',
+          headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+          body: { tool: 'tool_name', params: { key: 'value' } },
+          note: 'Call this before executing any tool. Default policy blocks dangerous tools (shell_exec, rm, sudo), allows everything else.',
+        },
+      },
     });
   });
 

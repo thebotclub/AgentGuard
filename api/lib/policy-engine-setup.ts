@@ -201,5 +201,15 @@ export const DEFAULT_POLICY: PolicyDocument = {
       tags: ['security', 'system-integrity'],
       riskBoost: 400,
     },
+    {
+      id: 'allow-all-unmatched',
+      description: 'Allow all tools not matched by a previous rule — safe default for quick onboarding',
+      priority: 999,
+      action: 'allow',
+      severity: 'low',
+      when: [{ tool: { matches: ['*'] } }],
+      tags: ['default'],
+      riskBoost: 0,
+    },
   ],
 };

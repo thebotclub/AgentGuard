@@ -233,6 +233,7 @@ async function main(): Promise<void> {
       status: 'online',
       killSwitch: { active: ks.active, activatedAt: ks.at },
       endpoints: {
+        'GET  /api/v1/setup': 'Agent-readable setup guide — any AI agent can read this and self-onboard',
         'POST /api/v1/signup': 'Create tenant account and get API key',
         'POST /api/v1/evaluate':
           'Evaluate an agent action against the policy engine',
@@ -363,6 +364,66 @@ async function main(): Promise<void> {
       templates: templateCache.size,
       tenants: tenantCount,
       activeAgents: agentCount,
+    });
+  });
+
+  // ── Agent-Readable Setup Guide ────────────────────────────────────────
+  // GET /api/v1/setup — Returns a step-by-step guide any AI agent can follow
+  // to integrate AgentGuard. No auth required. This is the zero-friction
+  // onboarding path: an agent reads this endpoint and does the rest.
+  app.get('/api/v1/setup', (_req: Request, res: Response) => {
+    res.set('Content-Type', 'application/json');
+    res.json({
+      name: 'AgentGuard — Agent Setup Guide',
+      description: 'Follow these steps to add runtime security to your AI agent in under 60 seconds.',
+      steps: [
+        {
+          step: 1,
+          action: 'Sign up',
+          method: 'POST',
+          url: 'https://api.agentguard.tech/api/v1/signup',
+          body: { email: 'your-email@example.com', name: 'Your Agent Name' },
+          headers: { 'Content-Type': 'application/json' },
+          note: 'Returns an apiKey. Store it securely — it will not be shown again.',
+        },
+        {
+          step: 2,
+          action: 'Evaluate a tool call (this is all you need)',
+          method: 'POST',
+          url: 'https://api.agentguard.tech/api/v1/evaluate',
+          headers: { 'X-API-Key': '<your-api-key>', 'Content-Type': 'application/json' },
+          body: { tool: 'tool_name', params: { key: 'value' } },
+          response: {
+            result: 'allow | block | monitor | require_approval',
+            reason: 'Human-readable explanation',
+            riskScore: 0,
+            durationMs: 0.3,
+          },
+          note: 'Call this BEFORE executing any tool. If result is "block", do not execute. If "require_approval", wait for human.',
+        },
+      ],
+      defaults: {
+        note: 'New accounts ship with a sensible default policy: dangerous tools (shell_exec, rm, sudo) are blocked, financial tools require approval, everything else is allowed. You can customise later.',
+        blocked: ['shell_exec', 'sudo', 'chmod', 'chown', 'rm', 'rmdir', 'eval_code', 'system_command'],
+        requireApproval: ['transfer_funds', 'create_payment', 'execute_transaction'],
+        allowed: 'Everything not explicitly blocked or requiring approval',
+      },
+      sdks: {
+        python: 'pip install agentguard',
+        node: 'npm install @the-bot-club/agentguard',
+        usage: {
+          python: 'from agentguard import AgentGuard\nguard = AgentGuard(api_key="ag_live_...")\nresult = guard.evaluate("tool_name", {"param": "value"})\nif result["result"] == "allow":\n    # execute tool',
+          node: 'import { AgentGuard } from "@the-bot-club/agentguard";\nconst guard = new AgentGuard({ apiKey: "ag_live_..." });\nconst result = await guard.evaluate("tool_name", { param: "value" });\nif (result.result === "allow") { /* execute tool */ }',
+        },
+      },
+      customise: {
+        method: 'PUT',
+        url: 'https://api.agentguard.tech/api/v1/policy',
+        headers: { 'X-API-Key': '<your-api-key>', 'Content-Type': 'application/json' },
+        note: 'Replace your policy with custom rules. See templates at GET /api/v1/templates.',
+      },
+      docs: 'https://agentguard.tech/docs',
+      dashboard: 'https://app.agentguard.tech',
     });
   });
 
