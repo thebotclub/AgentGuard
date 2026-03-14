@@ -406,6 +406,7 @@ export interface IDatabase {
   getLastAuditHash(tenantId: string): Promise<string | undefined>;
   countAuditEvents(tenantId: string): Promise<number>;
   getAuditEvents(tenantId: string, limit: number, offset: number): Promise<AuditEventRow[]>;
+  getAuditEventsCursor(tenantId: string, limit: number, before?: string): Promise<AuditEventRow[]>;
   getAllAuditEvents(tenantId: string): Promise<AuditEventRow[]>;
 
   // ── Usage Stats ───────────────────────────────────────────────────────────

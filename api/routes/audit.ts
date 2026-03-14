@@ -1,7 +1,8 @@
 /**
  * AgentGuard — Audit Routes & Helpers
  *
- * GET /api/v1/audit        — paginated persistent audit trail
+ * GET /api/v1/audit        — paginated persistent audit trail (offset-based)
+ * GET /api/v1/audit/events — cursor-based paginated audit events
  * GET /api/v1/audit/verify — verify hash chain integrity
  * GET /api/v1/audit/export — export audit events as CSV or JSON
  *
@@ -15,6 +16,7 @@
  */
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import { z } from 'zod';
 import type { IDatabase, WebhookRow } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { GENESIS_HASH } from '../../packages/sdk/src/core/types.js';
@@ -197,6 +199,40 @@ export function createAuditRoutes(
       const events = await db.getAuditEvents(tenantId, limit, offset);
 
       res.json({ tenantId, total, limit, offset, events });
+    },
+  );
+
+  // ── GET /api/v1/audit/events ────────────────────────────────────────────────
+  // Cursor-based paginated audit events.
+  // Query params:
+  //   limit  — 1–200, default 50
+  //   before — ISO 8601 timestamp cursor (optional)
+  const AuditEventsQuerySchema = z.object({
+    limit: z
+      .string()
+      .optional()
+      .transform((v) => (v === undefined ? 50 : Number(v)))
+      .pipe(z.number().int().min(1).max(200)),
+    before: z.string().datetime().optional(),
+  });
+
+  router.get(
+    '/api/v1/audit/events',
+    auth.requireTenantAuth,
+    async (req: Request, res: Response) => {
+      const parsed = AuditEventsQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Invalid query parameters' });
+        return;
+      }
+
+      const { limit, before } = parsed.data;
+      const tenantId = req.tenantId!;
+      const events = await db.getAuditEventsCursor(tenantId, limit, before);
+      const nextCursor =
+        events.length === limit ? events[events.length - 1]!.created_at : null;
+
+      res.json({ events, nextCursor });
     },
   );
 

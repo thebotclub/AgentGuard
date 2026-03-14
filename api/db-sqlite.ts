@@ -760,6 +760,19 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       );
     },
 
+    async getAuditEventsCursor(tenantId: string, limit: number, before?: string): Promise<AuditEventRow[]> {
+      if (before) {
+        return allSync<AuditEventRow>(
+          'SELECT * FROM audit_events WHERE tenant_id = ? AND created_at < ? ORDER BY created_at DESC LIMIT ?',
+          [tenantId, before, limit]
+        );
+      }
+      return allSync<AuditEventRow>(
+        'SELECT * FROM audit_events WHERE tenant_id = ? ORDER BY created_at DESC LIMIT ?',
+        [tenantId, limit]
+      );
+    },
+
     async getAllAuditEvents(tenantId: string): Promise<AuditEventRow[]> {
       return allSync<AuditEventRow>(
         'SELECT * FROM audit_events WHERE tenant_id = ? ORDER BY id ASC',

@@ -837,6 +837,21 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       return rows.map(normAuditEvent);
     },
 
+    async getAuditEventsCursor(tenantId: string, limit: number, before?: string): Promise<AuditEventRow[]> {
+      if (before) {
+        const rows = await all<Record<string, unknown>>(
+          'SELECT * FROM audit_events WHERE tenant_id = $1 AND created_at < $2 ORDER BY created_at DESC LIMIT $3',
+          [tenantId, before, limit]
+        );
+        return rows.map(normAuditEvent);
+      }
+      const rows = await all<Record<string, unknown>>(
+        'SELECT * FROM audit_events WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2',
+        [tenantId, limit]
+      );
+      return rows.map(normAuditEvent);
+    },
+
     async getAllAuditEvents(tenantId: string): Promise<AuditEventRow[]> {
       const rows = await all<Record<string, unknown>>(
         'SELECT * FROM audit_events WHERE tenant_id = $1 ORDER BY id ASC',

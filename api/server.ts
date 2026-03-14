@@ -247,6 +247,8 @@ async function main(): Promise<void> {
         'GET  /api/v1/playground/scenarios': 'Get preset attack scenarios',
         'GET  /api/v1/audit':
           'Get your persistent audit trail (requires API key)',
+        'GET  /api/v1/audit/events':
+          'Cursor-based paginated audit events (requires API key)',
         'GET  /api/v1/audit/verify':
           'Verify audit hash chain integrity (requires API key)',
         'GET  /api/v1/usage':
