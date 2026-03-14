@@ -495,7 +495,7 @@ async function main(): Promise<void> {
     const jsYaml = await import('js-yaml');
     const __fn = fileURLToPath(import.meta.url);
     const __dn = dirname(__fn);
-    const specPath = join(__dn, '..', 'openapi.yaml');
+    const specPath = join(__dn, 'openapi.yaml');
 
     app.get('/api/v1/openapi.yaml', (_req: Request, res: Response) => {
       try {
