@@ -1374,14 +1374,39 @@ function loadApiKey() {
       document.getElementById('api-key-input').value = saved;
     }
   } catch {}
-  // Also check for key from landing page signup
-  try {
-    var landingKey = localStorage.getItem('ag_api_key');
-    if (landingKey && !storedApiKey) {
-      storedApiKey = landingKey;
-      document.getElementById('api-key-input').value = landingKey;
-    }
-  } catch {}
+
+  // Check URL hash for key passed from landing page signup
+  // Format: app.agentguard.tech/#key=ag_live_xxx
+  if (!storedApiKey) {
+    try {
+      var hash = window.location.hash;
+      if (hash) {
+        var params = new URLSearchParams(hash.substring(1));
+        var hashKey = params.get('key');
+        if (hashKey && hashKey.startsWith('ag_live_')) {
+          storedApiKey = hashKey;
+          document.getElementById('api-key-input').value = hashKey;
+          try { localStorage.setItem('ag_dashboard_api_key', hashKey); } catch {}
+          // Clear hash from URL (don't leave key visible)
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      }
+    } catch {}
+  }
+
+  // Check URL query param as fallback (?key=ag_live_xxx)
+  if (!storedApiKey) {
+    try {
+      var urlKey = new URLSearchParams(window.location.search).get('key');
+      if (urlKey && urlKey.startsWith('ag_live_')) {
+        storedApiKey = urlKey;
+        document.getElementById('api-key-input').value = urlKey;
+        try { localStorage.setItem('ag_dashboard_api_key', urlKey); } catch {}
+        // Clear query param from URL
+        history.replaceState(null, '', window.location.pathname);
+      }
+    } catch {}
+  }
 }
 
 function getApiHeaders() {

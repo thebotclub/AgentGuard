@@ -1194,6 +1194,14 @@ function handleSignupForm(formEl, successEl, errorEl, isMainForm) {
               apikeyBox.style.display = 'block';
             }
             try { localStorage.setItem('ag_api_key', data.apiKey); } catch {}
+            // Add "Open Dashboard" button that passes key via URL hash
+            var dashBtn = document.createElement('a');
+            dashBtn.href = 'https://app.agentguard.tech/#key=' + encodeURIComponent(data.apiKey);
+            dashBtn.textContent = '📊 Open Dashboard';
+            dashBtn.style.cssText = 'display:inline-block;margin-top:12px;padding:10px 24px;background:var(--accent,#6c63ff);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;transition:opacity 0.2s';
+            dashBtn.onmouseover = function() { this.style.opacity = '0.85'; };
+            dashBtn.onmouseout = function() { this.style.opacity = '1'; };
+            apikeyBox.appendChild(dashBtn);
           }
           try { localStorage.setItem('ag_signed_up', '1'); } catch {}
         } else {
