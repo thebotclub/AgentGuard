@@ -253,33 +253,54 @@ async function getTenantSubscription(
   renewsAt: string | null;
   stripeCustomerId: string | null;
 }> {
+  const getOne = (db as unknown as {
+    getOne?: (sql: string, params: unknown[]) => Promise<Record<string, unknown> | null>;
+  }).getOne;
+
+  // Check Stripe-issued licenses first
   try {
-    // Try to get license info
-    const row = await (db as unknown as {
-      getOne?: (sql: string, params: unknown[]) => Promise<{
-        tier?: string;
-        status?: string;
-        events_per_month?: number;
-        stripe_customer_id?: string;
-        expires_at?: string;
-      } | null>;
-    }).getOne?.(
+    const row = await getOne?.(
       'SELECT tier, status, events_per_month, stripe_customer_id, expires_at FROM licenses WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 1',
       [tenantId],
     );
 
     if (row) {
       return {
-        plan: row.tier ?? 'free',
-        status: row.status ?? 'active',
-        eventsPerMonth: row.events_per_month ?? 100_000,
-        currentUsage: 0, // TODO: pull from usage tracker
-        renewsAt: row.expires_at ?? null,
-        stripeCustomerId: row.stripe_customer_id ?? null,
+        plan: (row.tier as string) ?? 'free',
+        status: (row.status as string) ?? 'active',
+        eventsPerMonth: (row.events_per_month as number) ?? 100_000,
+        currentUsage: 0,
+        renewsAt: (row.expires_at as string) ?? null,
+        stripeCustomerId: (row.stripe_customer_id as string) ?? null,
       };
     }
   } catch {
-    // Table doesn't exist — return free tier defaults
+    // Table doesn't exist
+  }
+
+  // Check admin-issued license keys (license_keys table)
+  try {
+    const row = await getOne?.(
+      `SELECT tier, expires_at, revoked_at, stripe_subscription_id,
+              limits_json FROM license_keys
+       WHERE tenant_id = $1 AND revoked_at IS NULL
+       ORDER BY created_at DESC LIMIT 1`,
+      [tenantId],
+    );
+
+    if (row) {
+      const limits = JSON.parse((row.limits_json as string) || '{}');
+      return {
+        plan: (row.tier as string) ?? 'free',
+        status: row.revoked_at ? 'revoked' : 'active',
+        eventsPerMonth: limits.events_pm ?? 100_000,  // 0 = unlimited
+        currentUsage: 0,
+        renewsAt: (row.expires_at as string) ?? null,
+        stripeCustomerId: (row.stripe_subscription_id as string) ?? null,
+      };
+    }
+  } catch {
+    // Table doesn't exist
   }
 
   return {
