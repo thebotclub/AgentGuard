@@ -171,7 +171,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
           'Header: X-API-Key: ag_<key>',
           'Header: Authorization: Bearer <jwt>',
         ],
-        docs: 'https://agentguard.tech/docs/authentication',
+        docs: 'https://agentguard.dev/docs/authentication',
       });
       return;
     }
@@ -188,7 +188,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
           'Header: X-API-Key: ag_<key>',
           'Header: Authorization: Bearer <jwt>',
         ],
-        docs: 'https://agentguard.tech/docs/authentication',
+        docs: 'https://agentguard.dev/docs/authentication',
       });
       return;
     }
@@ -251,7 +251,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
             'Header: X-API-Key: ag_agent_<key>',
             'Header: Authorization: Bearer <jwt>',
           ],
-          docs: 'https://agentguard.tech/docs/authentication',
+          docs: 'https://agentguard.dev/docs/authentication',
         });
         return;
       }
@@ -272,7 +272,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
           'Header: X-API-Key: ag_agent_<key>',
           'Header: Authorization: Bearer <jwt>',
         ],
-        docs: 'https://agentguard.tech/docs/authentication',
+        docs: 'https://agentguard.dev/docs/authentication',
       });
       return;
     }
@@ -295,7 +295,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
         error: 'unauthorized',
         message: 'Valid admin API key required',
         acceptedAuth: ['Header: X-API-Key: <admin-key>'],
-        docs: 'https://agentguard.tech/docs/authentication#admin',
+        docs: 'https://agentguard.dev/docs/authentication#admin',
       });
       return;
     }

@@ -11,7 +11,7 @@ hero:
       link: /guide/getting-started
     - theme: alt
       text: Live Demo (no signup)
-      link: https://demo.agentguard.tech
+      link: https://demo.agentguard.dev
     - theme: alt
       text: GitHub
       link: https://github.com/thebotclub/AgentGuard
@@ -65,4 +65,4 @@ const decision = await guard.evaluate({
 
 **Free tier: 100,000 events/month. No credit card required.**
 
-[Get started →](/guide/getting-started) | [See the API reference →](/api/overview) | [Try the demo →](https://demo.agentguard.tech)
+[Get started →](/guide/getting-started) | [See the API reference →](/api/overview) | [Try the demo →](https://demo.agentguard.dev)

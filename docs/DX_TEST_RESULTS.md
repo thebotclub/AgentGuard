@@ -17,7 +17,7 @@ AgentGuard has a **genuinely strong value proposition** with a well-crafted home
 
 ## Step-by-Step Scores & Notes
 
-### Step 1: Discovery — agentguard.tech
+### Step 1: Discovery — agentguard.dev
 **Clarity: 9 | Speed: 9 | Quality: 8**
 
 **Notes:**
@@ -26,12 +26,12 @@ AgentGuard has a **genuinely strong value proposition** with a well-crafted home
 - Clear CTA: "Get Your API Key" inline signup form — no separate page, just email + name. Excellent friction reduction.
 - EU AI Act deadline badge ("August 2026") adds urgency — smart.
 - The pricing section on the homepage is thorough and honest ($0 / $299 / Contact Sales).
-- Minor gripe: the secondary CTAs ("Start Pro Trial", "Get Started Free") both link to docs.agentguard.tech — not directly to signup. Slightly confusing for Pro.
+- Minor gripe: the secondary CTAs ("Start Pro Trial", "Get Started Free") both link to docs.agentguard.dev — not directly to signup. Slightly confusing for Pro.
 - Live playground on homepage is a strong trust signal — developers can test without signing up.
 
 ---
 
-### Step 2: Documentation — docs.agentguard.tech
+### Step 2: Documentation — docs.agentguard.dev
 **Clarity: 8 | Speed: 8 | Quality: 7**
 
 **Notes:**
@@ -57,7 +57,7 @@ AgentGuard has a **genuinely strong value proposition** with a well-crafted home
   {
     "tenantId": "9628ac1e-...",
     "apiKey": "ag_live_8baf9797cfa1218c363995e94b97d160",
-    "dashboard": "https://app.agentguard.tech",
+    "dashboard": "https://app.agentguard.dev",
     "message": "Account created. Store your API key securely — it will not be shown again."
   }
   ```
@@ -106,7 +106,7 @@ AgentGuard has a **genuinely strong value proposition** with a well-crafted home
 
 ---
 
-### Step 6: Dashboard — app.agentguard.tech
+### Step 6: Dashboard — app.agentguard.dev
 **Clarity: 6 | Speed: 7 | Quality: 6**
 
 **Notes:**

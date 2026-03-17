@@ -28,7 +28,7 @@ import { AgentGuardBlockError } from './errors.js';
 export interface LangChainGuardOptions {
   /** AgentGuard API key (ag_...) */
   apiKey: string;
-  /** Override the AgentGuard API base URL (default: https://api.agentguard.tech) */
+  /** Override the AgentGuard API base URL (default: https://api.agentguard.dev) */
   baseUrl?: string;
   /** Optional agent ID to scope evaluations */
   agentId?: string;

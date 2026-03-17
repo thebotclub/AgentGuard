@@ -23,7 +23,7 @@ Most criticals and highs are fixed. Two residual issues remain (one partial, one
 | CRITICAL-01 | Broken form submission (mailto fetch) | ✅ FIXED | `<form id="form-hero" novalidate>` — no `action=` attribute. `handleForm()` now stores to `localStorage` and shows success UI immediately. No server fetch attempted. `aria-live="polite"` added to error divs. |
 | CRITICAL-02 | Kill switch — client-side theatre | ✅ FIXED | Dashboard POSTs to `${API}/api/v1/killswitch`. API endpoint confirmed live: `GET /api/v1/killswitch` → `{"active":false,...}`, `POST` responds with `{"active":false,"previousState":false,...}`. Falls back to local state only if API unreachable, with explicit warning shown. |
 | CRITICAL-03 | GitHub 404 link | ✅ FIXED | "Star on GitHub" replaced with "Request Repo Access" `mailto:` link. Footer GitHub link also changed to mailto. |
-| CRITICAL-04 | LinkedIn link pointed to agentguard.tech | ✅ FIXED | Footer now: `<a href="https://www.linkedin.com/company/agentguard">LinkedIn</a>` |
+| CRITICAL-04 | LinkedIn link pointed to agentguard.dev | ✅ FIXED | Footer now: `<a href="https://www.linkedin.com/company/agentguard">LinkedIn</a>` |
 | CRITICAL-05 | No security headers | ✅ FIXED | Live response headers confirmed: `x-content-type-options: nosniff`, `x-frame-options: DENY`, `referrer-policy: strict-origin-when-cross-origin`, `strict-transport-security: max-age=31536000; includeSubDomains`, `content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline'; ...` — all present on both landing and dashboard. API also returns security headers (but not HSTS, acceptable for API). |
 
 ---
@@ -36,7 +36,7 @@ Most criticals and highs are fixed. Two residual issues remain (one partial, one
 | HIGH-02 | Blocked stat counter off-by-logic bug | ✅ FIXED | Dashboard now correctly uses `blocked` variable: `document.getElementById('stat-blocked').textContent = blocked;` (line 681). `allEvents.forEach` correctly increments separate `allowed` and `blocked` counters. |
 | HIGH-03 | Social proof placeholder logos | ❌ NOT FIXED | Still present as styled grey pill badges: "Financial Services", "Healthcare AI", "Legal Tech", "Enterprise SaaS". The "Design partners from" label also retains `color:#3a3a5a` inline style (contrast ~1.80:1 — WCAG fail). Out of scope for this fix pass per FIXES-APPLIED.md, but unresolved. |
 | HIGH-04 | Dashboard mobile — no hamburger nav | ✅ FIXED | Mobile header with hamburger button added. `openMobileNav()`/`closeMobileNav()` functions implemented. Overlay + drawer pattern with `role="navigation"` and `aria-label="Mobile navigation"`. CSS: `@media (max-width:900px)` shows `.mobile-header`, hides desktop sidebar. |
-| HIGH-06 | API URL inconsistency (hardcoded Azure URL) | ✅ FIXED | Both files now use `API_PRIMARY = 'https://api.agentguard.tech'` with `API_FALLBACK` to Azure URL. Landing resolves working URL on first health check. Dashboard pre-warms on `init()`. Note: `api.agentguard.tech` DNS still appears to 404 (not verified live), but fallback logic is now correct. |
+| HIGH-06 | API URL inconsistency (hardcoded Azure URL) | ✅ FIXED | Both files now use `API_PRIMARY = 'https://api.agentguard.dev'` with `API_FALLBACK` to Azure URL. Landing resolves working URL on first health check. Dashboard pre-warms on `init()`. Note: `api.agentguard.dev` DNS still appears to 404 (not verified live), but fallback logic is now correct. |
 | HIGH-07 | No favicon | ✅ FIXED | Both files: `<link rel="icon" href="data:image/svg+xml,<svg ...>🛡</svg>">` in `<head>`. |
 
 ---

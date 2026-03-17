@@ -532,8 +532,8 @@ const result = await guardedTool.invoke({ input: '{"to":"user@example.com"}' });
 
 ## Links
 
-- 🌐 [agentguard.tech](https://agentguard.tech)
-- 🎮 [Live Demo](https://demo.agentguard.tech)
+- 🌐 [agentguard.dev](https://agentguard.dev)
+- 🎮 [Live Demo](https://demo.agentguard.dev)
 - 📦 [GitHub](https://github.com/thebotclub/AgentGuard)
 - 🐍 [Python SDK](https://pypi.org/project/agentguard/)
 

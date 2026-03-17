@@ -78,7 +78,7 @@
 ## Contact
 
 For compliance inquiries, security reports, or enterprise licensing:
-- 📧 security@agentguard.tech
-- 🌐 [agentguard.tech](https://agentguard.tech)
+- 📧 security@agentguard.dev
+- 🌐 [agentguard.dev](https://agentguard.dev)
 
 © 2026 The Bot Club Pty Ltd (ABN 99 695 980 226) trading as AgentGuard.

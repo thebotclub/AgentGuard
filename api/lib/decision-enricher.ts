@@ -20,25 +20,25 @@ export interface EnrichedDecision {
 // ── Rule-to-docs mapping ───────────────────────────────────────────────────
 // Maps rule IDs to relevant documentation anchors.
 const RULE_DOCS: Record<string, string> = {
-  'block-external-http': 'https://agentguard.tech/docs/rules#external-http',
-  'rule-block-external-http': 'https://agentguard.tech/docs/rules#external-http',
-  'block-pii-tables': 'https://agentguard.tech/docs/rules#pii-protection',
-  'rule-block-pii': 'https://agentguard.tech/docs/rules#pii-protection',
-  'block-privilege-escalation': 'https://agentguard.tech/docs/rules#privilege-escalation',
-  'rule-block-priv-esc': 'https://agentguard.tech/docs/rules#privilege-escalation',
-  'block-destructive-ops': 'https://agentguard.tech/docs/rules#destructive-operations',
-  'rule-block-destructive': 'https://agentguard.tech/docs/rules#destructive-operations',
-  'block-system-path-writes': 'https://agentguard.tech/docs/rules#system-paths',
-  'require-approval-financial': 'https://agentguard.tech/docs/rules#financial-approvals',
-  'rule-require-approval-financial': 'https://agentguard.tech/docs/rules#financial-approvals',
-  'monitor-llm-calls': 'https://agentguard.tech/docs/rules#llm-monitoring',
-  'rule-monitor-llm': 'https://agentguard.tech/docs/rules#llm-monitoring',
-  'KILL_SWITCH': 'https://agentguard.tech/docs/kill-switch',
-  'TENANT_KILL_SWITCH': 'https://agentguard.tech/docs/kill-switch',
-  'INJECTION_DETECTED': 'https://agentguard.tech/docs/security#prompt-injection',
-  'CHILD_POLICY_VIOLATION': 'https://agentguard.tech/docs/a2a-governance',
-  'AGENT_EXPIRED': 'https://agentguard.tech/docs/a2a-governance#ttl',
-  'BUDGET_EXCEEDED': 'https://agentguard.tech/docs/a2a-governance#budget',
+  'block-external-http': 'https://agentguard.dev/docs/rules#external-http',
+  'rule-block-external-http': 'https://agentguard.dev/docs/rules#external-http',
+  'block-pii-tables': 'https://agentguard.dev/docs/rules#pii-protection',
+  'rule-block-pii': 'https://agentguard.dev/docs/rules#pii-protection',
+  'block-privilege-escalation': 'https://agentguard.dev/docs/rules#privilege-escalation',
+  'rule-block-priv-esc': 'https://agentguard.dev/docs/rules#privilege-escalation',
+  'block-destructive-ops': 'https://agentguard.dev/docs/rules#destructive-operations',
+  'rule-block-destructive': 'https://agentguard.dev/docs/rules#destructive-operations',
+  'block-system-path-writes': 'https://agentguard.dev/docs/rules#system-paths',
+  'require-approval-financial': 'https://agentguard.dev/docs/rules#financial-approvals',
+  'rule-require-approval-financial': 'https://agentguard.dev/docs/rules#financial-approvals',
+  'monitor-llm-calls': 'https://agentguard.dev/docs/rules#llm-monitoring',
+  'rule-monitor-llm': 'https://agentguard.dev/docs/rules#llm-monitoring',
+  'KILL_SWITCH': 'https://agentguard.dev/docs/kill-switch',
+  'TENANT_KILL_SWITCH': 'https://agentguard.dev/docs/kill-switch',
+  'INJECTION_DETECTED': 'https://agentguard.dev/docs/security#prompt-injection',
+  'CHILD_POLICY_VIOLATION': 'https://agentguard.dev/docs/a2a-governance',
+  'AGENT_EXPIRED': 'https://agentguard.dev/docs/a2a-governance#ttl',
+  'BUDGET_EXCEEDED': 'https://agentguard.dev/docs/a2a-governance#budget',
 };
 
 // ── Rule-to-suggestion mapping ─────────────────────────────────────────────
@@ -115,7 +115,7 @@ export function enrichDecision(
   const suggestion = RULE_SUGGESTIONS[ruleId] ?? deriveGenericSuggestion(decision.result);
 
   // docs: look up by rule ID, fall back to generic policy docs
-  const docs = RULE_DOCS[ruleId] ?? 'https://agentguard.tech/docs/policy';
+  const docs = RULE_DOCS[ruleId] ?? 'https://agentguard.dev/docs/policy';
 
   // alternatives: for require_approval the action is to wait for approval — no tool alternatives
   if (decision.result === 'require_approval') {
@@ -141,5 +141,5 @@ function deriveGenericSuggestion(result: string): string {
   if (result === 'require_approval') {
     return 'Use the approvalUrl to request human approval before proceeding.';
   }
-  return "Review your agent's policy configuration at https://app.agentguard.tech/policy.";
+  return "Review your agent's policy configuration at https://app.agentguard.dev/policy.";
 }

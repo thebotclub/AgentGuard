@@ -23,7 +23,7 @@ Free tier: 100K events/month. TypeScript and Python SDKs.
 **Topics:** Developer Tools, Artificial Intelligence, Security, Open Source
 
 **Gallery images needed:**
-1. Dashboard screenshot (app.agentguard.tech)
+1. Dashboard screenshot (app.agentguard.dev)
 2. Terminal showing a blocked dangerous tool call
 3. Architecture diagram
 4. Code example showing integration
@@ -38,12 +38,12 @@ AgentGuard evaluates every tool call before execution. It's the missing security
 
 We're a small team in Australia, and this is our first public launch. Would love your honest feedback on what we're building — the good and the bad.
 
-Try the demo: https://demo.agentguard.tech
-Docs: https://docs.agentguard.tech
+Try the demo: https://demo.agentguard.dev
+Docs: https://docs.agentguard.dev
 GitHub: https://github.com/thebotclub/AgentGuard"
 
 **Links:**
-- Website: https://agentguard.tech
+- Website: https://agentguard.dev
 - GitHub: https://github.com/thebotclub/AgentGuard
 
 ## Launch Checklist

@@ -121,7 +121,7 @@ X-API-Key: ag_...
 {
   error: "unauthorized",
   acceptedAuth: ["X-API-Key: ag_...", "X-API-Key: ag_agent_..."],
-  docs: "https://agentguard.tech/docs/authentication"
+  docs: "https://agentguard.dev/docs/authentication"
 }
 
 // 402 — Limit exceeded
@@ -132,7 +132,7 @@ X-API-Key: ag_...
   current: 100050,
   limit: 100000,
   tier: "free",
-  upgradeUrl: "https://agentguard.tech/pricing"
+  upgradeUrl: "https://agentguard.dev/pricing"
 }
 
 // 429 — Rate limited
@@ -315,7 +315,7 @@ export function createBatchEvaluateRoutes(db: IDatabase, auth: AuthMiddleware): 
                 db, tenantId, agentId, call.tool,
                 typeof call.params === 'object' && call.params !== null ? call.params : {},
               );
-              approvalUrl = `https://app.agentguard.tech/approvals/${approvalId}`;
+              approvalUrl = `https://app.agentguard.dev/approvals/${approvalId}`;
             } catch { /* non-blocking */ }
           }
 
@@ -504,19 +504,19 @@ export interface EnrichedDecision {
 
 // Rule-to-docs mapping: maps rule IDs to documentation anchors
 const RULE_DOCS: Record<string, string> = {
-  'block-external-http': 'https://agentguard.tech/docs/rules#external-http',
-  'block-pii-tables': 'https://agentguard.tech/docs/rules#pii-protection',
-  'block-privilege-escalation': 'https://agentguard.tech/docs/rules#privilege-escalation',
-  'block-destructive-ops': 'https://agentguard.tech/docs/rules#destructive-operations',
-  'block-system-path-writes': 'https://agentguard.tech/docs/rules#system-paths',
-  'require-approval-financial': 'https://agentguard.tech/docs/rules#financial-approvals',
-  'monitor-llm-calls': 'https://agentguard.tech/docs/rules#llm-monitoring',
-  'KILL_SWITCH': 'https://agentguard.tech/docs/kill-switch',
-  'TENANT_KILL_SWITCH': 'https://agentguard.tech/docs/kill-switch',
-  'INJECTION_DETECTED': 'https://agentguard.tech/docs/security#prompt-injection',
-  'CHILD_POLICY_VIOLATION': 'https://agentguard.tech/docs/a2a-governance',
-  'AGENT_EXPIRED': 'https://agentguard.tech/docs/a2a-governance#ttl',
-  'BUDGET_EXCEEDED': 'https://agentguard.tech/docs/a2a-governance#budget',
+  'block-external-http': 'https://agentguard.dev/docs/rules#external-http',
+  'block-pii-tables': 'https://agentguard.dev/docs/rules#pii-protection',
+  'block-privilege-escalation': 'https://agentguard.dev/docs/rules#privilege-escalation',
+  'block-destructive-ops': 'https://agentguard.dev/docs/rules#destructive-operations',
+  'block-system-path-writes': 'https://agentguard.dev/docs/rules#system-paths',
+  'require-approval-financial': 'https://agentguard.dev/docs/rules#financial-approvals',
+  'monitor-llm-calls': 'https://agentguard.dev/docs/rules#llm-monitoring',
+  'KILL_SWITCH': 'https://agentguard.dev/docs/kill-switch',
+  'TENANT_KILL_SWITCH': 'https://agentguard.dev/docs/kill-switch',
+  'INJECTION_DETECTED': 'https://agentguard.dev/docs/security#prompt-injection',
+  'CHILD_POLICY_VIOLATION': 'https://agentguard.dev/docs/a2a-governance',
+  'AGENT_EXPIRED': 'https://agentguard.dev/docs/a2a-governance#ttl',
+  'BUDGET_EXCEEDED': 'https://agentguard.dev/docs/a2a-governance#budget',
 };
 
 // Rule-to-suggestion mapping: actionable next steps per rule
@@ -575,7 +575,7 @@ export function enrichDecision(
   const suggestion = RULE_SUGGESTIONS[ruleId] ?? deriveGenericSuggestion(decision.result);
   
   // Build docs link
-  const docs = RULE_DOCS[ruleId] ?? 'https://agentguard.tech/docs/policy';
+  const docs = RULE_DOCS[ruleId] ?? 'https://agentguard.dev/docs/policy';
   
   // Build alternatives from tool name
   const alternatives = TOOL_ALTERNATIVES[toolName] ?? [];
@@ -597,7 +597,7 @@ function deriveGenericSuggestion(result: string): string {
   if (result === 'require_approval') {
     return 'Use the approvalUrl to request human approval before proceeding.';
   }
-  return 'Review your agent\'s policy configuration at https://app.agentguard.tech/policy.';
+  return 'Review your agent\'s policy configuration at https://app.agentguard.dev/policy.';
 }
 ```
 
@@ -878,8 +878,8 @@ The existing `POST /api/v1/evaluate` response gains these fields when `result` i
   
   // NEW FIELDS:
   suggestion: "Use an approved internal endpoint, or ask your administrator to add the destination to the allowlist.",
-  approvalUrl: "https://app.agentguard.tech/approvals/abc-123",  // only for require_approval
-  docs: "https://agentguard.tech/docs/rules#external-http",
+  approvalUrl: "https://app.agentguard.dev/approvals/abc-123",  // only for require_approval
+  docs: "https://agentguard.dev/docs/rules#external-http",
   alternatives: ["internal_fetch", "approved_api_call"],
   
   durationMs: 4.2,
@@ -898,7 +898,7 @@ All four new fields (`suggestion`, `docs`, `alternatives`) are **always present*
   field: "tool",              // which field is wrong
   expected: "string, 1-200 characters, matching /^[a-zA-Z0-9_.\\-:]+$/",
   received: "number",         // type or value received
-  docs: "https://agentguard.tech/docs/api#evaluate"
+  docs: "https://agentguard.dev/docs/api#evaluate"
 }
 ```
 
@@ -911,7 +911,7 @@ All four new fields (`suggestion`, `docs`, `alternatives`) are **always present*
     "Header: X-API-Key: ag_<key>",
     "Header: X-API-Key: ag_agent_<key>"
   ],
-  docs: "https://agentguard.tech/docs/authentication"
+  docs: "https://agentguard.dev/docs/authentication"
 }
 ```
 
@@ -924,8 +924,8 @@ All four new fields (`suggestion`, `docs`, `alternatives`) are **always present*
   message: "This feature requires an Enterprise plan or higher.",
   currentTier: "free",
   requiredTier: "enterprise",
-  pricingUrl: "https://agentguard.tech/pricing",
-  upgradeUrl: "https://agentguard.tech/pricing"
+  pricingUrl: "https://agentguard.dev/pricing",
+  upgradeUrl: "https://agentguard.dev/pricing"
 }
 ```
 
@@ -976,7 +976,7 @@ res.json({
   // Existing fields
   ...(agentId ? { agentId } : {}),
   ...(approvalId ? { approvalId } : {}),
-  ...(approvalId ? { approvalUrl: `https://app.agentguard.tech/approvals/${approvalId}` } : {}),
+  ...(approvalId ? { approvalUrl: `https://app.agentguard.dev/approvals/${approvalId}` } : {}),
   ...(warnings.length > 0 ? { warnings } : {}),
   ...(piiBlock ? { pii: piiBlock } : {}),
 });
@@ -993,7 +993,7 @@ if (!evalParsed.success) {
     field: fieldPath,
     expected: firstIssue.message,
     received: fieldPath === 'body' ? typeof req.body : typeof (req.body as Record<string, unknown>)[fieldPath],
-    docs: 'https://agentguard.tech/docs/api#evaluate',
+    docs: 'https://agentguard.dev/docs/api#evaluate',
   });
 }
 ```
@@ -1011,7 +1011,7 @@ res.status(401).json({
   error: 'unauthorized',
   message: 'Missing or invalid API key',
   acceptedAuth: ['Header: X-API-Key: ag_<key>', 'Header: X-API-Key: ag_agent_<key>'],
-  docs: 'https://agentguard.tech/docs/authentication',
+  docs: 'https://agentguard.dev/docs/authentication',
 });
 ```
 
@@ -1029,9 +1029,9 @@ res.status(402).json({
   message: `This feature requires a ${minTier} plan or higher.`,
   currentTier: tier,
   requiredTier: minTier.toLowerCase(),
-  pricingUrl: 'https://agentguard.tech/pricing',
-  upgradeUrl: 'https://agentguard.tech/pricing',
-  upgrade_url: 'https://agentguard.tech/pricing', // keep for backward compat
+  pricingUrl: 'https://agentguard.dev/pricing',
+  upgradeUrl: 'https://agentguard.dev/pricing',
+  upgrade_url: 'https://agentguard.dev/pricing', // keep for backward compat
 });
 ```
 
@@ -1045,9 +1045,9 @@ res.status(402).json({
   limit,
   tier: license.tier,
   requiredTier: 'pro',  // free users upgrading always go to pro first
-  pricingUrl: 'https://agentguard.tech/pricing',
-  upgradeUrl: 'https://agentguard.tech/pricing',
-  upgrade_url: 'https://agentguard.tech/pricing', // keep for backward compat
+  pricingUrl: 'https://agentguard.dev/pricing',
+  upgradeUrl: 'https://agentguard.dev/pricing',
+  upgrade_url: 'https://agentguard.dev/pricing', // keep for backward compat
 });
 ```
 
@@ -1081,7 +1081,7 @@ if (err.status === 400 || err.type === 'entity.parse.failed') {
     field: 'body',
     expected: 'valid JSON',
     received: 'malformed JSON',
-    docs: 'https://agentguard.tech/docs/api',
+    docs: 'https://agentguard.dev/docs/api',
   });
 }
 ```
@@ -1286,7 +1286,7 @@ describe('Feature 2: Actionable Error Responses', () => {
 
 3. **The `reason` field**: The policy engine already populates `decision.reason` for some rules. The enricher checks `decision.reason` first and uses it. For rules that don't produce a reason, it derives one from the rule ID. Never overwrite an existing non-null reason.
 
-4. **`approvalUrl` construction**: Uses the pattern `https://app.agentguard.tech/approvals/${approvalId}`. This is hardcoded for now. If the dashboard URL becomes configurable, extract it to an env var: `DASHBOARD_URL ?? 'https://app.agentguard.tech'`.
+4. **`approvalUrl` construction**: Uses the pattern `https://app.agentguard.dev/approvals/${approvalId}`. This is hardcoded for now. If the dashboard URL becomes configurable, extract it to an env var: `DASHBOARD_URL ?? 'https://app.agentguard.dev'`.
 
 5. **`api/middleware/feature-gate.ts`**: Already has backward-compat `upgrade_url` (snake_case). Keep it — external integrations may depend on it. Add `pricingUrl` and `requiredTier` as new fields, not replacements.
 

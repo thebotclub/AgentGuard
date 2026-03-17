@@ -14,7 +14,7 @@ AgentGuard evaluates every tool call your agent makes before execution. It retur
 You can evaluate tool calls immediately — no API key needed:
 
 ```bash
-curl -X POST https://api.agentguard.tech/api/v1/evaluate \
+curl -X POST https://api.agentguard.dev/api/v1/evaluate \
   -H "Content-Type: application/json" \
   -d '{"tool": "shell_exec", "params": {"command": "rm -rf /"}}'
 ```
@@ -27,13 +27,13 @@ For audit trails, custom policies, and higher rate limits:
 
 ```bash
 # 1. Sign up (email optional)
-curl -X POST https://api.agentguard.tech/api/v1/signup \
+curl -X POST https://api.agentguard.dev/api/v1/signup \
   -H "Content-Type: application/json" \
   -d '{"name": "My Agent"}'
 # Returns: { "apiKey": "ag_live_...", ... }
 
 # 2. Evaluate with your key
-curl -X POST https://api.agentguard.tech/api/v1/evaluate \
+curl -X POST https://api.agentguard.dev/api/v1/evaluate \
   -H "X-API-Key: ag_live_..." \
   -H "Content-Type: application/json" \
   -d '{"tool": "read_file", "params": {"path": "/data/report.csv"}}'
@@ -53,7 +53,7 @@ def guard_check(tool: str, params: dict, api_key: str = "") -> dict:
         headers["X-API-Key"] = api_key
     data = json.dumps({"tool": tool, "params": params}).encode()
     req = urllib.request.Request(
-        "https://api.agentguard.tech/api/v1/evaluate",
+        "https://api.agentguard.dev/api/v1/evaluate",
         data=data, headers=headers, method="POST"
     )
     resp = urllib.request.urlopen(req)
@@ -82,7 +82,7 @@ else:
 ## Customising Policy
 
 ```bash
-PUT https://api.agentguard.tech/api/v1/policy
+PUT https://api.agentguard.dev/api/v1/policy
 X-API-Key: <your-key>
 Content-Type: application/json
 
@@ -98,7 +98,7 @@ Set `AGENTGUARD_API_KEY` in your environment and the SDKs will pick it up automa
 
 ## More
 
-- Setup guide: `GET https://api.agentguard.tech/api/v1/setup`
-- Templates: `GET https://api.agentguard.tech/api/v1/templates`
-- Docs: https://agentguard.tech/docs
+- Setup guide: `GET https://api.agentguard.dev/api/v1/setup`
+- Templates: `GET https://api.agentguard.dev/api/v1/templates`
+- Docs: https://agentguard.dev/docs
 - GitHub: https://github.com/thebotclub/AgentGuard

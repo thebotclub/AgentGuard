@@ -10,13 +10,13 @@
 <meta property="og:title" content="AgentGuard Documentation — API Reference & SDK Guide">
 <meta property="og:description" content="AgentGuard developer documentation. API reference, TypeScript & Python SDK guides, policy engine, compliance templates.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://docs.agentguard.tech">
-<meta property="og:image" content="https://agentguard.tech/social-og.png">
+<meta property="og:url" content="https://docs.agentguard.dev">
+<meta property="og:image" content="https://agentguard.dev/social-og.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://agentguard.tech/social-og.png">
+<meta name="twitter:image" content="https://agentguard.dev/social-og.png">
 <meta name="twitter:title" content="AgentGuard Docs">
 <meta name="twitter:description" content="API reference, SDK guides, and integration examples for AgentGuard.">
-<link rel="canonical" href="https://docs.agentguard.tech">
+<link rel="canonical" href="https://docs.agentguard.dev">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
@@ -147,7 +147,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 <!-- ─── SIDEBAR ─── -->
 <aside class="sidebar">
   <div class="sidebar-header">
-    <a href="https://agentguard.tech" class="sidebar-logo"><img src="/agentguard-logo.svg?v=3" alt="" style="height:40px;width:40px"> AgentGuard</a>
+    <a href="https://agentguard.dev" class="sidebar-logo"><img src="/agentguard-logo.svg?v=3" alt="" style="height:40px;width:40px"> AgentGuard</a>
     <div class="sidebar-version">v0.9.0 · docs</div>
   </div>
   <nav>
@@ -222,7 +222,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
       <a href="#self-hosted" class="nav-link">Self-Hosted</a>
       <a href="#errors" class="nav-link">Error Handling</a>
       <a href="#playground" class="nav-link">Playground</a>
-      <a href="https://agentguard.tech" class="nav-link">← Back to site</a>
+      <a href="https://agentguard.dev" class="nav-link">← Back to site</a>
     </div>
   </nav>
 </aside>
@@ -237,7 +237,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:32px">
   <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
     <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">BASE URL</div>
-    <code style="font-size:.9rem">https://api.agentguard.tech</code>
+    <code style="font-size:.9rem">https://api.agentguard.dev</code>
   </div>
   <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
     <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">LATENCY</div>
@@ -262,7 +262,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 
 <h3>1. Create an account</h3>
 <div class="code-header"><span>curl</span></div>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/signup \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/signup \
   -H "Content-Type: application/json" \
   -d '{
     "name": "My Company",
@@ -283,7 +283,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 
 const guard = new AgentGuard({
   apiKey: 'ag_live_your_key_here',   // your tenant key from signup
-  baseUrl: 'https://api.agentguard.tech'
+  baseUrl: 'https://api.agentguard.dev'
 });
 
 const decision = await guard.evaluate({
@@ -302,7 +302,7 @@ if (decision.result === 'allow') {
 
 guard = AgentGuard(
     api_key="ag_live_your_key_here",   # your tenant key from signup
-    base_url="https://api.agentguard.tech"
+    base_url="https://api.agentguard.dev"
 )
 
 decision = guard.evaluate(
@@ -316,7 +316,7 @@ else:
     print(f"Blocked: {decision['reason']}")</code></pre>
 </div>
 <div class="tab-panel" data-tab="curl" data-tabgroup="eval">
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/evaluate \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/evaluate \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_agent_your_agent_key_here" \
   -d '{
@@ -333,7 +333,7 @@ else:
 <h3>3. (Optional) Create scoped agent keys</h3>
 <p>For production deployments, you can create scoped <code>ag_agent_*</code> keys that are restricted to <code>evaluate</code> only. This is a best practice — it limits the blast radius if a key is leaked.</p>
 <div class="code-header"><span>curl</span></div>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/agents \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{"name": "booking-agent", "policy_scope": ["booking", "read-only"]}'</code></pre>
@@ -374,7 +374,7 @@ else:
   "message": "API key rotated. The previous key is immediately invalidated."
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/keys/rotate \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/keys/rotate \
   -H "X-API-Key: ag_live_your_current_key_here"</code></pre>
     <div class="callout callout-warn"><strong>Store the new key securely — the old key is immediately invalidated.</strong> All agents using the old key will receive <code>401</code> errors. Update your environment variables and secrets before rotating.</div>
   </div>
@@ -390,7 +390,7 @@ else:
 
 const guard = new AgentGuard({
   apiKey: process.env.AGENTGUARD_API_KEY,
-  baseUrl: 'https://api.agentguard.tech'  // optional, this is the default
+  baseUrl: 'https://api.agentguard.dev'  // optional, this is the default
 });
 
 // Core
@@ -486,7 +486,7 @@ await guard.submitFeedback({ evaluationId, rating, comment });</code></pre>
 
 guard = AgentGuard(
     api_key=os.environ["AGENTGUARD_API_KEY"],
-    base_url="https://api.agentguard.tech"  # optional
+    base_url="https://api.agentguard.dev"  # optional
 )
 
 # Core — snake_case convention
@@ -685,7 +685,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
       <tr><td>password</td><td><span class="param-type">string</span></td><td><span class="param-req">required</span></td><td>Account password (min 8 chars)</td></tr>
     </table>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/signup \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/signup \
   -H "Content-Type: application/json" \
   -d '{
     "name": "My Company",
@@ -696,7 +696,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
 <pre><code>{
   "tenantId": "a80dd96c-...",
   "apiKey": "ag_live_bca6b529c4ac09e4...",
-  "dashboard": "https://app.agentguard.tech",
+  "dashboard": "https://app.agentguard.dev",
   "message": "Account created. Store your API key — it won't be shown again."
 }</code></pre>
     <div class="callout callout-warn"><strong>Save your API key immediately.</strong> It's hashed at rest and cannot be retrieved after this response.</div>
@@ -772,7 +772,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
     </table>
     <div class="callout callout-tip"><strong>Kill switch takes priority.</strong> If either the global or tenant-level kill switch is active, all evaluations return <code>block</code> immediately with reason <code>KILL_SWITCH</code>.</div>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/evaluate \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/evaluate \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_agent_your_key_here" \
   -d '{
@@ -820,7 +820,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
   "total": 42
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl https://api.agentguard.tech/api/v1/audit?limit=20&offset=0 \
+<pre><code>curl https://api.agentguard.dev/api/v1/audit?limit=20&offset=0 \
   -H "X-API-Key: ag_live_your_key_here"</code></pre>
   </div>
 </div>
@@ -875,7 +875,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
   "note": "Store the apiKey securely — it will not be shown again."
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/agents \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{"name": "booking-agent", "policy_scope": ["booking", "read-only"]}'</code></pre>
@@ -996,7 +996,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
   "uncovered": ["send_email"]
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents/a1b2c3/validate \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/agents/a1b2c3/validate \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -1034,7 +1034,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
   "coverage": 71
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents/a1b2c3/certify \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/agents/a1b2c3/certify \
   -H "X-API-Key: ag_live_your_key_here"</code></pre>
   </div>
 </div>
@@ -1080,7 +1080,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
   ]
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents/coverage-check \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/agents/coverage-check \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -1123,7 +1123,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
   "checkedAt": "2026-03-03T09:00:00.000Z"
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/mcp/admit \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/mcp/admit \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -1228,7 +1228,7 @@ jobs:
   }
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/mcp/evaluate \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/mcp/evaluate \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_agent_your_key_here" \
   -d '{
@@ -1287,7 +1287,7 @@ jobs:
       <tr><td>enabled</td><td><span class="param-type">boolean</span></td><td><span class="param-opt">optional</span></td><td>Enable or disable this config</td></tr>
     </table>
     <h4>Example — curl (create)</h4>
-<pre><code>curl -X PUT https://api.agentguard.tech/api/v1/mcp/config \
+<pre><code>curl -X PUT https://api.agentguard.dev/api/v1/mcp/config \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -1381,7 +1381,7 @@ jobs:
       <tr><td>multi_turn_escalation</td><td>Slow-burn attack across multiple turns</td><td>Gradual scope expansion across conversation history</td></tr>
     </table>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/security/prompt-injection/scan \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/security/prompt-injection/scan \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -1457,7 +1457,7 @@ jobs:
       <tr><td>NAME</td><td>Human names (NLP-based, lower confidence)</td></tr>
     </table>
     <h4>Example — curl (redact)</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/pii/scan \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/pii/scan \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -1545,7 +1545,7 @@ jobs:
       <tr><td>LLM10</td><td>Model Theft</td><td>Audit trail + rate limiting + anomaly alerts</td></tr>
     </table>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/compliance/owasp/generate \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/compliance/owasp/generate \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -1606,7 +1606,7 @@ jobs:
       <li>Domains not on your configured allowlist</li>
     </ul>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/mcp/policy/evaluate \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/mcp/policy/evaluate \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -1690,7 +1690,7 @@ jobs:
   ]
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/integrations/slack \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/integrations/slack \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -1755,7 +1755,7 @@ jobs:
       <div class="endpoint-body"><p>List all active child agents for a parent, including their TTL, budget remaining, and evaluation count.</p></div>
     </div>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/agents/a1b2c3/children \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/agents/a1b2c3/children \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -1812,7 +1812,7 @@ jobs:
   ]
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl "https://api.agentguard.tech/api/v1/analytics/usage?period=7d&groupBy=agent&resolution=day" \
+<pre><code>curl "https://api.agentguard.dev/api/v1/analytics/usage?period=7d&groupBy=agent&resolution=day" \
   -H "X-API-Key: ag_live_your_key_here"</code></pre>
   </div>
 </div>
@@ -1859,7 +1859,7 @@ jobs:
   "note": "Feedback logged. Policy coverage gap flagged for review."
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/feedback \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/feedback \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -1946,7 +1946,7 @@ guard = AgentGuard(
       <tr><td>agentId</td><td><span class="param-type">string</span></td><td><span class="param-opt">optional</span></td><td>Scope to a specific agent (omit for tenant-wide)</td></tr>
     </table>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/rate-limits \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/rate-limits \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{"windowSeconds": 60, "maxRequests": 100, "agentId": "booking-agent"}'</code></pre>
@@ -1991,7 +1991,7 @@ guard = AgentGuard(
       <tr><td>metadata</td><td><span class="param-type">object</span></td><td><span class="param-opt">optional</span></td><td>Additional context (tokens, model, etc.)</td></tr>
     </table>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/costs/track \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/costs/track \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -2072,7 +2072,7 @@ guard = AgentGuard(
       <tr><td>*</td><td>Subscribe to all event types</td></tr>
     </table>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/webhooks \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/webhooks \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -2137,7 +2137,7 @@ guard = AgentGuard(
       <tr><td>active</td><td><span class="param-type">boolean</span></td><td><span class="param-opt">optional</span></td><td><code>true</code> to activate, <code>false</code> to deactivate. Omit to toggle.</td></tr>
     </table>
     <h4>Example — activate kill switch</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/killswitch \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/killswitch \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{"active": true}'</code></pre>
@@ -2195,7 +2195,7 @@ guard = AgentGuard(
   "count": 1
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl https://api.agentguard.tech/api/v1/approvals \
+<pre><code>curl https://api.agentguard.dev/api/v1/approvals \
   -H "X-API-Key: ag_live_your_key_here"</code></pre>
   </div>
 </div>
@@ -2221,7 +2221,7 @@ guard = AgentGuard(
   "approvedBy": "tenant-..."
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/approvals/apr_8f3a2c1b/approve \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/approvals/apr_8f3a2c1b/approve \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{"note": "Reviewed and confirmed legitimate payment"}'</code></pre>
@@ -2249,7 +2249,7 @@ guard = AgentGuard(
   "deniedBy": "tenant-..."
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/approvals/apr_8f3a2c1b/deny \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/approvals/apr_8f3a2c1b/deny \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{"note": "Suspicious destination — not an authorised payment endpoint"}'</code></pre>
@@ -2282,7 +2282,7 @@ guard = AgentGuard(
   "period": "24h"
 }</code></pre>
     <h4>Example — curl</h4>
-<pre><code>curl https://api.agentguard.tech/api/v1/dashboard/stats \
+<pre><code>curl https://api.agentguard.dev/api/v1/dashboard/stats \
   -H "X-API-Key: ag_live_your_key_here"</code></pre>
   </div>
 </div>
@@ -2334,7 +2334,7 @@ guard = AgentGuard(
 
 const guard = new AgentGuard({
   apiKey: process.env.AGENTGUARD_API_KEY,
-  baseUrl: 'https://api.agentguard.tech'
+  baseUrl: 'https://api.agentguard.dev'
 });
 
 // Before any agent action
@@ -2395,7 +2395,7 @@ import os
 
 guard = AgentGuard(
     api_key=os.environ["AGENTGUARD_API_KEY"],
-    base_url="https://api.agentguard.tech"
+    base_url="https://api.agentguard.dev"
 )
 
 # Synchronous
@@ -2485,7 +2485,7 @@ guard.verify_audit_chain()
   <div class="endpoint-body">
     <p>Apply a compliance template to your tenant. Adds the template's rules to your active policy. Existing rules are not removed.</p>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/templates/soc2-starter/apply \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/templates/soc2-starter/apply \
   -H "X-API-Key: ag_live_your_key_here"</code></pre>
   </div>
 </div>
@@ -2538,7 +2538,7 @@ guard.verify_audit_chain()
       <tr><td>rules</td><td><span class="param-type">object[]</span></td><td><span class="param-req">required</span></td><td>Array of policy rule objects (max 500)</td></tr>
     </table>
     <h4>Example — set a custom policy</h4>
-<pre><code>curl -X PUT https://api.agentguard.tech/api/v1/policy \
+<pre><code>curl -X PUT https://api.agentguard.dev/api/v1/policy \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{
@@ -2591,7 +2591,7 @@ guard.verify_audit_chain()
       <tr><td>tools</td><td><span class="param-type">string[]</span></td><td><span class="param-req">required</span></td><td>Tool names to check</td></tr>
     </table>
     <h4>Example — curl</h4>
-<pre><code>curl -X POST https://api.agentguard.tech/api/v1/policy/coverage \
+<pre><code>curl -X POST https://api.agentguard.dev/api/v1/policy/coverage \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ag_live_your_key_here" \
   -d '{"tools": ["shell_exec", "file_read", "send_sms"]}'</code></pre>
@@ -2713,7 +2713,7 @@ docker compose up -d</code></pre>
 </table>
 
 <h3>License Key Setup (Pro / Enterprise)</h3>
-<p>Purchase a license at <a href="https://agentguard.tech/pricing" target="_blank" rel="noopener">agentguard.tech/pricing</a>, then add your key to <code>.env</code>:</p>
+<p>Purchase a license at <a href="https://agentguard.dev/pricing" target="_blank" rel="noopener">agentguard.dev/pricing</a>, then add your key to <code>.env</code>:</p>
 <pre><code>AGENTGUARD_LICENSE_KEY=AGKEY-xxxx...xxxx</code></pre>
 <pre><code># Restart to activate
 docker compose restart agentguard</code></pre>
@@ -2806,9 +2806,9 @@ docker compose restart agentguard</code></pre>
 <div style="margin-top:80px;padding-top:32px;border-top:1px solid var(--border-dim);font-size:.82rem;color:#6b7280;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px">
   <div>© 2026 The Bot Club Pty Ltd (ABN 99 695 980 226) t/a AgentGuard</div>
   <div style="display:flex;gap:20px">
-    <a href="https://agentguard.tech" style="color:#6b7280">Home</a>
+    <a href="https://agentguard.dev" style="color:#6b7280">Home</a>
     <a href="https://github.com/thebotclub" style="color:#6b7280">GitHub</a>
-    <a href="mailto:hello@agentguard.tech" style="color:#6b7280">Contact</a>
+    <a href="mailto:hello@agentguard.dev" style="color:#6b7280">Contact</a>
   </div>
 </div>
 

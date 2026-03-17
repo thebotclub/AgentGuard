@@ -78,15 +78,15 @@ The Bot Club Pty Ltd (trading as AgentGuard)
 
 ### 2. Company URL
 
-https://agentguard.tech
+https://agentguard.dev
 
 ---
 
 ### 3. Demo URL
 
-https://demo.agentguard.tech
+https://demo.agentguard.dev
 
-*(Also: docs at https://docs.agentguard.tech, source at https://github.com/thebotclub/AgentGuard)*
+*(Also: docs at https://docs.agentguard.dev, source at https://github.com/thebotclub/AgentGuard)*
 
 ---
 
@@ -190,8 +190,8 @@ Pricing is live on Stripe today. Revenue is pre-revenue — we're focused on get
 - **193+ automated tests**, 60+ REST API endpoints
 - **Published SDKs:** npm (`@agentguard/sdk`) and PyPI (`agentguard`)
 - **Integrations:** LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Vercel AI SDK
-- **Live demo:** demo.agentguard.tech
-- **Documentation site:** docs.agentguard.tech
+- **Live demo:** demo.agentguard.dev
+- **Documentation site:** docs.agentguard.dev
 - **Stripe billing:** configured and live (Free / Pro / Enterprise tiers)
 - **Hash-chained audit trail:** cryptographically verifiable event log
 - **Sub-millisecond policy evaluation latency**
@@ -343,7 +343,7 @@ I'm not waiting for the market — I'm building the category.
 - [ ] Bank balance, burn rate, and runway numbers verified
 - [ ] 1-minute video recorded (webcam, unscripted, quiet room)
 - [ ] Video uploaded to unlisted YouTube or Loom link
-- [ ] Demo site (demo.agentguard.tech) is live and working
+- [ ] Demo site (demo.agentguard.dev) is live and working
 - [ ] GitHub repo is public and presentable
 - [ ] Application read aloud to catch awkward phrasing
 - [ ] Asked someone outside tech to read the 50-char description — do they get it?

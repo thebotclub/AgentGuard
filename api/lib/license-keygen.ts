@@ -21,7 +21,7 @@ import { TIER_LIMITS, TIER_FEATURES } from './license-types.js';
 // ── Key header ────────────────────────────────────────────────────────────────
 
 const LICENSE_HEADER = { alg: 'EdDSA', typ: 'AG-LIC' };
-const ISSUER = 'agentguard.tech';
+const ISSUER = 'agentguard.dev';
 
 // ── Private key loading ───────────────────────────────────────────────────────
 

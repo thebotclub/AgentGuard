@@ -21,17 +21,17 @@ info:
 
     ## Base URL
 
-    Production: `https://api.agentguard.tech/api/v1`
+    Production: `https://api.agentguard.dev/api/v1`
   version: 0.9.0
   contact:
     name: AgentGuard Support
-    url: https://agentguard.tech
+    url: https://agentguard.dev
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://api.agentguard.tech/api/v1
+  - url: https://api.agentguard.dev/api/v1
     description: Production
   - url: http://localhost:3000/api/v1
     description: Local development
@@ -652,7 +652,7 @@ paths:
               example:
                 tenantId: "550e8400-e29b-41d4-a716-446655440000"
                 apiKey: "ag_live_a1b2c3d4e5f67890abcd1234"
-                dashboard: "https://app.agentguard.tech"
+                dashboard: "https://app.agentguard.dev"
                 message: "Account created. Store your API key securely — it will not be shown again."
         '400':
           description: Validation error

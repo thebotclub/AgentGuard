@@ -90,7 +90,7 @@ export async function runValidate(
     (opts.apiUrl && opts.apiUrl !== '') ? opts.apiUrl :
     process.env['AGENTGUARD_API_URL'] ??
     config.api_url ??
-    'https://api.agentguard.tech';
+    'https://api.agentguard.dev';
 
   const format = resolveFormat(opts.format);
 

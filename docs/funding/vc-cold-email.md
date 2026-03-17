@@ -12,12 +12,12 @@ Hi [Name],
 
 Snyk bought Invariant Labs. Palo Alto bought Protect AI. Both focused on LLM input/output — nobody has touched the action layer yet.
 
-AgentGuard is a runtime policy engine for autonomous AI agents: declarative rules, sub-millisecond enforcement, tamper-proof audit trail. The product is live — [demo.agentguard.tech](https://demo.agentguard.tech) runs on our production backend, not a mockup.
+AgentGuard is a runtime policy engine for autonomous AI agents: declarative rules, sub-millisecond enforcement, tamper-proof audit trail. The product is live — [demo.agentguard.dev](https://demo.agentguard.dev) runs on our production backend, not a mockup.
 
 We're raising a $6M seed ($24M pre, SAFE notes). Would you take 15 minutes this week?
 
 [Your name]
-[agentguard.tech](https://agentguard.tech) · [demo.agentguard.tech](https://demo.agentguard.tech)
+[agentguard.dev](https://agentguard.dev) · [demo.agentguard.dev](https://demo.agentguard.dev)
 
 ---
 
@@ -37,14 +37,14 @@ Hi [Name],
 
 Enterprises are running autonomous AI agents in production with no enforceable policy layer — no audit trail, no runtime controls, nothing that satisfies EU AI Act or SOC 2. That's the gap AgentGuard fills.
 
-Live product: policy evaluation API, developer dashboard, TypeScript SDK. Sub-millisecond enforcement. SHA-256 hash-chained audit log. [demo.agentguard.tech](https://demo.agentguard.tech) (real backend).
+Live product: policy evaluation API, developer dashboard, TypeScript SDK. Sub-millisecond enforcement. SHA-256 hash-chained audit log. [demo.agentguard.dev](https://demo.agentguard.dev) (real backend).
 
 Snyk and Palo Alto already bought their way into AI security. We're building the layer they missed.
 
 Raising $6M seed ($24M pre, SAFE notes). 15 minutes?
 
 [Your name]
-[agentguard.tech](https://agentguard.tech)
+[agentguard.dev](https://agentguard.dev)
 
 ---
 
@@ -60,7 +60,7 @@ Raising $6M seed ($24M pre, SAFE notes). 15 minutes?
 
 Hi [Name],
 
-I shipped AgentGuard in 6 weeks — runtime policy enforcement for AI agents, production-grade, live at [demo.agentguard.tech](https://demo.agentguard.tech).
+I shipped AgentGuard in 6 weeks — runtime policy enforcement for AI agents, production-grade, live at [demo.agentguard.dev](https://demo.agentguard.dev).
 
 The problem: companies are deploying autonomous agents with no governance layer. The solution: a declarative policy engine that intercepts agent actions before execution, sub-millisecond latency, cryptographic audit trail.
 
@@ -69,7 +69,7 @@ Two major acquisitions in this space in 2025 (Snyk, Palo Alto). We're building t
 Raising $6M ($24M pre, SAFE notes). Worth 15 minutes?
 
 [Your name]
-[agentguard.tech](https://agentguard.tech) · founders@agentguard.tech
+[agentguard.dev](https://agentguard.dev) · founders@agentguard.dev
 
 ---
 
@@ -89,7 +89,7 @@ Raising $6M ($24M pre, SAFE notes). Worth 15 minutes?
 
 | Resource | URL |
 |----------|-----|
-| Investor demo (live) | https://demo.agentguard.tech |
-| Landing page | https://agentguard.tech |
-| Developer dashboard | https://app.agentguard.tech |
-| Contact | founders@agentguard.tech |
+| Investor demo (live) | https://demo.agentguard.dev |
+| Landing page | https://agentguard.dev |
+| Developer dashboard | https://app.agentguard.dev |
+| Contact | founders@agentguard.dev |

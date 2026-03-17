@@ -3,7 +3,7 @@
 **Test Date:** 2026-03-07 UTC  
 **Tester:** DX Subagent (end-to-end automated journey)  
 **API Version Confirmed:** v0.8.0 ✅  
-**Account Created:** dx-test-v2-1772850267@agentguard.tech  
+**Account Created:** dx-test-v2-1772850267@agentguard.dev  
 **Tenant ID:** 86dfeb95-0224-4f6c-bebc-23ef67f2af4b
 
 ---
@@ -18,7 +18,7 @@ AgentGuard v0.8.0 has a strong foundation with a compelling value proposition an
 
 ---
 
-### Step 1: Landing Page Discovery (https://agentguard.tech)
+### Step 1: Landing Page Discovery (https://agentguard.dev)
 
 **Score: Clarity 9 | Speed 9 | Quality 9**
 
@@ -39,7 +39,7 @@ AgentGuard v0.8.0 has a strong foundation with a compelling value proposition an
 
 ---
 
-### Step 2: Documentation (https://docs.agentguard.tech)
+### Step 2: Documentation (https://docs.agentguard.dev)
 
 **Score: Clarity 9 | Speed 9 | Quality 9**
 
@@ -89,7 +89,7 @@ AgentGuard v0.8.0 has a strong foundation with a compelling value proposition an
 {
   "tenantId": "86dfeb95-0224-4f6c-bebc-23ef67f2af4b",
   "apiKey": "ag_live_95ae4684a703b3706d0c7899f48fe27f",
-  "dashboard": "https://app.agentguard.tech",
+  "dashboard": "https://app.agentguard.dev",
   "message": "Account created. Store your API key securely — it will not be shown again."
 }
 ```
@@ -200,7 +200,7 @@ Both SDKs are perfectly synchronized at v0.8.0. Package names are different from
 
 ---
 
-### Step 7: Dashboard (https://app.agentguard.tech)
+### Step 7: Dashboard (https://app.agentguard.dev)
 
 **Score: Clarity 8 | Speed 9 | Quality 8**
 

@@ -46,7 +46,7 @@ Return an `errors` array with all validation failures at once. Use the same stru
     "reason": "Blocked by rule \"block-external-http\"",
     "durationMs": 0.29,
     "suggestion": "Use an approved internal endpoint...",
-    "docs": "https://agentguard.tech/docs/rules#external-http",
+    "docs": "https://agentguard.dev/docs/rules#external-http",
     "alternatives": ["internal_post", "approved_api_call"]
   }
   ```
@@ -148,7 +148,7 @@ Apply the structured error format (`field`, `expected`, `suggestion`, `docs`) co
 ## 6. Documentation — Grade: A
 
 ### What Works
-- **Comprehensive API reference** at docs.agentguard.tech — covers all 51 endpoints
+- **Comprehensive API reference** at docs.agentguard.dev — covers all 51 endpoints
 - **Multi-language code examples** (curl, TypeScript, Python) for key endpoints
 - **Clear quickstart** — 4-step flow from signup to runtime enforcement
 - **Authentication section is excellent** — explains key types, permissions, demo mode
@@ -175,7 +175,7 @@ Apply the structured error format (`field`, `expected`, `suggestion`, `docs`) co
 ## 7. Onboarding / Dashboard — Grade: B+
 
 ### What Works
-- **Dashboard at app.agentguard.tech loads** and provides:
+- **Dashboard at app.agentguard.dev loads** and provides:
   - Evaluate playground (test API in-browser)
   - Policy rules viewer
   - Audit trail with hash chain verification

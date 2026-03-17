@@ -74,7 +74,7 @@ program
         opts.apiUrl ??
         process.env['AGENTGUARD_API_URL'] ??
         config.api_url ??
-        'https://api.agentguard.tech';
+        'https://api.agentguard.dev';
 
       console.log('');
       console.log(chalk.bold.cyan('AgentGuard Status'));

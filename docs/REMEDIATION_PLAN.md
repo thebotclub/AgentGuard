@@ -20,9 +20,9 @@
 | **F-SEC-08** | Agent names accept SQL injection payloads (e.g., `' UNION SELECT * FROM tenants--`) without sanitization | PENTEST | Security | MEDIUM |
 | **F-SEC-09** | Rate limiting not enforced on `POST /evaluate` — 20+ parallel requests all succeed | PENTEST + E2E | Security | MEDIUM |
 | **F-SEC-10** | Rate limiting not enforced on `GET /audit` — 30 rapid requests all succeed | E2E | Security | MEDIUM |
-| **F-SEC-11** | Missing CSP header on docs.agentguard.tech, demo.agentguard.tech, about.agentguard.tech | FRONTEND | Security | MEDIUM |
-| **F-SEC-12** | Missing HSTS header on docs.agentguard.tech, demo.agentguard.tech, about.agentguard.tech | FRONTEND | Security | MEDIUM |
-| **F-SEC-13** | Missing X-Frame-Options on demo.agentguard.tech (clickjacking risk) | FRONTEND | Security | MEDIUM |
+| **F-SEC-11** | Missing CSP header on docs.agentguard.dev, demo.agentguard.dev, about.agentguard.dev | FRONTEND | Security | MEDIUM |
+| **F-SEC-12** | Missing HSTS header on docs.agentguard.dev, demo.agentguard.dev, about.agentguard.dev | FRONTEND | Security | MEDIUM |
+| **F-SEC-13** | Missing X-Frame-Options on demo.agentguard.dev (clickjacking risk) | FRONTEND | Security | MEDIUM |
 | **F-SEC-14** | Missing Permissions-Policy on docs, demo, about subdomains | FRONTEND | Security | LOW |
 | **F-BUG-01** | `PUT /policy` changes not propagating to `POST /evaluate` — evaluate engine caches old policy | DX + E2E | Functional Bug | **CRITICAL** |
 | **F-BUG-02** | `GET /analytics/usage` returns HTTP 500 `{"error":"Failed to fetch analytics"}` for all periods | E2E + DX | Functional Bug | HIGH |
@@ -31,7 +31,7 @@
 | **F-BUG-05** | `POST /feedback` with `verdict` field fails — API requires `rating` (integer 1–5) | E2E | Functional Bug | MEDIUM |
 | **F-BUG-06** | `POST /evaluate` response missing `sessionId` and `hashChain` fields documented in API spec | DX | Functional Bug | LOW |
 | **F-BUG-07** | `agentId` in `POST /evaluate` request body silently ignored / not reflected in audit event | DX | Functional Bug | LOW |
-| **F-BUG-08** | Dashboard (app.agentguard.tech) shows placeholder usage data (12,450 events) for fresh accounts | DX + FRONTEND | Functional Bug | LOW |
+| **F-BUG-08** | Dashboard (app.agentguard.dev) shows placeholder usage data (12,450 events) for fresh accounts | DX + FRONTEND | Functional Bug | LOW |
 | **F-DX-01** | Signup docs don't include required `name` field — first API call fails for devs following docs | DX | DX Issue | HIGH |
 | **F-DX-02** | No self-hosted / Docker / on-prem documentation despite `air_gap` listed as Enterprise feature | DX | DX Issue | HIGH |
 | **F-DX-03** | Dashboard sidebar shows `v0.7.2` — stale version string not updated for v0.8.0 release | FRONTEND + DX | DX Issue | HIGH |
@@ -43,10 +43,10 @@
 | **F-CONTENT-01** | GitHub repo link (`https://github.com/thebotclub/AgentGuard`) returns 404 on main site + about | FRONTEND | Content Gap | HIGH |
 | **F-CONTENT-02** | GitHub org link (`https://github.com/thebotclub`) returns 404 on about page | FRONTEND | Content Gap | HIGH |
 | **F-CONTENT-03** | `twitter:image` meta tag missing on all 5 HTML sites | FRONTEND | Content Gap | MEDIUM |
-| **F-CONTENT-04** | `about.agentguard.tech` og:url set to `https://agentguard.tech/about` instead of `https://about.agentguard.tech` | FRONTEND | Content Gap | LOW |
-| **F-CONTENT-05** | demo.agentguard.tech and about.agentguard.tech have older Last-Modified dates (2026-03-03) vs v0.8.0 release | FRONTEND | Content Gap | LOW |
+| **F-CONTENT-04** | `about.agentguard.dev` og:url set to `https://agentguard.dev/about` instead of `https://about.agentguard.dev` | FRONTEND | Content Gap | LOW |
+| **F-CONTENT-05** | demo.agentguard.dev and about.agentguard.dev have older Last-Modified dates (2026-03-03) vs v0.8.0 release | FRONTEND | Content Gap | LOW |
 | **F-PERF-01** | Rate limit of 10 req/min on `GET /health` and `GET /api/docs` — too aggressive for developer tooling | FRONTEND | DX Issue | MEDIUM |
-| **F-PERF-02** | app.agentguard.tech and demo.agentguard.tech timeout on first cold-start request | FRONTEND | DX Issue | LOW |
+| **F-PERF-02** | app.agentguard.dev and demo.agentguard.dev timeout on first cold-start request | FRONTEND | DX Issue | LOW |
 
 ---
 
@@ -196,7 +196,7 @@
 | **14** | F-DX-06 | Signup password field undocumented | Docs omit optional field | Add password to docs with "optional, for enterprise SSO" note | 30min | Yes (D) |
 | **15** | F-DX-07 | Docs use `ag_agent_*` in evaluate example | Copy error in docs | Update evaluate curl to use `ag_live_*` | 15min | Yes (D) |
 | **16** | F-CONTENT-03 | `twitter:image` missing everywhere | Omitted from HTML templates | Add `<meta name="twitter:image">` to all 5 sites | 1h | Yes (C) |
-| **17** | F-CONTENT-04 | about.agentguard.tech og:url mismatch | Hard-coded wrong URL | Update og:url to `https://about.agentguard.tech` | 15min | Yes (C) |
+| **17** | F-CONTENT-04 | about.agentguard.dev og:url mismatch | Hard-coded wrong URL | Update og:url to `https://about.agentguard.dev` | 15min | Yes (C) |
 | **18** | F-PERF-01 | `/health` and `/api/docs` rate limited aggressively | Same rate limit as API calls | Exclude health + docs from 10 req/min; create separate "infra" tier | 1h | Yes (A/B) |
 | **19** | F-BUG-06 | evaluate response missing `sessionId`, `hashChain` | Regression vs docs | Restore fields to evaluate response or remove from docs | 2h | Yes (B) |
 | **20** | F-DX-02 | No self-hosted docs | Feature not documented | Add Docker quickstart stub + "contact sales" CTA | 3h | Yes (D) |
@@ -229,7 +229,7 @@
 2. Identify the auth middleware used elsewhere (likely called `requireApiKey`, `authMiddleware`, or `validateKey` — grep codebase for where it's applied to protected routes).
 3. Apply that same middleware to ALL playground routes before the route handlers.
 4. Alternatively, if playground routes are mounted on a sub-router, apply the middleware to the entire sub-router.
-5. Test: `curl -X POST https://api.agentguard.tech/api/v1/playground/session -H "Content-Type: application/json" -d '{}'` should return 401.
+5. Test: `curl -X POST https://api.agentguard.dev/api/v1/playground/session -H "Content-Type: application/json" -d '{}'` should return 401.
 
 **Code pattern (Express example):**
 ```js
@@ -446,7 +446,7 @@ logger.info({ tenantId }, 'Policy cache invalidated after update');
 ---
 
 ### B8 — Dashboard Placeholder Data for Fresh Accounts (F-BUG-08)
-**File to find:** Dashboard app source, likely `app.agentguard.tech` frontend code  
+**File to find:** Dashboard app source, likely `app.agentguard.dev` frontend code  
 **Instructions:**
 1. Find where the overview stats (e.g., "12,450 / 25,000 events") are rendered in the dashboard.
 2. If the data is hard-coded as demo data, replace with an API call to `/analytics/usage` or `/license/usage`.
@@ -464,18 +464,18 @@ logger.info({ tenantId }, 'Policy cache invalidated after update');
 ---
 
 ### C1 — Fix Dashboard Version String (F-DX-03) ⚠️ HIGHEST PRIORITY IN TRACK C
-**File:** `app.agentguard.tech` source — sidebar/navigation component  
+**File:** `app.agentguard.dev` source — sidebar/navigation component  
 **Instructions:**
 1. In the dashboard source, search for `v0.7.2`.
 2. Replace all occurrences with `v0.8.0`.
 3. If the version is set in a config file (e.g., `config.js`, `.env`, `package.json`), update there and ensure the sidebar reads from it dynamically.
 4. Redeploy the dashboard.
-5. Test: load app.agentguard.tech, check sidebar footer → should show `AgentGuard v0.8.0`.
+5. Test: load app.agentguard.dev, check sidebar footer → should show `AgentGuard v0.8.0`.
 
 ---
 
 ### C2 — Add Security Headers to docs/demo/about Subdomains (F-SEC-11/12/13/14)
-**Files:** Cloudflare `_headers` file or Cloudflare Transform Rules for docs.agentguard.tech, demo.agentguard.tech, about.agentguard.tech  
+**Files:** Cloudflare `_headers` file or Cloudflare Transform Rules for docs.agentguard.dev, demo.agentguard.dev, about.agentguard.dev  
 **Instructions:**
 1. For each subdomain, add the following headers. If deployed via Cloudflare Pages, create/update `_headers` file in the site root:
    ```
@@ -487,29 +487,29 @@ logger.info({ tenantId }, 'Policy cache invalidated after update');
      Referrer-Policy: strict-origin-when-cross-origin
      Permissions-Policy: geolocation=(), microphone=(), camera=()
    ```
-2. If using Cloudflare Transform Rules (dashboard approach): create a rule matching `(http.host eq "docs.agentguard.tech") or (http.host eq "demo.agentguard.tech") or (http.host eq "about.agentguard.tech")` and add the response headers.
-3. Note: `X-Frame-Options: DENY` should be applied especially to demo.agentguard.tech (currently missing, clickjacking risk).
-4. Test with `curl -I https://docs.agentguard.tech` — verify all headers present.
+2. If using Cloudflare Transform Rules (dashboard approach): create a rule matching `(http.host eq "docs.agentguard.dev") or (http.host eq "demo.agentguard.dev") or (http.host eq "about.agentguard.dev")` and add the response headers.
+3. Note: `X-Frame-Options: DENY` should be applied especially to demo.agentguard.dev (currently missing, clickjacking risk).
+4. Test with `curl -I https://docs.agentguard.dev` — verify all headers present.
 
 ---
 
 ### C3 — Fix GitHub Links (F-CONTENT-01/02)
 **Files:** 
-- `agentguard.tech` HTML — footer section (remove or replace GitHub org link and repo link)
-- `about.agentguard.tech` HTML — team/footer section  
+- `agentguard.dev` HTML — footer section (remove or replace GitHub org link and repo link)
+- `about.agentguard.dev` HTML — team/footer section  
 **Instructions:**
 1. Search for `github.com/thebotclub` in all HTML source files.
 2. Choose one of:
    - **Option A (quick):** Remove all GitHub links entirely until repo is public.
    - **Option B (best):** Create the GitHub org at `github.com/thebotclub` (free, 5 minutes) and pin a public repo or set a public profile. Then the link works.
    - **Option C:** Replace with a coming-soon message: `<a href="/roadmap">Open source coming soon</a>`
-3. In JSON-LD structured data on agentguard.tech, also remove the GitHub URL from `sameAs` or `url` fields if present.
+3. In JSON-LD structured data on agentguard.dev, also remove the GitHub URL from `sameAs` or `url` fields if present.
 4. Test: click all GitHub-referencing links, confirm no 404s.
 
 ---
 
 ### C4 — Add `twitter:image` Meta Tag to All Sites (F-CONTENT-03)
-**Files:** HTML `<head>` of all 5 sites: agentguard.tech, app.agentguard.tech, docs.agentguard.tech, demo.agentguard.tech, about.agentguard.tech  
+**Files:** HTML `<head>` of all 5 sites: agentguard.dev, app.agentguard.dev, docs.agentguard.dev, demo.agentguard.dev, about.agentguard.dev  
 **Instructions:**
 1. For each site, find the existing `og:image` meta tag value.
 2. Add directly after it:
@@ -521,19 +521,19 @@ logger.info({ tenantId }, 'Policy cache invalidated after update');
 
 ---
 
-### C5 — Fix about.agentguard.tech og:url Mismatch (F-CONTENT-04)
-**File:** `about.agentguard.tech` HTML  
+### C5 — Fix about.agentguard.dev og:url Mismatch (F-CONTENT-04)
+**File:** `about.agentguard.dev` HTML  
 **Instructions:**
-1. Find `<meta property="og:url" content="https://agentguard.tech/about">` in the HTML.
-2. Change to: `<meta property="og:url" content="https://about.agentguard.tech">`.
+1. Find `<meta property="og:url" content="https://agentguard.dev/about">` in the HTML.
+2. Change to: `<meta property="og:url" content="https://about.agentguard.dev">`.
 3. This should match the canonical URL already set correctly.
 
 ---
 
 ### C6 — Redeploy demo and about Subdomains (F-CONTENT-05)
 **Instructions:**
-1. Trigger redeploy for `demo.agentguard.tech` (Last-Modified was 2026-03-03, pre-release).
-2. Trigger redeploy for `about.agentguard.tech` (also pre-release).
+1. Trigger redeploy for `demo.agentguard.dev` (Last-Modified was 2026-03-03, pre-release).
+2. Trigger redeploy for `about.agentguard.dev` (also pre-release).
 3. If these sites have v0.8.0 content changes (e.g., new demo scenes, updated team bios), ensure those changes are included in the redeploy.
 4. After redeploy, verify Last-Modified headers update to current date.
 5. Verify all demo scenes load correctly and reference v0.8.0 features if applicable.
@@ -558,22 +558,22 @@ logger.info({ tenantId }, 'Policy cache invalidated after update');
 **Estimated Duration:** 3–4 hours  
 **Scope:** F-DX-01, F-DX-02, F-DX-04, F-DX-05, F-DX-06, F-DX-07, F-DX-08, F-BUG-06 (docs component)
 
-All doc changes apply to the docs.agentguard.tech source HTML/markdown.
+All doc changes apply to the docs.agentguard.dev source HTML/markdown.
 
 ---
 
 ### D1 — Fix Signup Quickstart: Add `name` Field (F-DX-01) ⚠️ HIGHEST PRIORITY IN TRACK D
-**File:** docs.agentguard.tech — Quickstart / Getting Started / Signup section  
+**File:** docs.agentguard.dev — Quickstart / Getting Started / Signup section  
 **Instructions:**
 1. Find the signup curl example in the quickstart. Currently shows:
    ```bash
-   curl -X POST https://api.agentguard.tech/api/v1/signup \
+   curl -X POST https://api.agentguard.dev/api/v1/signup \
      -H "Content-Type: application/json" \
      -d '{"email": "you@example.com"}'
    ```
 2. Update to include `name`:
    ```bash
-   curl -X POST https://api.agentguard.tech/api/v1/signup \
+   curl -X POST https://api.agentguard.dev/api/v1/signup \
      -H "Content-Type: application/json" \
      -d '{"email": "you@example.com", "name": "Your Name"}'
    ```
@@ -583,7 +583,7 @@ All doc changes apply to the docs.agentguard.tech source HTML/markdown.
 ---
 
 ### D2 — Fix PII Scan Docs: Use `content` Field (F-DX-04)
-**File:** docs.agentguard.tech — PII Detection section  
+**File:** docs.agentguard.dev — PII Detection section  
 **Instructions:**
 1. Find all occurrences of `"text":` in PII scan examples. Update to `"content":`.
 2. Update TypeScript SDK example:
@@ -605,7 +605,7 @@ All doc changes apply to the docs.agentguard.tech source HTML/markdown.
 ---
 
 ### D3 — Fix Feedback Docs: Use `rating` Field (F-DX-05)
-**File:** docs.agentguard.tech — Feedback / HITL section  
+**File:** docs.agentguard.dev — Feedback / HITL section  
 **Instructions:**
 1. Find where feedback is documented. Currently shows `{"verdict": "positive"}`.
 2. Update to:
@@ -625,7 +625,7 @@ All doc changes apply to the docs.agentguard.tech source HTML/markdown.
 ---
 
 ### D4 — Document `password` Field in Signup (F-DX-06)
-**File:** docs.agentguard.tech — Authentication / Signup section  
+**File:** docs.agentguard.dev — Authentication / Signup section  
 **Instructions:**
 1. Add to the signup field table:
    | Field | Type | Required | Description |
@@ -638,7 +638,7 @@ All doc changes apply to the docs.agentguard.tech source HTML/markdown.
 ---
 
 ### D5 — Fix Evaluate Docs: Correct API Key Type in Examples (F-DX-07)
-**File:** docs.agentguard.tech — Evaluate section  
+**File:** docs.agentguard.dev — Evaluate section  
 **Instructions:**
 1. Find any evaluate curl examples that use `ag_agent_*` keys.
 2. Replace with `ag_live_*` (tenant key) format for the evaluate endpoint.
@@ -647,7 +647,7 @@ All doc changes apply to the docs.agentguard.tech source HTML/markdown.
 ---
 
 ### D6 — Add Self-Hosted Stub Section (F-DX-02)
-**File:** docs.agentguard.tech — new section "Self-Hosted / On-Premises"  
+**File:** docs.agentguard.dev — new section "Self-Hosted / On-Premises"  
 **Instructions:**
 1. Add a new sidebar section "Self-Hosted" between SDK Telemetry and Resources.
 2. Content template:
@@ -665,7 +665,7 @@ All doc changes apply to the docs.agentguard.tech source HTML/markdown.
    \`\`\`
    
    **For full Helm chart, Terraform modules, and air-gap bundle:**
-   [Contact our solutions team →](https://agentguard.tech/enterprise)
+   [Contact our solutions team →](https://agentguard.dev/enterprise)
    
    *Available on Enterprise plan. Includes SLA, dedicated onboarding, and security review.*
    ```
@@ -674,7 +674,7 @@ All doc changes apply to the docs.agentguard.tech source HTML/markdown.
 ---
 
 ### D7 — Document SDK Package vs Import Name (F-DX-08)
-**File:** docs.agentguard.tech — SDK Installation section  
+**File:** docs.agentguard.dev — SDK Installation section  
 **Instructions:**
 1. Add a callout note after install commands:
    ```markdown
@@ -692,7 +692,7 @@ All doc changes apply to the docs.agentguard.tech source HTML/markdown.
 ---
 
 ### D8 — Update or Remove `sessionId`/`hashChain` from Evaluate Docs (F-BUG-06 docs component)
-**File:** docs.agentguard.tech — Evaluate section, response schema  
+**File:** docs.agentguard.dev — Evaluate section, response schema  
 **Coordination:** Check with Track B (B6) — if they restore these fields to the API, docs are correct as-is. If they decide to not restore them, update docs to remove `sessionId` and `hashChain` from the response examples.  
 **Instructions (if fields removed from API):**
 1. Remove `sessionId` and `hashChain` from the evaluate response example.
@@ -739,8 +739,8 @@ After all 4 tracks complete, run these verification tests:
 - [ ] `GET /analytics/usage` → 200 with data or empty state, NOT 500 (B2 fix)
 - [ ] `GET /agents/:id` → 200 with agent data (B3 fix)
 - [ ] `POST /pii/scan` with `text` field → 200 (B4 fix)
-- [ ] `app.agentguard.tech` sidebar shows `v0.8.0` (C1 fix)
-- [ ] `curl -I https://docs.agentguard.tech` → CSP, HSTS, Permissions-Policy headers present (C2 fix)
+- [ ] `app.agentguard.dev` sidebar shows `v0.8.0` (C1 fix)
+- [ ] `curl -I https://docs.agentguard.dev` → CSP, HSTS, Permissions-Policy headers present (C2 fix)
 - [ ] All GitHub links removed or return 200 (C3 fix)
 - [ ] Signup docs include `name` field in example (D1 fix)
 - [ ] PII docs show `content` field (D2 fix)

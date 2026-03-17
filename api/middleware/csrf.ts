@@ -10,9 +10,9 @@
  *   4. Requests with no Origin/Referer and no API key → rejected (double-submit safety).
  *
  * Allowed origins (always):
- *   - https://agentguard.tech
- *   - https://app.agentguard.tech
- *   - https://demo.agentguard.tech
+ *   - https://agentguard.dev
+ *   - https://app.agentguard.dev
+ *   - https://demo.agentguard.dev
  *   - http(s)://localhost (any port)
  *   - Additional origins via CORS_ORIGINS env var
  *
@@ -24,11 +24,11 @@ import { logger } from '../lib/logger.js';
 // ── Allowed Origins ────────────────────────────────────────────────────────
 
 const BASE_ALLOWED_ORIGINS = new Set([
-  'https://agentguard.tech',
-  'https://www.agentguard.tech',
-  'https://app.agentguard.tech',
-  'https://demo.agentguard.tech',
-  'https://docs.agentguard.tech',
+  'https://agentguard.dev',
+  'https://www.agentguard.dev',
+  'https://app.agentguard.dev',
+  'https://demo.agentguard.dev',
+  'https://docs.agentguard.dev',
 ]);
 
 /** Returns the full set of allowed origins including runtime config */

@@ -14,7 +14,7 @@ inputs:
   api-url:
     description: 'AgentGuard API base URL'
     required: false
-    default: 'https://api.agentguard.tech'
+    default: 'https://api.agentguard.dev'
 
   directory:
     description: 'Directory to scan for agent tool usage patterns'

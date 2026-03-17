@@ -19,7 +19,7 @@
    - **AgentGuard Enterprise** — Custom pricing (contact sales)
      - Description: "Unlimited events, air-gap deploy, custom SLA"
 3. **Create Webhook:**
-   - Endpoint URL: `https://api.agentguard.tech/api/v1/stripe/webhook`
+   - Endpoint URL: `https://api.agentguard.dev/api/v1/stripe/webhook`
    - Events to listen: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`
    - Copy the **Webhook Signing Secret** (starts with `whsec_`)
 4. **Set Azure env var:**
@@ -87,13 +87,13 @@ az containerapp update \
 
 ### 5. Cloudflare www Redirect (~2 min)
 
-**What:** `www.agentguard.tech` → `agentguard.tech` (fixes Google Search Console "page with redirect")
+**What:** `www.agentguard.dev` → `agentguard.dev` (fixes Google Search Console "page with redirect")
 
 1. Log into [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. Select `agentguard.tech` zone
+2. Select `agentguard.dev` zone
 3. Go to **Rules** → **Redirect Rules** → **Create Rule**
-4. **When:** Hostname equals `www.agentguard.tech`
-5. **Then:** Dynamic redirect to `https://agentguard.tech/${http.request.uri.path}` with status 301
+4. **When:** Hostname equals `www.agentguard.dev`
+5. **Then:** Dynamic redirect to `https://agentguard.dev/${http.request.uri.path}` with status 301
 6. Save and deploy
 
 ### 6. Google Search Console (~10 min)
@@ -101,9 +101,9 @@ az containerapp update \
 **What:** Verify ownership and submit sitemap for indexing.
 
 1. Go to [Google Search Console](https://search.google.com/search-console)
-2. Add property: `agentguard.tech` (Domain type)
+2. Add property: `agentguard.dev` (Domain type)
 3. Verify via Cloudflare DNS (add TXT record they give you)
-4. Submit sitemap: `https://agentguard.tech/sitemap.xml`
+4. Submit sitemap: `https://agentguard.dev/sitemap.xml`
 5. Request indexing for main pages
 
 ### 7. Make GitHub Repo Public (when ready)

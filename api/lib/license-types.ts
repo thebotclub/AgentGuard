@@ -51,7 +51,7 @@ export interface LicensePayload {
   iat: number;
   /** Expiry (epoch seconds) */
   exp: number;
-  /** Issuer — must be 'agentguard.tech' */
+  /** Issuer — must be 'agentguard.dev' */
   iss: string;
 }
 

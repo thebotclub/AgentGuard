@@ -59,7 +59,7 @@ export function createBatchEvaluateRoutes(db: IDatabase, auth: AuthMiddleware): 
           durationMs: 0,
           reason: 'Global kill switch is ACTIVE — all agent actions are blocked.',
           suggestion: 'All actions are blocked. Contact your system administrator.',
-          docs: 'https://agentguard.tech/docs/kill-switch',
+          docs: 'https://agentguard.dev/docs/kill-switch',
           alternatives: [] as string[],
         }));
         return res.json({
@@ -86,7 +86,7 @@ export function createBatchEvaluateRoutes(db: IDatabase, auth: AuthMiddleware): 
           durationMs: 0,
           reason: 'Tenant kill switch is ACTIVE — all your agent actions are blocked.',
           suggestion: 'Your account kill switch is active. Log into the dashboard to deactivate it.',
-          docs: 'https://agentguard.tech/docs/kill-switch',
+          docs: 'https://agentguard.dev/docs/kill-switch',
           alternatives: [] as string[],
         }));
         return res.json({
@@ -117,7 +117,7 @@ export function createBatchEvaluateRoutes(db: IDatabase, auth: AuthMiddleware): 
               signup: {
                 hint: 'Sign up for a free API key to get higher rate limits',
                 method: 'POST',
-                url: 'https://api.agentguard.tech/api/v1/signup',
+                url: 'https://api.agentguard.dev/api/v1/signup',
                 body: { name: 'Your Agent Name' },
               },
             });
@@ -204,7 +204,7 @@ export function createBatchEvaluateRoutes(db: IDatabase, auth: AuthMiddleware): 
                   ? (call.params as Record<string, unknown>)
                   : {},
               );
-              approvalUrl = `https://app.agentguard.tech/approvals/${approvalId}`;
+              approvalUrl = `https://app.agentguard.dev/approvals/${approvalId}`;
             } catch {
               // Approval creation is non-blocking
             }
@@ -254,7 +254,7 @@ export function createBatchEvaluateRoutes(db: IDatabase, auth: AuthMiddleware): 
             durationMs: Math.round((performance.now() - callStart) * 100) / 100,
             reason: 'Evaluation failed for this tool call. Blocked as a safety measure.',
             suggestion: 'An internal error occurred during evaluation. Please retry. If the problem persists, contact support.',
-            docs: 'https://agentguard.tech/docs/troubleshooting',
+            docs: 'https://agentguard.dev/docs/troubleshooting',
             alternatives: [] as string[],
           };
         }

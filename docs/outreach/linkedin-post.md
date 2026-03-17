@@ -28,7 +28,7 @@ Free tier: 100K events/month.
 
 We just open-sourced it: https://github.com/thebotclub/AgentGuard
 
-Try the interactive demo: https://demo.agentguard.tech
+Try the interactive demo: https://demo.agentguard.dev
 
 npm install @the-bot-club/agentguard
 pip install agentguard-tech

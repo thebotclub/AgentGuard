@@ -44,7 +44,7 @@ These items make the product *demo-ready* for design partners.
 **Deliverable:** Full end-to-end encryption
 
 ### A4. Landing Page Refresh
-**What:** Update agentguard.tech to lead with "Deployment Enforcement" positioning. Add the CI/CD gate story, the compliance angle, the "shift-left" narrative.
+**What:** Update agentguard.dev to lead with "Deployment Enforcement" positioning. Add the CI/CD gate story, the compliance angle, the "shift-left" narrative.
 **Why:** Current landing page says "agent firewall" — the AI team's insight about deployment enforcement is the stronger wedge.
 **Effort:** 1 day
 **Deliverable:** Updated landing page with new positioning
@@ -100,7 +100,7 @@ These items make the product *demo-ready* for design partners.
 **Effort:** File and wait. ~$1,500 total.
 
 ### C3. Google Search Console
-**What:** Verify `agentguard.tech` domain.
+**What:** Verify `agentguard.dev` domain.
 **Why:** SEO visibility. Need to verify before Google indexes properly.
 **Effort:** 10 minutes (you need to do this — requires domain ownership verification).
 

@@ -84,7 +84,7 @@ export class AgentGuardApiClient {
   private apiKey: string;
   private baseUrl: string;
 
-  constructor(apiKey: string, baseUrl = 'https://api.agentguard.tech') {
+  constructor(apiKey: string, baseUrl = 'https://api.agentguard.dev') {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl.replace(/\/$/, '');
   }

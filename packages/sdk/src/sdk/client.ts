@@ -51,7 +51,7 @@ export class AgentGuard {
     policySyncIntervalMs?: number;
   }) {
     this.apiKey = options.apiKey;
-    this.baseUrl = options.baseUrl || 'https://api.agentguard.tech';
+    this.baseUrl = options.baseUrl || 'https://api.agentguard.dev';
     this.telemetryEnabled =
       options.telemetry !== false &&
       process.env['AGENTGUARD_NO_TELEMETRY'] !== '1';

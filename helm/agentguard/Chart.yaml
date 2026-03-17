@@ -4,12 +4,12 @@ description: AgentGuard — Runtime security API for AI agents. Policy enforceme
 type: application
 version: 0.9.0
 appVersion: "0.9.0"
-home: https://agentguard.tech
+home: https://agentguard.dev
 sources:
   - https://github.com/thebotclub/AgentGuard
 maintainers:
   - name: The Bot Club
-    url: https://agentguard.tech
+    url: https://agentguard.dev
 keywords:
   - ai
   - security

@@ -20,7 +20,7 @@
 
 ## What's Shipped
 
-The following capabilities are live in production at `api.agentguard.tech`. Each phase was implemented incrementally, primarily via AI-assisted development.
+The following capabilities are live in production at `api.agentguard.dev`. Each phase was implemented incrementally, primarily via AI-assisted development.
 
 ---
 

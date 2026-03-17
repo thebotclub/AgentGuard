@@ -30,7 +30,7 @@ No heavy dependencies. No config files. Just a package.
 
 ## Step 2: Get Your API Key
 
-Sign up at [agentguard.tech](https://agentguard.tech) — the free tier gives you **100,000 events per month**, no credit card required.
+Sign up at [agentguard.dev](https://agentguard.dev) — the free tier gives you **100,000 events per month**, no credit card required.
 
 Grab your API key from the dashboard. It'll look like `ag_live_abc123...`.
 
@@ -210,7 +210,7 @@ rules:
 Upload your policy:
 
 ```bash
-curl -X POST https://api.agentguard.tech/api/v1/policies \
+curl -X POST https://api.agentguard.dev/api/v1/policies \
   -H "x-api-key: $AGENTGUARD_API_KEY" \
   -H "Content-Type: application/yaml" \
   --data-binary @my-production-policy.yaml
@@ -220,7 +220,7 @@ Or use one of the built-in compliance templates:
 
 ```bash
 # List available templates
-curl https://api.agentguard.tech/api/v1/policies/templates \
+curl https://api.agentguard.dev/api/v1/policies/templates \
   -H "x-api-key: $AGENTGUARD_API_KEY"
 ```
 
@@ -239,7 +239,7 @@ To:
 - ✅ Every tool call evaluated against policy before execution
 - ✅ Real-time audit trail with tamper-evident logging
 - ✅ Kill switch ready (`POST /api/v1/killswitch`)
-- ✅ Dashboard at [app.agentguard.tech](https://app.agentguard.tech) showing live activity
+- ✅ Dashboard at [app.agentguard.dev](https://app.agentguard.dev) showing live activity
 
 ---
 
@@ -270,11 +270,11 @@ Customise any of these with your own policy rules.
 
 ## Support
 
-- **Dashboard:** [app.agentguard.tech](https://app.agentguard.tech)
-- **Docs:** [docs.agentguard.tech](https://docs.agentguard.tech)
+- **Dashboard:** [app.agentguard.dev](https://app.agentguard.dev)
+- **Docs:** [docs.agentguard.dev](https://docs.agentguard.dev)
 - **GitHub Issues:** [github.com/thebotclub/AgentGuard/issues](https://github.com/thebotclub/AgentGuard/issues)
-- **Live Demo:** [demo.agentguard.tech](https://demo.agentguard.tech) — try it without signing up
+- **Live Demo:** [demo.agentguard.dev](https://demo.agentguard.dev) — try it without signing up
 
 ---
 
-*AgentGuard is built by [The Bot Club Pty Ltd](https://agentguard.tech), trading as AgentGuard. Licensed under BSL 1.1.*
+*AgentGuard is built by [The Bot Club Pty Ltd](https://agentguard.dev), trading as AgentGuard. Licensed under BSL 1.1.*

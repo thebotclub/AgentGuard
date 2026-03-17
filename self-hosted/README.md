@@ -100,7 +100,7 @@ When you reach 80% of your monthly event limit, AgentGuard will display a warnin
 - Priority support
 
 **Steps:**
-1. Purchase at [agentguard.tech/pricing](https://agentguard.tech/pricing)
+1. Purchase at [agentguard.dev/pricing](https://agentguard.dev/pricing)
 2. Copy your `AGKEY-xxxx...xxxx` license key
 3. Edit your `.env` file: `AGENTGUARD_LICENSE_KEY=AGKEY-xxxx...xxxx`
 4. Restart AgentGuard: `docker compose restart agentguard`
@@ -209,6 +209,6 @@ Common causes:
 
 ## 📞 Support
 
-- **Docs:** [docs.agentguard.tech](https://docs.agentguard.tech)
+- **Docs:** [docs.agentguard.dev](https://docs.agentguard.dev)
 - **Issues:** [github.com/thebotclub/AgentGuard/issues](https://github.com/thebotclub/AgentGuard/issues)
-- **Pro support:** [agentguard.tech/support](https://agentguard.tech/support)
+- **Pro support:** [agentguard.dev/support](https://agentguard.dev/support)

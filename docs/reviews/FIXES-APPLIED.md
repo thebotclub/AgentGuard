@@ -14,7 +14,7 @@
 | CRITICAL-01 | Wrong server deployed | Updated `Dockerfile.api` to build from `packages/api/` (production Hono API) instead of demo Express server. Multi-stage build with proper production config. |
 | CRITICAL-02 | No auth | Added optional API key middleware to `api/server.ts` (X-API-Key header). Skips auth on public demo endpoints (`/health`, `/`, `/api/v1/playground/*`). |
 | CRITICAL-03 | No rate limiting | Added in-memory rate limiting: 100 req/min per IP in `api/server.ts`. Uses sliding window with automatic cleanup. |
-| CRITICAL-04 | CORS wildcard | Restricted CORS to known origins in `api/server.ts`: agentguard.tech, app.agentguard.tech, Azure container URLs, localhost. |
+| CRITICAL-04 | CORS wildcard | Restricted CORS to known origins in `api/server.ts`: agentguard.dev, app.agentguard.dev, Azure container URLs, localhost. |
 
 ### UX CRITICALs
 
@@ -23,7 +23,7 @@
 | CRITICAL-01 | Broken forms | Fixed both hero and CTA2 forms in `landing/index.html`: removed `action="mailto:..."`, implemented client-side success flow with localStorage persistence. Shows success UI immediately on submit. |
 | CRITICAL-02 | Kill switch theatre | Added real `/api/v1/killswitch` endpoints (GET + POST) in `api/server.ts`. Updated dashboard to call the API. Kill switch now persists in server memory and affects all API calls. |
 | CRITICAL-03 | GitHub 404 | Changed "Star on GitHub" to "Request Repo Access" mailto link. Updated footer GitHub link to mailto. |
-| CRITICAL-04 | LinkedIn link | Fixed footer LinkedIn link from `agentguard.tech` → `linkedin.com/company/agentguard` |
+| CRITICAL-04 | LinkedIn link | Fixed footer LinkedIn link from `agentguard.dev` → `linkedin.com/company/agentguard` |
 | CRITICAL-05 | No security headers | Added security headers to both nginx configs: CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS. |
 
 ---
@@ -38,7 +38,7 @@
 | Kill switch API | Disconnected UI | Dashboard now calls `/api/v1/killswitch` POST endpoint. Shows real API state. |
 | Dashboard mobile | No hamburger menu | Added responsive mobile nav with hamburger button, overlay, and drawer for screens <900px. |
 | Stat counter bug | Wrong blocked count | Fixed `stat-blocked` to use correct `blocked` variable instead of `allEvents.length - allowed`. |
-| API URL consistency | Hardcoded Azure URL | Updated landing and dashboard to try `api.agentguard.tech` first, fall back to Azure URL. |
+| API URL consistency | Hardcoded Azure URL | Updated landing and dashboard to try `api.agentguard.dev` first, fall back to Azure URL. |
 | Favicon | Missing | Added SVG data URI favicon with shield emoji (🛡) to both pages. |
 | CTA contrast | Below WCAG AA | Darkened `--accent` from `#6366f14d4`` to `#525 (passes 4.5:1). Updated button hover states. |
 

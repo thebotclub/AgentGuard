@@ -5,7 +5,7 @@
 **Founder:** Hani Kashi — technical founder, solo, Australia-based  
 **Product:** AgentGuard — runtime security platform for AI agents  
 **Stage:** v0.9.0 live, pre-revenue  
-**URLs:** [agentguard.tech](https://agentguard.tech) | [github.com/thebotclub/AgentGuard](https://github.com/thebotclub/AgentGuard)
+**URLs:** [agentguard.dev](https://agentguard.dev) | [github.com/thebotclub/AgentGuard](https://github.com/thebotclub/AgentGuard)
 
 ---
 
@@ -38,7 +38,7 @@
 | Field | Answer |
 |-------|--------|
 | Company name | ✅ The Bot Club Pty Ltd (trading as AgentGuard) |
-| Website | ✅ agentguard.tech |
+| Website | ✅ agentguard.dev |
 | Industry | ✅ Cybersecurity / Developer Tools / AI Infrastructure |
 | Stage | ✅ MVP live (v0.9.0), pre-revenue |
 | Number of employees | ✅ 1 (solo founder) |

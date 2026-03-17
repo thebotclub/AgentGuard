@@ -19,7 +19,7 @@ When's the last time you audited what it can actually do?
 Not what you *told* it to do. What it *can* do.
 
 There's a gap. AgentGuard closes it. 🛡️
-agentguard.tech
+agentguard.dev
 ```
 
 ---
@@ -50,7 +50,7 @@ Can your agent be tricked into executing that?
 If you can't answer with certainty, you don't have a security layer. You have a hope.
 
 AgentGuard evaluates every tool call before it executes. 
-👉 demo.agentguard.tech
+👉 demo.agentguard.dev
 ```
 
 ---
@@ -63,7 +63,7 @@ Rogue AI agent scenario:
 - Agent is doing something catastrophic
 
 With AgentGuard:
-curl -X POST api.agentguard.tech/api/v1/killswitch \
+curl -X POST api.agentguard.dev/api/v1/killswitch \
   -H "x-api-key: $AG_API_KEY" \
   -d '{"active": true}'
 
@@ -91,7 +91,7 @@ const executor = new AgentExecutor({
 That's it. Every tool call now runs through policy evaluation.
 
 Free tier: 100K events/month. No credit card.
-agentguard.tech
+agentguard.dev
 ```
 
 ---
@@ -171,8 +171,8 @@ Today it's public: runtime security for AI agents.
 → Tamper-evident audit trail (SHA-256 chained)
 → Free tier: 100K events/month
 
-Docs: docs.agentguard.tech
-Demo: demo.agentguard.tech
+Docs: docs.agentguard.dev
+Demo: demo.agentguard.dev
 GitHub: github.com/thebotclub/AgentGuard
 ```
 
@@ -301,9 +301,9 @@ Every tool call your agent makes — database queries, HTTP requests, shell comm
 
 **Where to find it:**
 
-🌐 agentguard.tech
-📖 docs.agentguard.tech
-🎮 demo.agentguard.tech (no signup required)
+🌐 agentguard.dev
+📖 docs.agentguard.dev
+🎮 demo.agentguard.dev (no signup required)
 📦 npm: @the-bot-club/agentguard
 🐍 pip: agentguard-tech
 ⭐ github.com/thebotclub/AgentGuard
@@ -357,9 +357,9 @@ npm install @the-bot-club/agentguard
 pip install agentguard-tech
 
 **Links:**
-🌐 Website: https://agentguard.tech
-📖 Docs: https://docs.agentguard.tech
-🎮 Demo: https://demo.agentguard.tech
+🌐 Website: https://agentguard.dev
+📖 Docs: https://docs.agentguard.dev
+🎮 Demo: https://demo.agentguard.dev
 ⭐ GitHub: https://github.com/thebotclub/AgentGuard
 
 Happy to answer questions [here/in comments/via DM].

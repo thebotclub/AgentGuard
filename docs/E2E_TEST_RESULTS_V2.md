@@ -1,7 +1,7 @@
 # AgentGuard E2E API Test Results V2
 
 **Date:** 2026-03-07T02:23 UTC  
-**Base URL:** https://api.agentguard.tech/api/v1  
+**Base URL:** https://api.agentguard.dev/api/v1  
 **API Key (provided):** ag_live_fffa9fa6a6b4ef0f954af096d182be4d *(inactive — key rotation occurred)*  
 **API Key (signup, active):** ag_live_2526feff71ef18b9e151703bd934fdeb  
 **API Key (post-rotate, active):** ag_live_01746f1585be3edf34f22ed3a8e4637f  
@@ -15,7 +15,7 @@
 | # | Endpoint | Method | Expected | Actual Status | Response Summary | Pass/Fail |
 |---|----------|--------|----------|---------------|------------------|-----------|
 | 1 | /health (base, not /api/v1) | GET | 200 + version 0.8.0 | 200 | `{"status":"ok","version":"0.8.0"}` | ✅ PASS |
-| 2 | /signup | POST | 201 + apiKey | 201 | `{"tenantId":"157f18d7...","apiKey":"ag_live_2526...","dashboard":"https://app.agentguard.tech","message":"Account created..."}` | ✅ PASS |
+| 2 | /signup | POST | 201 + apiKey | 201 | `{"tenantId":"157f18d7...","apiKey":"ag_live_2526...","dashboard":"https://app.agentguard.dev","message":"Account created..."}` | ✅ PASS |
 | 3 | /evaluate (send_email, provided key) | POST | 200 or 401 | 401 | `{"error":"Invalid or inactive API key"}` — provided key is inactive | ⚠️ INFO |
 | 4 | /evaluate (send_email, new key) | POST | 200 | 200 | `{"result":"block","matchedRuleId":null,"riskScore":75,"reason":"No matching rule — default action is block (fail-closed)","durationMs":0.15}` | ✅ PASS |
 | 5 | /evaluate (unknown_tool_xyz) | POST | 200 | 200 | `{"result":"block","riskScore":75,"reason":"No matching rule — default action is block (fail-closed)"}` | ✅ PASS |
@@ -89,7 +89,7 @@
 
 ### Test 1 — GET /health
 ```
-GET https://api.agentguard.tech/health
+GET https://api.agentguard.dev/health
 Response: {"status":"ok","version":"0.8.0"}
 Status: 200
 ```
@@ -97,11 +97,11 @@ Status: 200
 ### Test 2 — POST /signup
 ```
 POST /api/v1/signup
-Body: {"email":"e2e-test-1741314222@agentguard.tech","name":"E2E Test User"}
+Body: {"email":"e2e-test-1741314222@agentguard.dev","name":"E2E Test User"}
 Response: {
   "tenantId":"157f18d7-3668-4d01-986a-10706f664e79",
   "apiKey":"ag_live_2526feff71ef18b9e151703bd934fdeb",
-  "dashboard":"https://app.agentguard.tech",
+  "dashboard":"https://app.agentguard.dev",
   "message":"Account created. Store your API key securely — it will not be shown again."
 }
 Status: 201
@@ -230,7 +230,7 @@ Response: {
     {"name":"Pro","price":14900,"interval":"month","annualPrice":11900,"trial":{"days":14,"creditCardRequired":false}},
     {"name":"Enterprise","price":null,"interval":"year"}
   ],
-  "upgradeUrl":"https://agentguard.tech/pricing"
+  "upgradeUrl":"https://agentguard.dev/pricing"
 }
 Status: 200
 ```

@@ -78,7 +78,7 @@ export function errorHandler(
         field: firstIssue.path.join('.') || 'body',
         expected: firstIssue.message,
       } : {}),
-      docs: 'https://agentguard.tech/docs/api',
+      docs: 'https://agentguard.dev/docs/api',
       requestId,
     });
     return;
@@ -100,7 +100,7 @@ export function errorHandler(
         'Header: X-API-Key: ag_<key>',
         'Header: Authorization: Bearer <jwt>',
       ],
-      docs: 'https://agentguard.tech/docs/authentication',
+      docs: 'https://agentguard.dev/docs/authentication',
       requestId,
     });
     return;
@@ -119,7 +119,7 @@ export function errorHandler(
       field: 'body',
       expected: 'valid JSON',
       received: 'malformed JSON',
-      docs: 'https://agentguard.tech/docs/api',
+      docs: 'https://agentguard.dev/docs/api',
       requestId,
     });
     return;

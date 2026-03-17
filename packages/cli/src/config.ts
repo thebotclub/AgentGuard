@@ -58,7 +58,7 @@ export const DEFAULT_CONFIG_CONTENT = `# .agentguard.yml — AgentGuard CLI conf
 # All values can be overridden with CLI flags.
 # The API key should be set via the AGENTGUARD_API_KEY environment variable.
 
-api_url: https://api.agentguard.tech
+api_url: https://api.agentguard.dev
 # api_key: ag_live_xxx   # Use AGENTGUARD_API_KEY env var instead
 
 # Minimum coverage percentage required to pass

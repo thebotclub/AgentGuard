@@ -130,7 +130,7 @@ The policy engine runs **in-process** — no network call during evaluation. Typ
 Yes. `pip install agentguard-tech` gives you full SDK parity with the TypeScript version, including LangChain and CrewAI integrations.
 
 ### Can I self-host?
-Yes. `git clone` + `docker-compose up`. Full self-hosted guide at [agentguard.tech/self-hosted](https://agentguard.tech/self-hosted). Your data stays on your infrastructure.
+Yes. `git clone` + `docker-compose up`. Full self-hosted guide at [agentguard.dev/self-hosted](https://agentguard.dev/self-hosted). Your data stays on your infrastructure.
 
 ### How does the kill switch work?
 One API call (or one click in the dashboard) sets the `kill_switch_active` flag for your tenant. Every subsequent `evaluate()` call returns `blocked` — immediately, for every agent. The cascade happens at the policy evaluation layer, not at the agent level, so it works regardless of what framework or language your agents use.
@@ -142,7 +142,7 @@ Built-in policy templates for: EU AI Act (Articles 5, 9, 12, 14), SOC 2 (CC1-9),
 **Free:** 100,000 events/month, 3 agent seats — enough for development and small production workloads.  
 **Pro:** $149/mo — unlimited events, unlimited agents, SSO, SIEM export, 1-year audit retention.  
 **Enterprise:** $499/mo — custom retention, 99.9% SLA, dedicated support, on-prem option.  
-[See full pricing →](https://agentguard.tech/#pricing)
+[See full pricing →](https://agentguard.dev/#pricing)
 
 ### Is the source code available?
 Yes. Business Source License 1.1 — source available, free to use, with enterprise licensing for commercial self-hosting at scale. [Read the license →](https://github.com/thebotclub/AgentGuard/blob/main/LICENSE)

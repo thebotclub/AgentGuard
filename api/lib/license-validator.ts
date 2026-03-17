@@ -24,7 +24,7 @@ import { FREE_TIER_DEFAULTS } from './license-types.js';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const AGKEY_PREFIX = 'AGKEY-';
-const EXPECTED_ISSUER = 'agentguard.tech';
+const EXPECTED_ISSUER = 'agentguard.dev';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 60 minutes
 
 // ── Errors ────────────────────────────────────────────────────────────────────
