@@ -18,7 +18,7 @@ import type { LicenseContext } from '../lib/license-types.js';
 // ── Module augmentation ───────────────────────────────────────────────────────
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
+   
   namespace Express {
     interface Request {
       license?: LicenseContext;

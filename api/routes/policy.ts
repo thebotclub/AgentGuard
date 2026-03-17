@@ -6,7 +6,7 @@
  * POST /api/v1/policy/coverage — check coverage of a list of tool names
  */
 import { Router, Request, Response } from 'express';
-import { createHash } from 'node:crypto';
+
 import { PolicyEngine, PolicyCompiler } from '../../packages/sdk/src/core/policy-engine.js';
 import { PolicyRuleSchema, type PolicyDocument, type PolicyRule } from '../../packages/sdk/src/core/types.js';
 import { z } from 'zod';

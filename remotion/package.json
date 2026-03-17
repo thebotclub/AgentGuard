@@ -1,0 +1,25 @@
+{
+  "name": "@agentguard/remotion",
+  "version": "0.9.0",
+  "private": true,
+  "description": "AgentGuard marketing video generation (Remotion)",
+  "scripts": {
+    "dev": "npx remotion studio src/index.ts",
+    "render": "npx remotion render src/index.ts ProductDemo output/video.mp4",
+    "build": "echo 'No build step for remotion workspace'"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.431",
+    "@remotion/cli": "^4.0.431",
+    "@remotion/renderer": "^4.0.431",
+    "@remotion/studio": "^4.0.431",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.431"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.7.3"
+  }
+}

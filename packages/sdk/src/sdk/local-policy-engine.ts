@@ -244,6 +244,7 @@ export class LocalPolicyEngine {
       if (!micromatch.isMatch(tool, condition.matches)) return false;
     }
     if (condition.regex !== undefined) {
+      // eslint-disable-next-line security/detect-non-literal-regexp -- pattern comes from admin-authored policy config, not user input
       if (!new RegExp(condition.regex).test(tool)) return false;
     }
     return true;
@@ -287,6 +288,7 @@ export class LocalPolicyEngine {
       if (!micromatch.isMatch(String(value), c['pattern'])) return false;
     }
     if ('regex' in c && typeof c['regex'] === 'string') {
+      // eslint-disable-next-line security/detect-non-literal-regexp -- pattern comes from admin-authored policy config, not user input
       if (!new RegExp(c['regex']).test(String(value))) return false;
     }
     if ('exists' in c && c['exists'] !== undefined) {

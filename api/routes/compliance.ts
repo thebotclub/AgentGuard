@@ -6,7 +6,7 @@
  * GET  /api/v1/compliance/owasp/reports/:reportId — get a specific report by ID (tenant auth)
  */
 import { Router, Request, Response } from 'express';
-import { randomUUID } from 'crypto';
+
 import { ComplianceGenerateRequestSchema } from '../schemas.js';
 import { generateOWASPReport } from '../lib/compliance-checker.js';
 import type { IDatabase } from '../db-interface.js';

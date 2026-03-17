@@ -221,16 +221,6 @@ export interface LicenseUsageRow {
   last_updated: string;
 }
 
-export interface McpServerRow {
-  id: string;
-  tenant_id: string;
-  name: string;
-  url: string;
-  allowed_tools: string;
-  blocked_tools: string;
-  created_at: string;
-}
-
 export interface ChildAgentRow {
   id: string;
   parent_agent_id: string;

@@ -378,7 +378,7 @@ describe('AgentGuard localEval mode', () => {
   it('evaluate() uses local engine after syncPolicies()', async () => {
     const bundle = PolicyCompiler.compile(TEST_DOC);
 
-    const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
+    const _fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
       const urlStr = String(url);
       if (urlStr.includes('/api/v1/policy/bundle')) {
         return new Response(JSON.stringify(bundle), { status: 200 });

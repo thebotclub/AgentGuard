@@ -11,6 +11,8 @@
     <img src="https://img.shields.io/badge/license-BSL_1.1-orange" alt="License">
     <img src="https://img.shields.io/badge/endpoints-60+-blue" alt="Endpoints">
     <img src="https://img.shields.io/badge/tests-193_passing-brightgreen" alt="Tests">
+    <img src="https://img.shields.io/badge/coverage-67%25-yellow" alt="Coverage">
+    <a href="https://github.com/thebotclub/AgentGuard/actions/workflows/test-coverage.yml"><img src="https://github.com/thebotclub/AgentGuard/actions/workflows/test-coverage.yml/badge.svg" alt="Tests"></a>
   </p>
 </div>
 

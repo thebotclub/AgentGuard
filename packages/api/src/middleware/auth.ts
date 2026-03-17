@@ -4,7 +4,7 @@
  * JWT path is for human dashboard/CLI users.
  */
 import type { Context, Next } from 'hono';
-import { jwtVerify, createRemoteJWKSet } from 'jose';
+import { jwtVerify } from 'jose';
 import type { ServiceContext, UserRole } from '@agentguard/shared';
 import { UnauthorizedError } from '../lib/errors.js';
 import { prisma } from '../lib/prisma.js';

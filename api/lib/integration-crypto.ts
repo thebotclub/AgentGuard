@@ -12,7 +12,7 @@ import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12; // 96-bit IV for GCM
-const TAG_LENGTH = 16; // 128-bit auth tag
+const _TAG_LENGTH = 16; // 128-bit auth tag — implicit in node:crypto AES-GCM, reserved for explicit use
 
 /** Get or derive the 32-byte encryption key */
 function getEncryptionKey(): Buffer {

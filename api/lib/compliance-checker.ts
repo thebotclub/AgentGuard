@@ -44,8 +44,8 @@ interface OWASPControl {
   notes: string;
 }
 
-// ── Score weights ──────────────────────────────────────────────────────────
-
+// ── Score weights (reserved for weighted scoring — not yet wired up) ───────
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- planned for weighted compliance scoring
 const SCORE_MAP: Record<CoverageStatus, number> = {
   covered:     1,
   partial:     0.5,

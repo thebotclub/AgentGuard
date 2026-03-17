@@ -39,7 +39,9 @@ jobs:
         run: npm audit --audit-level=critical --omit=dev || echo "::warning::npm audit found vulnerabilities (non-blocking)"
       - run: npm run test
       - name: Type check API
-        run: npx tsc --noEmit --esModuleInterop --target ES2022 --module nodenext --moduleResolution nodenext api/server.ts 2>&1 || echo "⚠️ Type check had warnings (non-blocking)"
+        run: cd api && npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
 
   build-deploy:
     name: 🏗️ Build & Deploy

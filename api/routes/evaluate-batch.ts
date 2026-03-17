@@ -14,7 +14,7 @@ import { BatchEvaluateRequestSchema } from '../schemas.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { getGlobalKillSwitch, storeAuditEvent, fireWebhooksAsync } from './audit.js';
-import { checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from '../phase2-routes.js';
+import { checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from '../lib/rate-limit-db.js';
 import { DEFAULT_POLICY } from '../lib/policy-engine-setup.js';
 import { createPendingApproval } from './approvals.js';
 import { enrichDecision } from '../lib/decision-enricher.js';

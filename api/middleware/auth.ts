@@ -27,7 +27,7 @@ function sha256Hex(key: string): string {
 // ── Extend Express Request ─────────────────────────────────────────────────
 // (module augmentation so the fields are always available on req)
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
+   
   namespace Express {
     interface Request {
       tenant?: TenantRow | null;

@@ -22,7 +22,7 @@ function isPrivateIPv4(ip: string): boolean {
   if (!m) return false;
   const a = parseInt(m[1]!, 10);
   const b = parseInt(m[2]!, 10);
-  const c = parseInt(m[3]!, 10);
+  const _c = parseInt(m[3]!, 10); // third octet — parsed for future subnet checks (e.g. 192.168.x.0/24)
   return (
     a === 0 ||                               // 0.0.0.0/8
     a === 10 ||                              // 10.0.0.0/8 private

@@ -1066,6 +1066,7 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
     },
 
     // ── Platform Analytics (admin) ────────────────────────────────────────────
+    /* eslint-disable @typescript-eslint/no-explicit-any -- SQLite .get()/.all() return dynamic row shapes; typed inline for brevity */
     async getPlatformAnalytics(): Promise<PlatformAnalytics> {
       const totalTenants = (db.prepare('SELECT COUNT(*) as cnt FROM tenants').get() as any)?.cnt ?? 0;
       const activeTenants30d = (db.prepare("SELECT COUNT(DISTINCT tenant_id) as cnt FROM audit_events WHERE created_at >= datetime('now','-30 days')").get() as any)?.cnt ?? 0;
@@ -1101,6 +1102,7 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         sdkTelemetry,
       };
     },
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     // ── Feedback ──────────────────────────────────────────────────────────────
     async insertFeedback(

@@ -147,6 +147,7 @@ export function createMcpRoutes(db: IDatabase): Router {
   const router = Router();
   const requireAuth = makeRequireTenantAuth(db);
   const requireEvaluateAuth = makeRequireEvaluateAuth(db);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for future unauthenticated MCP endpoints
   const optionalAuth = makeOptionalAuth(db);
   const mcp = getMcpMiddleware(db);
 

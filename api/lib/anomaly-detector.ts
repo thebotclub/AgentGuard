@@ -10,7 +10,7 @@
  */
 
 import crypto from 'crypto';
-import type { IDatabase, AnomalyRuleRow, AlertRow } from '../db-interface.js';
+import type { IDatabase, AlertRow } from '../db-interface.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

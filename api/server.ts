@@ -9,7 +9,9 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
 import './types.js' // Request.requestId augmentation
-import { createPhase2Routes } from './phase2-routes.js';
+import { createRateLimitRoutes } from './routes/rate-limits.js';
+import { createCostsRoutes } from './routes/costs.js';
+import { createDashboardRoutes } from './routes/dashboard.js';
 import { createMcpRoutes } from './mcp-routes.js';
 import {
   createValidationRoutes,
@@ -151,7 +153,7 @@ Content-Type: application/json
 
 // ── Extend Express Request type for raw body capture ────────────────────────
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
+   
   namespace Express {
     interface Request {
       rawBody?: string;
@@ -497,12 +499,9 @@ async function main(): Promise<void> {
   // Serve before auth middleware so the spec is publicly accessible.
   {
     const { readFileSync } = await import('fs');
-    const { join, dirname } = await import('path');
-    const { fileURLToPath } = await import('url');
+    const { join } = await import('path');
     const jsYaml = await import('js-yaml');
-    const __fn = fileURLToPath(import.meta.url);
-    const __dn = dirname(__fn);
-    const specPath = join(__dn, 'openapi.yaml');
+    const specPath = join(__dirname, 'openapi.yaml');
 
     app.get('/api/v1/openapi.yaml', (_req: Request, res: Response) => {
       try {
@@ -584,8 +583,10 @@ async function main(): Promise<void> {
   // Must be mounted BEFORE createMcpRoutes so our /mcp/evaluate takes precedence
   app.use(createMcpPolicyRoutes(db, auth));
 
-  // ── Already-extracted route modules ───────────────────────────────────
-  app.use(createPhase2Routes(db));
+  // ── Rate limits, costs, and dashboard ────────────────────────────────
+  app.use(createRateLimitRoutes(db, auth));
+  app.use(createCostsRoutes(db, auth));
+  app.use(createDashboardRoutes(db, auth));
   app.use(createMcpRoutes(db));
   app.use(createValidationRoutes(db));
 

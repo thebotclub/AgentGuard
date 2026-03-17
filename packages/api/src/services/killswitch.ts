@@ -110,7 +110,7 @@ export class KillSwitchService extends BaseService {
   /**
    * Resume an agent after a kill switch.
    */
-  async resumeAgent(agentId: string, reason?: string): Promise<void> {
+  async resumeAgent(agentId: string, _reason?: string): Promise<void> {
     this.assertRole('owner', 'admin', 'operator');
 
     const agent = await this.db.agent.findFirst({

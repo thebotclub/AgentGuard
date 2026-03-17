@@ -9,7 +9,7 @@
  *   router.post('/evaluate', requireLimit('eventsPerMonth'), handler)
  */
 import { Request, Response, NextFunction } from 'express';
-import type { LicenseFeature, LicenseContext } from '../lib/license-types.js';
+import type { LicenseFeature } from '../lib/license-types.js';
 
 // license type on Request is declared in license.ts
 

@@ -195,7 +195,7 @@ export class AnomalyService extends BaseService {
   private computeFinalScore(ctx: AnomalyContext, flags: AnomalyFlag[]): number {
     // Base score from policy decision
     const decisionKey = ctx.decision.toLowerCase() as keyof typeof BASE_RISK_SCORES;
-    const baseScore = BASE_RISK_SCORES[decisionKey] ?? ctx.riskScore;
+    const _baseScore = BASE_RISK_SCORES[decisionKey] ?? ctx.riskScore; // computed but risk calc uses ctx.riskScore directly; kept for future weighted scoring
 
     // Flag boosts
     const FLAG_BOOSTS: Record<AnomalyFlag, number> = {

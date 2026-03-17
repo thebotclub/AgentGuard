@@ -180,6 +180,7 @@ class InMemoryRateLimiter {
 
 function globMatch(pattern: string, value: string): boolean {
   const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.');
+  // eslint-disable-next-line security/detect-non-literal-regexp -- pattern is admin-configured allowedAgents glob, not user input
   return new RegExp(`^${escaped}$`).test(value);
 }
 

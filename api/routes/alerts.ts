@@ -78,8 +78,7 @@ export function createAlertsRoutes(db: IDatabase, auth: AuthMiddleware): Router 
       const alertId = req.params['id'] as string;
 
       try {
-        const [alert] = await db.getAlerts(tenantId, {});
-        // We need to find this specific alert
+        // Fetch all alerts to find the specific one by ID (no direct get-by-id API yet)
         const allAlerts = await db.getAlerts(tenantId, {});
         const target = allAlerts.find((a) => a.id === alertId);
 

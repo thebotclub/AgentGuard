@@ -121,7 +121,7 @@ function renderTerminal(report: ScanReport): void {
   if (report.mode === 'offline') {
     // Offline: all tools are unprotected (no policy server)
     const unprotCount = tools.filter((t) => t.status === 'uncovered').length;
-    const protCount   = tools.filter((t) => t.status !== 'uncovered').length;
+    const _protCount  = tools.filter((t) => t.status !== 'uncovered').length; // reserved for coverage breakdown display
     console.log(chalk.dim(`  Score: offline mode — ${tools.length} tool(s) detected`));
     console.log(chalk.dim(`  Run with --api-key to validate against server policies.`));
     if (unprotCount > 0) {

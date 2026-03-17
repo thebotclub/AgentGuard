@@ -18,7 +18,6 @@ import { load as loadYaml } from 'js-yaml';
 
 import {
   PolicyDocumentSchema,
-  PolicyBundleSchema,
   type PolicyDocument,
   type PolicyBundle,
   type CompiledRule,
@@ -27,13 +26,11 @@ import {
   type AgentContext,
   type ActionRequest,
   type PolicyDecision,
-  type WhenCondition,
   type ToolCondition,
   type ValueConstraint,
   type TimeWindow,
   type RateLimitBucket,
   BASE_RISK_SCORES,
-  GENESIS_HASH,
 } from './types.js';
 import { PolicyError } from './errors.js';
 
@@ -605,6 +602,7 @@ export function evalToolCondition(condition: ToolCondition, toolName: string): b
 
   // "regex"
   if (condition.regex !== undefined) {
+    // eslint-disable-next-line security/detect-non-literal-regexp -- pattern comes from admin-authored policy YAML/JSON, not user input
     if (!new RegExp(condition.regex).test(toolName)) return false;
   }
 
@@ -673,6 +671,7 @@ export function evalValueConstraint(constraint: ValueConstraint, value: unknown)
     if (!micromatch.isMatch(String(value), constraint.pattern)) return false;
   }
   if ('regex' in constraint && constraint.regex !== undefined) {
+    // eslint-disable-next-line security/detect-non-literal-regexp -- pattern comes from admin-authored policy YAML/JSON, not user input
     if (!new RegExp(constraint.regex).test(String(value))) return false;
   }
   if ('domain_not_in' in constraint && constraint.domain_not_in !== undefined) {
@@ -712,7 +711,7 @@ function isInTimeRange(
   tz: string,
 ): boolean {
   try {
-    const localStr = now.toLocaleString('en-US', { timeZone: tz, weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false });
+    const _localStr = now.toLocaleString('en-US', { timeZone: tz, weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }); // combined locale string, kept for debugging time-window checks
     const dayName = now.toLocaleString('en-US', { timeZone: tz, weekday: 'long' }).toLowerCase();
     const timeStr = now.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
 

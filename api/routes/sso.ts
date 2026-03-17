@@ -12,7 +12,7 @@ import { Router, Request, Response } from 'express';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { requireRole } from '../lib/rbac.js';
-import { encryptConfig, decryptConfig } from '../lib/integration-crypto.js';
+import { encryptConfig } from '../lib/integration-crypto.js';
 import { SsoConfigureRequestSchema } from '../schemas.js';
 import { requireFeature } from '../middleware/feature-gate.js';
 

@@ -78,6 +78,7 @@ function inMemCheck(key: string, limit: number): RateLimitResult {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- brute-force helpers reserved for Redis-fallback path (not yet wired)
 function inMemBfRecord(ip: string): void {
   const now = Date.now();
   const record = inMemBf.get(ip);
@@ -91,6 +92,7 @@ function inMemBfRecord(ip: string): void {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- brute-force helpers reserved for Redis-fallback path (not yet wired)
 function inMemBfCheck(ip: string): BruteForceResult {
   const record = inMemBf.get(ip);
   if (!record) return { blocked: false };
@@ -101,6 +103,7 @@ function inMemBfCheck(ip: string): BruteForceResult {
   return { blocked: false };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- brute-force helpers reserved for Redis-fallback path (not yet wired)
 function inMemBfClear(ip: string): void {
   inMemBf.delete(ip);
 }

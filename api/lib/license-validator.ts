@@ -59,7 +59,7 @@ function loadPublicKey(): string {
 
   // Allow override via env var (useful for tests)
   const envPath = process.env['AGENTGUARD_LICENSE_PUBKEY_PATH'];
-  let keyPath = envPath ?? join(process.cwd(), 'api', 'license-pub.pem');
+  const keyPath = envPath ?? join(process.cwd(), 'api', 'license-pub.pem');
 
   try {
     _publicKey = readFileSync(keyPath, 'utf8');

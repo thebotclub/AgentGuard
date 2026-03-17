@@ -209,7 +209,7 @@ export class PolicyService extends BaseService {
 
   async activateVersion(policyId: string, version?: string): Promise<Policy> {
     this.assertRole('owner', 'admin');
-    const policy = await this.getPolicy(policyId);
+    const _policy = await this.getPolicy(policyId); // validates existence before activation
 
     let targetVersion = version;
     if (!targetVersion) {
@@ -764,6 +764,7 @@ function evalToolCondition(condition: ToolCondition, toolName: string): boolean 
     if (!micromatch.isMatch(toolName, condition.matches)) return false;
   }
   if (condition.regex !== undefined) {
+    // eslint-disable-next-line security/detect-non-literal-regexp -- pattern comes from admin-authored policy config, not user input
     if (!new RegExp(condition.regex).test(toolName)) return false;
   }
   return true;
@@ -827,6 +828,7 @@ function evalValueConstraint(constraint: ValueConstraint, value: unknown): boole
     if (!micromatch.isMatch(String(value), (constraint as { pattern?: string }).pattern!)) return false;
   }
   if ('regex' in constraint && (constraint as { regex?: string }).regex !== undefined) {
+    // eslint-disable-next-line security/detect-non-literal-regexp -- pattern comes from admin-authored policy config, not user input
     if (!new RegExp((constraint as { regex?: string }).regex!).test(String(value))) return false;
   }
   if ('domain_not_in' in constraint && (constraint as { domain_not_in?: string[] }).domain_not_in !== undefined) {

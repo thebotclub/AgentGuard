@@ -50,7 +50,7 @@ function httpRequest(
     let parsed: URL;
     try {
       parsed = new URL(url);
-    } catch (e) {
+    } catch (_e) {
       return reject(new Error(`Invalid URL: ${url}`));
     }
 

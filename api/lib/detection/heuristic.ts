@@ -19,9 +19,9 @@ interface Patterns {
 function loadPatterns(): Patterns {
   try {
     // Use Node.js require for JSON — works in both CJS and tsx/ESM via interop
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+     
     const patternsPath = require.resolve('./patterns.json');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+     
     return require(patternsPath) as Patterns;
   } catch {
     // Fallback inline patterns if file is unavailable

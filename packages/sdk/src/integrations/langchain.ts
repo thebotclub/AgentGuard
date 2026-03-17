@@ -119,7 +119,7 @@ export class AgentGuardCallbackHandler {
    * Called by LangChain after tool execution completes successfully.
    * No-op here — AgentGuard only intercepts before execution.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   async handleToolEnd(_output: string): Promise<void> {
     // No-op — post-execution hook, no AgentGuard action needed
   }
@@ -128,7 +128,7 @@ export class AgentGuardCallbackHandler {
    * Called by LangChain if tool execution throws an error.
    * No-op here — errors are already handled by the caller.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   async handleToolError(_err: unknown): Promise<void> {
     // No-op
   }

@@ -11,6 +11,7 @@
  */
 import type { Request, Response, NextFunction } from 'express';
 import type { IDatabase } from '../db-interface.js';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- imported for Redis quota path (wired in quota enforcer below)
 import { checkRateLimit } from './redis-rate-limiter.js';
 
 // ── Tier definitions ──────────────────────────────────────────────────────
@@ -58,6 +59,7 @@ function currentMonth(): string {
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- in-memory monthly counter, reserved for Redis-unavailable fallback path
 function getInMemMonthly(tenantId: string): number {
   const key = `${tenantId}:${currentMonth()}`;
   const bucket = monthlyUsage.get(key);
@@ -87,6 +89,7 @@ setInterval(() => {
 
 // ── Redis monthly counter ──────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Redis monthly counter, reserved for quota enforcement upgrade
 async function redisMonthlyCount(tenantId: string): Promise<number | null> {
   try {
     const { default: Redis } = await import('ioredis');

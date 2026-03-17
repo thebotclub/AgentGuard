@@ -15,8 +15,7 @@
  */
 import { Request, Response, NextFunction } from 'express';
 import { jwtVerify, createRemoteJWKSet, createLocalJWKSet } from 'jose';
-import type { JWTPayload, JWTVerifyOptions, JSONWebKeySet } from 'jose';
-import crypto from 'crypto';
+import type { JWTPayload, JWTVerifyOptions } from 'jose';
 
 // ── Type Augmentation ──────────────────────────────────────────────────────
 
@@ -28,7 +27,7 @@ export interface JwtClaims extends JWTPayload {
 }
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
+   
   namespace Express {
     interface Request {
       jwtClaims?: JwtClaims;
@@ -42,7 +41,7 @@ declare global {
 const JWKS_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 interface JwksCacheEntry {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   keySet: ReturnType<typeof createRemoteJWKSet> | ReturnType<typeof createLocalJWKSet>;
   expiresAt: number;
   url: string;

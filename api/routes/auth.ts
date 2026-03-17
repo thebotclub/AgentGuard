@@ -18,7 +18,6 @@ import type { AuthMiddleware } from '../middleware/auth.js';
 import { signupRateLimit, recoveryRateLimit } from '../middleware/rate-limit.js';
 import {
   templateCache,
-  DEFAULT_POLICY,
 } from '../lib/policy-engine-setup.js';
 import {
   getGlobalKillSwitch,

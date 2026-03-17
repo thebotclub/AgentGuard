@@ -90,6 +90,7 @@ const DANGEROUS_NAME_PATTERNS: RegExp[] = [
   /expression\s*\(/i,        // CSS expression()
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for agent-name sanitization at registration (not yet called)
 function sanitizeAgentName(name: string): string {
   // Strip HTML tags
   const stripped = name.replace(/<[^>]*>/g, '').trim();

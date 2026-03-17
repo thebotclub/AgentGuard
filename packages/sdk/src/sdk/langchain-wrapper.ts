@@ -231,12 +231,7 @@ export class GuardedTool implements LangChainTool {
       auditLogger.log({ request, ctx, decision });
       approvalBus.request(approvalReq);
 
-      let resolved: ApprovalRequest;
-      try {
-        resolved = await approvalBus.awaitResolution(gateId, timeoutSec * 1000);
-      } catch (err) {
-        throw err; // Propagate PolicyError.approvalTimeout
-      }
+      const resolved = await approvalBus.awaitResolution(gateId, timeoutSec * 1000);
 
       if (resolved.status === 'denied') {
         throw PolicyError.approvalDenied(gateId, resolved.resolveReason, {

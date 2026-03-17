@@ -15,7 +15,7 @@
  *   entity.too.large → 413
  */
 import { Request, Response, NextFunction } from 'express';
-import { ZodError } from 'zod';
+import { ZodError, ZodIssue } from 'zod';
 import { logger } from '../lib/logger.js';
 
 // ── Known Error Types ──────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ function getRequestId(req: Request): string | undefined {
  * Express global error handler.
  * Register as the very last `app.use()` so all route errors reach it.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export function errorHandler(
   err: unknown,
   req: Request,
@@ -67,10 +67,10 @@ export function errorHandler(
     res.status(400).json({
       error: 'Validation failed',
       code: 'VALIDATION_ERROR',
-      details: err.issues.map((e: any) => ({
+      details: err.issues.map((e: ZodIssue) => ({
         field: e.path.join('.') || 'body',
         message: e.message,
-        expected: e.expected ?? undefined,
+        expected: 'expected' in e ? (e as { expected: unknown }).expected as string : undefined,
         path: e.path.join('.'),
       })),
       // Convenience top-level fields for the first issue

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- HTTP client returns dynamic API response shapes; typed per-method in JSDoc */
 import os from 'os';
 import { LocalPolicyEngine } from './local-policy-engine.js';
 import type { PolicyBundle } from '../core/types.js';

@@ -14,7 +14,7 @@ import * as crypto from 'crypto';
 const DEFAULT_BASE_URL = 'https://api.agentguard.tech';
 const CONFIG_DIR = '.agentguard';
 const CONFIG_FILE = 'config.json';
-const AGENT_KEY_FILE = 'agent.key';
+const _AGENT_KEY_FILE = 'agent.key'; // reserved for future explicit key-file path exposure
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -92,7 +92,7 @@ export function loadConfig(storagePath: string): StoredConfig | null {
     }
     const data = fs.readFileSync(configPath, 'utf-8');
     return JSON.parse(data) as StoredConfig;
-  } catch (error) {
+  } catch (_error) {
     // Config might be corrupted - return null to trigger fresh registration
     return null;
   }
@@ -309,7 +309,7 @@ export async function autoRegister(
     autoRegister = false,
     agentId: providedAgentId,
     agentName,
-    storagePath,
+    storagePath: _storagePath, // raw path option; resolved below via resolveStoragePath()
     baseUrl = DEFAULT_BASE_URL,
     rotateKey = false,
     onKeyCreated,
@@ -710,127 +710,3 @@ export function formatRateLimitError(error: RateLimitError): string {
   
   return message;
 }
-/**
- * AgentGuard Auto-Register Module
- * Enables AI agents to self-provision security without human intervention.
- */
-
-import { randomUUID } from 'crypto';
-
-export interface AutoRegisterOptions {
-  /**
-   * Automatically create a free-tier account if no API key provided.
-   * Uses the agent's unique ID to provision security.
-   */
-  autoRegister?: boolean;
-  
-  /**
-   * Custom identifier for this agent (defaults to generated UUID).
-   * Useful for key recovery across restarts.
-   */
-  agentId?: string;
-  
-  /**
-   * Where to store the API key (default: memory only).
-   * - 'memory': Only in memory, lost on restart
-   * - 'file': Store in ~/.agentguard/key.json
-   */
-  keyStorage?: 'memory' | 'file';
-  
-  /**
-   * Callback when key is created (useful for logging).
-   */
-  onKeyCreated?: (key: string, agentId: string) => void | Promise<void>;
-}
-
-export interface AgentGuardOptions {
-  apiKey?: string;
-  baseUrl?: string;
-  autoRegister?: boolean;
-  agentId?: string;
-  keyStorage?: 'memory' | 'file';
-  onKeyCreated?: (key: string, agentId: string) => void | Promise<void>;
-}
-
-// Free tier limits
-export const FREE_TIER_LIMITS = {
-  requestsPerMonth: 1000,
-  rateLimitPerMinute: 10,
-  concurrentAgents: 1,
-  storageAgents: false,
-  dashboardAccess: false,
-} as const;
-
-/**
- * Auto-provision a free-tier account for an agent.
- * Calls the signup API and returns credentials.
- */
-export async function provisionAgentAccount(
-  baseUrl: string = 'https://api.agentguard.tech'
-): Promise<{ apiKey: string; tenantId: string }> {
-  const agentId = `agent-${randomUUID()}`;
-  
-  const response = await fetch(`${baseUrl}/api/v1/signup`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      name: `Agent ${agentId.slice(0, 8)}`,
-      email: `${agentId}@agent.local`,
-    }),
-  });
-  
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to provision agent account: ${response.status} ${error}`);
-  }
-  
-  const data = await response.json() as { apiKey: string; tenantId: string };
-  return {
-    apiKey: data.apiKey,
-    tenantId: data.tenantId,
-  };
-}
-
-/**
- * Store API key to file for persistence across restarts.
- */
-export function storeKeyToFile(key: string, tenantId: string): void {
-  const fs = require('fs');
-  const path = require('path');
-  const homedir = require('os').homedir();
-  
-  const keyDir = path.join(homedir, '.agentguard');
-  const keyFile = path.join(keyDir, 'key.json');
-  
-  if (!fs.existsSync(keyDir)) {
-    fs.mkdirSync(keyDir, { recursive: true });
-  }
-  
-  fs.writeFileSync(keyFile, JSON.stringify({ key, tenantId, updatedAt: new Date().toISOString() }));
-}
-
-/**
- * Load API key from file if exists.
- */
-export function loadKeyFromFile(): { key: string; tenantId: string } | null {
-  try {
-    const fs = require('fs');
-    const path = require('path');
-    const homedir = require('os').homedir();
-    
-    const keyFile = path.join(homedir, '.agentguard', 'key.json');
-    
-    if (!fs.existsSync(keyFile)) {
-      return null;
-    }
-    
-    const data = JSON.parse(fs.readFileSync(keyFile, 'utf-8'));
-    return { key: data.key, tenantId: data.tenantId };
-  } catch {
-    return null;
-  }
-}
-
-console.log('✅ Auto-register module loaded');
