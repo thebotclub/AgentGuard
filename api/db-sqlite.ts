@@ -34,6 +34,7 @@ import type {
   LicenseUsageRow,
   AnomalyRuleRow,
   AlertRow,
+  PolicyVersionRow,
 } from './db-interface.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
@@ -595,6 +596,20 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
           created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
         CREATE INDEX IF NOT EXISTS idx_siem_configs_tenant ON siem_configs(tenant_id);
+      `);
+
+      // Migration: policy_versions table (M3-75 policy versioning)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS policy_versions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          policy_id TEXT NOT NULL,
+          tenant_id TEXT NOT NULL,
+          version INTEGER NOT NULL,
+          policy_data TEXT NOT NULL,
+          created_at TEXT DEFAULT (datetime('now')),
+          reverted_from INTEGER
+        );
+        CREATE INDEX IF NOT EXISTS idx_policy_versions_policy ON policy_versions(policy_id, tenant_id);
       `);
 
       console.log('[db] SQLite schema ready');
@@ -1531,6 +1546,46 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       execSync(
         `DELETE FROM stripe_processed_events WHERE processed_at < datetime('now', '-' || ? || ' days')`,
         [olderThanDays]
+      );
+    },
+
+    // ── Policy Versioning ─────────────────────────────────────────────────────
+    async getNextPolicyVersion(policyId: string, tenantId: string): Promise<number> {
+      const row = getSync<{ max_version: number | null }>(
+        'SELECT MAX(version) as max_version FROM policy_versions WHERE policy_id = ? AND tenant_id = ?',
+        [policyId, tenantId]
+      );
+      return (row?.max_version ?? 0) + 1;
+    },
+
+    async insertPolicyVersion(
+      policyId: string,
+      tenantId: string,
+      policyData: string,
+      revertedFrom: number | null = null,
+    ): Promise<PolicyVersionRow> {
+      const version = await adapter.getNextPolicyVersion(policyId, tenantId);
+      db.prepare(
+        `INSERT INTO policy_versions (policy_id, tenant_id, version, policy_data, reverted_from)
+         VALUES (?, ?, ?, ?, ?)`
+      ).run(policyId, tenantId, version, policyData, revertedFrom ?? null);
+      return getSync<PolicyVersionRow>(
+        'SELECT * FROM policy_versions WHERE policy_id = ? AND tenant_id = ? AND version = ?',
+        [policyId, tenantId, version]
+      )!;
+    },
+
+    async getPolicyVersions(policyId: string, tenantId: string): Promise<PolicyVersionRow[]> {
+      return allSync<PolicyVersionRow>(
+        'SELECT * FROM policy_versions WHERE policy_id = ? AND tenant_id = ? ORDER BY version DESC',
+        [policyId, tenantId]
+      );
+    },
+
+    async getPolicyVersion(policyId: string, tenantId: string, version: number): Promise<PolicyVersionRow | undefined> {
+      return getSync<PolicyVersionRow>(
+        'SELECT * FROM policy_versions WHERE policy_id = ? AND tenant_id = ? AND version = ?',
+        [policyId, tenantId, version]
       );
     },
   };

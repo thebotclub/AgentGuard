@@ -349,6 +349,17 @@ const SCHEMA_SQL = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_stripe_events_processed_at ON stripe_processed_events(processed_at);
+
+  CREATE TABLE IF NOT EXISTS policy_versions (
+    id SERIAL PRIMARY KEY,
+    policy_id TEXT NOT NULL,
+    tenant_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    policy_data TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    reverted_from INTEGER
+  );
+  CREATE INDEX IF NOT EXISTS idx_policy_versions_policy ON policy_versions(policy_id, tenant_id);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -1896,6 +1907,44 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         'DELETE FROM stripe_processed_events WHERE processed_at < NOW() - ($1 || \' days\')::INTERVAL',
         [olderThanDays]
       );
+    },
+
+    // ── Policy Versioning ─────────────────────────────────────────────────────
+    async getNextPolicyVersion(policyId: string, tenantId: string): Promise<number> {
+      const result = await pool.query(
+        'SELECT COALESCE(MAX(version), 0) + 1 AS next_version FROM policy_versions WHERE policy_id = $1 AND tenant_id = $2',
+        [policyId, tenantId]
+      );
+      return result.rows[0]?.next_version ?? 1;
+    },
+
+    async insertPolicyVersion(
+      policyId: string, tenantId: string, policyData: string, revertedFrom?: number | null
+    ): Promise<PolicyVersionRow> {
+      const version = await adapter.getNextPolicyVersion(policyId, tenantId);
+      const result = await pool.query(
+        `INSERT INTO policy_versions (policy_id, tenant_id, version, policy_data, reverted_from)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, policy_id, tenant_id, version, policy_data, created_at::text, reverted_from`,
+        [policyId, tenantId, version, policyData, revertedFrom ?? null]
+      );
+      return result.rows[0] as PolicyVersionRow;
+    },
+
+    async getPolicyVersions(policyId: string, tenantId: string): Promise<PolicyVersionRow[]> {
+      const result = await pool.query(
+        'SELECT id, policy_id, tenant_id, version, policy_data, created_at::text, reverted_from FROM policy_versions WHERE policy_id = $1 AND tenant_id = $2 ORDER BY version DESC',
+        [policyId, tenantId]
+      );
+      return result.rows as PolicyVersionRow[];
+    },
+
+    async getPolicyVersion(policyId: string, tenantId: string, version: number): Promise<PolicyVersionRow | undefined> {
+      const result = await pool.query(
+        'SELECT id, policy_id, tenant_id, version, policy_data, created_at::text, reverted_from FROM policy_versions WHERE policy_id = $1 AND tenant_id = $2 AND version = $3',
+        [policyId, tenantId, version]
+      );
+      return result.rows[0] as PolicyVersionRow | undefined;
     },
   };
 

@@ -120,6 +120,13 @@ export function createPolicyRoutes(
       };
 
       try {
+        // Save current policy as a version before overwriting
+        const policyId = `custom-${tenantId}`;
+        const currentPolicy = await db.getCustomPolicy(tenantId);
+        if (currentPolicy) {
+          await db.insertPolicyVersion(policyId, tenantId, currentPolicy);
+        }
+
         await db.setCustomPolicy(tenantId, JSON.stringify(policyDoc));
         res.json({
           tenantId,
@@ -202,6 +209,59 @@ export function createPolicyRoutes(
       const coverage = tools.length > 0 ? Math.round((covered.length / tools.length) * 100) : 100;
 
       res.json({ coverage, covered, uncovered, results });
+    },
+  );
+
+  // ── GET /api/v1/policy/versions ─────────────────────────────────────────
+  router.get(
+    '/api/v1/policy/versions',
+    auth.requireTenantAuth,
+    async (req: Request, res: Response) => {
+      const tenantId = req.tenantId!;
+      const policyId = `custom-${tenantId}`;
+      try {
+        const versions = await db.getPolicyVersions(policyId, tenantId);
+        res.json({ tenantId, versions });
+      } catch (e) {
+        console.error('[policy] versions error:', e);
+        res.status(500).json({ error: 'Failed to fetch policy versions' });
+      }
+    },
+  );
+
+  // ── POST /api/v1/policy/revert/:version ───────────────────────────────────
+  router.post(
+    '/api/v1/policy/revert/:version',
+    auth.requireTenantAuth,
+    async (req: Request, res: Response) => {
+      const tenantId = req.tenantId!;
+      const policyId = `custom-${tenantId}`;
+      const version = parseInt(req.params['version'] ?? '', 10);
+      if (isNaN(version) || version < 1) {
+        return res.status(400).json({ error: 'Invalid version number' });
+      }
+      try {
+        const targetVersion = await db.getPolicyVersion(policyId, tenantId, version);
+        if (!targetVersion) {
+          return res.status(404).json({ error: `Version ${version} not found` });
+        }
+        // Save current policy before reverting
+        const currentPolicy = await db.getCustomPolicy(tenantId);
+        if (currentPolicy) {
+          await db.insertPolicyVersion(policyId, tenantId, currentPolicy, version);
+        }
+        // Restore the target version
+        await db.setCustomPolicy(tenantId, targetVersion.policy_data);
+        res.json({
+          message: `Policy reverted to version ${version}`,
+          tenantId,
+          revertedFrom: version,
+          policy: JSON.parse(targetVersion.policy_data),
+        });
+      } catch (e) {
+        console.error('[policy] revert error:', e);
+        res.status(500).json({ error: 'Failed to revert policy' });
+      }
     },
   );
 

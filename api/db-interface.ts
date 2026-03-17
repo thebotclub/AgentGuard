@@ -316,6 +316,16 @@ export interface SiemConfigRow {
   created_at: string;
 }
 
+export interface PolicyVersionRow {
+  id: number;
+  policy_id: string;
+  tenant_id: string;
+  version: number;
+  policy_data: string;
+  created_at: string;
+  reverted_from: number | null;
+}
+
 // ── Database Interface ─────────────────────────────────────────────────────
 
 export interface IDatabase {
@@ -581,4 +591,10 @@ export interface IDatabase {
   isStripeEventProcessed(eventId: string): Promise<boolean>;
   markStripeEventProcessed(eventId: string, eventType: string): Promise<void>;
   pruneStripeProcessedEvents(olderThanDays?: number): Promise<void>;
+
+  // ── Policy Versioning ─────────────────────────────────────────────────────
+  insertPolicyVersion(policyId: string, tenantId: string, policyData: string, revertedFrom?: number | null): Promise<PolicyVersionRow>;
+  getPolicyVersions(policyId: string, tenantId: string): Promise<PolicyVersionRow[]>;
+  getPolicyVersion(policyId: string, tenantId: string, version: number): Promise<PolicyVersionRow | undefined>;
+  getNextPolicyVersion(policyId: string, tenantId: string): Promise<number>;
 }
