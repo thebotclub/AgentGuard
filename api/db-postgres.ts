@@ -32,6 +32,9 @@ import type {
   LicenseUsageRow,
   AnomalyRuleRow,
   AlertRow,
+  PolicyVersionRow,
+  TeamMemberRow,
+  JobRow,
 } from './db-interface.js';
 import { randomUUID } from 'crypto';
 import crypto from 'crypto';
@@ -360,6 +363,32 @@ const SCHEMA_SQL = `
     reverted_from INTEGER
   );
   CREATE INDEX IF NOT EXISTS idx_policy_versions_policy ON policy_versions(policy_id, tenant_id);
+
+  CREATE TABLE IF NOT EXISTS team_members (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    email TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'member',
+    invited_at TIMESTAMPTZ DEFAULT NOW(),
+    accepted_at TIMESTAMPTZ,
+    UNIQUE(tenant_id, email)
+  );
+  CREATE INDEX IF NOT EXISTS idx_team_members_tenant ON team_members(tenant_id);
+
+  CREATE TABLE IF NOT EXISTS evaluation_jobs (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    job_type TEXT NOT NULL DEFAULT 'evaluation',
+    status TEXT NOT NULL DEFAULT 'pending',
+    payload TEXT NOT NULL,
+    result TEXT,
+    error TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ
+  );
+  CREATE INDEX IF NOT EXISTS idx_jobs_tenant ON evaluation_jobs(tenant_id);
+  CREATE INDEX IF NOT EXISTS idx_jobs_status ON evaluation_jobs(status);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -1945,6 +1974,95 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         [policyId, tenantId, version]
       );
       return result.rows[0] as PolicyVersionRow | undefined;
+    },
+
+    // ── Team Members (M3-78) ──────────────────────────────────────────────
+    async getTeamMembers(tenantId: string): Promise<TeamMemberRow[]> {
+      const result = await pool.query(
+        'SELECT id, tenant_id, email, role, invited_at::text, accepted_at::text FROM team_members WHERE tenant_id = $1 ORDER BY invited_at',
+        [tenantId]
+      );
+      return result.rows as TeamMemberRow[];
+    },
+
+    async addTeamMember(tenantId: string, email: string, role: string): Promise<TeamMemberRow> {
+      const id = crypto.randomUUID();
+      try {
+        await pool.query(
+          'INSERT INTO team_members (id, tenant_id, email, role) VALUES ($1, $2, $3, $4)',
+          [id, tenantId, email, role]
+        );
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message.includes('unique') || e instanceof Error && e.message.includes('duplicate')) {
+          throw new Error('Member already exists');
+        }
+        throw e;
+      }
+      const result = await pool.query('SELECT id, tenant_id, email, role, invited_at::text, accepted_at::text FROM team_members WHERE id = $1', [id]);
+      return result.rows[0] as TeamMemberRow;
+    },
+
+    async removeTeamMember(tenantId: string, userId: string): Promise<void> {
+      await pool.query('DELETE FROM team_members WHERE tenant_id = $1 AND id = $2', [tenantId, userId]);
+    },
+
+    async updateTeamMemberRole(tenantId: string, userId: string, role: string): Promise<void> {
+      await pool.query('UPDATE team_members SET role = $1 WHERE tenant_id = $2 AND id = $3', [role, tenantId, userId]);
+    },
+
+    async getTeamMemberByEmail(tenantId: string, email: string): Promise<TeamMemberRow | undefined> {
+      const result = await pool.query(
+        'SELECT id, tenant_id, email, role, invited_at::text, accepted_at::text FROM team_members WHERE tenant_id = $1 AND email = $2',
+        [tenantId, email]
+      );
+      return result.rows[0] as TeamMemberRow | undefined;
+    },
+
+    // ── Job Queue (M3-79) ─────────────────────────────────────────────────
+    async enqueueJob(tenantId: string, jobType: string, payload: string): Promise<string> {
+      const id = crypto.randomUUID();
+      await pool.query(
+        'INSERT INTO evaluation_jobs (id, tenant_id, job_type, payload) VALUES ($1, $2, $3, $4)',
+        [id, tenantId, jobType, payload]
+      );
+      return id;
+    },
+
+    async getJob(jobId: string): Promise<JobRow | undefined> {
+      const result = await pool.query('SELECT * FROM evaluation_jobs WHERE id = $1', [jobId]);
+      return result.rows[0] as JobRow | undefined;
+    },
+
+    async getJobsForTenant(tenantId: string, limit = 50, offset = 0): Promise<JobRow[]> {
+      const result = await pool.query(
+        'SELECT * FROM evaluation_jobs WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
+        [tenantId, limit, offset]
+      );
+      return result.rows as JobRow[];
+    },
+
+    async claimPendingJob(): Promise<JobRow | undefined> {
+      // Use FOR UPDATE SKIP LOCKED for safe concurrent claiming
+      const result = await pool.query(
+        `UPDATE evaluation_jobs SET status = 'running', started_at = NOW()
+         WHERE id = (SELECT id FROM evaluation_jobs WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1 FOR UPDATE SKIP LOCKED)
+         RETURNING *`
+      );
+      return result.rows[0] as JobRow | undefined;
+    },
+
+    async completeJob(jobId: string, result: string): Promise<void> {
+      await pool.query(
+        "UPDATE evaluation_jobs SET status = 'completed', result = $1, completed_at = NOW() WHERE id = $2",
+        [result, jobId]
+      );
+    },
+
+    async failJob(jobId: string, error: string): Promise<void> {
+      await pool.query(
+        "UPDATE evaluation_jobs SET status = 'failed', error = $1, completed_at = NOW() WHERE id = $2",
+        [error, jobId]
+      );
     },
   };
 

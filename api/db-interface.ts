@@ -326,6 +326,28 @@ export interface PolicyVersionRow {
   reverted_from: number | null;
 }
 
+export interface TeamMemberRow {
+  id: string;
+  tenant_id: string;
+  email: string;
+  role: string;
+  invited_at: string;
+  accepted_at: string | null;
+}
+
+export interface JobRow {
+  id: string;
+  tenant_id: string;
+  job_type: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  payload: string;
+  result: string | null;
+  error: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
 // ── Database Interface ─────────────────────────────────────────────────────
 
 export interface IDatabase {
@@ -597,4 +619,19 @@ export interface IDatabase {
   getPolicyVersions(policyId: string, tenantId: string): Promise<PolicyVersionRow[]>;
   getPolicyVersion(policyId: string, tenantId: string, version: number): Promise<PolicyVersionRow | undefined>;
   getNextPolicyVersion(policyId: string, tenantId: string): Promise<number>;
+
+  // ── Team Members (RBAC) ─────────────────────────────────────────────────
+  getTeamMembers(tenantId: string): Promise<TeamMemberRow[]>;
+  addTeamMember(tenantId: string, email: string, role: string): Promise<TeamMemberRow>;
+  removeTeamMember(tenantId: string, userId: string): Promise<void>;
+  updateTeamMemberRole(tenantId: string, userId: string, role: string): Promise<void>;
+  getTeamMemberByEmail(tenantId: string, email: string): Promise<TeamMemberRow | undefined>;
+
+  // ── Job Queue ───────────────────────────────────────────────────────────
+  enqueueJob(tenantId: string, jobType: string, payload: string): Promise<string>;
+  getJob(jobId: string): Promise<JobRow | undefined>;
+  getJobsForTenant(tenantId: string, limit?: number, offset?: number): Promise<JobRow[]>;
+  claimPendingJob(): Promise<JobRow | undefined>;
+  completeJob(jobId: string, result: string): Promise<void>;
+  failJob(jobId: string, error: string): Promise<void>;
 }

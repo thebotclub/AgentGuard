@@ -35,6 +35,8 @@ import type {
   AnomalyRuleRow,
   AlertRow,
   PolicyVersionRow,
+  TeamMemberRow,
+  JobRow,
 } from './db-interface.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
@@ -610,6 +612,38 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
           reverted_from INTEGER
         );
         CREATE INDEX IF NOT EXISTS idx_policy_versions_policy ON policy_versions(policy_id, tenant_id);
+      `);
+
+      // Migration: team_members table (M3-78 RBAC)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS team_members (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL,
+          email TEXT NOT NULL,
+          role TEXT NOT NULL DEFAULT 'member',
+          invited_at TEXT DEFAULT (datetime('now')),
+          accepted_at TEXT,
+          UNIQUE(tenant_id, email)
+        );
+        CREATE INDEX IF NOT EXISTS idx_team_members_tenant ON team_members(tenant_id);
+      `);
+
+      // Migration: evaluation_jobs table (M3-79 job queue)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS evaluation_jobs (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL,
+          job_type TEXT NOT NULL DEFAULT 'evaluation',
+          status TEXT NOT NULL DEFAULT 'pending',
+          payload TEXT NOT NULL,
+          result TEXT,
+          error TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          started_at TEXT,
+          completed_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_jobs_tenant ON evaluation_jobs(tenant_id);
+        CREATE INDEX IF NOT EXISTS idx_jobs_status ON evaluation_jobs(status);
       `);
 
       console.log('[db] SQLite schema ready');
@@ -1587,6 +1621,88 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         'SELECT * FROM policy_versions WHERE policy_id = ? AND tenant_id = ? AND version = ?',
         [policyId, tenantId, version]
       );
+    },
+
+    // ── Team Members (M3-78) ──────────────────────────────────────────────
+    async getTeamMembers(tenantId: string): Promise<TeamMemberRow[]> {
+      return allSync<TeamMemberRow>(
+        'SELECT * FROM team_members WHERE tenant_id = ? ORDER BY invited_at',
+        [tenantId]
+      );
+    },
+
+    async addTeamMember(tenantId: string, email: string, role: string): Promise<TeamMemberRow> {
+      const id = crypto.randomUUID();
+      try {
+        db.prepare(
+          'INSERT INTO team_members (id, tenant_id, email, role) VALUES (?, ?, ?, ?)'
+        ).run(id, tenantId, email, role);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message.includes('UNIQUE')) {
+          throw new Error('Member already exists');
+        }
+        throw e;
+      }
+      return getSync<TeamMemberRow>('SELECT * FROM team_members WHERE id = ?', [id])!;
+    },
+
+    async removeTeamMember(tenantId: string, userId: string): Promise<void> {
+      db.prepare('DELETE FROM team_members WHERE tenant_id = ? AND id = ?').run(tenantId, userId);
+    },
+
+    async updateTeamMemberRole(tenantId: string, userId: string, role: string): Promise<void> {
+      db.prepare('UPDATE team_members SET role = ? WHERE tenant_id = ? AND id = ?').run(role, tenantId, userId);
+    },
+
+    async getTeamMemberByEmail(tenantId: string, email: string): Promise<TeamMemberRow | undefined> {
+      return getSync<TeamMemberRow>(
+        'SELECT * FROM team_members WHERE tenant_id = ? AND email = ?',
+        [tenantId, email]
+      );
+    },
+
+    // ── Job Queue (M3-79) ─────────────────────────────────────────────────
+    async enqueueJob(tenantId: string, jobType: string, payload: string): Promise<string> {
+      const id = crypto.randomUUID();
+      db.prepare(
+        'INSERT INTO evaluation_jobs (id, tenant_id, job_type, payload) VALUES (?, ?, ?, ?)'
+      ).run(id, tenantId, jobType, payload);
+      return id;
+    },
+
+    async getJob(jobId: string): Promise<JobRow | undefined> {
+      return getSync<JobRow>('SELECT * FROM evaluation_jobs WHERE id = ?', [jobId]);
+    },
+
+    async getJobsForTenant(tenantId: string, limit = 50, offset = 0): Promise<JobRow[]> {
+      return allSync<JobRow>(
+        'SELECT * FROM evaluation_jobs WHERE tenant_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+        [tenantId, limit, offset]
+      );
+    },
+
+    async claimPendingJob(): Promise<JobRow | undefined> {
+      const job = getSync<JobRow>(
+        "SELECT * FROM evaluation_jobs WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1"
+      );
+      if (job) {
+        db.prepare(
+          "UPDATE evaluation_jobs SET status = 'running', started_at = datetime('now') WHERE id = ? AND status = 'pending'"
+        ).run(job.id);
+      }
+      return job;
+    },
+
+    async completeJob(jobId: string, result: string): Promise<void> {
+      db.prepare(
+        "UPDATE evaluation_jobs SET status = 'completed', result = ?, completed_at = datetime('now') WHERE id = ?"
+      ).run(result, jobId);
+    },
+
+    async failJob(jobId: string, error: string): Promise<void> {
+      db.prepare(
+        "UPDATE evaluation_jobs SET status = 'failed', error = ?, completed_at = datetime('now') WHERE id = ?"
+      ).run(error, jobId);
     },
   };
 

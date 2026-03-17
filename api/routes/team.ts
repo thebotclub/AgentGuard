@@ -1,0 +1,113 @@
+/**
+ * AgentGuard — Team Management Routes (M3-78 RBAC)
+ *
+ * GET    /api/v1/team/members           — list team members
+ * POST   /api/v1/team/members           — invite a member
+ * DELETE /api/v1/team/members/:userId   — remove a member (owner only)
+ * PATCH  /api/v1/team/members/:userId/role — change role (owner only)
+ */
+import { Router, Request, Response } from 'express';
+import { z } from 'zod';
+import type { IDatabase } from '../db-interface.js';
+import type { AuthMiddleware } from '../middleware/auth.js';
+import { requireRole } from '../lib/rbac.js';
+
+const InviteMemberSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(['admin', 'member', 'viewer']).default('member'),
+});
+
+const ChangeRoleSchema = z.object({
+  role: z.enum(['admin', 'member', 'viewer']),
+});
+
+export function createTeamRoutes(db: IDatabase, auth: AuthMiddleware): Router {
+  const router = Router();
+
+  // List members
+  router.get(
+    '/api/v1/team/members',
+    auth.requireTenantAuth,
+    requireRole('owner', 'admin'),
+    async (req: Request, res: Response) => {
+      try {
+        const tenantId = req.tenantId!;
+        const members = await db.getTeamMembers(tenantId);
+        res.json({ members });
+      } catch (e) {
+        console.error('[team/list]', e);
+        res.status(500).json({ error: 'Failed to list team members' });
+      }
+    },
+  );
+
+  // Invite member
+  router.post(
+    '/api/v1/team/members',
+    auth.requireTenantAuth,
+    requireRole('owner', 'admin'),
+    async (req: Request, res: Response) => {
+      const parsed = InviteMemberSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.issues[0]!.message });
+      }
+
+      try {
+        const tenantId = req.tenantId!;
+        const { email, role } = parsed.data;
+        const member = await db.addTeamMember(tenantId, email, role);
+        res.status(201).json(member);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message.includes('already exists')) {
+          return res.status(409).json({ error: 'Member already exists' });
+        }
+        console.error('[team/invite]', e);
+        res.status(500).json({ error: 'Failed to invite team member' });
+      }
+    },
+  );
+
+  // Remove member (owner only)
+  router.delete(
+    '/api/v1/team/members/:userId',
+    auth.requireTenantAuth,
+    requireRole('owner'),
+    async (req: Request, res: Response) => {
+      try {
+        const tenantId = req.tenantId!;
+        const { userId } = req.params;
+        await db.removeTeamMember(tenantId, userId);
+        res.json({ success: true });
+      } catch (e) {
+        console.error('[team/remove]', e);
+        res.status(500).json({ error: 'Failed to remove team member' });
+      }
+    },
+  );
+
+  // Change role (owner only)
+  router.patch(
+    '/api/v1/team/members/:userId/role',
+    auth.requireTenantAuth,
+    requireRole('owner'),
+    async (req: Request, res: Response) => {
+      const parsed = ChangeRoleSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.issues[0]!.message });
+      }
+
+      try {
+        const tenantId = req.tenantId!;
+        const { userId } = req.params;
+        const { role } = parsed.data;
+        await db.updateTeamMemberRole(tenantId, userId, role);
+        res.json({ success: true, role });
+      } catch (e) {
+        console.error('[team/role]', e);
+        res.status(500).json({ error: 'Failed to update role' });
+      }
+    },
+  );
+
+  return router;
+}
