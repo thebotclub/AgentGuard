@@ -10,16 +10,16 @@
 
 | Site | Status | Load Time | SSL Valid | Security Headers | SEO | Mobile | Favicon | Score |
 |------|--------|-----------|-----------|-----------------|-----|--------|---------|-------|
-| agentguard.dev | ✅ 200 | 0.71s | ✅ May 29 | ✅ 5/5 | ✅ 9/10 | ✅ | ✅ | **92/100** |
-| app.agentguard.dev | ⚠️ Slow/Timeout | >15s | ✅ May 29 | ✅ 5/5 | ✅ noindex (correct) | ✅ | ✅ | **65/100** |
-| api.agentguard.dev | ✅ 429 (rate-limited) | 0.16s | ✅ May 29 | ✅ 8/8 | N/A (JSON API) | N/A | N/A | **90/100** |
-| docs.agentguard.dev | ✅ 200 | 0.32s | ✅ May 29 | ✅ 5/5 | ✅ 8/10 | ✅ | ✅ | **85/100** |
-| status.agentguard.dev | ❌ DNS failure | N/A | N/A | N/A | N/A | N/A | N/A | **0/100** |
-| blog.agentguard.dev | ❌ DNS failure | N/A | N/A | N/A | N/A | N/A | N/A | **0/100** |
+| agentguard.tech | ✅ 200 | 0.71s | ✅ May 29 | ✅ 5/5 | ✅ 9/10 | ✅ | ✅ | **92/100** |
+| app.agentguard.tech | ⚠️ Slow/Timeout | >15s | ✅ May 29 | ✅ 5/5 | ✅ noindex (correct) | ✅ | ✅ | **65/100** |
+| api.agentguard.tech | ✅ 429 (rate-limited) | 0.16s | ✅ May 29 | ✅ 8/8 | N/A (JSON API) | N/A | N/A | **90/100** |
+| docs.agentguard.tech | ✅ 200 | 0.32s | ✅ May 29 | ✅ 5/5 | ✅ 8/10 | ✅ | ✅ | **85/100** |
+| status.agentguard.tech | ❌ DNS failure | N/A | N/A | N/A | N/A | N/A | N/A | **0/100** |
+| blog.agentguard.tech | ❌ DNS failure | N/A | N/A | N/A | N/A | N/A | N/A | **0/100** |
 
 ---
 
-## 1. agentguard.dev (Marketing Site)
+## 1. agentguard.tech (Marketing Site)
 
 ### Accessibility
 - **Status:** ✅ HTTP 200
@@ -41,11 +41,11 @@
 |-----|---------|-------|
 | `<title>` | ✅ | "AgentGuard — AI Agent Deployment Enforcement \| CI/CD Gate & Runtime Policy Engine" |
 | `<meta description>` | ✅ | Comprehensive description present |
-| `<link rel="canonical">` | ✅ | `https://agentguard.dev` |
+| `<link rel="canonical">` | ✅ | `https://agentguard.tech` |
 | `og:title` | ✅ | "AgentGuard — Stop Deploying Unsafe AI Agents" |
 | `og:description` | ✅ | Present |
-| `og:image` | ✅ | `https://agentguard.dev/social-og.png` (200, 50KB) |
-| `og:url` | ✅ | `https://agentguard.dev` |
+| `og:image` | ✅ | `https://agentguard.tech/social-og.png` (200, 50KB) |
+| `og:url` | ✅ | `https://agentguard.tech` |
 | `twitter:card` | ✅ | `summary_large_image` |
 | `twitter:title` | ✅ | Present |
 | **`twitter:site`** | ❌ | **MISSING** — should be `@agentguard` or similar |
@@ -55,19 +55,19 @@
 ### robots.txt ✅
 - Blocks AI crawlers: ClaudeBot, Google-Extended, GPTBot, meta-externalagent
 - Allows general crawlers
-- Sitemap reference: `https://agentguard.dev/sitemap.xml`
+- Sitemap reference: `https://agentguard.tech/sitemap.xml`
 - Content signals (search/ai-input/ai-train) implemented
 
 ### sitemap.xml ✅
 - Valid XML, includes:
-  - `https://agentguard.dev/` (priority 1.0)
-  - `https://docs.agentguard.dev/` (priority 0.9)
-  - `https://demo.agentguard.dev/` (priority 0.7) — ⚠️ references demo subdomain
+  - `https://agentguard.tech/` (priority 1.0)
+  - `https://docs.agentguard.tech/` (priority 0.9)
+  - `https://demo.agentguard.tech/` (priority 0.7) — ⚠️ references demo subdomain
 
 ### SSL Certificate ✅
 - **Issuer:** Let's Encrypt (E8)
 - **Valid:** Feb 28, 2026 → May 29, 2026
-- **Wildcard:** `*.agentguard.dev` — covers all subdomains
+- **Wildcard:** `*.agentguard.tech` — covers all subdomains
 - **Days remaining:** ~81 days ✅
 
 ### Mobile ✅
@@ -92,7 +92,7 @@
 
 ---
 
-## 2. app.agentguard.dev (Dashboard)
+## 2. app.agentguard.tech (Dashboard)
 
 ### Accessibility ⚠️
 - **Status:** Timeout on full page load (>15s), but headers return quickly
@@ -108,11 +108,11 @@
 |-----|-------|--------|
 | `<title>` | "AgentGuard — Dashboard" | ✅ |
 | `<meta robots>` | `noindex, nofollow` | ✅ Correct for app |
-| `<link rel="canonical">` | `https://app.agentguard.dev` | ✅ |
+| `<link rel="canonical">` | `https://app.agentguard.tech` | ✅ |
 | `og:title` | Not set | ⚠️ Acceptable for noindex page |
 | `og:description` | Not set | ⚠️ Acceptable for noindex page |
 | `twitter:card` | `summary_large_image` | ✅ |
-| `twitter:image` | `https://agentguard.dev/social-og.png` | ✅ |
+| `twitter:image` | `https://agentguard.tech/social-og.png` | ✅ |
 
 ### robots.txt ✅
 - Present (same content signals as main site)
@@ -133,7 +133,7 @@
 
 ---
 
-## 3. api.agentguard.dev (API)
+## 3. api.agentguard.tech (API)
 
 ### Accessibility ✅
 - **Status:** 429 (rate-limited) — expected for unauthenticated requests
@@ -182,7 +182,7 @@
 
 ---
 
-## 4. docs.agentguard.dev (Documentation)
+## 4. docs.agentguard.tech (Documentation)
 
 ### Accessibility ✅
 - **Status:** HTTP 200
@@ -206,11 +206,11 @@
 |-----|---------|-------|
 | `<title>` | ✅ | "AgentGuard Documentation — API Reference & SDK Guide" |
 | `<meta description>` | ✅ | Comprehensive |
-| `<link rel="canonical">` | ✅ | `https://docs.agentguard.dev` |
+| `<link rel="canonical">` | ✅ | `https://docs.agentguard.tech` |
 | `og:title` | ✅ | Present |
 | `og:description` | ✅ | Present |
-| `og:image` | ✅ | `https://agentguard.dev/social-og.png` |
-| `og:url` | ✅ | `https://docs.agentguard.dev` |
+| `og:image` | ✅ | `https://agentguard.tech/social-og.png` |
+| `og:url` | ✅ | `https://docs.agentguard.tech` |
 | `twitter:card` | ✅ | `summary_large_image` |
 | **`twitter:site`** | ❌ | **MISSING** |
 | **`og:site_name`** | ❌ | **MISSING** (present on main site) |
@@ -243,7 +243,7 @@
 
 ---
 
-## 5. status.agentguard.dev ❌
+## 5. status.agentguard.tech ❌
 
 - **DNS Resolution Failed** (curl exit code 6)
 - No DNS record exists for this subdomain
@@ -251,7 +251,7 @@
 
 ---
 
-## 6. blog.agentguard.dev ❌
+## 6. blog.agentguard.tech ❌
 
 - **DNS Resolution Failed** (curl exit code 6)
 - No DNS record exists for this subdomain
@@ -265,28 +265,28 @@
 
 | # | Issue | Affected Sites | Impact |
 |---|-------|---------------|--------|
-| 1 | **GitHub repo links → 404** | agentguard.dev, docs.agentguard.dev | `github.com/thebotclub/AgentGuard` returns 404. Breaks open-source credibility. | 
-| 2 | **Soft 404s (HTTP 200 for missing pages)** | agentguard.dev, docs.agentguard.dev, app.agentguard.dev | SEO pollution, crawl budget waste, poor error UX |
-| 3 | **app.agentguard.dev extremely slow** | app.agentguard.dev | >15s page load — likely unusable for users |
+| 1 | **GitHub repo links → 404** | agentguard.tech, docs.agentguard.tech | `github.com/thebotclub/AgentGuard` returns 404. Breaks open-source credibility. | 
+| 2 | **Soft 404s (HTTP 200 for missing pages)** | agentguard.tech, docs.agentguard.tech, app.agentguard.tech | SEO pollution, crawl budget waste, poor error UX |
+| 3 | **app.agentguard.tech extremely slow** | app.agentguard.tech | >15s page load — likely unusable for users |
 
 ### 🟡 Medium Issues
 
 | # | Issue | Affected Sites | Impact |
 |---|-------|---------------|--------|
-| 4 | **`twitter:site` meta tag missing** | agentguard.dev, docs.agentguard.dev | Twitter cards won't attribute to the brand account |
-| 5 | **docs sitemap.xml returns HTML** | docs.agentguard.dev | Crawlers can't discover docs pages |
-| 6 | **app sitemap.xml returns HTML** | app.agentguard.dev | Minor (noindex page), but messy |
-| 7 | **Docs CSP uses `'unsafe-eval'`** | docs.agentguard.dev | Wider attack surface than necessary |
-| 8 | **Sitemap references `demo.agentguard.dev`** | agentguard.dev | Not tested — may or may not resolve |
-| 9 | **status.agentguard.dev doesn't exist** | N/A | No public status page for enterprise customers |
-| 10 | **blog.agentguard.dev doesn't exist** | N/A | No content marketing surface |
+| 4 | **`twitter:site` meta tag missing** | agentguard.tech, docs.agentguard.tech | Twitter cards won't attribute to the brand account |
+| 5 | **docs sitemap.xml returns HTML** | docs.agentguard.tech | Crawlers can't discover docs pages |
+| 6 | **app sitemap.xml returns HTML** | app.agentguard.tech | Minor (noindex page), but messy |
+| 7 | **Docs CSP uses `'unsafe-eval'`** | docs.agentguard.tech | Wider attack surface than necessary |
+| 8 | **Sitemap references `demo.agentguard.tech`** | agentguard.tech | Not tested — may or may not resolve |
+| 9 | **status.agentguard.tech doesn't exist** | N/A | No public status page for enterprise customers |
+| 10 | **blog.agentguard.tech doesn't exist** | N/A | No content marketing surface |
 
 ### 🟢 Minor Issues
 
 | # | Issue | Affected Sites | Impact |
 |---|-------|---------------|--------|
-| 11 | **`og:site_name` missing on docs** | docs.agentguard.dev | Minor SEO signal missing |
-| 12 | **app.agentguard.dev missing `og:title`/`og:description`** | app.agentguard.dev | Low impact since noindex, but affects link previews in Slack/Teams |
+| 11 | **`og:site_name` missing on docs** | docs.agentguard.tech | Minor SEO signal missing |
+| 12 | **app.agentguard.tech missing `og:title`/`og:description`** | app.agentguard.tech | Low impact since noindex, but affects link previews in Slack/Teams |
 
 ---
 
@@ -328,14 +328,14 @@ The marketing site and API are solid. The biggest concerns are: broken GitHub li
 ## Recommended Priority Actions
 
 1. **🔴 Fix GitHub repo links** — either make the repo public or remove/update the links
-2. **🔴 Fix app.agentguard.dev load time** — diagnose why full page takes >15s
+2. **🔴 Fix app.agentguard.tech load time** — diagnose why full page takes >15s
 3. **🔴 Return proper HTTP 404** for missing pages instead of SPA catch-all
 4. **🟡 Add `twitter:site` meta tag** to marketing and docs sites
-5. **🟡 Create proper sitemap.xml** for docs.agentguard.dev
+5. **🟡 Create proper sitemap.xml** for docs.agentguard.tech
 6. **🟡 Tighten docs CSP** — remove `'unsafe-eval'` if possible
 7. **🟢 Add `og:site_name`** to docs
-8. **🟢 Consider creating** status.agentguard.dev (Betterstack/UptimeRobot)
-9. **🟢 Verify demo.agentguard.dev** referenced in sitemap is live
+8. **🟢 Consider creating** status.agentguard.tech (Betterstack/UptimeRobot)
+9. **🟢 Verify demo.agentguard.tech** referenced in sitemap is live
 
 ---
 

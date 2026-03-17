@@ -64,7 +64,7 @@ export class AgentGuardBlockError extends Error {
     this.riskScore = (result['riskScore'] as number | undefined) ?? 0;
     this.reason = reason;
     this.suggestion = (result['suggestion'] as string | undefined) ?? '';
-    this.docs = (result['docs'] as string | undefined) ?? 'https://agentguard.dev/docs/policy';
+    this.docs = (result['docs'] as string | undefined) ?? 'https://agentguard.tech/docs/policy';
     this.alternatives = (result['alternatives'] as string[] | undefined) ?? [];
     this.tool = tool;
     this.matchedRuleId = result['matchedRuleId'] as string | undefined;

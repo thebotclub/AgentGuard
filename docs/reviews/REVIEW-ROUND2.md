@@ -191,7 +191,7 @@ Not mentioned in FIXES-APPLIED.md. Assumed unchanged.
 
 ### MEDIUM-10 — Hardcoded Dashboard API URL
 **Status: ✅ FIXED**  
-Both `landing/index.html` and `dashboard/index.html` now try `api.agentguard.dev` first and fall back to the Azure URL. However, `api.agentguard.dev` does not resolve (DNS NXDOMAIN), so all traffic falls back to the hardcoded Azure URL — functionally same as before, but the code structure is better.
+Both `landing/index.html` and `dashboard/index.html` now try `api.agentguard.tech` first and fall back to the Azure URL. However, `api.agentguard.tech` does not resolve (DNS NXDOMAIN), so all traffic falls back to the hardcoded Azure URL — functionally same as before, but the code structure is better.
 
 ---
 
@@ -222,9 +222,9 @@ Rate limit responses don't include `Retry-After`, making it harder for legitimat
 
 ---
 
-### NEW-04 — `api.agentguard.dev` DNS Not Configured
+### NEW-04 — `api.agentguard.tech` DNS Not Configured
 **Severity: MEDIUM**  
-The "try api.agentguard.dev first" fallback always fails (DNS NXDOMAIN), adding latency to every page load as clients try and fail before falling back. Either configure the DNS or remove the dead fallback attempt.
+The "try api.agentguard.tech first" fallback always fails (DNS NXDOMAIN), adding latency to every page load as clients try and fail before falling back. Either configure the DNS or remove the dead fallback attempt.
 
 ---
 
@@ -256,7 +256,7 @@ The "try api.agentguard.dev first" fallback always fails (DNS NXDOMAIN), adding 
 | NEW-01 | 🟠 HIGH | ❌ NEW | Kill switch unauthenticated — anyone can toggle it |
 | NEW-02 | 🔵 LOW | ❌ NEW | X-Powered-By: Express exposed |
 | NEW-03 | 🔵 LOW | ❌ NEW | No Retry-After on 429 |
-| NEW-04 | 🟡 MEDIUM | ❌ NEW | api.agentguard.dev DNS not configured |
+| NEW-04 | 🟡 MEDIUM | ❌ NEW | api.agentguard.tech DNS not configured |
 
 ---
 
@@ -265,7 +265,7 @@ The "try api.agentguard.dev first" fallback always fails (DNS NXDOMAIN), adding 
 1. **Set `API_KEY` env var in production** — immediate, requires only deployment config change. Fixes NEW-01 and enforces CRITICAL-02.
 2. **Fix kill switch auth** — move `/api/v1/killswitch` to require auth unconditionally (not just when API_KEY is set).
 3. **Suppress `X-Powered-By`** — one line: `app.disable('x-powered-by')`.
-4. **Provision `api.agentguard.dev` DNS** or remove the dead fallback attempt.
+4. **Provision `api.agentguard.tech` DNS** or remove the dead fallback attempt.
 5. **Hardcoded JWT secret** — rotate and ensure `JWT_SECRET` env var is always required (throw on startup if absent).
 6. **Enable tenantRLSMiddleware** once PostgreSQL RLS policies are confirmed correct.
 7. **ReDoS** — add regex timeout/validation in `packages/sdk/`.

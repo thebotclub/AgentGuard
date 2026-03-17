@@ -1,7 +1,7 @@
 # AgentGuard API — End-to-End Test Results
 
 **Test Date:** 2026-03-07 01:35–02:10 UTC  
-**Base URL:** `https://api.agentguard.dev`  
+**Base URL:** `https://api.agentguard.tech`  
 **API Version:** 0.8.0  
 **Auth Method:** `X-API-Key` header (Bearer token triggers JWT pathway — not configured on this deployment)  
 **Rate Limit:** 10 requests/minute (429 returned when exceeded)
@@ -74,7 +74,7 @@
 {
   "tenantId": "ae655beb-7b6b-4e4b-b1d8-d66b9d5a846d",
   "apiKey": "ag_live_686e640ff3cef9eca80462ffa7cd2343",
-  "dashboard": "https://app.agentguard.dev",
+  "dashboard": "https://app.agentguard.tech",
   "message": "Account created. Store your API key securely — it will not be shown again."
 }
 ```

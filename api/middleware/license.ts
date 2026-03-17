@@ -79,7 +79,7 @@ export function requireFeature(
         error: 'FEATURE_NOT_AVAILABLE',
         message: `Feature '${feature}' requires a higher tier license`,
         currentTier: license.tier,
-        upgrade_url: 'https://agentguard.dev/upgrade',
+        upgrade_url: 'https://agentguard.tech/upgrade',
       });
       return;
     }
@@ -117,7 +117,7 @@ export async function checkEventLimitMiddleware(
         current: result.current,
         limit: result.limit,
         tier: license.tier,
-        upgrade_url: 'https://agentguard.dev/upgrade',
+        upgrade_url: 'https://agentguard.tech/upgrade',
       });
       return;
     }

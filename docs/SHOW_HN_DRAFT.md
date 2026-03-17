@@ -3,7 +3,7 @@
 ## Posting Checklist
 - [ ] Repo is public
 - [ ] README polished ✅
-- [ ] All sites live ✅ (agentguard.dev, docs, demo, app, api)
+- [ ] All sites live ✅ (agentguard.tech, docs, demo, app, api)
 - [ ] npm + PyPI at v0.9.0 ✅
 - [ ] Demo playground working ✅
 - [ ] Hani available to respond to comments for first 2 hours
@@ -55,8 +55,8 @@ const decision = await guard.evaluate({
 
 We're a small team in Australia. The repo has been private while we built it — this is our first public release. Would genuinely appreciate feedback on whether this solves a real problem for you, and what's missing.
 
-Try the interactive demo: https://demo.agentguard.dev
-Docs: https://docs.agentguard.dev
+Try the interactive demo: https://demo.agentguard.tech
+Docs: https://docs.agentguard.tech
 npm: `npm install @the-bot-club/agentguard`
 
 ---

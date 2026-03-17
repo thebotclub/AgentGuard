@@ -116,7 +116,7 @@ Also: the compliance page (OWASP Agentic Top 10 report) is worth $50K in a deal 
 
 **🎨 Dana:** I've onboarded with dozens of developer tools. Here's the exact failure mode we're at risk of:
 
-1. Developer finds agentguard.dev from HN or a tweet
+1. Developer finds agentguard.tech from HN or a tweet
 2. They read the landing page — it's interesting
 3. They click "Get Started" → they're asked to sign up
 4. They sign up → they land on a blank dashboard
@@ -126,7 +126,7 @@ Also: the compliance page (OWASP Agentic Top 10 report) is worth $50K in a deal 
 
 ```bash
 # This should work without signing up — just an API demo key
-curl -X POST https://api.agentguard.dev/api/v1/evaluate/demo \
+curl -X POST https://api.agentguard.tech/api/v1/evaluate/demo \
   -H "X-Demo-Key: demo" \
   -d '{"toolName": "send_email", "toolInput": {"to": "evil@attacker.com", "body": "Ignore previous instructions..."}}'
 
@@ -445,7 +445,7 @@ That said: Sam agrees with Casey and Alex — Docker Compose first. But when we 
 
 ---
 
-**🎨 Dana:** From a UX perspective, the "install experience" for Helm needs to be as clean as Docker Compose. The current standard for good Helm charts: `helm repo add agentguard https://charts.agentguard.dev && helm install agentguard agentguard/agentguard`. That's it. The values file should be well-commented with sensible defaults so a new customer doesn't need to read 50 pages of docs to deploy.
+**🎨 Dana:** From a UX perspective, the "install experience" for Helm needs to be as clean as Docker Compose. The current standard for good Helm charts: `helm repo add agentguard https://charts.agentguard.tech && helm install agentguard agentguard/agentguard`. That's it. The values file should be well-commented with sensible defaults so a new customer doesn't need to read 50 pages of docs to deploy.
 
 ---
 
@@ -968,7 +968,7 @@ Fri  ├─ [E1] Rate Limiter + brute-force DONE ✅
 | Mon-Tue | JWKS RS256 middleware: fetch → cache (1h TTL) → local verify; re-fetch on unknown kid |
 | Tue | JWT clock skew: ±30s tolerance; token expiry enforcement |
 | Wed | JIT user provisioning: auto-create user on first SSO login, assign to org by email domain |
-| Wed | Role-claim mapping: `https://agentguard.dev/roles` JWT claim → DB role |
+| Wed | Role-claim mapping: `https://agentguard.tech/roles` JWT claim → DB role |
 | Thu | DB migration: `users.sso_provider`, `users.sso_subject`, `users.jit_provisioned` |
 | Thu | CSRF protection: verify SameSite cookie config + CSRF token on state-changing non-JSON endpoints |
 

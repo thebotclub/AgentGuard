@@ -6,7 +6,7 @@ AgentGuard provides a REST API with 60+ endpoints for policy evaluation, agent m
 
 | Environment | URL |
 |-------------|-----|
-| Production | `https://api.agentguard.dev/api/v1` |
+| Production | `https://api.agentguard.tech/api/v1` |
 | Local Dev | `http://localhost:3000/api/v1` |
 
 ## Authentication

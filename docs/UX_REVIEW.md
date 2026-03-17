@@ -24,7 +24,7 @@ Fix the P0s before shipping. The P1s should be in the first week.
 | 3 | `docs-site/index.html` | P0 | Signup cURL example includes `"password"` field — API doesn't accept it |
 | 4 | `docs/SHOW_HN_DRAFT.md` | P0 | GitHub URL is `AgentGuard-tech/agentguard` — doesn't match `0nebot` used everywhere else |
 | 5 | `packages/python/agentguard/__init__.py` | P0 | `__version__ = "0.7.2"` — must be `"0.9.0"` |
-| 6 | `landing/index.html` | P0 | Hero CTA says "Get Started Free →" links to `docs.agentguard.dev` — should create an account, not go to docs |
+| 6 | `landing/index.html` | P0 | Hero CTA says "Get Started Free →" links to `docs.agentguard.tech` — should create an account, not go to docs |
 | 7 | `landing/index.html` + `self-hosted/README.md` | P0 | Free tier limits inconsistent: landing says 10K evals/month, self-hosted says 100K |
 | 8 | `packages/python/README.md` | P1 | Links to `@agentguard/sdk` on npm — should be `@the-bot-club/agentguard` |
 | 9 | `README.md` | P1 | CI gate action `uses: agentguard/agentguard-action@v1` — landing/docs use `agentguard-tech/validate@v1` |
@@ -50,7 +50,7 @@ Fix the P0s before shipping. The P1s should be in the first week.
 | 29 | `docs/LAUNCH_GUIDE.md` | P2 | Contains live PostgreSQL connection string with credentials in plaintext — security risk if file is ever in a public repo |
 | 30 | `docs/LAUNCH_GUIDE.md` | P2 | Contains live Cloudflare API token in plaintext — same concern |
 | 31 | `dashboard/index.html` | P2 | "Deployment" readiness nav label — slightly vague, consider "Agent Readiness" |
-| 32 | `landing/index.html` | P2 | Nav "Get Started Free →" links to `docs.agentguard.dev` — should anchor to `#hero-form` |
+| 32 | `landing/index.html` | P2 | Nav "Get Started Free →" links to `docs.agentguard.tech` — should anchor to `#hero-form` |
 
 ---
 
@@ -64,12 +64,12 @@ Strong. "Stop deploying unsafe AI agents" + "Like container scanning, but for AI
 
 The primary action ("Get Your API Key" form in the hero) is prominent and correct. However:
 
-**P0 — Issue #6:** The main nav CTA and hero copy CTAs both say "Get Started Free →" but link to `https://docs.agentguard.dev`. Users expecting to create an account will land on the docs page instead of a signup form. This kills your conversion rate. The mobile CTA (`href="#hero-form"`) is correct — the desktop CTAs need to match.
+**P0 — Issue #6:** The main nav CTA and hero copy CTAs both say "Get Started Free →" but link to `https://docs.agentguard.tech`. Users expecting to create an account will land on the docs page instead of a signup form. This kills your conversion rate. The mobile CTA (`href="#hero-form"`) is correct — the desktop CTAs need to match.
 
 ```html
 <!-- CURRENT (wrong) -->
-<a href="https://docs.agentguard.dev" class="nav-cta">Get Started Free →</a>
-<a href="https://docs.agentguard.dev" style="...">Get Started Free →</a>
+<a href="https://docs.agentguard.tech" class="nav-cta">Get Started Free →</a>
+<a href="https://docs.agentguard.tech" style="...">Get Started Free →</a>
 
 <!-- FIX: anchor to the signup form that's already on the page -->
 <a href="#hero-form" class="nav-cta">Get Started Free →</a>
@@ -230,7 +230,7 @@ Responsive breakpoints at 900px and 768px look complete. The hamburger menu, sin
 
 ```json
 // docs-site/index.html line 270 and line 693
-curl -X POST https://api.agentguard.dev/api/v1/signup \
+curl -X POST https://api.agentguard.tech/api/v1/signup \
   -d '{
     "name": "My Company",
     "email": "security@acme.com",
@@ -341,7 +341,7 @@ Founder section (Hani Kashi, "HK" avatar, LinkedIn link) is well-presented. The 
 
 ### 4.3 Contact Details — PASS ✅
 
-`hello@agentguard.dev` is present. The Calendly CTA is prominent.
+`hello@agentguard.tech` is present. The Calendly CTA is prominent.
 
 **P2 — Issue #23:** Verify `https://calendly.com/agentguard/intro` is live before launch. A broken Calendly link on the About page for a security product is a significant trust signal failure.
 
@@ -393,11 +393,11 @@ No placeholder text or stale scenarios detected.
 
 ### 6.1 Root Endpoint — PROFESSIONAL ✅
 
-The root `/` endpoint returns a well-structured JSON object with `name`, `version`, `status`, `endpoints`, `docs`, `dashboard`. The endpoint descriptions are clear and accurate. The `docs` URL correctly points to `https://agentguard.dev` (though `docs.agentguard.dev` would be more accurate).
+The root `/` endpoint returns a well-structured JSON object with `name`, `version`, `status`, `endpoints`, `docs`, `dashboard`. The endpoint descriptions are clear and accurate. The `docs` URL correctly points to `https://agentguard.tech` (though `docs.agentguard.tech` would be more accurate).
 
 ```javascript
 // Minor: root endpoint docs URL
-docs: 'https://agentguard.dev',  // should be 'https://docs.agentguard.dev'
+docs: 'https://agentguard.tech',  // should be 'https://docs.agentguard.tech'
 ```
 
 ### 6.2 Error Messages — PASS ✅
@@ -422,11 +422,11 @@ This is the first thing GitHub visitors (potential users, investors, press) see.
 
 ```markdown
 <!-- CURRENT -->
-[![Docs](https://img.shields.io/badge/Docs-v0.8.0-blue)](https://docs.agentguard.dev)
+[![Docs](https://img.shields.io/badge/Docs-v0.8.0-blue)](https://docs.agentguard.tech)
 ## What's New in v0.8.0
 
 <!-- FIX -->
-[![Docs](https://img.shields.io/badge/Docs-v0.9.0-blue)](https://docs.agentguard.dev)
+[![Docs](https://img.shields.io/badge/Docs-v0.9.0-blue)](https://docs.agentguard.tech)
 ## What's New in v0.9.0
 ```
 
@@ -657,7 +657,7 @@ The guide itself is accurate and well-structured. The revenue path, incorporatio
 | 3 | `docs-site/index.html` | Remove `"password"` field from signup cURL examples (2 occurrences) |
 | 4 | `docs/SHOW_HN_DRAFT.md` | Fix GitHub URL to match canonical URL |
 | 5 | `packages/python/agentguard/__init__.py` | Change `__version__ = "0.7.2"` to `"0.9.0"` |
-| 6 | `landing/index.html` | Change nav and hero "Get Started Free →" links from `docs.agentguard.dev` to `#hero-form` |
+| 6 | `landing/index.html` | Change nav and hero "Get Started Free →" links from `docs.agentguard.tech` to `#hero-form` |
 | 7 | `landing/index.html` + `self-hosted/README.md` | Align free tier eval limits (10K vs 100K) and Pro pricing ($149 vs $299) |
 
 ### P1 — Fix This Week (7 issues)
@@ -693,7 +693,7 @@ The guide itself is accurate and well-structured. The revenue path, incorporatio
 | 29 | `docs/LAUNCH_GUIDE.md` | Redact live DB credentials before repo goes public |
 | 30 | `docs/LAUNCH_GUIDE.md` | Redact live Cloudflare token before repo goes public |
 | 31 | `dashboard/index.html` | Rename "Deployment" nav item to "Agent Readiness" |
-| 32 | `landing/index.html` | Fix nav CTA `href` to `#hero-form`, not `docs.agentguard.dev` (duplicate of P0 #6) |
+| 32 | `landing/index.html` | Fix nav CTA `href` to `#hero-form`, not `docs.agentguard.tech` (duplicate of P0 #6) |
 
 ---
 

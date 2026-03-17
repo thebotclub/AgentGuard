@@ -146,7 +146,7 @@ USAGE:
 
 OPTIONS:
   --api-key <key>           AgentGuard API key (or AGENTGUARD_API_KEY env var)
-  --api-url <url>           AgentGuard API base URL (default: https://api.agentguard.dev)
+  --api-url <url>           AgentGuard API base URL (default: https://api.agentguard.tech)
   --agent-id <id>           Validate against a specific registered agent's declared tools
   --threshold <0-100>       Minimum coverage % required (default: 80)
   --fail-on <severity>      Also fail on uncovered tools of this severity or higher
@@ -443,7 +443,7 @@ jobs:
           threshold: '85'                # Coverage % required (default: '80')
           fail-on: 'high'                # Fail on uncovered tools of this severity (default: 'high')
           framework: 'auto'             # langchain|crewai|autogen|mcp|auto (default: 'auto')
-          api-url: 'https://api.agentguard.dev'  # For self-hosted (default: SaaS)
+          api-url: 'https://api.agentguard.tech'  # For self-hosted (default: SaaS)
           agent-id: ''                   # Validate against registered agent's declared tools
           post-comment: 'true'          # Post PR coverage report (default: 'true')
           fail-on-decrease: 'true'       # Fail if coverage drops vs. base branch (default: 'false')
@@ -468,7 +468,7 @@ jobs:
 | `threshold` | | `80` | Minimum coverage % (0–100) |
 | `fail-on` | | `high` | Severity level that causes failure if uncovered |
 | `framework` | | `auto` | Framework hint for detection |
-| `api-url` | | `https://api.agentguard.dev` | API base URL |
+| `api-url` | | `https://api.agentguard.tech` | API base URL |
 | `agent-id` | | — | Registered agent ID to validate against |
 | `post-comment` | | `true` | Post coverage report as PR comment |
 | `fail-on-decrease` | | `false` | Fail if coverage is lower than base branch |
@@ -507,10 +507,10 @@ When `post-comment: 'true'`, the action posts a comment structured as:
 
 | Tool | Framework | Decision | Policy |
 |------|-----------|----------|--------|
-| `search_web` | LangChain | monitor | [pol_soc2-starter](https://app.agentguard.dev/policies/pol_001) |
-| `send_email` | LangChain | require_approval | [pol_email-guard](https://app.agentguard.dev/policies/pol_002) |
-| `read_crm` | LangChain | allow | [pol_crm-readonly](https://app.agentguard.dev/policies/pol_003) |
-| `search_knowledge_base` | LangChain | allow | [pol_internal-tools](https://app.agentguard.dev/policies/pol_004) |
+| `search_web` | LangChain | monitor | [pol_soc2-starter](https://app.agentguard.tech/policies/pol_001) |
+| `send_email` | LangChain | require_approval | [pol_email-guard](https://app.agentguard.tech/policies/pol_002) |
+| `read_crm` | LangChain | allow | [pol_crm-readonly](https://app.agentguard.tech/policies/pol_003) |
+| `search_knowledge_base` | LangChain | allow | [pol_internal-tools](https://app.agentguard.tech/policies/pol_004) |
 
 ### ❌ Uncovered Tools (2) — **BLOCKING MERGE**
 
@@ -522,14 +522,14 @@ When `post-comment: 'true'`, the action posts a comment structured as:
 ---
 
 **How to fix:**
-1. Go to [AgentGuard Dashboard](https://app.agentguard.dev) → Policies
+1. Go to [AgentGuard Dashboard](https://app.agentguard.tech) → Policies
 2. Create rules covering `write_crm` and address `raw:shell`
 3. Re-run this check (push a new commit)
 
-[View full report →](https://app.agentguard.dev/reports/abc123)
+[View full report →](https://app.agentguard.tech/reports/abc123)
 
 ---
-<sub>AgentGuard v1.0 • Scanned 47 files • 0.8s • [Docs](https://docs.agentguard.dev)</sub>
+<sub>AgentGuard v1.0 • Scanned 47 files • 0.8s • [Docs](https://docs.agentguard.tech)</sub>
 ```
 
 ### 4.4 Action Implementation
@@ -569,7 +569,7 @@ inputs:
   api-url:
     description: 'AgentGuard API base URL (for self-hosted)'
     required: false
-    default: 'https://api.agentguard.dev'
+    default: 'https://api.agentguard.tech'
   agent-id:
     description: 'Registered agent ID to validate against'
     required: false
@@ -1164,7 +1164,7 @@ Content-Type: application/json
     }
   ],
   "recommendation": "Create policies for blocked tools, then retry. Or use --admissionMode=permissive to allow with warnings.",
-  "policyTemplateUrl": "https://app.agentguard.dev/policies/templates?filter=mcp-filesystem"
+  "policyTemplateUrl": "https://app.agentguard.tech/policies/templates?filter=mcp-filesystem"
 }
 ```
 

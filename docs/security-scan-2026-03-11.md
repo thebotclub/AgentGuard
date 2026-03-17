@@ -1,6 +1,6 @@
 # AgentGuard API Security Scan — 2026-03-11
 
-**Target:** https://api.agentguard.dev
+**Target:** https://api.agentguard.tech
 **Version:** 0.9.0
 **Scanned at:** 2026-03-11 08:39-08:45 UTC
 

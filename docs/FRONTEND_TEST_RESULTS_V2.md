@@ -11,18 +11,18 @@
 
 | # | Site | Availability | Security Headers | Content | SEO | Special | Score |
 |---|------|-------------|-----------------|---------|-----|---------|-------|
-| 1 | agentguard.dev | ✅ | ✅ | ✅ | ⚠️ | — | 9/10 |
-| 2 | app.agentguard.dev | ✅ | ✅ | ❌ | ✅ | ⚠️ | 7/10 |
-| 3 | api.agentguard.dev/health | ✅ | ✅ | ✅ | — | ⚠️ | 8/10 |
-| 4 | docs.agentguard.dev | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | 8/10 |
-| 5 | demo.agentguard.dev | ✅ | ⚠️ | ✅ | ⚠️ | — | 7/10 |
-| 6 | about.agentguard.dev | ✅ | ⚠️ | ✅ | ⚠️ | — | 7/10 |
+| 1 | agentguard.tech | ✅ | ✅ | ✅ | ⚠️ | — | 9/10 |
+| 2 | app.agentguard.tech | ✅ | ✅ | ❌ | ✅ | ⚠️ | 7/10 |
+| 3 | api.agentguard.tech/health | ✅ | ✅ | ✅ | — | ⚠️ | 8/10 |
+| 4 | docs.agentguard.tech | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | 8/10 |
+| 5 | demo.agentguard.tech | ✅ | ⚠️ | ✅ | ⚠️ | — | 7/10 |
+| 6 | about.agentguard.tech | ✅ | ⚠️ | ✅ | ⚠️ | — | 7/10 |
 
 **Overall Score: 46/60 (77%)** — Deployable with known issues.
 
 ---
 
-## Site 1: https://agentguard.dev (Marketing / Landing)
+## Site 1: https://agentguard.tech (Marketing / Landing)
 
 ### Availability & Performance
 | Check | Result | Detail |
@@ -44,7 +44,7 @@
 | HSTS | ✅ PASS | max-age=31536000; includeSubDomains |
 | Permissions-Policy | ✅ PASS | geolocation=(), microphone=(), camera=() |
 
-**CSP value:** `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://agentguard-api.greenrock-adeab1b0.australiaeast.azurecontainerapps.io https://api.agentguard.dev; img-src 'self' data:; frame-ancestors 'none';`
+**CSP value:** `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://agentguard-api.greenrock-adeab1b0.australiaeast.azurecontainerapps.io https://api.agentguard.tech; img-src 'self' data:; frame-ancestors 'none';`
 
 ### Content Accuracy
 | Check | Result | Detail |
@@ -60,10 +60,10 @@
 ### Link Check (5 links)
 | URL | Status |
 |-----|--------|
-| https://docs.agentguard.dev | ✅ 200 |
-| https://demo.agentguard.dev | ✅ 200 |
-| https://about.agentguard.dev | ✅ 200 |
-| https://app.agentguard.dev (footer) | ✅ 200 |
+| https://docs.agentguard.tech | ✅ 200 |
+| https://demo.agentguard.tech | ✅ 200 |
+| https://about.agentguard.tech | ✅ 200 |
+| https://app.agentguard.tech (footer) | ✅ 200 |
 | https://github.com/thebotclub/AgentGuard | ❌ 404 — **GitHub repo is private or non-existent** |
 
 ### SEO
@@ -73,7 +73,7 @@
 | Meta description | ✅ PASS | Well-written, mentions key differentiators |
 | OG tags | ✅ PASS | og:title, og:description, og:image (1200×630), og:type, og:url |
 | Twitter Card | ⚠️ PARTIAL | summary_large_image, title, description present — **twitter:image missing** |
-| Canonical | ✅ PASS | https://agentguard.dev |
+| Canonical | ✅ PASS | https://agentguard.tech |
 | Viewport | ✅ PASS | width=device-width, initial-scale=1.0 |
 | Favicon | ✅ PASS | favicon.ico (200), favicon-32.png (200), favicon-16.png (200), apple-touch-180.png (200) |
 | JSON-LD Structured Data | ✅ PASS | SoftwareApplication schema with pricing, author, publisher |
@@ -84,7 +84,7 @@
 
 ---
 
-## Site 2: https://app.agentguard.dev (Dashboard)
+## Site 2: https://app.agentguard.tech (Dashboard)
 
 ### Availability & Performance
 | Check | Result | Detail |
@@ -156,7 +156,7 @@ All 11 expected pages present (18 total nav items).
 | `<title>` | ✅ PASS | "AgentGuard — Dashboard" |
 | Meta description | ✅ PASS | Present |
 | robots | ✅ PASS | noindex, nofollow (correct for authenticated app) |
-| Canonical | ✅ PASS | https://app.agentguard.dev |
+| Canonical | ✅ PASS | https://app.agentguard.tech |
 | Favicon | ✅ PASS | favicon.ico, manifest referenced |
 
 **Issues:**
@@ -165,7 +165,7 @@ All 11 expected pages present (18 total nav items).
 
 ---
 
-## Site 3: https://api.agentguard.dev/health (API Backend)
+## Site 3: https://api.agentguard.tech/health (API Backend)
 
 ### Availability & Performance
 | Check | Result | Detail |
@@ -211,7 +211,7 @@ All 11 expected pages present (18 total nav items).
 
 ---
 
-## Site 4: https://docs.agentguard.dev (Documentation)
+## Site 4: https://docs.agentguard.tech (Documentation)
 
 ### Availability & Performance
 | Check | Result | Detail |
@@ -259,11 +259,11 @@ All 11 expected pages present (18 total nav items).
 ### Link Check (5 links)
 | URL | Status |
 |-----|--------|
-| https://docs.agentguard.dev | ✅ 200 |
-| https://agentguard.dev | ✅ 200 |
-| https://docs.agentguard.dev#overview | ✅ 200 |
-| https://docs.agentguard.dev#quickstart | ✅ 200 |
-| https://docs.agentguard.dev#authentication | ✅ 200 |
+| https://docs.agentguard.tech | ✅ 200 |
+| https://agentguard.tech | ✅ 200 |
+| https://docs.agentguard.tech#overview | ✅ 200 |
+| https://docs.agentguard.tech#quickstart | ✅ 200 |
+| https://docs.agentguard.tech#authentication | ✅ 200 |
 
 ### SEO
 | Check | Result | Detail |
@@ -272,7 +272,7 @@ All 11 expected pages present (18 total nav items).
 | Meta description | ✅ PASS | Comprehensive, mentions PII, OWASP, MCP, Slack HITL, A2A |
 | OG tags | ✅ PASS | og:title, og:description, og:image, og:type, og:url |
 | Twitter Card | ⚠️ PARTIAL | title, description present — **twitter:image missing** |
-| Canonical | ✅ PASS | https://docs.agentguard.dev |
+| Canonical | ✅ PASS | https://docs.agentguard.tech |
 | Favicon | ✅ PASS | Referenced |
 
 **Issues:**
@@ -283,7 +283,7 @@ All 11 expected pages present (18 total nav items).
 
 ---
 
-## Site 5: https://demo.agentguard.dev (Live Demo)
+## Site 5: https://demo.agentguard.tech (Live Demo)
 
 ### Availability & Performance
 | Check | Result | Detail |
@@ -316,7 +316,7 @@ All 11 expected pages present (18 total nav items).
 ### Link Check (2 external links only)
 | URL | Status |
 |-----|--------|
-| https://agentguard.dev | ✅ 200 |
+| https://agentguard.tech | ✅ 200 |
 | Email (Cloudflare-protected) | ✅ Present |
 
 ### SEO
@@ -326,7 +326,7 @@ All 11 expected pages present (18 total nav items).
 | Meta description | ✅ PASS | "Try AgentGuard live — see how the runtime policy engine evaluates AI agent tool calls in real-time." |
 | OG tags | ✅ PASS | og:title, og:description, og:image, og:type, og:url |
 | Twitter Card | ⚠️ PARTIAL | title, description — **twitter:image missing** |
-| Canonical | ✅ PASS | https://demo.agentguard.dev |
+| Canonical | ✅ PASS | https://demo.agentguard.tech |
 | robots | ✅ PASS | index, follow |
 | Favicon | ✅ PASS | Referenced |
 
@@ -340,7 +340,7 @@ All 11 expected pages present (18 total nav items).
 
 ---
 
-## Site 6: https://about.agentguard.dev (About)
+## Site 6: https://about.agentguard.tech (About)
 
 ### Availability & Performance
 | Check | Result | Detail |
@@ -376,8 +376,8 @@ All 11 expected pages present (18 total nav items).
 ### Link Check (5 links)
 | URL | Status |
 |-----|--------|
-| https://about.agentguard.dev/ | ✅ 200 |
-| https://agentguard.dev | ✅ 200 |
+| https://about.agentguard.tech/ | ✅ 200 |
+| https://agentguard.tech | ✅ 200 |
 | https://linkedin.com/in/hanikashi | ⚠️ 999 (LinkedIn blocks curl — expected) |
 | https://linkedin.com/company/agentguard | ⚠️ 999 (LinkedIn blocks curl — expected) |
 | https://github.com/thebotclub | ❌ 404 — **GitHub org page not found** |
@@ -387,9 +387,9 @@ All 11 expected pages present (18 total nav items).
 |-------|--------|--------|
 | `<title>` | ✅ PASS | "About — AgentGuard \| Built by Security Engineers" |
 | Meta description | ✅ PASS | Well-crafted, references problem and 2026 context |
-| OG tags | ✅ PASS | og:title, og:description, og:image, og:url, og:type — **Note: og:url points to https://agentguard.dev/about (not about.agentguard.dev)** |
+| OG tags | ✅ PASS | og:title, og:description, og:image, og:url, og:type — **Note: og:url points to https://agentguard.tech/about (not about.agentguard.tech)** |
 | Twitter Card | ⚠️ PARTIAL | title, description — **twitter:image missing** |
-| Canonical | ✅ PASS | https://about.agentguard.dev |
+| Canonical | ✅ PASS | https://about.agentguard.tech |
 | JSON-LD | ✅ PASS | AboutPage schema |
 | Favicon | ✅ PASS | Referenced |
 
@@ -398,7 +398,7 @@ All 11 expected pages present (18 total nav items).
 - ❌ **Missing HSTS header**
 - ❌ **Missing Permissions-Policy**
 - ❌ GitHub org link (https://github.com/thebotclub) returns 404
-- ⚠️ `og:url` mismatch: value is `https://agentguard.dev/about` but the canonical is `https://about.agentguard.dev`
+- ⚠️ `og:url` mismatch: value is `https://agentguard.tech/about` but the canonical is `https://about.agentguard.tech`
 - ⚠️ `twitter:image` missing
 - ⚠️ Last-Modified is pre-v0.8.0 release date
 
@@ -408,7 +408,7 @@ All 11 expected pages present (18 total nav items).
 
 ### Security Header Matrix
 
-| Header | agentguard.dev | app.agentguard.dev | api.agentguard.dev | docs.agentguard.dev | demo.agentguard.dev | about.agentguard.dev |
+| Header | agentguard.tech | app.agentguard.tech | api.agentguard.tech | docs.agentguard.tech | demo.agentguard.tech | about.agentguard.tech |
 |--------|:-:|:-:|:-:|:-:|:-:|:-:|
 | X-Content-Type-Options | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | X-Frame-Options | ✅ DENY | ✅ DENY | ✅ SAMEORIGIN | ✅ SAMEORIGIN | ❌ | ✅ SAMEORIGIN |
@@ -418,7 +418,7 @@ All 11 expected pages present (18 total nav items).
 | HSTS | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Permissions-Policy | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 
-**Pattern:** agentguard.dev, app.agentguard.dev, and api.agentguard.dev have full security headers (deployed via Cloudflare Workers/Pages with custom headers). The three remaining sites (docs, demo, about) appear to be static HTML served directly without the security header configuration applied. They likely need Cloudflare Transform Rules or `_headers` file added.
+**Pattern:** agentguard.tech, app.agentguard.tech, and api.agentguard.tech have full security headers (deployed via Cloudflare Workers/Pages with custom headers). The three remaining sites (docs, demo, about) appear to be static HTML served directly without the security header configuration applied. They likely need Cloudflare Transform Rules or `_headers` file added.
 
 ### twitter:image Missing Everywhere
 All 5 HTML sites are missing `<meta name="twitter:image" ...>`. The `og:image` is set but Twitter/X prefers its own explicit tag. This affects link previews on X.
@@ -429,7 +429,7 @@ All 5 HTML sites are missing `<meta name="twitter:image" ...>`. The `og:image` i
 
 ### 🔴 Priority 1 — Critical (Fix Before Next Public Push)
 
-1. **app.agentguard.dev: `v0.7.2` in dashboard sidebar**
+1. **app.agentguard.tech: `v0.7.2` in dashboard sidebar**
    - Location: Bottom of sidebar, hard-coded string `AgentGuard v0.7.2`
    - Fix: Update to `AgentGuard v0.8.0`
    - Impact: HIGH — visible to every user who logs in; contradicts the v0.8.0 release
@@ -441,18 +441,18 @@ All 5 HTML sites are missing `<meta name="twitter:image" ...>`. The `og:image` i
 
 ### 🟠 Priority 2 — High (Fix This Week)
 
-3. **docs.agentguard.dev, demo.agentguard.dev, about.agentguard.dev: Missing security headers**
+3. **docs.agentguard.tech, demo.agentguard.tech, about.agentguard.tech: Missing security headers**
    - Missing: CSP, HSTS, Permissions-Policy (docs/about also missing X-Frame-Options on demo)
    - Fix: Add Cloudflare `_headers` file or Transform Rule to apply headers to all subdomain pages
    - Affected: 3 of 6 sites
    - Risk: Clickjacking, XSS, protocol downgrade attacks theoretically possible
 
-4. **api.agentguard.dev: Rate limit of 10 req/min too aggressive**
+4. **api.agentguard.tech: Rate limit of 10 req/min too aggressive**
    - `/health` and `/api/docs` are caught by the same rate limit as API calls
    - Fix: Exclude `/health` and `/api/docs` from the 10 req/min limit, or create separate limit tiers
    - Impact: Developer experience — docs and health monitoring should be freely accessible
 
-5. **app.agentguard.dev / demo.agentguard.dev: Initial connection timeouts**
+5. **app.agentguard.tech / demo.agentguard.tech: Initial connection timeouts**
    - Both sites returned HTTP 000 (connection timeout) on first request in the test run
    - Subsequent requests succeeded — suggests Cloudflare cold start issue or origin server spin-up
    - Fix: Investigate Cloudflare caching strategy; consider keeping origin warm
@@ -462,20 +462,20 @@ All 5 HTML sites are missing `<meta name="twitter:image" ...>`. The `og:image` i
 6. **twitter:image missing on all sites**
    - Impact: X/Twitter link previews won't show images
    - Fix: Add `<meta name="twitter:image" content="[url]">` matching og:image on each page
-   - Affected: agentguard.dev, app.agentguard.dev, docs.agentguard.dev, demo.agentguard.dev, about.agentguard.dev
+   - Affected: agentguard.tech, app.agentguard.tech, docs.agentguard.tech, demo.agentguard.tech, about.agentguard.tech
 
-7. **about.agentguard.dev: og:url mismatch**
-   - `og:url` = `https://agentguard.dev/about` but canonical = `https://about.agentguard.dev`
-   - Fix: Update og:url to match canonical: `https://about.agentguard.dev`
+7. **about.agentguard.tech: og:url mismatch**
+   - `og:url` = `https://agentguard.tech/about` but canonical = `https://about.agentguard.tech`
+   - Fix: Update og:url to match canonical: `https://about.agentguard.tech`
 
-8. **demo.agentguard.dev and about.agentguard.dev not re-deployed since v0.8.0**
+8. **demo.agentguard.tech and about.agentguard.tech not re-deployed since v0.8.0**
    - Last-Modified: 2026-03-03 (vs main/app/docs: 2026-03-06)
    - Verify: Do these sites need v0.8.0-specific content updates?
    - Fix: Redeploy as part of release pipeline if content changed
 
 ### 🟢 Priority 4 — Low (Backlog)
 
-9. **agentguard.dev: twitter:image missing** (redundant to #6 but noted separately for main domain)
+9. **agentguard.tech: twitter:image missing** (redundant to #6 but noted separately for main domain)
 
 10. **CSP uses `unsafe-inline` for scripts and styles** (app and main site)
     - Current: `script-src 'self' 'unsafe-inline'`

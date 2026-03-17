@@ -63,7 +63,7 @@ Create a client instance.
 ```python
 guard = AgentGuard(
     api_key="ag_your_api_key",
-    base_url="https://api.agentguard.dev"  # optional, default shown
+    base_url="https://api.agentguard.tech"  # optional, default shown
 )
 ```
 
@@ -543,8 +543,8 @@ except RuntimeError as e:
 
 ## Links
 
-- 🌐 [agentguard.dev](https://agentguard.dev)
-- 🎮 [Live Demo](https://demo.agentguard.dev)
+- 🌐 [agentguard.tech](https://agentguard.tech)
+- 🎮 [Live Demo](https://demo.agentguard.tech)
 - 📦 [GitHub](https://github.com/thebotclub/AgentGuard)
 - 📘 [npm SDK](https://www.npmjs.com/package/@the-bot-club/agentguard)
 

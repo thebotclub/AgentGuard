@@ -275,7 +275,7 @@ __version__ = "0.6.0"
    // BEFORE:
    const API_BASE = 'https://agentguard-api.greenrock-adeab1b0.australiaeast.azurecontainerapps.io';
    // AFTER:
-   const API_BASE = 'https://api.agentguard.dev';
+   const API_BASE = 'https://api.agentguard.tech';
    ```
 
 2. **curl example in HTML** (line ~994):
@@ -285,7 +285,7 @@ __version__ = "0.6.0"
    -H "Authorization: Bearer ag_live_sk_..."
    
    <!-- AFTER: correct URL + correct auth header -->
-   https://api.agentguard.dev/api/v1/evaluate
+   https://api.agentguard.tech/api/v1/evaluate
    -H "X-API-Key: ag_live_sk_..."
    ```
 

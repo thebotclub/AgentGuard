@@ -297,7 +297,7 @@ export function createTenantQuotaMiddleware(
           signup: {
             hint: 'Sign up for a free API key to get higher rate limits',
             method: 'POST',
-            url: 'https://api.agentguard.dev/api/v1/signup',
+            url: 'https://api.agentguard.tech/api/v1/signup',
             body: { name: 'Your Agent Name' },
           },
         });

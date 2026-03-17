@@ -32,7 +32,7 @@ That's it. No heavy dependencies, no config files.
 
 ## Step 2: Get Your API Key
 
-Head to [agentguard.dev](https://agentguard.dev) and sign up. The free tier gives you **100,000 events per month** — more than enough for development and most production workloads.
+Head to [agentguard.tech](https://agentguard.tech) and sign up. The free tier gives you **100,000 events per month** — more than enough for development and most production workloads.
 
 Once you're in, grab your API key from the dashboard. It'll look something like `ag_live_abc123...`.
 
@@ -154,7 +154,7 @@ Other examples AgentGuard catches:
 
 ## Step 5: Monitor Everything in the Dashboard
 
-Every evaluation — blocked or allowed — shows up in real-time at [app.agentguard.dev](https://app.agentguard.dev).
+Every evaluation — blocked or allowed — shows up in real-time at [app.agentguard.tech](https://app.agentguard.tech).
 
 The dashboard gives you:
 
@@ -195,8 +195,8 @@ Your LangChain agent is now guarded. Every tool call passes through AgentGuard's
 
 ## Get Started
 
-- **Sign up**: [agentguard.dev](https://agentguard.dev) — free tier, no credit card
-- **Documentation**: [docs.agentguard.dev](https://docs.agentguard.dev)
-- **Dashboard**: [app.agentguard.dev](https://app.agentguard.dev)
+- **Sign up**: [agentguard.tech](https://agentguard.tech) — free tier, no credit card
+- **Documentation**: [docs.agentguard.tech](https://docs.agentguard.tech)
+- **Dashboard**: [app.agentguard.tech](https://app.agentguard.tech)
 
 Your agents are powerful. Make sure they're safe.

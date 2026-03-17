@@ -113,10 +113,10 @@ export function createEvaluateRoutes(
       method: 'POST required',
       description: 'Evaluate an agent action against the policy engine',
       example: {
-        curl: 'curl -X POST https://api.agentguard.dev/api/v1/evaluate -H "Content-Type: application/json" -d \'{"tool":"sudo","params":{"command":"cat /etc/shadow"}}\'',
+        curl: 'curl -X POST https://api.agentguard.tech/api/v1/evaluate -H "Content-Type: application/json" -d \'{"tool":"sudo","params":{"command":"cat /etc/shadow"}}\'',
         body: { tool: 'sudo', params: { command: 'cat /etc/shadow' } },
       },
-      try_interactive: 'https://app.agentguard.dev',
+      try_interactive: 'https://app.agentguard.tech',
     });
   });
 
@@ -202,7 +202,7 @@ export function createEvaluateRoutes(
               signup: {
                 hint: 'Sign up for a free API key to get higher rate limits',
                 method: 'POST',
-                url: 'https://api.agentguard.dev/api/v1/signup',
+                url: 'https://api.agentguard.tech/api/v1/signup',
                 body: { name: 'Your Agent Name' },
               },
             });
@@ -369,7 +369,7 @@ export function createEvaluateRoutes(
           received: fieldPath === 'body'
             ? typeof req.body
             : typeof (req.body as Record<string, unknown>)[fieldPath],
-          docs: 'https://agentguard.dev/docs/api#evaluate',
+          docs: 'https://agentguard.tech/docs/api#evaluate',
         });
       }
       const { tool, params } = evalParsed.data;
@@ -688,7 +688,7 @@ export function createEvaluateRoutes(
         // Existing optional fields
         ...(agentId ? { agentId } : {}),
         ...(approvalId ? { approvalId } : {}),
-        ...(approvalId ? { approvalUrl: `https://app.agentguard.dev/approvals/${approvalId}` } : {}),
+        ...(approvalId ? { approvalUrl: `https://app.agentguard.tech/approvals/${approvalId}` } : {}),
         ...(warnings.length > 0 ? { warnings } : {}),
         ...(piiBlock ? { pii: piiBlock } : {}),
       });

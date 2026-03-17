@@ -20,7 +20,7 @@ pip install agentguard-tech
 
 ### 1. Sign Up
 
-Create an account at [agentguard.dev](https://agentguard.dev) and get your API key.
+Create an account at [agentguard.tech](https://agentguard.tech) and get your API key.
 
 ### 2. Initialize the SDK
 
@@ -90,12 +90,12 @@ const results = await guard.evaluateBatch([
 If an agent goes rogue, halt everything with a single call:
 
 ```bash
-curl -X POST https://api.agentguard.dev/api/v1/killswitch \
+curl -X POST https://api.agentguard.tech/api/v1/killswitch \
   -H "x-api-key: $AGENTGUARD_API_KEY" \
   -d '{"active": true}'
 ```
 
-Or via the dashboard at [app.agentguard.dev](https://app.agentguard.dev).
+Or via the dashboard at [app.agentguard.tech](https://app.agentguard.tech).
 
 ## Next Steps
 

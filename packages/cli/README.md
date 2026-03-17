@@ -66,7 +66,7 @@ Arguments:
 
 Options:
   -k, --api-key <key>     AgentGuard API key (env: AGENTGUARD_API_KEY)
-  -u, --api-url <url>     AgentGuard API URL (default: https://api.agentguard.dev)
+  -u, --api-url <url>     AgentGuard API URL (default: https://api.agentguard.tech)
   -t, --threshold <n>     Minimum coverage % required to pass (default: 100)
   -f, --format <fmt>      Output format: table | json | summary (default: table)
   --fail-on-uncovered     Fail if any tool has no matching policy rule (default: true)
@@ -79,7 +79,7 @@ Options:
 
 ```
 Scanning: /home/user/myagent ...
-Checking coverage via AgentGuard API (https://api.agentguard.dev) ...
+Checking coverage via AgentGuard API (https://api.agentguard.tech) ...
 
 AgentGuard Policy Coverage Report
 ══════════════════════════════════════════════════
@@ -136,7 +136,7 @@ agentguard status --api-key ag_live_xxx
 AgentGuard Status
 ════════════════════════════════════════
   Pinging API ...   ✅ reachable (42ms)
-  API URL:          https://api.agentguard.dev
+  API URL:          https://api.agentguard.tech
   API Key:          set (ag_live_x...)
   Tenant info ...   ✅ authenticated
   plan              "pro"
@@ -157,7 +157,7 @@ Generated file:
 
 ```yaml
 # .agentguard.yml — AgentGuard CLI configuration
-api_url: https://api.agentguard.dev
+api_url: https://api.agentguard.tech
 # api_key: ag_live_xxx   # Use AGENTGUARD_API_KEY env var instead
 
 threshold: 100

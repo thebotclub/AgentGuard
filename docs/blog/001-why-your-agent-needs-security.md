@@ -135,7 +135,7 @@ else:
 Here's a raw API call showing AgentGuard catching a destructive SQL operation:
 
 ```bash
-curl -X POST https://api.agentguard.dev/v1/evaluate \
+curl -X POST https://api.agentguard.tech/v1/evaluate \
   -H "Authorization: Bearer $AGENTGUARD_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -199,12 +199,12 @@ npm install @the-bot-club/agentguard
 pip install agentguard-tech
 ```
 
-- **Documentation**: [docs.agentguard.dev](https://docs.agentguard.dev)
-- **Live demo**: [demo.agentguard.dev](https://demo.agentguard.dev)
-- **Sign up**: [agentguard.dev](https://agentguard.dev)
+- **Documentation**: [docs.agentguard.tech](https://docs.agentguard.tech)
+- **Live demo**: [demo.agentguard.tech](https://demo.agentguard.tech)
+- **Sign up**: [agentguard.tech](https://agentguard.tech)
 
 Your agent is powerful. Make sure it's also safe.
 
 ---
 
-*AgentGuard is built by [The Bot Club Pty Ltd](https://agentguard.dev), trading as AgentGuard. Licensed under BSL 1.1.*
+*AgentGuard is built by [The Bot Club Pty Ltd](https://agentguard.tech), trading as AgentGuard. Licensed under BSL 1.1.*

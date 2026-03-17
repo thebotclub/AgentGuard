@@ -1,6 +1,6 @@
 # AgentGuard E2E API Test Results (V3)
 
-**API Base URL:** `https://api.agentguard.dev`  
+**API Base URL:** `https://api.agentguard.tech`  
 **Version:** 0.8.0  
 **Test Date:** 2026-03-09 03:51–04:00 UTC  
 **API Key Used:** `ag_live_3ed4774062fff154cf17cc430700e68b`  
@@ -332,5 +332,5 @@ From `/health` response:
 
 A **valid API key** is required. Either:
 - Create a new account via `POST /api/v1/signup` with valid credentials
-- Obtain a fresh key from the AgentGuard dashboard at `https://app.agentguard.dev`
+- Obtain a fresh key from the AgentGuard dashboard at `https://app.agentguard.tech`
 - Verify the provided key hasn't been rotated or deactivated

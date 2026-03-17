@@ -48,7 +48,7 @@ Added complete Open Graph and Twitter Card tags:
 <meta property="og:title" content="AgentGuard — Runtime Security for AI Agents">
 <meta property="og:description" content="Policy engine, audit trail, and kill switch for AI agent security. Sub-millisecond decisions.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://agentguard.dev">
+<meta property="og:url" content="https://agentguard.tech">
 <meta property="og:image" content="[gradient placeholder SVG]">
 <meta name="twitter:card" content="summary_large_image">
 ```
@@ -97,7 +97,7 @@ Added complete Open Graph and Twitter Card tags:
 ### API Pattern
 Both pages use primary/fallback URL pattern:
 ```javascript
-const API_PRIMARY = 'https://api.agentguard.dev';
+const API_PRIMARY = 'https://api.agentguard.tech';
 const API_FALLBACK = 'https://agentguard-api.greenrock-adeab1b0.australiaeast.azurecontainerapps.io';
 ```
 

@@ -110,8 +110,8 @@ export function createBillingRoutes(db: IDatabase, auth: AuthMiddleware): Router
         'mode': 'subscription',
         'line_items[0][price]': priceId,
         'line_items[0][quantity]': '1',
-        'success_url': successUrl ?? 'https://app.agentguard.dev/billing?session_id={CHECKOUT_SESSION_ID}&status=success',
-        'cancel_url': cancelUrl ?? 'https://app.agentguard.dev/billing?status=cancelled',
+        'success_url': successUrl ?? 'https://app.agentguard.tech/billing?session_id={CHECKOUT_SESSION_ID}&status=success',
+        'cancel_url': cancelUrl ?? 'https://app.agentguard.tech/billing?status=cancelled',
         'metadata[tenant_id]': tenantId,
         'subscription_data[metadata][tenant_id]': tenantId,
         'allow_promotion_codes': 'true',
@@ -169,7 +169,7 @@ export function createBillingRoutes(db: IDatabase, auth: AuthMiddleware): Router
       }
 
       const returnUrl = (req.body as { returnUrl?: string }).returnUrl
-        ?? 'https://app.agentguard.dev/billing';
+        ?? 'https://app.agentguard.tech/billing';
 
       const session = await stripeRequest<{
         id: string;

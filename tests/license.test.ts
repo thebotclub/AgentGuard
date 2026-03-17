@@ -210,9 +210,9 @@ describe('LicenseKeygen — key format', () => {
     assert.equal(payload.tid, 'my-tenant');
   });
 
-  it('payload issuer is agentguard.dev', () => {
+  it('payload issuer is agentguard.tech', () => {
     const { payload } = makeKey();
-    assert.equal(payload.iss, 'agentguard.dev');
+    assert.equal(payload.iss, 'agentguard.tech');
   });
 
   it('payload has iat set to approximately now', () => {

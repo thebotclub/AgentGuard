@@ -3,8 +3,8 @@
 
 *Confidential. Not for distribution.*
 
-**Contact:** founders@agentguard.dev
-**Demo:** demo.agentguard.dev · **Product:** agentguard.dev
+**Contact:** founders@agentguard.tech
+**Demo:** demo.agentguard.tech · **Product:** agentguard.tech
 
 ---
 
@@ -64,10 +64,10 @@ AgentGuard is live in production. All URLs below serve real traffic from a real 
 
 | System | URL | Status |
 |--------|-----|--------|
-| Landing page | agentguard.dev | Live |
-| Developer dashboard | app.agentguard.dev | Live — real signup, API key provisioning, usage analytics |
-| Policy evaluation API | api.agentguard.dev | Live — serving real requests |
-| Investor demo | demo.agentguard.dev | Live — real backend, not a mockup |
+| Landing page | agentguard.tech | Live |
+| Developer dashboard | app.agentguard.tech | Live — real signup, API key provisioning, usage analytics |
+| Policy evaluation API | api.agentguard.tech | Live — serving real requests |
+| Investor demo | demo.agentguard.tech | Live — real backend, not a mockup |
 
 **SDKs published:**
 - `npm install @the-bot-club/agentguard` (TypeScript)
@@ -211,11 +211,11 @@ We are not pitching a lifestyle business. We are building the governance infrast
 
 | | |
 |---|---|
-| **Email** | founders@agentguard.dev |
-| **Demo** | https://demo.agentguard.dev |
-| **Product** | https://agentguard.dev |
-| **Dashboard** | https://app.agentguard.dev |
-| **API** | https://api.agentguard.dev |
+| **Email** | founders@agentguard.tech |
+| **Demo** | https://demo.agentguard.tech |
+| **Product** | https://agentguard.tech |
+| **Dashboard** | https://app.agentguard.tech |
+| **API** | https://api.agentguard.tech |
 | **GitHub** | https://github.com/thebotclub/AgentGuard *(private — access on request)* |
 
 ---

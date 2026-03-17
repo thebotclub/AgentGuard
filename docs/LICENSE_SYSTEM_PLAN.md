@@ -34,7 +34,7 @@ AGKEY-<base64url(header.payload.signature)>
 
 Where:
 - **Header:** `{ "alg": "EdDSA", "typ": "AG-LIC" }`  
-- **Payload:** `{ "iss": "license.agentguard.dev", "sub": "<tenant_id>", "iat": <epoch>, "exp": <epoch>, "jti": "<key_uuid>", "tier": "pro", "limits": { "agents": 25, "events_pm": 500000 }, "features": ["hitl", "siem", "anomaly"], "install_id": null }`
+- **Payload:** `{ "iss": "license.agentguard.tech", "sub": "<tenant_id>", "iat": <epoch>, "exp": <epoch>, "jti": "<key_uuid>", "tier": "pro", "limits": { "agents": 25, "events_pm": 500000 }, "features": ["hitl", "siem", "anomaly"], "install_id": null }`
 
 The binary embeds the **Ed25519 public key** at compile time. Validation is a 50µs crypto op — no network needed. For revocation: we maintain a revocation list (`/v1/license/revocation-list`) that the binary fetches on startup and caches. The CRL is itself Ed25519-signed, so it can't be tampered.
 
@@ -151,7 +151,7 @@ Mitigations I want:
 
 > **Morgan:** I initially wanted Threat Intelligence Feed to be cloud-only — forces a phone-home. But honestly the BSL license already prevents competitors from re-hosting. Keep everything self-hostable on Enterprise.
 
-> **Alex:** Agreed. The only thing that *can't* be self-hosted is our SaaS dashboard at app.agentguard.dev — but that's separate from the self-hosted deployment. Self-hosted users get a local dashboard (already exists).
+> **Alex:** Agreed. The only thing that *can't* be self-hosted is our SaaS dashboard at app.agentguard.tech — but that's separate from the self-hosted deployment. Self-hosted users get a local dashboard (already exists).
 
 #### ✅ Consensus — Topic 2
 
@@ -183,7 +183,7 @@ The `docker compose up` first-run flow should be:
 2. License service reads AGENTGUARD_LICENSE_KEY env var
 3. If key missing → start in FREE mode (auto-provisioned community key or no key = free limits)
 4. If key present → validate signature locally (Ed25519, <1ms)
-5. If valid locally → attempt phone-home to license.agentguard.dev/v1/validate
+5. If valid locally → attempt phone-home to license.agentguard.tech/v1/validate
 6. Phone-home success → cache LicenseCache blob to /data/license.cache (Ed25519-signed)
 7. Phone-home fails → use cached blob if not expired (72h grace)
 8. Phone-home fails + no cache → degrade to FREE limits, warn in logs
@@ -196,7 +196,7 @@ Phone-home frequency in steady state: once per **24 hours**, jittered by ±4h to
 
 I want the degradation behavior to be *visible* not punitive. When limits are exceeded:
 1. **80% of monthly limit:** Warning in dashboard banner + log line `[AGENTGUARD-LICENSE] approaching monthly limit (80%)`
-2. **100% of monthly limit:** HTTP 402 response with body `{ "error": "LIMIT_EXCEEDED", "tier": "free", "upgrade_url": "https://agentguard.dev/upgrade" }`. Do NOT silently allow or silently drop — the customer should see the wall clearly.
+2. **100% of monthly limit:** HTTP 402 response with body `{ "error": "LIMIT_EXCEEDED", "tier": "free", "upgrade_url": "https://agentguard.tech/upgrade" }`. Do NOT silently allow or silently drop — the customer should see the wall clearly.
 3. **Exceeded + Pro:** Don't hard block. Instead: rate limit to 10 req/sec for the remainder of the billing period (soft throttle).
 
 Also: the license status page in the dashboard should show a real-time meter with upgrade CTA. This is a conversion surface, not just a status page.
@@ -498,7 +498,7 @@ packages/license/
 export type LicenseTier = 'free' | 'pro' | 'enterprise';
 
 export interface LicensePayload {
-  iss: string;                    // "license.agentguard.dev"
+  iss: string;                    // "license.agentguard.tech"
   sub: string;                    // tenant_id
   iat: number;                    // issued-at epoch
   exp: number;                    // expiry epoch
@@ -602,7 +602,7 @@ export function verifyLicenseKey(agkey: string): LicensePayload {
     Buffer.from(payloadB64, 'base64url').toString('utf8')
   ) as LicensePayload;
 
-  if (payload.iss !== 'license.agentguard.dev') {
+  if (payload.iss !== 'license.agentguard.tech') {
     throw new InvalidSignatureError('License key issuer mismatch');
   }
 
@@ -798,7 +798,7 @@ export function requireFeature(feature: LicenseFeature) {
         error: 'FEATURE_NOT_AVAILABLE',
         message: `Feature '${feature}' requires a higher tier`,
         currentTier: license.tier,
-        upgrade_url: 'https://agentguard.dev/upgrade',
+        upgrade_url: 'https://agentguard.tech/upgrade',
       }, 402);
     }
     await next();
@@ -990,7 +990,7 @@ actionsRouter.post('/evaluate', async (c) => {
       current,
       limit,
       tier: license.tier,
-      upgrade_url: 'https://agentguard.dev/upgrade',
+      upgrade_url: 'https://agentguard.tech/upgrade',
       reset_date: getNextBillingCycleDate(ctx.tenantId),
     }, 402);
   }
@@ -1016,7 +1016,7 @@ hitlRouter.post('/gates', async (c) => {
       return c.json({
         error: 'HITL_LIMIT_EXCEEDED',
         message: 'Free tier allows max 3 concurrent HITL gates',
-        upgrade_url: 'https://agentguard.dev/upgrade',
+        upgrade_url: 'https://agentguard.tech/upgrade',
       }, 402);
     }
   }
@@ -1064,7 +1064,7 @@ services:
       AGENTGUARD_LICENSE_KEY: ${AGENTGUARD_LICENSE_KEY:-}
       
       # License server URL (for phone-home)
-      AGENTGUARD_LICENSE_SERVER: ${AGENTGUARD_LICENSE_SERVER:-https://license.agentguard.dev}
+      AGENTGUARD_LICENSE_SERVER: ${AGENTGUARD_LICENSE_SERVER:-https://license.agentguard.tech}
       
       # Optional: opt-in usage telemetry
       AGENTGUARD_TELEMETRY_ENABLED: ${AGENTGUARD_TELEMETRY_ENABLED:-false}
@@ -1259,7 +1259,7 @@ export class LicenseIssuanceService {
     const features = params.features ?? getTierDefaultFeatures(params.tier);
     
     const payload: LicensePayload = {
-      iss: 'license.agentguard.dev',
+      iss: 'license.agentguard.tech',
       sub: params.tenantId,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(params.expiresAt.getTime() / 1000),
@@ -1585,7 +1585,7 @@ AGKEY-eyJhbGciOiJFZERTQSIsInR5cCI6IkFHLUxJQyJ9.eyJpc3MiOiJsaWNlbnNlLmFnZW50Z3Vhc
 Decoded payload:
 ```json
 {
-  "iss": "license.agentguard.dev",
+  "iss": "license.agentguard.tech",
   "sub": "ten_abc123",
   "iat": 1740269000,
   "exp": 1771805000,

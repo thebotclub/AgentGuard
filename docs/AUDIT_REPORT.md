@@ -62,9 +62,9 @@ AgentGuard is a well-structured, functional runtime security API with solid auth
 ```mermaid
 graph TB
     subgraph "Frontend (nginx containers)"
-        Landing["Landing Page<br/>agentguard.dev"]
-        Dashboard["Dashboard SPA<br/>app.agentguard.dev"]
-        Demo["Investor Demo<br/>demo.agentguard.dev"]
+        Landing["Landing Page<br/>agentguard.tech"]
+        Dashboard["Dashboard SPA<br/>app.agentguard.tech"]
+        Demo["Investor Demo<br/>demo.agentguard.tech"]
     end
     
     subgraph "API (Node.js container)"

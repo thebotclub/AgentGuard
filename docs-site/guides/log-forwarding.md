@@ -221,13 +221,13 @@ Configure it via the API:
 
 ```bash
 # Splunk
-curl -X POST https://api.agentguard.dev/api/v1/siem/splunk/configure \
+curl -X POST https://api.agentguard.tech/api/v1/siem/splunk/configure \
   -H "X-API-Key: $YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"hecUrl": "https://splunk.example.com:8088/services/collector", "hecToken": "...", "index": "agentguard"}'
 
 # Azure Sentinel
-curl -X POST https://api.agentguard.dev/api/v1/siem/sentinel/configure \
+curl -X POST https://api.agentguard.tech/api/v1/siem/sentinel/configure \
   -H "X-API-Key: $YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"workspaceId": "...", "sharedKey": "...", "logType": "AgentGuard_CL"}'

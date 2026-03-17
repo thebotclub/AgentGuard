@@ -183,7 +183,7 @@ The whole thing is 51 API endpoints running on Express + PostgreSQL.
 **File:** `README.md`  
 **Line 8 (badge):**
 ```markdown
-<a href="https://docs.agentguard.dev"><img src="https://img.shields.io/badge/Docs-v0.8.0-blue"></a>
+<a href="https://docs.agentguard.tech"><img src="https://img.shields.io/badge/Docs-v0.8.0-blue"></a>
 ```
 **Line 17 (section heading):**
 ```markdown
@@ -191,7 +191,7 @@ The whole thing is 51 API endpoints running on Express + PostgreSQL.
 ```
 **Recommended (line 8):**
 ```markdown
-<a href="https://docs.agentguard.dev"><img src="https://img.shields.io/badge/Docs-v0.9.0-blue"></a>
+<a href="https://docs.agentguard.tech"><img src="https://img.shields.io/badge/Docs-v0.9.0-blue"></a>
 ```
 **Recommended (line 17):**
 ```markdown

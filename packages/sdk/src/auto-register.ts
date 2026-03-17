@@ -11,7 +11,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
 
-const DEFAULT_BASE_URL = 'https://api.agentguard.dev';
+const DEFAULT_BASE_URL = 'https://api.agentguard.tech';
 const CONFIG_DIR = '.agentguard';
 const CONFIG_FILE = 'config.json';
 const _AGENT_KEY_FILE = 'agent.key'; // reserved for future explicit key-file path exposure
@@ -27,7 +27,7 @@ export interface AutoRegisterOptions {
   agentName?: string;
   /** Custom storage path (default: ~/.agentguard) */
   storagePath?: string;
-  /** Custom base URL (default: https://api.agentguard.dev) */
+  /** Custom base URL (default: https://api.agentguard.tech) */
   baseUrl?: string;
   /** Enable key rotation on startup */
   rotateKey?: boolean;

@@ -11,16 +11,16 @@
 
 | Site | HTTP | SSL | Security Headers | SEO/Meta | Content | Mobile | Branding | Overall |
 |------|------|-----|-----------------|----------|---------|--------|----------|---------|
-| agentguard.dev | ✅ PASS | ✅ | ✅ Strong | ✅ | ⚠️ Minor | ✅ | ✅ | **91%** |
-| app.agentguard.dev | ✅ PASS | ✅ | ✅ Strong | ⚠️ Missing OG | ⚠️ Version mismatch | ✅ | ⚠️ No footer | **78%** |
-| api.agentguard.dev | ✅ PASS | ✅ | ✅ Good | N/A | ⚠️ Count mismatch | N/A | N/A | **85%** |
-| docs.agentguard.dev | ✅ PASS | ✅ | ⚠️ Weak | ✅ | ✅ | ✅ | ⚠️ No footer | **82%** |
-| demo.agentguard.dev | ✅ PASS | ✅ | ❌ Missing | ✅ | ✅ | ✅ | ⚠️ No footer | **72%** |
-| about.agentguard.dev | ✅ PASS | ✅ | ⚠️ Partial | ✅ | ✅ | ✅ | ✅ | **88%** |
+| agentguard.tech | ✅ PASS | ✅ | ✅ Strong | ✅ | ⚠️ Minor | ✅ | ✅ | **91%** |
+| app.agentguard.tech | ✅ PASS | ✅ | ✅ Strong | ⚠️ Missing OG | ⚠️ Version mismatch | ✅ | ⚠️ No footer | **78%** |
+| api.agentguard.tech | ✅ PASS | ✅ | ✅ Good | N/A | ⚠️ Count mismatch | N/A | N/A | **85%** |
+| docs.agentguard.tech | ✅ PASS | ✅ | ⚠️ Weak | ✅ | ✅ | ✅ | ⚠️ No footer | **82%** |
+| demo.agentguard.tech | ✅ PASS | ✅ | ❌ Missing | ✅ | ✅ | ✅ | ⚠️ No footer | **72%** |
+| about.agentguard.tech | ✅ PASS | ✅ | ⚠️ Partial | ✅ | ✅ | ✅ | ✅ | **88%** |
 
 ---
 
-## 1. agentguard.dev — Landing Page
+## 1. agentguard.tech — Landing Page
 
 ### 1.1 Availability
 | Check | Result | Notes |
@@ -34,7 +34,7 @@
 ### 1.2 SSL/Security Headers
 | Check | Result | Value |
 |-------|--------|-------|
-| Valid SSL cert | ✅ PASS | Let's Encrypt, valid until 2026-05-29, wildcard `*.agentguard.dev` |
+| Valid SSL cert | ✅ PASS | Let's Encrypt, valid until 2026-05-29, wildcard `*.agentguard.tech` |
 | X-Content-Type-Options | ✅ PASS | `nosniff` |
 | X-Frame-Options | ✅ PASS | `DENY` |
 | Referrer-Policy | ✅ PASS | `strict-origin-when-cross-origin` |
@@ -50,13 +50,13 @@
 | Meta description | ✅ PASS | "AgentGuard enforces security policies at deploy-time and runtime. Like container scanning, but for AI agents." |
 | og:title | ✅ PASS | "AgentGuard — Stop Deploying Unsafe AI Agents" |
 | og:description | ✅ PASS | Present |
-| og:image | ✅ PASS | `https://agentguard.dev/social-og.png` (200 OK ✅) |
+| og:image | ✅ PASS | `https://agentguard.tech/social-og.png` (200 OK ✅) |
 | Twitter card | ✅ PASS | `summary_large_image` |
-| Canonical URL | ✅ PASS | `https://agentguard.dev` |
+| Canonical URL | ✅ PASS | `https://agentguard.tech` |
 | Viewport meta | ✅ PASS | `width=device-width, initial-scale=1.0` |
 | Favicon | ✅ PASS | Present (multiple sizes: 16, 32, 180px, WebManifest) |
 | Robots.txt | ✅ PASS | Present with sitemap reference |
-| Sitemap | ✅ PASS | `https://agentguard.dev/sitemap.xml` contains all 6 sites |
+| Sitemap | ✅ PASS | `https://agentguard.tech/sitemap.xml` contains all 6 sites |
 | Schema.org | ✅ PASS | `SoftwareApplication` structured data present |
 
 ### 1.4 Content Accuracy
@@ -69,14 +69,14 @@
 | Broken links | ⚠️ FAIL | **GitHub link broken** — `https://github.com/thebotclub/AgentGuard` returns **404**. Both casing variants fail. |
 | Email links | ⚠️ WARN | Emails are Cloudflare-obfuscated (`/cdn-cgi/l/email-protection#...`) — may cause issues for some users |
 | Form submission | ✅ PASS | Forms call `/api/v1/signup` with fallback logic |
-| API_BASE config | ⚠️ WARN | `API_BASE = API_FALLBACK` (Azure URL) set as default instead of `API_PRIMARY` (api.agentguard.dev). Forms hit Azure container directly. |
+| API_BASE config | ⚠️ WARN | `API_BASE = API_FALLBACK` (Azure URL) set as default instead of `API_PRIMARY` (api.agentguard.tech). Forms hit Azure container directly. |
 
 **Link Spot Check (5 links):**
-- https://docs.agentguard.dev → ✅ 200
-- https://app.agentguard.dev → ✅ 200
-- https://demo.agentguard.dev → ✅ 200
+- https://docs.agentguard.tech → ✅ 200
+- https://app.agentguard.tech → ✅ 200
+- https://demo.agentguard.tech → ✅ 200
 - https://github.com/thebotclub/AgentGuard → ❌ **404**
-- https://about.agentguard.dev → ✅ 200
+- https://about.agentguard.tech → ✅ 200
 
 ### 1.5 Mobile Responsiveness
 | Check | Result | Notes |
@@ -104,7 +104,7 @@
 
 ---
 
-## 2. app.agentguard.dev — Dashboard
+## 2. app.agentguard.tech — Dashboard
 
 ### 2.1 Availability
 | Check | Result | Notes |
@@ -169,7 +169,7 @@
 | Console errors | ✅ PASS | None in source |
 | Console.log | ✅ PASS | None |
 | Interactive elements | ✅ PASS | 101 buttons, 22 inputs, 111 event listeners |
-| API calls | ✅ PASS | Uses `API_PRIMARY` and `API_FALLBACK` = both `api.agentguard.dev` |
+| API calls | ✅ PASS | Uses `API_PRIMARY` and `API_FALLBACK` = both `api.agentguard.tech` |
 
 ### 2.7 Branding
 | Check | Result |
@@ -180,7 +180,7 @@
 
 ---
 
-## 3. api.agentguard.dev — API
+## 3. api.agentguard.tech — API
 
 ### 3.1 Availability
 | Check | Result | Notes |
@@ -219,7 +219,7 @@
 
 ---
 
-## 4. docs.agentguard.dev — Documentation
+## 4. docs.agentguard.tech — Documentation
 
 ### 4.1 Availability
 | Check | Result | Notes |
@@ -246,7 +246,7 @@
 | Meta description | ✅ PASS | "AgentGuard developer documentation. API reference, TypeScript & Python SDK guides..." |
 | og:title | ✅ PASS | Present |
 | og:description | ✅ PASS | Present |
-| og:image | ✅ PASS | `https://agentguard.dev/icon-512.png` (200 OK ✅) |
+| og:image | ✅ PASS | `https://agentguard.tech/icon-512.png` (200 OK ✅) |
 | Twitter card | ✅ PASS | Present |
 | Canonical | ✅ PASS | Present |
 | Viewport | ✅ PASS | Correct |
@@ -291,7 +291,7 @@ overview, quickstart, authentication, sdk, signup, evaluate, audit, audit-verify
 
 ---
 
-## 5. demo.agentguard.dev — Interactive Demo
+## 5. demo.agentguard.tech — Interactive Demo
 
 ### 5.1 Availability
 | Check | Result | Notes |
@@ -313,7 +313,7 @@ overview, quickstart, authentication, sdk, signup, evaluate, audit, audit-verify
 | Permissions-Policy | ❌ **MISSING** | Not present |
 | Mixed content | ✅ PASS | None found |
 
-**Security grade for demo.agentguard.dev is significantly weaker than landing/app.**
+**Security grade for demo.agentguard.tech is significantly weaker than landing/app.**
 
 ### 5.3 SEO & Meta
 | Check | Result | Notes |
@@ -322,7 +322,7 @@ overview, quickstart, authentication, sdk, signup, evaluate, audit, audit-verify
 | Meta description | ✅ PASS | "Try AgentGuard live — see how the runtime policy engine evaluates AI agent tool calls in real-time." |
 | og:title | ✅ PASS | "AgentGuard Live Demo" |
 | og:description | ✅ PASS | Present |
-| og:image | ✅ PASS | `https://agentguard.dev/icon-512.png` |
+| og:image | ✅ PASS | `https://agentguard.tech/icon-512.png` |
 | Twitter card | ✅ PASS | Present |
 | Canonical | ✅ PASS | Present |
 | Viewport | ✅ PASS | Correct |
@@ -335,7 +335,7 @@ overview, quickstart, authentication, sdk, signup, evaluate, audit, audit-verify
 | Scenes | ✅ PASS | 9 scenes (0-8) found with `data-scene` attributes |
 | Scene elements | ✅ PASS | 18 scene-related elements in DOM |
 | Placeholder text | ✅ PASS | None |
-| API endpoint | ✅ PASS | References `https://api.agentguard.dev/api/v1/evaluate` |
+| API endpoint | ✅ PASS | References `https://api.agentguard.tech/api/v1/evaluate` |
 
 ### 5.5 Mobile Responsiveness
 | Check | Result |
@@ -365,7 +365,7 @@ overview, quickstart, authentication, sdk, signup, evaluate, audit, audit-verify
 
 ---
 
-## 6. about.agentguard.dev — About Page
+## 6. about.agentguard.tech — About Page
 
 ### 6.1 Availability
 | Check | Result | Notes |
@@ -395,8 +395,8 @@ overview, quickstart, authentication, sdk, signup, evaluate, audit, audit-verify
 | Robots meta | ✅ PASS | `index, follow` |
 | og:title | ✅ PASS | "About AgentGuard — Built by Security Engineers" |
 | og:description | ✅ PASS | Present |
-| og:image | ✅ PASS | `https://agentguard.dev/social-512.png` (200 OK ✅) |
-| og:url | ⚠️ WARN | Points to `https://agentguard.dev/about` — not `https://about.agentguard.dev` |
+| og:image | ✅ PASS | `https://agentguard.tech/social-512.png` (200 OK ✅) |
+| og:url | ⚠️ WARN | Points to `https://agentguard.tech/about` — not `https://about.agentguard.tech` |
 | Twitter card | ✅ PASS | `summary_large_image` |
 | Canonical | ✅ PASS | Present |
 | Viewport | ✅ PASS | Correct |
@@ -466,12 +466,12 @@ overview, quickstart, authentication, sdk, signup, evaluate, audit, audit-verify
 ### 7.3 Version Consistency
 | Site | Version Shown |
 |------|--------------|
-| agentguard.dev | Not shown |
-| app.agentguard.dev | **v0.7.2** |
-| api.agentguard.dev | **v0.7.2** |
-| docs.agentguard.dev | **v0.8.0** |
-| demo.agentguard.dev | Not shown |
-| about.agentguard.dev | Not shown |
+| agentguard.tech | Not shown |
+| app.agentguard.tech | **v0.7.2** |
+| api.agentguard.tech | **v0.7.2** |
+| docs.agentguard.tech | **v0.8.0** |
+| demo.agentguard.tech | Not shown |
+| about.agentguard.tech | Not shown |
 
 **Version mismatch: docs says v0.8.0, live API and app say v0.7.2.**
 
@@ -493,7 +493,7 @@ overview, quickstart, authentication, sdk, signup, evaluate, audit, audit-verify
 
 1. **GitHub link broken (404)** — `https://github.com/thebotclub/AgentGuard` returns 404 on landing page. Either repo doesn't exist or URL casing is wrong. Appears in footer and multiple CTA sections. *Impact: Credibility damage for developer audience.*
 
-2. **API /api/docs returns 404** — No Swagger or ReDoc UI at `https://api.agentguard.dev/api/docs`. Developers expect interactive API documentation. *Impact: Developer experience failure.*
+2. **API /api/docs returns 404** — No Swagger or ReDoc UI at `https://api.agentguard.tech/api/docs`. Developers expect interactive API documentation. *Impact: Developer experience failure.*
 
 3. **Version mismatch: docs v0.8.0 vs live API/app v0.7.2** — Misleads developers about what's actually deployed. Either update docs to v0.7.2 or push v0.8.0 to production. *Impact: Confusion, trust erosion.*
 
@@ -501,23 +501,23 @@ overview, quickstart, authentication, sdk, signup, evaluate, audit, audit-verify
 
 ### 🟠 High Priority (Fix This Week)
 
-5. **Landing page API_BASE = FALLBACK (Azure URL)** — `var API_BASE = API_FALLBACK` means signup forms bypass `api.agentguard.dev` and hit the Azure Container Apps URL directly. Should use `API_PRIMARY` as default. *Impact: Bypasses any Cloudflare WAF/rate-limiting on the custom domain.*
+5. **Landing page API_BASE = FALLBACK (Azure URL)** — `var API_BASE = API_FALLBACK` means signup forms bypass `api.agentguard.tech` and hit the Azure Container Apps URL directly. Should use `API_PRIMARY` as default. *Impact: Bypasses any Cloudflare WAF/rate-limiting on the custom domain.*
 
 6. **Missing security headers on docs, demo, about** — HSTS, CSP, and Permissions-Policy are absent on 3 of 6 subdomains. Apply consistent Cloudflare security headers across all subdomains. *Impact: Security posture inconsistency, potential clickjacking risk on demo (no X-Frame-Options).*
 
-7. **demo.agentguard.dev missing X-Frame-Options entirely** — Only subdomain with no framing protection. Can be embedded in iframes by attackers. *Impact: Clickjacking risk.*
+7. **demo.agentguard.tech missing X-Frame-Options entirely** — Only subdomain with no framing protection. Can be embedded in iframes by attackers. *Impact: Clickjacking risk.*
 
-8. **app.agentguard.dev missing OG/Twitter cards** — Dashboard has zero social sharing metadata. While it's an app (not a landing page), sharing a link to the dashboard looks terrible in Slack/Twitter. *Impact: Sharability, professionalism.*
+8. **app.agentguard.tech missing OG/Twitter cards** — Dashboard has zero social sharing metadata. While it's an app (not a landing page), sharing a link to the dashboard looks terrible in Slack/Twitter. *Impact: Sharability, professionalism.*
 
 ### 🟡 Medium Priority (Fix This Sprint)
 
-9. **Footer missing from app, docs, demo** — Only about.agentguard.dev has a complete footer. App, docs, and demo lack any footer, making legal pages inaccessible. *Impact: Legal/compliance risk (GDPR, etc.).*
+9. **Footer missing from app, docs, demo** — Only about.agentguard.tech has a complete footer. App, docs, and demo lack any footer, making legal pages inaccessible. *Impact: Legal/compliance risk (GDPR, etc.).*
 
 10. **Privacy/Terms links missing from landing page footer** — The landing footer has copyright but no privacy or terms links. About page has them but landing doesn't. *Impact: Legal risk.*
 
 11. **Docs search not implemented** — The docs page mentions "search" in 9 places but there is no search input or filter function. Users cannot search documentation. *Impact: Developer experience (large docs, no discovery).*
 
-12. **og:url on about.agentguard.dev points to wrong URL** — `og:url` is set to `https://agentguard.dev/about` but actual page is at `https://about.agentguard.dev`. *Impact: Incorrect social sharing metadata.*
+12. **og:url on about.agentguard.tech points to wrong URL** — `og:url` is set to `https://agentguard.tech/about` but actual page is at `https://about.agentguard.tech`. *Impact: Incorrect social sharing metadata.*
 
 13. **Duplicate anchor IDs in docs** — `id="..."` (literally 3 dots) appears 4 times. Causes invalid HTML and nav linking issues. *Impact: Minor, anchoring bugs.*
 
@@ -539,12 +539,12 @@ overview, quickstart, authentication, sdk, signup, evaluate, audit, audit-verify
 
 | Site | Score | Grade |
 |------|-------|-------|
-| agentguard.dev | 91% | A- |
-| app.agentguard.dev | 78% | C+ |
-| api.agentguard.dev | 85% | B |
-| docs.agentguard.dev | 82% | B- |
-| demo.agentguard.dev | 72% | C |
-| about.agentguard.dev | 88% | B+ |
+| agentguard.tech | 91% | A- |
+| app.agentguard.tech | 78% | C+ |
+| api.agentguard.tech | 85% | B |
+| docs.agentguard.tech | 82% | B- |
+| demo.agentguard.tech | 72% | C |
+| about.agentguard.tech | 88% | B+ |
 | **OVERALL** | **83%** | **B** |
 
 ---

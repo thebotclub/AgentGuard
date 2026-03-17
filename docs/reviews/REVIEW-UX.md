@@ -41,11 +41,11 @@ AgentGuard's landing page is **notably strong** for an early-stage product — t
 **File:** `landing/index.html` lines 723, 1144  
 **Section:** Hero form, CTA2 form
 
-Both beta signup forms have `action="mailto:hello@agentguard.dev"` as the form action. The JavaScript `handleForm()` function then does `fetch(formEl.action, {...})` — which attempts an AJAX POST to a `mailto:` URI. This will throw a network error in every browser. The `form-error` div will show, but the error message ("Something went wrong. Please try again.") is misleading — the form is fundamentally broken.
+Both beta signup forms have `action="mailto:hello@agentguard.tech"` as the form action. The JavaScript `handleForm()` function then does `fetch(formEl.action, {...})` — which attempts an AJAX POST to a `mailto:` URI. This will throw a network error in every browser. The `form-error` div will show, but the error message ("Something went wrong. Please try again.") is misleading — the form is fundamentally broken.
 
 Even if JavaScript is disabled and the browser falls back to native form submission, `method="POST"` with a `mailto:` action doesn't open a mail client in modern browsers — it's undefined behavior.
 
-**The `_next` hidden field points to** `https://agentguard.dev/landing/thankyou.html`, which appears to be a FormSpree-style redirect convention, but no FormSpree endpoint is wired up.
+**The `_next` hidden field points to** `https://agentguard.tech/landing/thankyou.html`, which appears to be a FormSpree-style redirect convention, but no FormSpree endpoint is wired up.
 
 **Impact:** You are collecting zero beta signups. Every visitor who fills out your form sees an error. This is the most critical bug in the entire product.
 
@@ -87,15 +87,15 @@ A prospect who clicks this immediately thinks: either the repo doesn't exist (yo
 
 ---
 
-#### [CRITICAL-04] LinkedIn footer link points to agentguard.dev — wrong URL
+#### [CRITICAL-04] LinkedIn footer link points to agentguard.tech — wrong URL
 **File:** `landing/index.html` line 1185  
 **Section:** Footer
 
 ```html
-<a href="https://agentguard.dev">LinkedIn</a>
+<a href="https://agentguard.tech">LinkedIn</a>
 ```
 
-The "LinkedIn" link goes to `https://agentguard.dev` (which is actually a live domain, returning 200). This is either a copy-paste error or a placeholder never updated. Users clicking "LinkedIn" expecting a company page will hit the marketing site — which is confusing and undermines trust.
+The "LinkedIn" link goes to `https://agentguard.tech` (which is actually a live domain, returning 200). This is either a copy-paste error or a placeholder never updated. Users clicking "LinkedIn" expecting a company page will hit the marketing site — which is confusing and undermines trust.
 
 **Recommendation:** Replace with the actual LinkedIn company page URL, or remove the link until it exists.
 
@@ -219,7 +219,7 @@ On mobile and tablet, the entire sidebar navigation disappears with no hamburger
 
 This tells the user it's a temporary error and to retry — but there is no retry that will work. Users will fill out the form multiple times, see the error, and leave frustrated or conclude the site is broken. Given the high-intent of a beta signup form, this error messaging compounds the harm of the broken endpoint.
 
-**Recommendation:** Once the endpoint is fixed, the error message should be specific: "We couldn't send your request. Please email us directly at hello@agentguard.dev or try again."
+**Recommendation:** Once the endpoint is fixed, the error message should be specific: "We couldn't send your request. Please email us directly at hello@agentguard.tech or try again."
 
 ---
 
@@ -234,12 +234,12 @@ const API_BASE = 'https://agentguard-api.greenrock-adeab1b0.australiaeast.azurec
 
 But the SDK documentation section (both landing and dashboard) shows:
 ```
-POST https://api.agentguard.dev/api/v1/evaluate
+POST https://api.agentguard.tech/api/v1/evaluate
 ```
 
-`api.agentguard.dev` returns **HTTP 404** (tested). So the custom domain shown in all the "copy this to integrate" code snippets doesn't work. A developer who copies the cURL example and runs it gets a 404.
+`api.agentguard.tech` returns **HTTP 404** (tested). So the custom domain shown in all the "copy this to integrate" code snippets doesn't work. A developer who copies the cURL example and runs it gets a 404.
 
-**Recommendation:** Either point `api.agentguard.dev` DNS to the Azure container, or update all documentation to use the working Azure URL. The inconsistency is especially damaging in the cURL/SDK tab which exists specifically for "here's how you integrate this."
+**Recommendation:** Either point `api.agentguard.tech` DNS to the Azure container, or update all documentation to use the working Azure URL. The inconsistency is especially damaging in the cURL/SDK tab which exists specifically for "here's how you integrate this."
 
 ---
 
@@ -492,7 +492,7 @@ Both forms use identical fields (Name, Work Email, Company) with identical succe
 2. But if a user fills in the hero form successfully, they may fill the CTA2 form again not realising they're the same form
 3. No de-duplication logic (not feasible client-side, but backend should handle it)
 
-Also: the `_next` redirect URL `https://agentguard.dev/landing/thankyou.html` is never used because the JS intercepts the submit — but it's confusing boilerplate and suggests FormSpree integration that isn't complete.
+Also: the `_next` redirect URL `https://agentguard.tech/landing/thankyou.html` is never used because the JS intercepts the submit — but it's confusing boilerplate and suggests FormSpree integration that isn't complete.
 
 **Recommendation:** After the hero form succeeds, visually indicate the user is already signed up if they scroll to CTA2. Store a `localStorage` flag and show a "You're already on the list! 🎉" state in the second form.
 
@@ -620,7 +620,7 @@ The landing page has multiple `<h2>` elements across sections, with the hero `<h
 | 4 | Add security headers (CRITICAL-05) | Low | Critical — security product with no security headers |
 | 5 | Add favicon (HIGH-07) | Trivial | Medium — polish |
 | 6 | Fix blocked stat counter (HIGH-02) | Trivial | Medium — data integrity |
-| 7 | Fix `api.agentguard.dev` DNS or update docs (HIGH-06) | Low | High — broken copy-paste examples |
+| 7 | Fix `api.agentguard.tech` DNS or update docs (HIGH-06) | Low | High — broken copy-paste examples |
 | 8 | Fix primary button contrast (HIGH-01) | Trivial | Medium — WCAG compliance |
 | 9 | Fix footer text contrast (MEDIUM-03) | Trivial | Medium — WCAG compliance |
 | 10 | Add mobile nav to dashboard (HIGH-04) | Medium | High — unusable on mobile |

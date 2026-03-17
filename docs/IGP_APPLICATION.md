@@ -22,7 +22,7 @@
 **Location:** Australia
 **Employees:** 1 (founder)
 **Annual Turnover:** Pre-revenue (< $20M threshold ✅)
-**Website:** https://agentguard.dev
+**Website:** https://agentguard.tech
 
 **Business Description:**
 AgentGuard is a runtime security platform for AI agents. As organisations deploy autonomous AI agents that can execute code, access databases, write files, and make API calls, there are currently no standardised security controls governing what these agents can do. AgentGuard fills this gap by providing policy enforcement at both deploy-time (CI/CD gates) and runtime (sub-millisecond evaluation of every tool call), with a tamper-evident audit trail for regulatory compliance.
@@ -52,7 +52,7 @@ AgentGuard is the first platform to combine three enforcement points for AI agen
 - Published SDKs on npm and PyPI
 - GitHub Action for CI/CD integration
 - 116+ automated tests passing
-- Live demo at https://demo.agentguard.dev
+- Live demo at https://demo.agentguard.tech
 
 ---
 
@@ -168,16 +168,16 @@ The EU AI Act begins enforcement in August 2026, creating global compliance dema
 
 ## Appendix: Links & Evidence
 
-- **Live Product:** https://agentguard.dev
-- **API:** https://api.agentguard.dev/health
-- **Dashboard:** https://app.agentguard.dev
-- **Documentation:** https://docs.agentguard.dev
-- **Demo:** https://demo.agentguard.dev
+- **Live Product:** https://agentguard.tech
+- **API:** https://api.agentguard.tech/health
+- **Dashboard:** https://app.agentguard.tech
+- **Documentation:** https://docs.agentguard.tech
+- **Demo:** https://demo.agentguard.tech
 - **GitHub:** https://github.com/thebotclub/AgentGuard
 - **npm SDK:** https://www.npmjs.com/package/@the-bot-club/agentguard
 - **PyPI SDK:** https://pypi.org/project/agentguard-tech/
-- **Terms of Service:** https://about.agentguard.dev/legal/terms.html
-- **Privacy Policy:** https://about.agentguard.dev/legal/privacy.html
+- **Terms of Service:** https://about.agentguard.tech/legal/terms.html
+- **Privacy Policy:** https://about.agentguard.tech/legal/privacy.html
 
 ---
 

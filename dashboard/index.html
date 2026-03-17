@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgentGuard — Dashboard</title>
 <meta name="description" content="AgentGuard Dashboard — Monitor agent evaluations, manage policies, and view compliance reports.">
-<link rel="canonical" href="https://app.agentguard.dev">
+<link rel="canonical" href="https://app.agentguard.tech">
 <meta name="robots" content="noindex, nofollow">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://agentguard.dev/social-og.png">
+<meta name="twitter:image" content="https://agentguard.tech/social-og.png">
 <!-- Favicon: shield emoji SVG data URI -->
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="manifest" href="/site.webmanifest">
@@ -783,7 +783,7 @@ tr:hover td { background:rgba(99,102,241,0.04); }
       <div class="card">
         <div class="card-header"><h2>API Endpoint</h2></div>
         <div class="card-body">
-          <code style="display:block;background:var(--bg-card2);padding:12px 16px;border-radius:8px;font-family:var(--mono);font-size:0.9rem;color:var(--accent-hi);margin-bottom:12px">POST https://api.agentguard.dev/api/v1/evaluate</code>
+          <code style="display:block;background:var(--bg-card2);padding:12px 16px;border-radius:8px;font-family:var(--mono);font-size:0.9rem;color:var(--accent-hi);margin-bottom:12px">POST https://api.agentguard.tech/api/v1/evaluate</code>
           <p style="color:var(--text-dim);font-size:0.85rem">Send any agent action to this endpoint to get a real-time policy decision.</p>
         </div>
       </div>
@@ -791,7 +791,7 @@ tr:hover td { background:rgba(99,102,241,0.04); }
         <div class="card">
           <div class="card-header"><h2>cURL</h2></div>
           <div class="card-body">
-            <pre style="font-family:var(--mono);font-size:0.8rem;color:var(--text);line-height:1.7;overflow-x:auto">curl -X POST https://api.agentguard.dev/api/v1/evaluate \
+            <pre style="font-family:var(--mono);font-size:0.8rem;color:var(--text);line-height:1.7;overflow-x:auto">curl -X POST https://api.agentguard.tech/api/v1/evaluate \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "http_post",
@@ -807,7 +807,7 @@ tr:hover td { background:rgba(99,102,241,0.04); }
             <pre style="font-family:var(--mono);font-size:0.8rem;color:var(--text);line-height:1.7;overflow-x:auto">import requests
 
 r = requests.post(
-    "https://api.agentguard.dev/api/v1/evaluate",
+    "https://api.agentguard.tech/api/v1/evaluate",
     json={
         "tool": "http_post",
         "params": {"destination": url}
@@ -822,7 +822,7 @@ if decision["result"] == "block":
           <div class="card-header"><h2>TypeScript</h2></div>
           <div class="card-body">
             <pre style="font-family:var(--mono);font-size:0.8rem;color:var(--text);line-height:1.7;overflow-x:auto">const res = await fetch(
-  "https://api.agentguard.dev/api/v1/evaluate",
+  "https://api.agentguard.tech/api/v1/evaluate",
   {
     method: "POST",
     headers: {"Content-Type": "application/json"},
@@ -1064,7 +1064,7 @@ const { result, riskScore } = await res.json();</pre>
               Free Plan
             </div>
             <div id="lic-plan-sub" style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px">100,000 events/month · 3 agents · 30-day retention</div>
-            <button class="btn btn-primary" style="width:100%;padding:12px 24px;font-size:0.95rem;background:linear-gradient(135deg,#5254d4,#818cf8)" onclick="window.open('https://agentguard.dev/pricing?ref=dashboard','_blank')">
+            <button class="btn btn-primary" style="width:100%;padding:12px 24px;font-size:0.95rem;background:linear-gradient(135deg,#5254d4,#818cf8)" onclick="window.open('https://agentguard.tech/pricing?ref=dashboard','_blank')">
               ⚡ Upgrade to Pro — $149/mo
             </button>
           </div>
@@ -1345,8 +1345,8 @@ const { result, riskScore } = await res.json();</pre>
 <script>
 // ── Config ──────────────────────────────────────────────
 // Primary: custom domain. Fallback: direct Azure URL.
-const API_PRIMARY = 'https://api.agentguard.dev';
-const API_FALLBACK = 'https://api.agentguard.dev';
+const API_PRIMARY = 'https://api.agentguard.tech';
+const API_FALLBACK = 'https://api.agentguard.tech';
 let API = API_FALLBACK; // Start with fallback; update after health check
 
 let sessionId = null;
@@ -1376,7 +1376,7 @@ function loadApiKey() {
   } catch {}
 
   // Check URL hash for key passed from landing page signup
-  // Format: app.agentguard.dev/#key=ag_live_xxx
+  // Format: app.agentguard.tech/#key=ag_live_xxx
   if (!storedApiKey) {
     try {
       var hash = window.location.hash;
@@ -3624,7 +3624,7 @@ function onboardingPrev() {
 
 function updateEvalCurl() {
   var key = storedApiKey || 'YOUR_API_KEY';
-  var cmd = 'curl -X POST https://api.agentguard.dev/api/v1/evaluate \\\n  -H "x-api-key: ' + key + '" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"tool":"file_read","params":{"path":"/var/log/app.log"}}\'';
+  var cmd = 'curl -X POST https://api.agentguard.tech/api/v1/evaluate \\\n  -H "x-api-key: ' + key + '" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"tool":"file_read","params":{"path":"/var/log/app.log"}}\'';
   var el = document.getElementById('ob-curl-cmd');
   if (el) el.textContent = cmd;
 }
@@ -3650,7 +3650,7 @@ function switchSdkLang(lang) {
   var cmds = {
     npm: 'npm install @agentguard/sdk',
     pip: 'pip install agentguard',
-    curl: 'curl https://api.agentguard.dev/health'
+    curl: 'curl https://api.agentguard.tech/health'
   };
   var el = document.getElementById('sdk-install-cmd');
   if (el) el.textContent = cmds[lang] || cmds.npm;

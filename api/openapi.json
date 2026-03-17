@@ -2,11 +2,11 @@
   "openapi": "3.0.3",
   "info": {
     "title": "AgentGuard Policy Engine API",
-    "description": "**AgentGuard** is a runtime security platform for AI agents. It provides policy-based evaluation,\naudit trails, PII detection, MCP server governance, agent hierarchy management, and OWASP compliance reporting.\n\n## Authentication\n\nAgentGuard uses three authentication schemes:\n\n- **API Key** (`x-api-key` header): Your tenant API key, prefixed `ag_live_`. Used for most authenticated endpoints.\n- **Agent Key** (`x-api-key` header): Agent-scoped key, prefixed `ag_agent_`. Used for evaluate calls from specific agents.\n- **Admin Key** (`x-admin-key` header or `x-api-key`): Platform admin key. Required for admin-only endpoints.\n\n## Rate Limits\n\n- Unauthenticated: 10 requests/min per IP\n- Authenticated: 100 requests/min per IP\n- Signup: 5 per hour per IP\n\n## Base URL\n\nProduction: `https://api.agentguard.dev/api/v1`\n",
+    "description": "**AgentGuard** is a runtime security platform for AI agents. It provides policy-based evaluation,\naudit trails, PII detection, MCP server governance, agent hierarchy management, and OWASP compliance reporting.\n\n## Authentication\n\nAgentGuard uses three authentication schemes:\n\n- **API Key** (`x-api-key` header): Your tenant API key, prefixed `ag_live_`. Used for most authenticated endpoints.\n- **Agent Key** (`x-api-key` header): Agent-scoped key, prefixed `ag_agent_`. Used for evaluate calls from specific agents.\n- **Admin Key** (`x-admin-key` header or `x-api-key`): Platform admin key. Required for admin-only endpoints.\n\n## Rate Limits\n\n- Unauthenticated: 10 requests/min per IP\n- Authenticated: 100 requests/min per IP\n- Signup: 5 per hour per IP\n\n## Base URL\n\nProduction: `https://api.agentguard.tech/api/v1`\n",
     "version": "0.9.0",
     "contact": {
       "name": "AgentGuard Support",
-      "url": "https://agentguard.dev"
+      "url": "https://agentguard.tech"
     },
     "license": {
       "name": "MIT",
@@ -15,7 +15,7 @@
   },
   "servers": [
     {
-      "url": "https://api.agentguard.dev/api/v1",
+      "url": "https://api.agentguard.tech/api/v1",
       "description": "Production"
     },
     {
@@ -991,7 +991,7 @@
                 "example": {
                   "tenantId": "550e8400-e29b-41d4-a716-446655440000",
                   "apiKey": "ag_live_a1b2c3d4e5f67890abcd1234",
-                  "dashboard": "https://app.agentguard.dev",
+                  "dashboard": "https://app.agentguard.tech",
                   "message": "Account created. Store your API key securely — it will not be shown again."
                 }
               }

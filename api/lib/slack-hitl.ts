@@ -6,7 +6,7 @@
  */
 import type { ApprovalRow } from '../db-interface.js';
 
-const DASHBOARD_URL = process.env['DASHBOARD_URL'] ?? 'https://app.agentguard.dev';
+const DASHBOARD_URL = process.env['DASHBOARD_URL'] ?? 'https://app.agentguard.tech';
 
 /** Truncate a string to max length with ellipsis */
 function truncate(str: string, max: number): string {

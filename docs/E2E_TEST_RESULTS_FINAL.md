@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-09 06:51–06:58 UTC  
 **Environment:** LIVE  
-**Base URL:** https://api.agentguard.dev/api/v1  
+**Base URL:** https://api.agentguard.tech/api/v1  
 **API Key Used:** ag_live_4b7c4d87d39ea2dedd18db346a1c76df (rotated mid-test to ag_live_3178411e92592e11bfdfeac7e96adf67)  
 **Tenant ID:** c43e2758-3556-4d28-8b47-b23ae6738c7f  
 **Tester:** QA Subagent (Vector / OpenClaw)
@@ -25,7 +25,7 @@ All authenticated tests used `X-API-Key` header after this was discovered.
 |--------|------|--------|--------|
 | GET | /health | 200 | ✅ PASS |
 
-**Note:** `/api/v1/health` returns 404. Correct path is `https://api.agentguard.dev/health` (no `/api/v1` prefix).
+**Note:** `/api/v1/health` returns 404. Correct path is `https://api.agentguard.tech/health` (no `/api/v1` prefix).
 
 **Response:**
 ```json
@@ -73,8 +73,8 @@ All authenticated tests used `X-API-Key` header after this was discovered.
   "riskScore": 75,
   "reason": "No matching rule — default action is block (fail-closed)",
   "durationMs": 0.02,
-  "suggestion": "Review your agent's policy configuration at https://app.agentguard.dev/policy.",
-  "docs": "https://agentguard.dev/docs/policy",
+  "suggestion": "Review your agent's policy configuration at https://app.agentguard.tech/policy.",
+  "docs": "https://agentguard.tech/docs/policy",
   "alternatives": []
 }
 ```
@@ -93,7 +93,7 @@ Input: `tool = "sudo' OR 1=1--"`
   "field": "tool",
   "expected": "tool name may only contain letters, digits, underscore, hyphen, dot, or colon",
   "received": "string",
-  "docs": "https://agentguard.dev/docs/api#evaluate"
+  "docs": "https://agentguard.tech/docs/api#evaluate"
 }
 ```
 ✅ Injection sanitized with clear validation error.
@@ -661,8 +661,8 @@ Available templates:
   "message": "This feature requires a Pro plan or higher.",
   "currentTier": "free",
   "requiredTier": "pro",
-  "pricingUrl": "https://agentguard.dev/pricing",
-  "upgradeUrl": "https://agentguard.dev/pricing"
+  "pricingUrl": "https://agentguard.tech/pricing",
+  "upgradeUrl": "https://agentguard.tech/pricing"
 }
 ```
 
@@ -690,7 +690,7 @@ Same structure as Splunk — `siem_export` feature gate, `requiredTier: "pro"`.
   "message": "This feature requires a Enterprise plan or higher.",
   "currentTier": "free",
   "requiredTier": "enterprise",
-  "pricingUrl": "https://agentguard.dev/pricing"
+  "pricingUrl": "https://agentguard.tech/pricing"
 }
 ```
 
@@ -724,7 +724,7 @@ Returns full Swagger UI HTML. Confirmed `swagger-ui.css` reference in HTML.
     "Header: X-API-Key: ag_agent_<key>",
     "Header: Authorization: Bearer <jwt>"
   ],
-  "docs": "https://agentguard.dev/docs/authentication"
+  "docs": "https://agentguard.tech/docs/authentication"
 }
 ```
 ✅ Contains `acceptedAuth` array as required.
@@ -743,7 +743,7 @@ Returns full Swagger UI HTML. Confirmed `swagger-ui.css` reference in HTML.
   "field": "body",
   "expected": "valid JSON",
   "received": "malformed JSON",
-  "docs": "https://agentguard.dev/docs/api",
+  "docs": "https://agentguard.tech/docs/api",
   "requestId": "124d953f-92f7-470b-b7f5-f7b46ab569fa"
 }
 ```
@@ -813,7 +813,7 @@ None.
 | B-4 | Low | **POST /webhooks** — accepted event names differ from what docs/task implied (`"evaluate.block"` rejected; correct values are `block`, `killswitch`, `hitl`, `*`). |
 | B-5 | Low | **PUT /policy** — simplified rule format rejected; requires `id`, `priority`, `when` fields. Error message could be more prescriptive. |
 | B-6 | Low | **POST /alerts/rules** — requires `windowMinutes` (number) not `window` (string like "5m"). Format not immediately obvious. |
-| B-7 | Info | **GET /health** — correct URL is `https://api.agentguard.dev/health`, NOT `/api/v1/health` (returns 404). Inconsistent path structure. |
+| B-7 | Info | **GET /health** — correct URL is `https://api.agentguard.tech/health`, NOT `/api/v1/health` (returns 404). Inconsistent path structure. |
 
 ### ✅ Notable Strengths
 

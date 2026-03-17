@@ -80,11 +80,11 @@ app.set('trust proxy', 2); // trust up to 2 proxy hops (Cloudflare + Azure LB)
 
 // ── CORS — restrict to known origins ──────────────────────────────────────
 const ALLOWED_ORIGINS = [
-  'https://agentguard.dev',
-  'https://www.agentguard.dev',
-  'https://app.agentguard.dev',
-  'https://demo.agentguard.dev',
-  'https://docs.agentguard.dev',
+  'https://agentguard.tech',
+  'https://www.agentguard.tech',
+  'https://app.agentguard.tech',
+  'https://demo.agentguard.tech',
+  'https://docs.agentguard.tech',
 ];
 if (process.env['CORS_ORIGINS']) {
   ALLOWED_ORIGINS.push(
@@ -127,16 +127,16 @@ app.get('/llms.txt', (_req: Request, res: Response) => {
 > Runtime security for AI agents. Evaluate tool calls before execution.
 
 ## Setup
-For AI agents: GET https://api.agentguard.dev/api/v1/setup
-For humans: https://agentguard.dev/docs
+For AI agents: GET https://api.agentguard.tech/api/v1/setup
+For humans: https://agentguard.tech/docs
 
 ## Try Without Signup
-POST https://api.agentguard.dev/api/v1/evaluate
+POST https://api.agentguard.tech/api/v1/evaluate
 Content-Type: application/json
 {"tool": "read_file", "params": {"path": "/etc/passwd"}}
 
 ## Sign Up (free, no email required)
-POST https://api.agentguard.dev/api/v1/signup
+POST https://api.agentguard.tech/api/v1/signup
 Content-Type: application/json
 {"name": "My Agent"}
 
@@ -145,8 +145,8 @@ Content-Type: application/json
 - Node.js: npm install @the-bot-club/agentguard
 
 ## Links
-- API: https://api.agentguard.dev
-- Docs: https://agentguard.dev/docs
+- API: https://api.agentguard.tech
+- Docs: https://agentguard.tech/docs
 - GitHub: https://github.com/thebotclub/AgentGuard
 `);
 });
@@ -351,8 +351,8 @@ async function main(): Promise<void> {
         'GET  /api/v1/billing/status':
           'Get current subscription status (requires API key)',
       },
-      docs: 'https://agentguard.dev',
-      dashboard: 'https://app.agentguard.dev',
+      docs: 'https://agentguard.tech',
+      dashboard: 'https://app.agentguard.tech',
     });
   });
 
@@ -414,7 +414,7 @@ async function main(): Promise<void> {
       tryNow: {
         description: 'Try immediately — no signup, no API key needed',
         method: 'POST',
-        url: 'https://api.agentguard.dev/api/v1/evaluate',
+        url: 'https://api.agentguard.tech/api/v1/evaluate',
         headers: { 'Content-Type': 'application/json' },
         body: { tool: 'shell_exec', params: { command: 'cat /etc/shadow' } },
         expectedResult: { result: 'block', reason: 'Blocked by rule...' },
@@ -425,7 +425,7 @@ async function main(): Promise<void> {
           step: 1,
           action: 'Sign up to get an API key (email is optional)',
           method: 'POST',
-          url: 'https://api.agentguard.dev/api/v1/signup',
+          url: 'https://api.agentguard.tech/api/v1/signup',
           headers: { 'Content-Type': 'application/json' },
           body: { name: 'Your Agent Name' },
           note: 'Returns an apiKey (starts with ag_live_). Store it securely — you cannot retrieve it again.',
@@ -443,7 +443,7 @@ async function main(): Promise<void> {
           step: 3,
           action: 'Before executing any tool, check it against AgentGuard',
           method: 'POST',
-          url: 'https://api.agentguard.dev/api/v1/evaluate',
+          url: 'https://api.agentguard.tech/api/v1/evaluate',
           headers: { 'X-API-Key': 'ag_live_<from step 1>', 'Content-Type': 'application/json' },
           body: { tool: '<the tool you are about to call>', params: { '<param>': '<value>' } },
           responses: {
@@ -457,7 +457,7 @@ async function main(): Promise<void> {
           step: 4,
           action: 'Optionally configure a custom policy for your use case',
           method: 'PUT',
-          url: 'https://api.agentguard.dev/api/v1/policy',
+          url: 'https://api.agentguard.tech/api/v1/policy',
           headers: { 'X-API-Key': 'ag_live_<your key>', 'Content-Type': 'application/json' },
           body: { rules: ['<see docs for policy rule format>'] },
           note: 'The default policy blocks dangerous tools and allows everything else. Customise it for production.',
@@ -487,10 +487,10 @@ async function main(): Promise<void> {
         node: { install: 'npm install @the-bot-club/agentguard', env: 'AGENTGUARD_API_KEY=ag_live_...' },
       },
       links: {
-        api: 'https://api.agentguard.dev',
-        docs: 'https://agentguard.dev/docs',
+        api: 'https://api.agentguard.tech',
+        docs: 'https://agentguard.tech/docs',
         github: 'https://github.com/thebotclub/AgentGuard',
-        dashboard: 'https://app.agentguard.dev',
+        dashboard: 'https://app.agentguard.tech',
       },
     });
   });
@@ -630,8 +630,8 @@ async function main(): Promise<void> {
     res.status(404).json({
       error: 'Not found',
       hint: 'Try GET / for a list of available endpoints',
-      docs: 'https://agentguard.dev',
-      dashboard: 'https://app.agentguard.dev',
+      docs: 'https://agentguard.tech',
+      dashboard: 'https://app.agentguard.tech',
     });
   });
 
@@ -651,7 +651,7 @@ async function main(): Promise<void> {
             [
               seedTenantId,
               'AgentGuard Admin',
-              'admin@agentguard.dev',
+              'admin@agentguard.tech',
               'enterprise',
               new Date().toISOString(),
             ],

@@ -30,10 +30,10 @@ AgentGuard is a policy engine that sits between an AI agent and the actions it w
 
 **Live in production. Not a demo.**
 
-- **agentguard.dev** — public landing page
-- **app.agentguard.dev** — developer dashboard with real signup, API key provisioning, usage analytics
-- **api.agentguard.dev** — policy evaluation API, serving live requests
-- **demo.agentguard.dev** — interactive investor demo with real backend
+- **agentguard.tech** — public landing page
+- **app.agentguard.tech** — developer dashboard with real signup, API key provisioning, usage analytics
+- **api.agentguard.tech** — policy evaluation API, serving live requests
+- **demo.agentguard.tech** — interactive investor demo with real backend
 
 **Technical state:**
 - Policy engine: 7 rule types, sub-millisecond evaluation (P99 < 1ms)
@@ -197,10 +197,10 @@ The codebase is TypeScript (API + SDK), deployed on Azure Container Apps, with G
 ## 14. Progress / Metrics
 
 **What's live:**
-- Production API serving real requests: `api.agentguard.dev`
-- Developer dashboard with real user accounts: `app.agentguard.dev`
-- Interactive investor demo (live backend): `demo.agentguard.dev`
-- Public landing page: `agentguard.dev`
+- Production API serving real requests: `api.agentguard.tech`
+- Developer dashboard with real user accounts: `app.agentguard.tech`
+- Interactive investor demo (live backend): `demo.agentguard.tech`
+- Public landing page: `agentguard.tech`
 
 **Technical metrics:**
 - Policy evaluation latency: P99 < 1ms
@@ -258,7 +258,7 @@ The risk is not "will anyone ever need this" — it's "how long until they're re
 "AgentGuard is a policy engine that sits between an agent and the actions it wants to take. You write rules in plain English — 'never delete production data,' 'always require human approval before sending external emails' — and we enforce them in real time, under a millisecond, with a cryptographically tamper-proof audit log."
 
 **[0:38 - 0:50]**
-"The product is live. We have a real API, a real dashboard, a real SDK. You can sign up today at agentguard.dev. The investor demo is at demo.agentguard.dev — it's not a mockup, it's running on our production backend."
+"The product is live. We have a real API, a real dashboard, a real SDK. You can sign up today at agentguard.tech. The investor demo is at demo.agentguard.tech — it's not a mockup, it's running on our production backend."
 
 **[0:50 - 1:00]**
 "We're raising a $6M seed on a $24M pre-money valuation — 20% dilution. SAFE notes with a $30M cap, 20% discount. We're based in Australia, building for a global market. I'd love to talk. AgentGuard — governance for the agent era."
@@ -273,10 +273,10 @@ The risk is not "will anyone ever need this" — it's "how long until they're re
 
 | Resource | URL |
 |----------|-----|
-| Landing page | https://agentguard.dev |
-| Developer dashboard | https://app.agentguard.dev |
-| API endpoint | https://api.agentguard.dev |
-| Investor demo | https://demo.agentguard.dev |
+| Landing page | https://agentguard.tech |
+| Developer dashboard | https://app.agentguard.tech |
+| API endpoint | https://api.agentguard.tech |
+| Investor demo | https://demo.agentguard.tech |
 | GitHub (private) | https://github.com/thebotclub/AgentGuard |
 
 ---

@@ -31,7 +31,7 @@ export const swaggerOptions = {
       description: 'Runtime security platform for AI agents',
       contact: {
         name: 'AgentGuard Support',
-        url: 'https://agentguard.dev',
+        url: 'https://agentguard.tech',
       },
       license: {
         name: 'BSL 1.1',
@@ -40,7 +40,7 @@ export const swaggerOptions = {
     },
     servers: [
       {
-        url: 'https://api.agentguard.dev/api/v1',
+        url: 'https://api.agentguard.tech/api/v1',
         description: 'Production',
       },
       {

@@ -45,7 +45,7 @@ AgentGuard is a **runtime security platform for AI agents**. It intercepts every
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         CLOUDFLARE EDGE                             │
 │           (DNS, Flexible SSL, DDoS mitigation)                      │
-│  api.agentguard.dev  app.  demo.  docs.  about.                    │
+│  api.agentguard.tech  app.  demo.  docs.  about.                    │
 └───────────────────────────────┬─────────────────────────────────────┘
                                 │ HTTPS (Cloudflare → Azure)
                                 ▼
@@ -55,7 +55,7 @@ AgentGuard is a **runtime security platform for AI agents**. It intercepts every
 │  ┌─────────────────────┐       ┌──────────────────────────────┐    │
 │  │   API Container     │       │   Dashboard / Landing        │    │
 │  │   (Express 5.x)     │       │   (Static HTML + Vanilla JS) │    │
-│  │   Node.js 22 LTS    │       │   app.agentguard.dev        │    │
+│  │   Node.js 22 LTS    │       │   app.agentguard.tech        │    │
 │  │   Port 3000         │       └──────────────────────────────┘    │
 │  │                     │                                            │
 │  │  ┌───────────────┐  │                                            │
@@ -115,7 +115,7 @@ AgentGuard is a **runtime security platform for AI agents**. It intercepts every
 | **DNS / CDN** | Cloudflare | Flexible SSL; proxy mode |
 | **Cache** | None | *(Planned — Redis for hot-path rate limits and policy cache)* |
 | **Queue** | None | *(Planned — background workers for webhook delivery)* |
-| **Dashboard** | Static HTML + Vanilla JS | `app.agentguard.dev` — no Next.js framework |
+| **Dashboard** | Static HTML + Vanilla JS | `app.agentguard.tech` — no Next.js framework |
 | **Policy DSL** | YAML | Loaded at startup from `api/templates/` |
 | **SDK (TypeScript)** | HTTP client | `packages/sdk/` |
 | **SDK (Python)** | HTTP client | `packages/python/` |
@@ -341,11 +341,11 @@ All five subdomains are proxied through Cloudflare:
 
 | Subdomain | Target | Notes |
 |-----------|--------|-------|
-| `api.agentguard.dev` | Azure Container App | Flexible SSL; API traffic |
-| `app.agentguard.dev` | Azure Container App or CDN | Dashboard |
-| `demo.agentguard.dev` | Azure Container App | Public demo playground |
-| `docs.agentguard.dev` | Hosted docs | 34 endpoints documented |
-| `about.agentguard.dev` | Landing page | Marketing site |
+| `api.agentguard.tech` | Azure Container App | Flexible SSL; API traffic |
+| `app.agentguard.tech` | Azure Container App or CDN | Dashboard |
+| `demo.agentguard.tech` | Azure Container App | Public demo playground |
+| `docs.agentguard.tech` | Hosted docs | 34 endpoints documented |
+| `about.agentguard.tech` | Landing page | Marketing site |
 
 **SSL mode:** Flexible (Cloudflare terminates TLS; backend traffic is HTTP on the Azure private network). Full/Strict SSL is a planned upgrade once an origin certificate is provisioned.
 
@@ -412,7 +412,7 @@ Agent keys can call:
 
 ## 8. API Surface
 
-AgentGuard exposes **34 endpoints** documented at [docs.agentguard.dev](https://docs.agentguard.dev).
+AgentGuard exposes **34 endpoints** documented at [docs.agentguard.tech](https://docs.agentguard.tech).
 
 ### Endpoint Summary by Domain
 
@@ -556,7 +556,7 @@ This section is intentionally honest about what exists in production versus what
 | Python SDK | HTTP client with validation and certification methods |
 | Dashboard | Static HTML; agent list, audit log, policy editor |
 | Demo playground | Public; no auth required |
-| 34 documented API endpoints | Full reference at docs.agentguard.dev |
+| 34 documented API endpoints | Full reference at docs.agentguard.tech |
 
 ### In Progress 🔄
 

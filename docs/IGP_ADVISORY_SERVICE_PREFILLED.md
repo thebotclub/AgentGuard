@@ -55,9 +55,9 @@
 > The Bot Club Pty Ltd (trading as AgentGuard) builds runtime security software for AI agents. Our platform evaluates every tool call an AI agent makes before execution, blocking dangerous actions and maintaining tamper-evident audit trails. We serve developers and enterprises deploying autonomous AI agents with LangChain, CrewAI, AutoGen, and OpenAI frameworks. Product is live with published SDKs on npm and PyPI.
 
 27. Website? → **Yes**
-28. URL → **https://agentguard.dev**
+28. URL → **https://agentguard.tech**
 29. Online videos? → **Yes**
-30. Video URL → **https://demo.agentguard.dev**
+30. Video URL → **https://demo.agentguard.tech**
 
 31. **What advice or support are you seeking? (max 500 chars):**
 

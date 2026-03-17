@@ -260,7 +260,7 @@ interface CompiledRule {
 
 🔐 **SAM:** Scope creep risk: don't implement SCIM provisioning in v1. SCIM (user sync from enterprise IdP) is a different feature that enterprise customers ask for after SSO is working. SSO first, SCIM in v2. Also: implement role-based access at the JWT claims level — enterprise customers need `admin` vs `reviewer` vs `read-only` roles derived from their IdP groups.
 
-📊 **CASEY:** Role mapping from IdP groups is critical — enterprises won't use SSO if they have to manually assign roles in our dashboard after provisioning. Auth0 supports group → claim mapping. Build the role-claim-to-role mapper. Standard claims: `https://agentguard.dev/roles: ["admin"]`.
+📊 **CASEY:** Role mapping from IdP groups is critical — enterprises won't use SSO if they have to manually assign roles in our dashboard after provisioning. Auth0 supports group → claim mapping. Build the role-claim-to-role mapper. Standard claims: `https://agentguard.tech/roles: ["admin"]`.
 
 ---
 
@@ -275,7 +275,7 @@ interface CompiledRule {
   - JWKS re-fetch only on unknown `kid`; cache TTL 1 hour
   - Clock skew tolerance: ±30s
   - JIT user provisioning: auto-create user on first SSO login, assign to org by domain
-  - Role claims: `https://agentguard.dev/roles` → map to DB roles (admin/reviewer/readonly)
+  - Role claims: `https://agentguard.tech/roles` → map to DB roles (admin/reviewer/readonly)
   - API keys unchanged: agent-to-API calls remain API key authenticated
   - `users` table: add `sso_provider VARCHAR`, `sso_subject VARCHAR`, `jit_provisioned BOOL`
   - Dashboard: SSO login button → redirect → callback → session
@@ -512,7 +512,7 @@ interface CompiledRule {
 
 🔐 **SAM:** Don't accept defaults. The helmet defaults are reasonable but we should explicitly configure:
 ```
-CSP: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.agentguard.dev
+CSP: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.agentguard.tech
 X-Frame-Options: DENY (not SAMEORIGIN — we don't embed ourselves)
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
@@ -813,7 +813,7 @@ All charts should be exportable as PNG for use in board decks.
 
 🎨 **DANA:** The demo site has basic mobile support but it needs responsive polish: hero section scaling, code samples scrollable horizontally on mobile, CTA buttons thumb-friendly (min 44px), navigation hamburger menu. I'd estimate 1 day of CSS work.
 
-📊 **CASEY:** Mobile traffic to agentguard.dev is likely < 20% given the developer audience, but any conference talk or tweet that links to us will send mobile traffic. Polish it — 1 day is fine.
+📊 **CASEY:** Mobile traffic to agentguard.tech is likely < 20% given the developer audience, but any conference talk or tweet that links to us will send mobile traffic. Polish it — 1 day is fine.
 
 🏗️ **ALEX:** No backend work. Pure CSS/responsive design. Ship with the marketing updates (Item 22).
 
@@ -950,7 +950,7 @@ All charts should be exportable as PNG for use in board decks.
   - Generate origin cert: Cloudflare Dashboard → SSL/TLS → Origin Server → Create Certificate
   - Upload cert to Azure Container Apps custom domain configuration
   - Switch Cloudflare SSL mode: Full → Full (Strict)
-  - Verify: `curl -I https://api.agentguard.dev` shows TLS all the way through
+  - Verify: `curl -I https://api.agentguard.tech` shows TLS all the way through
 - **Acceptance criteria:**
   - Cloudflare SSL mode shows "Full (Strict)"
   - Certificate valid, no warnings in browser

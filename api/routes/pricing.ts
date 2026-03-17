@@ -99,12 +99,12 @@ const PRICING_DATA = {
       },
       features: ENTERPRISE_FEATURES,
       tierFeatureFlags: TIER_FEATURES.enterprise,
-      contact: 'sales@agentguard.dev',
+      contact: 'sales@agentguard.tech',
     },
   ],
-  upgradeUrl: 'https://agentguard.dev/pricing',
-  contactUrl: 'https://agentguard.dev/contact',
-  docsUrl: 'https://docs.agentguard.dev/licensing',
+  upgradeUrl: 'https://agentguard.tech/pricing',
+  contactUrl: 'https://agentguard.tech/contact',
+  docsUrl: 'https://docs.agentguard.tech/licensing',
 };
 
 // ── Route factory ─────────────────────────────────────────────────────────

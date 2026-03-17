@@ -1040,7 +1040,7 @@ echo "⚠️  Save this password — it won't be shown again"
 **License validation:**
 ```typescript
 // Phone-home JWT validation
-// On startup: POST https://license.agentguard.dev/validate
+// On startup: POST https://license.agentguard.tech/validate
 // { licenseKey: "...", fingerprint: hash(hostname + installId) }
 // Returns JWT with: { valid: true, tier: 'enterprise', expiry: timestamp, features: [...] }
 // Cache JWT for 24 hours
@@ -1660,7 +1660,7 @@ export const config = {
   },
   license: {
     key: optional('AGENTGUARD_LICENSE_KEY'),
-    validationUrl: optional('LICENSE_VALIDATION_URL', 'https://license.agentguard.dev'),
+    validationUrl: optional('LICENSE_VALIDATION_URL', 'https://license.agentguard.tech'),
   },
   telemetry: {
     enabled: optional('TELEMETRY_ENABLED', 'false') === 'true',
