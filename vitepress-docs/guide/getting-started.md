@@ -71,8 +71,34 @@ rules:
     priority: 5
 ```
 
+## Batch Evaluate (Advanced)
+
+Evaluate up to 50 tool calls in a single request — useful for pipelines and pre-flight checks:
+
+```typescript
+const results = await guard.evaluateBatch([
+  { tool: 'database_query', action: 'read', input: { table: 'users' } },
+  { tool: 'http_post', action: 'send', input: { url: 'https://api.example.com' } },
+  { tool: 'shell_exec', action: 'run', input: { cmd: 'ls -la' } },
+]);
+
+// results[].result: 'allow' | 'block' | 'monitor' | 'hitl_required'
+```
+
+## Kill Switch
+
+If an agent goes rogue, halt everything with a single call:
+
+```bash
+curl -X POST https://api.agentguard.tech/api/v1/killswitch \
+  -H "x-api-key: $AGENTGUARD_API_KEY" \
+  -d '{"active": true}'
+```
+
+Or via the dashboard at [app.agentguard.tech](https://app.agentguard.tech).
+
 ## Next Steps
 
-- [Policy Engine Guide](/guide/policy-engine) — Learn how policies work
 - [API Reference](/api/overview) — Full REST API documentation
-- [TypeScript SDK](/guide/sdk-typescript) — SDK configuration options
+- [Architecture Overview](/architecture/overview) — How AgentGuard fits in your stack
+- [Roadmap](/roadmap) — What's coming in v1.0 and beyond

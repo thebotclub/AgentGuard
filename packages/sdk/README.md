@@ -3,7 +3,7 @@
 **Runtime security for AI agents** — policy engine, audit trail, kill switch, and cloud API client.
 
 [![npm version](https://img.shields.io/npm/v/@the-bot-club/agentguard)](https://www.npmjs.com/package/@the-bot-club/agentguard)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: BSL 1.1](https://img.shields.io/badge/License-BSL_1.1-orange.svg)](https://github.com/thebotclub/AgentGuard/blob/main/LICENSE)
 
 ## Overview
 

@@ -1,4 +1,4 @@
-# Why Your AI Agent Needs a Security Layer (Before It's Too Late)
+# Why Your AI Agents Need a Security Layer
 
 You gave your AI agent a database connection, a shell, and an API key. Congratulations — you've built something powerful. Now ask yourself: **what happens when it does something you didn't intend?**
 
