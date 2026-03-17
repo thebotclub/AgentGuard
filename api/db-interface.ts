@@ -576,4 +576,9 @@ export interface IDatabase {
   getAlerts(tenantId: string, opts?: { severity?: string; resolved?: boolean }): Promise<AlertRow[]>;
   resolveAlert(id: string): Promise<void>;
   getActiveAlert(tenantId: string, ruleId: string): Promise<AlertRow | undefined>;
+
+  // ── Stripe Webhook Idempotency ────────────────────────────────────────────
+  isStripeEventProcessed(eventId: string): Promise<boolean>;
+  markStripeEventProcessed(eventId: string, eventType: string): Promise<void>;
+  pruneStripeProcessedEvents(olderThanDays?: number): Promise<void>;
 }

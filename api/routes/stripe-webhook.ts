@@ -284,24 +284,6 @@ async function handlePaymentFailure(
   }
 }
 
-// ── Idempotency tracking (in-memory; production would use Redis/DB) ───────
-
-const processedEvents = new Set<string>();
-const MAX_PROCESSED_CACHE = 1000;
-
-function isAlreadyProcessed(eventId: string): boolean {
-  return processedEvents.has(eventId);
-}
-
-function markProcessed(eventId: string): void {
-  if (processedEvents.size >= MAX_PROCESSED_CACHE) {
-    // Evict oldest entry (Set iteration order = insertion order)
-    const first = processedEvents.values().next().value;
-    if (first) processedEvents.delete(first);
-  }
-  processedEvents.add(eventId);
-}
-
 // ── Route factory ─────────────────────────────────────────────────────────
 
 export function createStripeWebhookRoutes(db: IDatabase): Router {
@@ -351,8 +333,9 @@ export function createStripeWebhookRoutes(db: IDatabase): Router {
         return;
       }
 
-      // Idempotency: skip already-processed events
-      if (isAlreadyProcessed(event.id)) {
+      // Idempotency: DB-backed dedup — safe across restarts and multiple instances
+      const alreadyProcessed = await db.isStripeEventProcessed(event.id);
+      if (alreadyProcessed) {
         console.log(`[stripe-webhook] duplicate event ${event.id} — skipping`);
         res.status(200).json({ received: true, duplicate: true });
         return;
@@ -414,7 +397,7 @@ export function createStripeWebhookRoutes(db: IDatabase): Router {
             console.log(`[stripe-webhook] unhandled event type: ${event.type}`);
         }
 
-        markProcessed(event.id);
+        await db.markStripeEventProcessed(event.id, event.type);
         res.status(200).json({ received: true });
       } catch (err) {
         console.error('[stripe-webhook] handler error:', err instanceof Error ? err.message : err);

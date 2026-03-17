@@ -340,6 +340,15 @@ const SCHEMA_SQL = `
 
   CREATE INDEX IF NOT EXISTS idx_alerts_tenant ON alerts(tenant_id, resolved_at);
   CREATE INDEX IF NOT EXISTS idx_alerts_rule ON alerts(rule_id, resolved_at);
+
+  -- Stripe webhook idempotency: DB-backed dedup replaces in-memory Set
+  CREATE TABLE IF NOT EXISTS stripe_processed_events (
+    event_id TEXT PRIMARY KEY,
+    processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    event_type TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_stripe_events_processed_at ON stripe_processed_events(processed_at);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -1863,6 +1872,30 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         [tenantId, ruleId]
       );
       return res.rows[0];
+    },
+
+    // ── Stripe Webhook Idempotency ──────────────────────────────────────────
+
+    async isStripeEventProcessed(eventId: string): Promise<boolean> {
+      const res = await pool.query(
+        'SELECT 1 FROM stripe_processed_events WHERE event_id = $1',
+        [eventId]
+      );
+      return res.rowCount !== null && res.rowCount > 0;
+    },
+
+    async markStripeEventProcessed(eventId: string, eventType: string): Promise<void> {
+      await pool.query(
+        'INSERT INTO stripe_processed_events (event_id, event_type) VALUES ($1, $2) ON CONFLICT (event_id) DO NOTHING',
+        [eventId, eventType]
+      );
+    },
+
+    async pruneStripeProcessedEvents(olderThanDays = 30): Promise<void> {
+      await pool.query(
+        'DELETE FROM stripe_processed_events WHERE processed_at < NOW() - ($1 || \' days\')::INTERVAL',
+        [olderThanDays]
+      );
     },
   };
 

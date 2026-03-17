@@ -258,6 +258,14 @@ const SCHEMA_SQL = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_license_usage_tenant ON license_usage(tenant_id, month);
+
+  CREATE TABLE IF NOT EXISTS stripe_processed_events (
+    event_id TEXT PRIMARY KEY,
+    processed_at TEXT NOT NULL DEFAULT (datetime('now')),
+    event_type TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_stripe_events_processed_at ON stripe_processed_events(processed_at);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -1499,6 +1507,30 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       return getSync<AlertRow>(
         'SELECT * FROM alerts WHERE tenant_id = ? AND rule_id = ? AND resolved_at IS NULL ORDER BY created_at DESC LIMIT 1',
         [tenantId, ruleId]
+      );
+    },
+
+    // ── Stripe Webhook Idempotency ──────────────────────────────────────────
+
+    async isStripeEventProcessed(eventId: string): Promise<boolean> {
+      const row = getSync<{ event_id: string }>(
+        'SELECT event_id FROM stripe_processed_events WHERE event_id = ?',
+        [eventId]
+      );
+      return row !== undefined;
+    },
+
+    async markStripeEventProcessed(eventId: string, eventType: string): Promise<void> {
+      execSync(
+        'INSERT OR IGNORE INTO stripe_processed_events (event_id, event_type) VALUES (?, ?)',
+        [eventId, eventType]
+      );
+    },
+
+    async pruneStripeProcessedEvents(olderThanDays = 30): Promise<void> {
+      execSync(
+        `DELETE FROM stripe_processed_events WHERE processed_at < datetime('now', '-' || ? || ' days')`,
+        [olderThanDays]
       );
     },
   };
