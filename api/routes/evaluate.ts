@@ -121,6 +121,62 @@ export function createEvaluateRoutes(
   });
 
   // ── POST /api/v1/evaluate ─────────────────────────────────────────────────
+  /**
+   * @openapi
+   * /evaluate:
+   *   post:
+   *     summary: Evaluate a tool call
+   *     description: |
+   *       Core policy evaluation endpoint. Evaluates an agent's tool call against
+   *       configured policies and returns allow/block/require_approval/monitor decision.
+   *       Optionally persists to audit trail and fires webhooks.
+   *     tags: [Evaluate]
+   *     security:
+   *       - apiKey: []
+   *       - agentKey: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [tool]
+   *             properties:
+   *               tool:
+   *                 type: string
+   *                 description: Tool/function name being called
+   *                 example: file_write
+   *               params:
+   *                 type: object
+   *                 description: Tool parameters
+   *               agentId:
+   *                 type: string
+   *                 description: Identifier of the calling agent
+   *               context:
+   *                 type: object
+   *                 description: Additional evaluation context
+   *     responses:
+   *       200:
+   *         description: Evaluation decision
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 decision:
+   *                   type: string
+   *                   enum: [allow, block, require_approval, monitor]
+   *                 reason:
+   *                   type: string
+   *                 riskScore:
+   *                   type: number
+   *                 ruleId:
+   *                   type: string
+   *       401:
+   *         description: Unauthorized
+   *       429:
+   *         description: Rate limit exceeded
+   */
   router.post(
     '/api/v1/evaluate',
     auth.requireEvaluateAuth,

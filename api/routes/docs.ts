@@ -6,14 +6,23 @@
  * GET /api/docs/swagger-ui.css         — Swagger UI CSS
  * GET /api/docs/swagger-ui-bundle.js   — Swagger UI bundle
  * GET /api/docs/swagger-ui-standalone-preset.js
+ *
+ * Dev-only aliases:
+ * GET /api-docs               — Swagger UI (redirects to /api/docs)
+ * GET /api-docs/openapi.json  — OpenAPI spec in JSON format
+ * GET /api-docs/openapi.yaml  — OpenAPI spec in YAML format
  */
 import { Router, Request, Response } from 'express';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 // Resolve paths
 const SPEC_PATH = join(__dirname, '..', 'openapi.yaml');
+const SPEC_JSON_PATH = join(__dirname, '..', 'openapi.json');
 const SWAGGER_DIST = join(__dirname, '..', '..', 'node_modules', 'swagger-ui-dist');
+
+// Dev-only check
+const isDev = process.env.NODE_ENV !== 'production';
 
 export function createDocsRoutes(): Router {
   const router = Router();
@@ -299,6 +308,55 @@ export function createDocsRoutes(): Router {
   router.get('/api/docs/spec', (_req: Request, res: Response) => {
     res.redirect(301, '/api/docs/spec.yaml');
   });
+
+  // ── Dev-only: /api-docs aliases ──────────────────────────────────────────
+  // These are only available in non-production environments.
+  // Standard path expected by swagger-jsdoc tooling.
+
+  if (isDev) {
+    // Redirect /api-docs → /api/docs (Swagger UI)
+    router.get('/api-docs', (_req: Request, res: Response) => {
+      res.redirect(301, '/api/docs');
+    });
+
+    // GET /api-docs/openapi.json — machine-readable JSON spec
+    router.get('/api-docs/openapi.json', (_req: Request, res: Response) => {
+      // Prefer pre-generated JSON, fall back to converting YAML on-the-fly
+      if (existsSync(SPEC_JSON_PATH)) {
+        try {
+          const json = readFileSync(SPEC_JSON_PATH, 'utf8');
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Cache-Control', 'public, max-age=60');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.send(json);
+          return;
+        } catch {
+          // fall through to yaml conversion
+        }
+      }
+      // Fallback: convert yaml to json on-the-fly
+      try {
+        // Dynamic import to avoid requiring yaml parser at module load
+        import('js-yaml').then(({ load }) => {
+          const yamlContent = readFileSync(SPEC_PATH, 'utf8');
+          const parsed = load(yamlContent);
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Cache-Control', 'public, max-age=60');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.json(parsed);
+        }).catch(() => {
+          res.status(500).json({ error: 'Could not generate OpenAPI JSON spec' });
+        });
+      } catch {
+        res.status(500).json({ error: 'Could not load OpenAPI spec' });
+      }
+    });
+
+    // GET /api-docs/openapi.yaml — YAML spec (alias of /api/docs/spec.yaml)
+    router.get('/api-docs/openapi.yaml', (_req: Request, res: Response) => {
+      res.redirect(301, '/api/docs/spec.yaml');
+    });
+  }
 
   return router;
 }

@@ -15,9 +15,31 @@ export function createHealthRoutes(db: IDatabase): Router {
   const router = Router();
 
   /**
-   * GET /api/v1/health/detailed
-   * Public — no auth required (health probe endpoint).
-   * Returns version, uptime, and component health with latency.
+   * @openapi
+   * /health/detailed:
+   *   get:
+   *     summary: Detailed health check
+   *     description: Returns component-level health for k8s probes and monitoring dashboards.
+   *     tags: [Health]
+   *     responses:
+   *       200:
+   *         description: All components healthy
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: string
+   *                   enum: [ok, degraded]
+   *                 version:
+   *                   type: string
+   *                 uptimeSeconds:
+   *                   type: number
+   *                 components:
+   *                   type: object
+   *       503:
+   *         description: One or more components degraded
    */
   router.get('/api/v1/health/detailed', async (_req: Request, res: Response) => {
     let dbStatus: 'ok' | 'error' = 'ok';
