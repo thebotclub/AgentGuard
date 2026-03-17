@@ -134,15 +134,30 @@ function verifyStripeSignature(
 
 /**
  * Map a Stripe price ID to an AgentGuard tier.
- * Falls back to 'pro' for any unrecognised price.
+ *
+ * Uses environment variables for the canonical mapping first, so deployments
+ * can override without a code change.  Falls back to a hardcoded lookup of the
+ * known production price IDs (also used as fallback defaults in billing.ts).
+ *
+ * NOTE: The old implementation used string-includes matching (e.g.
+ * priceId.includes('enterprise')), which NEVER matches real Stripe IDs like
+ * `price_1T93g3PikWtUbmTWtlZgSVIM`.  This has been replaced with an explicit
+ * map lookup.
  */
 function mapStripePriceToTier(priceId: string): 'free' | 'pro' | 'enterprise' {
   if (!priceId) return 'pro';
 
-  const lower = priceId.toLowerCase();
-  if (lower.includes('enterprise')) return 'enterprise';
-  if (lower.includes('free')) return 'free';
-  return 'pro'; // default for any paid price
+  // Build a lookup map from known price IDs → tier.
+  const priceToTier: Record<string, 'free' | 'pro' | 'enterprise'> = {};
+
+  // Env-var configured IDs take precedence.
+  const proPriceId = process.env['STRIPE_PRO_PRICE_ID'] ?? 'price_1T93g1PikWtUbmTWjoiZBgjS';
+  const enterprisePriceId = process.env['STRIPE_ENTERPRISE_PRICE_ID'] ?? 'price_1T93g3PikWtUbmTWtlZgSVIM';
+
+  if (proPriceId) priceToTier[proPriceId] = 'pro';
+  if (enterprisePriceId) priceToTier[enterprisePriceId] = 'enterprise';
+
+  return priceToTier[priceId] ?? 'pro'; // default to 'pro' for any paid price
 }
 
 // ── License issuance helpers ──────────────────────────────────────────────
