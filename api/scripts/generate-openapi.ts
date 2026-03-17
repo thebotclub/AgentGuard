@@ -12,11 +12,8 @@
  *   api/openapi.json   — JSON version of the spec
  */
 import { readFileSync, writeFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import yaml from 'js-yaml';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const API_DIR = join(__dirname, '..');
 const ROOT_DIR = join(__dirname, '..', '..');
 
