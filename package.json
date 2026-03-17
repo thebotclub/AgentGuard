@@ -19,7 +19,10 @@
     "lint:fix": "npx eslint api/ packages/sdk/src packages/cli/src packages/shared/src --fix",
     "typecheck": "cd api && npx tsc --noEmit",
     "build": "turbo run build",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "docs:dev": "vitepress dev vitepress-docs",
+    "docs:build": "vitepress build vitepress-docs",
+    "docs:preview": "vitepress preview vitepress-docs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
@@ -34,6 +37,7 @@
     "prettier": "^3.4.2",
     "turbo": "^2.3.3",
     "typescript": "^5.7.3",
+    "vitepress": "^1.6.4",
     "vitest": "^2.1.9"
   },
   "engines": {
