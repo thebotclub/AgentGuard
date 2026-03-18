@@ -986,7 +986,7 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
           <li>Real-time dashboard</li>
           <li>7 compliance templates</li>
         </ul>
-        <a href="https://app.agentguard.tech" class="pricing-cta primary">Start Pro Trial</a>
+        <a href="https://agentguard.tech/dashboard/" class="pricing-cta primary">Start Pro Trial</a>
       </div>
 
       <!-- Enterprise -->
@@ -1098,7 +1098,7 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
       <div class="footer-copy">© 2026 <a href="https://thebot.club" style="color:inherit;text-decoration:none">The Bot Club</a> Pty Ltd · Runtime security for the agentic era.</div>
       <div class="footer-links">
         <a href="https://docs.agentguard.tech">Docs</a>
-        <a href="https://app.agentguard.tech">Dashboard</a>
+        <a href="https://agentguard.tech/dashboard/">Dashboard</a>
         <a href="https://demo.agentguard.tech">Demo</a>
         <a href="https://github.com/thebotclub" target="_blank" rel="noopener">GitHub</a>
         <a href="mailto:hello@agentguard.tech">hello@agentguard.tech</a>
@@ -1201,7 +1201,7 @@ function handleSignupForm(formEl, successEl, errorEl, isMainForm) {
             try { localStorage.setItem('ag_api_key', data.apiKey); } catch {}
             // Add "Open Dashboard" button that passes key via URL hash
             var dashBtn = document.createElement('a');
-            dashBtn.href = 'https://app.agentguard.tech/#key=' + encodeURIComponent(data.apiKey);
+            dashBtn.href = 'https://agentguard.tech/dashboard/#key=' + encodeURIComponent(data.apiKey);
             dashBtn.textContent = '📊 Open Dashboard';
             dashBtn.style.cssText = 'display:inline-block;margin-top:12px;padding:10px 24px;background:var(--accent,#6c63ff);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.95rem;transition:opacity 0.2s';
             dashBtn.onmouseover = function() { this.style.opacity = '0.85'; };
