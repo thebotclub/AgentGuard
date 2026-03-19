@@ -46,11 +46,11 @@
   },
   "publisher": {
     "@type": "Organization",
-    "name": "AgentGuard",
-    "url": "https://agentguard.tech",
-    "logo": "https://agentguard.tech/icon-512.png",
-    "image": "https://agentguard.tech/icon-512.png",
-    "sameAs": ["https://github.com/thebotclub", "https://linkedin.com/company/agentguard"]
+    "name": "The Bot Club",
+    "url": "https://thebot.club",
+    "logo": "https://thebot.club/logo.png",
+    "description": "AI incubation & acceleration studio",
+    "taxID": "ABN 99 695 980 226"
   }
 }
 </script>
@@ -364,6 +364,40 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
   .comparison-table thead th,.comparison-table tbody td{padding:10px 12px}
 }
 </style>
+
+<!-- Organization structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "AgentGuard",
+  "url": "https://agentguard.tech",
+  "logo": "https://agentguard.tech/icon-512.png",
+  "description": "AI agent security enforcement platform. Deploy agents confidently with CI/CD gates and runtime policy enforcement.",
+  "parentOrganization": {
+    "@type": "Organization",
+    "name": "The Bot Club",
+    "url": "https://thebot.club",
+    "taxID": "ABN 99 695 980 226",
+    "description": "AI incubation & acceleration studio"
+  },
+  "sameAs": [
+    "https://github.com/thebotclub",
+    "https://linkedin.com/company/agentguard"
+  ]
+}
+</script>
+
+<!-- WebSite structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "AgentGuard",
+  "url": "https://agentguard.tech",
+  "description": "AI agent security enforcement platform"
+}
+</script>
 </head>
 <body>
 
