@@ -13,6 +13,10 @@
     <img src="https://img.shields.io/badge/tests-193_passing-brightgreen" alt="Tests">
     <img src="https://img.shields.io/badge/coverage-67%25-yellow" alt="Coverage">
     <a href="https://github.com/thebotclub/AgentGuard/actions/workflows/test-coverage.yml"><img src="https://github.com/thebotclub/AgentGuard/actions/workflows/test-coverage.yml/badge.svg" alt="Tests"></a>
+    <a href="https://thebot.club"><img src="https://img.shields.io/badge/Bot_Club-Project-22d3ee" alt="A Bot Club Project"></a>
+  </p>
+  <p style="margin-top:8px">
+    A <a href="https://thebot.club"><strong>Bot Club</strong></a> project · also from The Bot Club: <a href="https://tribunal.dev">Tribunal</a>
   </p>
 </div>
 
