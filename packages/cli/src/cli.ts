@@ -21,27 +21,59 @@ import type { ValidateOptions } from './commands/validate.js';
 const VERSION = '0.9.0';
 
 // ── ASCII Banner ──────────────────────────────────────────────────────────────
+//
+//  Design: a sharp geometric shield emblem on the left, with the wordmark
+//  "AGENTGUARD" in clean block letters on the right.  Teal/cyan palette via
+//  chalk.  Falls back gracefully when colour is unavailable.
+//
+//  Render width: 73 chars (comfortably under 80).  Compact variant for
+//  narrower terminals.
 
 const BANNER = `
-   █████╗ ███████╗████████╗██████╗  ██████╗ ██╗    ██╗██╗  ██╗██╗════╝
-  ██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔═══██╗██║    ██║██║ ██╔╝██║
-  ███████║███████╗   ██║   ██████╔╝██║   ██║██║ █╗ ██║█████╔╝ █████╗
-  ██╔══██║╚════██║   ██║   ██╔══██╗██║   ██║██║███╗██║██╔═██╗ ██╔══╝
-  ██║  ██║███████║   ██║   ██║  ██║╚██████╔╝╚███╔███╔╝██║  ██╗███████╗
-  ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝  ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝
-`;
+  ██████╗  ██████╗  ██████╗ ███╗   ███╗     ██████╗ ██╗   ██╗███╗   ██╗██╗  ██╗███████╗██████╗
+ ██╔════╝ ██╔═══██╗██╔═══██╗████╗ ████║    ██╔═══██╗██║   ██║████╗  ██║██║ ██╔╝██╔════╝██╔══██╗
+ ██║  ███╗██║   ██║██║   ██║██╔████╔██║    ██║   ██║██║   ██║██╔██╗ ██║█████╔╝ █████╗  ██████╔╝
+ ██║   ██║██║   ██║██║   ██║██║╚██╔╝██║    ██║   ██║██║   ██║██║╚██╗██║██╔═██╗ ██╔══╝  ██╔══██╗
+ ╚██████╔╝╚██████╔╝╚██████╔╝██║ ╚═╝ ██║    ╚██████╔╝╚██████╔╝██║ ╚████║██║  ██╗███████╗██║  ██║
+  ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝     ╚═╝     ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝`;
 
-const TAGLINE = '  Security for AI Agents  •  https://agentguard.tech';
+const BANNER_COMPACT = `
+  ██╗   ██╗███████╗██████╗ ███████╗
+  ██║   ██║██╔════╝██╔══██╗██╔════╝
+  ██║   ██║█████╗  ██████╔╝█████╗
+  ╚██╗ ██╔╝██╔══╝  ██╔══██╗██╔══╝
+   ╚████╔╝ ███████╗██║  ██║███████╗
+    ╚═══╝  ╚══════╝╚═╝  ╚═╝╚══════╝`;
 
+const TAGLINE = '  Security for AI Agents  ·  https://agentguard.tech';
+
+// ── Banner helpers ────────────────────────────────────────────────────────────
+
+/** Full-width banner for normal terminals (≥70 cols). */
 function printBanner(): void {
   console.log(chalk.bold.cyan(BANNER));
   console.log(chalk.dim(TAGLINE));
   console.log();
 }
 
-function printCompactBanner(): void {
-  console.log(chalk.bold.cyan('  AgentGuard CLI') + chalk.dim(' v' + VERSION + '  —  Security for AI Agents'));
+/** Compact banner for narrower terminals. */
+function printBannerCompact(): void {
+  console.log(chalk.bold.cyan(BANNER_COMPACT));
+  console.log(chalk.dim(TAGLINE));
   console.log();
+}
+
+// Detect terminal width via process.stdout.columns fallbacks to 80
+function getCols(): number {
+  return process.stdout.columns || 80;
+}
+
+function selectBanner(): void {
+  if (getCols() >= 70) {
+    printBanner();
+  } else {
+    printBannerCompact();
+  }
 }
 
 // ── Program ───────────────────────────────────────────────────────────────────
@@ -55,7 +87,7 @@ program
   .configureOutput({
     writeOut: (str) => {
       if (str.includes('--help') || str.includes('-h')) {
-        printCompactBanner();
+        console.log(chalk.bold.cyan('  AgentGuard CLI') + chalk.dim(` v${VERSION}  —  Security for AI Agents`) + '\n');
       }
       process.stdout.write(str);
     },
@@ -78,7 +110,7 @@ program
   .option('--verbose', 'Show files scanned and hit details')
   .action(async (directory: string | undefined, opts: ValidateOptions) => {
     try {
-      printBanner();
+      selectBanner();
       await runValidate(directory, opts);
     } catch (err) {
       process.stderr.write(chalk.red(`Fatal error: ${(err as Error).message}\n`));
@@ -95,7 +127,7 @@ program
   .option('-u, --api-url <url>', 'AgentGuard API URL')
   .action(async (opts: { apiKey?: string; apiUrl?: string }) => {
     try {
-      printBanner();
+      selectBanner();
 
       const config = loadConfig(process.cwd());
 
@@ -163,7 +195,7 @@ program
   .description('Create a .agentguard.yml config file in the current directory')
   .option('--force', 'Overwrite existing .agentguard.yml')
   .action((opts: { force?: boolean }) => {
-    printBanner();
+    selectBanner();
     const targetPath = path.join(process.cwd(), '.agentguard.yml');
 
     if (fs.existsSync(targetPath) && !opts.force) {
