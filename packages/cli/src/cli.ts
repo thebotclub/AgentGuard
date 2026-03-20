@@ -20,6 +20,30 @@ import type { ValidateOptions } from './commands/validate.js';
 
 const VERSION = '0.9.0';
 
+// ── ASCII Banner ──────────────────────────────────────────────────────────────
+
+const BANNER = `
+   █████╗ ███████╗████████╗██████╗  ██████╗ ██╗    ██╗██╗  ██╗██╗════╝
+  ██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔═══██╗██║    ██║██║ ██╔╝██║
+  ███████║███████╗   ██║   ██████╔╝██║   ██║██║ █╗ ██║█████╔╝ █████╗
+  ██╔══██║╚════██║   ██║   ██╔══██╗██║   ██║██║███╗██║██╔═██╗ ██╔══╝
+  ██║  ██║███████║   ██║   ██║  ██║╚██████╔╝╚███╔███╔╝██║  ██╗███████╗
+  ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝  ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝
+`;
+
+const TAGLINE = '  Security for AI Agents  •  https://agentguard.tech';
+
+function printBanner(): void {
+  console.log(chalk.bold.cyan(BANNER));
+  console.log(chalk.dim(TAGLINE));
+  console.log();
+}
+
+function printCompactBanner(): void {
+  console.log(chalk.bold.cyan('  AgentGuard CLI') + chalk.dim(' v' + VERSION + '  —  Security for AI Agents'));
+  console.log();
+}
+
 // ── Program ───────────────────────────────────────────────────────────────────
 
 const program = new Command();
@@ -27,7 +51,15 @@ const program = new Command();
 program
   .name('agentguard')
   .description('AgentGuard CLI — scan AI agent code and validate policy coverage')
-  .version(VERSION);
+  .version(VERSION)
+  .configureOutput({
+    writeOut: (str) => {
+      if (str.includes('--help') || str.includes('-h')) {
+        printCompactBanner();
+      }
+      process.stdout.write(str);
+    },
+  });
 
 // ── validate ──────────────────────────────────────────────────────────────────
 
@@ -46,14 +78,15 @@ program
   .option('--verbose', 'Show files scanned and hit details')
   .action(async (directory: string | undefined, opts: ValidateOptions) => {
     try {
+      printBanner();
       await runValidate(directory, opts);
     } catch (err) {
-      process.stderr.write(chalk.red(`\nFatal error: ${(err as Error).message}\n`));
+      process.stderr.write(chalk.red(`Fatal error: ${(err as Error).message}\n`));
       process.exit(2);
     }
   });
 
-// ── status ────────────────────────────────────────────────────────────────────
+// ── status ───────────────────────────────────────────────────────────────────
 
 program
   .command('status')
@@ -62,6 +95,8 @@ program
   .option('-u, --api-url <url>', 'AgentGuard API URL')
   .action(async (opts: { apiKey?: string; apiUrl?: string }) => {
     try {
+      printBanner();
+
       const config = loadConfig(process.cwd());
 
       const apiKey =
@@ -76,9 +111,9 @@ program
         config.api_url ??
         'https://api.agentguard.tech';
 
-      console.log('');
-      console.log(chalk.bold.cyan('AgentGuard Status'));
-      console.log(chalk.dim('═'.repeat(40)));
+      console.log(chalk.bold('  Status Check'));
+      console.log(chalk.dim('  ' + '─'.repeat(50)));
+      console.log();
 
       const client = new AgentGuardApiClient(apiKey || 'no-key', apiUrl);
 
@@ -87,10 +122,10 @@ program
       try {
         const ping = await client.ping();
         console.log(ping.ok
-          ? chalk.green(`✅ reachable (${ping.latencyMs}ms)`)
-          : chalk.red('❌ unhealthy'));
+          ? chalk.green(`\u2705 reachable (${ping.latencyMs}ms)`)
+          : chalk.red('\u274c unhealthy'));
       } catch (err) {
-        console.log(chalk.red(`❌ unreachable — ${(err as Error).message}`));
+        console.log(chalk.red(`\u274c unreachable \u2014 ${(err as Error).message}`));
         process.exit(1);
       }
 
@@ -101,7 +136,7 @@ program
         process.stdout.write('  Tenant info ...   ');
         try {
           const status = await client.getTenantStatus();
-          console.log(chalk.green('✅ authenticated'));
+          console.log(chalk.green('\u2705 authenticated'));
           if (status && typeof status === 'object') {
             for (const [k, v] of Object.entries(status)) {
               if (k !== 'raw') {
@@ -110,11 +145,11 @@ program
             }
           }
         } catch (err) {
-          console.log(chalk.red(`❌ ${(err as Error).message}`));
+          console.log(chalk.red(`\u274c ${(err as Error).message}`));
         }
       }
 
-      console.log('');
+      console.log();
     } catch (err) {
       process.stderr.write(chalk.red(`Error: ${(err as Error).message}\n`));
       process.exit(1);
@@ -128,19 +163,20 @@ program
   .description('Create a .agentguard.yml config file in the current directory')
   .option('--force', 'Overwrite existing .agentguard.yml')
   .action((opts: { force?: boolean }) => {
+    printBanner();
     const targetPath = path.join(process.cwd(), '.agentguard.yml');
 
     if (fs.existsSync(targetPath) && !opts.force) {
-      console.log(chalk.yellow(`.agentguard.yml already exists. Use --force to overwrite.`));
+      console.log(chalk.yellow(`\u26a0 .agentguard.yml already exists. Use --force to overwrite.`));
       process.exit(0);
     }
 
     fs.writeFileSync(targetPath, DEFAULT_CONFIG_CONTENT, 'utf8');
-    console.log(chalk.green(`✅ Created ${targetPath}`));
-    console.log(chalk.dim('\nNext steps:'));
+    console.log(chalk.green(`\u2705 Created ${targetPath}`));
+    console.log(chalk.dim('\n  Next steps:'));
     console.log(chalk.dim('  1. Set your API key: export AGENTGUARD_API_KEY=ag_live_xxx'));
     console.log(chalk.dim('  2. Run: agentguard validate .'));
-    console.log('');
+    console.log();
   });
 
 // ── Parse ─────────────────────────────────────────────────────────────────────
