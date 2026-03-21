@@ -7,6 +7,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 import { authMiddleware } from './middleware/auth.js';
+import { tenantRLSMiddleware } from './middleware/tenant.js';
 import { errorHandler } from './middleware/error.js';
 import { healthRouter } from './routes/health.js';
 import { agentsRouter } from './routes/agents.js';
@@ -45,9 +46,12 @@ export function createApp(): Hono {
   // ── Authenticated routes ──────────────────────────────────────────────────────
   app.use('/v1/*', authMiddleware);
 
-  // Note: tenantRLSMiddleware is disabled by default until PostgreSQL RLS is
-  // enabled in the database. Uncomment after running migration SQL.
-  // app.use('/v1/*', tenantRLSMiddleware);
+  // Tenant Row-Level Security middleware — sets PostgreSQL session variable
+  // `app.current_tenant_id` for RLS enforcement at the database level.
+  // Defence-in-depth: even if application code omits a tenantId filter,
+  // the DB policy prevents cross-tenant data leaks.
+  // Requires RLS to be enabled via migration: packages/api/prisma/rls-migration.sql
+  app.use('/v1/*', tenantRLSMiddleware);
 
   // ── API routes ────────────────────────────────────────────────────────────────
   app.route('/v1/agents', agentsRouter);
