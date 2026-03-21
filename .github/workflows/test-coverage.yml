@@ -1,0 +1,51 @@
+name: Test & Coverage
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  test:
+    name: Unit Tests + Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --include=dev
+
+      - name: Audit dependencies for HIGH/CRITICAL vulnerabilities
+        # Blocks the CI pipeline if any HIGH or CRITICAL CVEs are found.
+        # Use `npm audit fix` locally to resolve, or add to .nsprc if a
+        # false positive needs to be acknowledged. This is a mandatory gate —
+        # a security product shipping with known HIGH CVEs is a credibility risk.
+        run: npm audit --audit-level=high
+
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      - name: Coverage summary comment (PR only)
+        if: github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          json-summary-path: coverage/coverage-summary.json
+          json-final-path: coverage/coverage-final.json
