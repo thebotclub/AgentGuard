@@ -16,7 +16,8 @@ COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/shared/package.json ./packages/shared/
 
 # Install ALL deps (devDeps needed for TypeScript compilation)
-RUN npm ci --prefer-offline
+# Using `install` instead of `ci` for resilience against lock file drift
+RUN npm install --prefer-offline
 
 # ── Stage 2: Builder ──────────────────────────────────────────────────────
 FROM deps AS builder
@@ -51,7 +52,7 @@ COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/shared/package.json ./packages/shared/
 
 # Install production-only deps
-RUN npm ci --omit=dev --prefer-offline && npm cache clean --force
+RUN npm install --omit=dev --prefer-offline && npm cache clean --force
 
 # Copy compiled output from builder
 COPY --from=builder /app/dist ./dist
