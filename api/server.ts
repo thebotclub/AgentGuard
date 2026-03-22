@@ -48,6 +48,7 @@ import { createPolicyGitWebhookRoutes } from './routes/policy-git-webhook.js';
 import { createSiemRoutes } from './routes/siem.js';
 import { getSiemForwarder } from './lib/siem-forwarder.js';
 import { createHealthRoutes } from './routes/health.js';
+import { createHealthProbeRoutes } from './routes/health-probes.js';
 import { createDocsRoutes } from './routes/docs.js';
 import { createLicenseRoutes } from './routes/license.js';
 import { createStripeWebhookRoutes } from './routes/stripe-webhook.js';
@@ -260,6 +261,11 @@ async function main(): Promise<void> {
 
   // ── Build shared auth middleware ───────────────────────────────────────
   const auth = createAuthMiddleware(db);
+
+  // ── Kubernetes health probes (mounted first, before DB health middleware) ──
+  // /healthz — liveness (process alive, no DB check)
+  // /readyz  — readiness (DB + Redis + migrations)
+  app.use(createHealthProbeRoutes(db));
 
   // ── Root & health routes ───────────────────────────────────────────────
   app.get('/', async (_req: Request, res: Response) => {
@@ -705,19 +711,44 @@ async function main(): Promise<void> {
   const GRACEFUL_SHUTDOWN_TIMEOUT_MS = 30_000;
   let shuttingDown = false;
 
+  // ── SSE connection registry ─────────────────────────────────────────────
+  // Track active SSE (Server-Sent Events) connections so we can drain them
+  // gracefully during shutdown. Each SSE route should call sseRegistry.add(res)
+  // on connection open and sseRegistry.delete(res) on close.
+  const sseRegistry = new Set<import('express').Response>();
+  (app as unknown as { sseRegistry: Set<import('express').Response> }).sseRegistry = sseRegistry;
+
   async function gracefulShutdown(signal: string): Promise<void> {
     if (shuttingDown) return;
     shuttingDown = true;
 
     logger.info(`Graceful shutdown initiated (${signal})`);
 
-    // 1. Stop accepting new connections
+    // 1a. Drain SSE connections — send a close event so clients reconnect gracefully
+    if (sseRegistry.size > 0) {
+      logger.info(`Draining ${sseRegistry.size} active SSE connection(s)...`);
+      for (const sseRes of sseRegistry) {
+        try {
+          sseRes.write('event: server-shutdown\ndata: {"reason":"graceful-shutdown"}\n\n');
+          sseRes.end();
+        } catch {
+          // ignore — client may have already disconnected
+        }
+      }
+      sseRegistry.clear();
+      logger.info('SSE connections drained');
+    }
+
+    // 1b. Stop accepting new connections (server.close)
     server.close(async (closeErr) => {
       if (closeErr) {
         logger.error({ error: String(closeErr) }, 'Error closing HTTP server');
       } else {
         logger.info('HTTP server closed — no more incoming connections');
       }
+
+      // 2. Wait for in-flight evaluations — already handled by server.close
+      // (existing keep-alive connections are destroyed after the timeout below)
 
       // 3. Close database connections
       try {
@@ -729,23 +760,43 @@ async function main(): Promise<void> {
         logger.error({ error: String(e) }, 'Error closing database');
       }
 
-      // 4. Close Redis connections (imported lazily to avoid circular deps)
+      // 4. Close Redis connections (standalone + sentinel)
       try {
         const { closeRedis } = await import('./lib/redis-rate-limiter.js');
         if (typeof closeRedis === 'function') {
           await closeRedis();
-          logger.info('Redis connection closed');
+          logger.info('Redis standalone connection closed');
         }
       } catch {
         // Redis may not be configured — not an error
       }
+      try {
+        const { closeSentinel } = await import('./lib/redis-sentinel.js');
+        if (typeof closeSentinel === 'function') {
+          await closeSentinel();
+          logger.info('Redis sentinel connection closed');
+        }
+      } catch {
+        // Sentinel may not be configured
+      }
 
-      // 5. Exit cleanly
+      // 5. Close webhook queue worker
+      try {
+        const { closeWebhookQueue } = await import('./lib/webhook-queue.js');
+        if (typeof closeWebhookQueue === 'function') {
+          await closeWebhookQueue();
+          logger.info('Webhook queue closed');
+        }
+      } catch {
+        // Queue may not be initialized
+      }
+
+      // 6. Exit cleanly
       logger.info('Graceful shutdown complete');
       process.exit(0);
     });
 
-    // 2. Force-exit after timeout if in-flight requests don't drain
+    // Force-exit after timeout if in-flight requests don't drain
     setTimeout(() => {
       logger.error(`Shutdown timeout (${GRACEFUL_SHUTDOWN_TIMEOUT_MS}ms) exceeded — forcing exit`);
       process.exit(1);

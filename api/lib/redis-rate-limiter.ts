@@ -350,6 +350,14 @@ export function isRedisAvailable(): boolean {
 }
 
 /**
+ * Get the current Redis client synchronously (may be null if not yet initialized).
+ * Used by health probes and webhook queue.
+ */
+export function getRedisClient(): RedisLike | null {
+  return redisAvailable ? redisClient : null;
+}
+
+/**
  * Gracefully close the Redis connection (used during server shutdown).
  * Safe to call even if Redis was never connected.
  */
