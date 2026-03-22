@@ -304,6 +304,24 @@ export class HITLService extends BaseService {
   }
 
   /**
+   * List resolved/historical gates for this tenant.
+   * Optional status filter: APPROVED | REJECTED | TIMED_OUT | CANCELLED
+   */
+  async listHistoricalGates(limit = 50, cursor?: string, status?: string): Promise<HITLGate[]> {
+    const resolvedStatuses = ['APPROVED', 'REJECTED', 'TIMED_OUT', 'CANCELLED'];
+    const statusFilter = status && resolvedStatuses.includes(status)
+      ? [status as HITLStatus]
+      : resolvedStatuses as HITLStatus[];
+
+    return this.db.hITLGate.findMany({
+      where: { tenantId: this.tenantId, status: { in: statusFilter } },
+      orderBy: { decidedAt: 'desc' },
+      take: limit,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+  }
+
+  /**
    * Poll for gate resolution — used by SDK long-poll endpoint.
    * Returns immediately if resolved, otherwise the caller should implement
    * HTTP long-poll with repeated calls.

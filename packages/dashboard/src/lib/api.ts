@@ -182,3 +182,221 @@ export async function resumeAgent(agentId: string, reason?: string): Promise<voi
     body: JSON.stringify({ reason }),
   });
 }
+
+// ─── HITL API ─────────────────────────────────────────────────────────────────
+
+export interface HITLGate {
+  id: string;
+  tenantId: string;
+  agentId: string;
+  sessionId: string;
+  toolName: string | null;
+  toolParams: Record<string, unknown> | null;
+  matchedRuleId: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'TIMED_OUT' | 'CANCELLED';
+  timeoutAt: string;
+  onTimeout: string;
+  createdAt: string;
+  decidedAt: string | null;
+  decisionNote: string | null;
+}
+
+export interface HITLListResponse {
+  data: HITLGate[];
+  pagination: { cursor: string | null; hasMore: boolean };
+}
+
+export async function listPendingGates(params: { limit?: number; cursor?: string } = {}): Promise<HITLListResponse> {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined) qs.set(k, String(v));
+  }
+  return apiFetch<HITLListResponse>(`/hitl/pending?${qs.toString()}`);
+}
+
+export async function listHistoricalGates(params: { limit?: number; cursor?: string; status?: string } = {}): Promise<HITLListResponse> {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== '') qs.set(k, String(v));
+  }
+  return apiFetch<HITLListResponse>(`/hitl/history?${qs.toString()}`);
+}
+
+export async function approveGate(gateId: string, note?: string): Promise<HITLGate> {
+  return apiFetch<HITLGate>(`/hitl/${gateId}/approve`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
+  });
+}
+
+export async function rejectGate(gateId: string, note?: string): Promise<HITLGate> {
+  return apiFetch<HITLGate>(`/hitl/${gateId}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
+  });
+}
+
+// ─── Policy API ───────────────────────────────────────────────────────────────
+
+export interface Policy {
+  id: string;
+  tenantId: string;
+  name: string;
+  description: string | null;
+  activeVersion: string | null;
+  defaultAction: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PolicyVersion {
+  id: string;
+  policyId: string;
+  version: string;
+  ruleCount: number;
+  changelog: string | null;
+  createdAt: string;
+  bundleChecksum: string;
+  yamlContent?: string;
+}
+
+export interface PolicyListResponse {
+  data: Policy[];
+  pagination: { cursor: string | null; hasMore: boolean };
+}
+
+export interface PolicyTestResult {
+  policyId: string;
+  summary: { total: number; passed: number; failed: number };
+  results: Array<{
+    name: string;
+    passed: boolean;
+    decision: string;
+    expectedDecision?: string;
+    riskScore?: number;
+    matchedRuleId?: string | null;
+    error?: string;
+  }>;
+}
+
+export async function listPolicies(params: { limit?: number; cursor?: string } = {}): Promise<PolicyListResponse> {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined) qs.set(k, String(v));
+  }
+  return apiFetch<PolicyListResponse>(`/policies?${qs.toString()}`);
+}
+
+export async function getPolicy(policyId: string): Promise<Policy> {
+  return apiFetch<Policy>(`/policies/${policyId}`);
+}
+
+export async function createPolicy(input: {
+  name: string;
+  description?: string;
+  yamlContent: string;
+  changelog?: string;
+}): Promise<{ policy: Policy; version: PolicyVersion; warnings: string[] }> {
+  return apiFetch(`/policies`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updatePolicy(
+  policyId: string,
+  input: { yamlContent?: string; description?: string; changelog?: string },
+): Promise<{ policy: Policy; version: PolicyVersion | null; warnings: string[] }> {
+  return apiFetch(`/policies/${policyId}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deletePolicy(policyId: string): Promise<void> {
+  await apiFetch(`/policies/${policyId}`, { method: 'DELETE' });
+}
+
+export async function listPolicyVersions(policyId: string): Promise<{ data: PolicyVersion[] }> {
+  return apiFetch<{ data: PolicyVersion[] }>(`/policies/${policyId}/versions`);
+}
+
+export async function getPolicyVersion(policyId: string, version: string): Promise<PolicyVersion> {
+  return apiFetch<PolicyVersion>(`/policies/${policyId}/versions/${version}`);
+}
+
+export async function testPolicy(policyId: string, tests: unknown[]): Promise<PolicyTestResult> {
+  return apiFetch<PolicyTestResult>(`/policies/${policyId}/test`, {
+    method: 'POST',
+    body: JSON.stringify({ tests }),
+  });
+}
+
+export async function activatePolicyVersion(policyId: string, version: string): Promise<Policy> {
+  return apiFetch<Policy>(`/policies/${policyId}/activate`, {
+    method: 'POST',
+    body: JSON.stringify({ version }),
+  });
+}
+
+// ─── Agents (extended) ───────────────────────────────────────────────────────
+
+export async function createAgent(input: {
+  name: string;
+  description?: string;
+  framework?: string;
+}): Promise<Agent & { apiKey: string }> {
+  return apiFetch<Agent & { apiKey: string }>(`/agents`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+// ─── Compliance API ───────────────────────────────────────────────────────────
+
+export interface OWASPControl {
+  id: string;
+  name: string;
+  score: number;
+  status: string;
+}
+
+export interface ComplianceReport {
+  generatedAt: string;
+  dateRange: { from: string; to: string };
+  owasp: { overallScore: number; controls: OWASPControl[] };
+  policies: Array<{ id: string; name: string; description: string | null; activeVersion: string | null; defaultAction: string; updatedAt: string }>;
+  auditSummary: {
+    total: number;
+    allowed: number;
+    blocked: number;
+    monitored: number;
+    highRisk: number;
+    recentEvents: Array<{
+      id: string;
+      agentId: string;
+      actionType: string;
+      toolName: string | null;
+      decision: string;
+      riskScore: number;
+      riskTier: string;
+      occurredAt: string;
+    }>;
+  };
+  agentHealth: {
+    total: number;
+    active: number;
+    killed: number;
+    quarantined: number;
+    agents: Array<{ id: string; name: string; status: string; riskTier: string; framework: string | null; lastSeenAt: string | null }>;
+  };
+  hitlSummary: { total: number; approved: number; rejected: number; timedOut: number };
+}
+
+export async function getComplianceReport(params: { fromDate?: string; toDate?: string } = {}): Promise<ComplianceReport> {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v) qs.set(k, v);
+  }
+  return apiFetch<ComplianceReport>(`/compliance/report?${qs.toString()}`);
+}
