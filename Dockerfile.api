@@ -54,8 +54,8 @@ COPY packages/shared/package.json ./packages/shared/
 # Install production-only deps
 RUN npm install --omit=dev --prefer-offline && npm cache clean --force
 
-# Copy compiled output from builder
-COPY --from=builder /app/dist ./dist
+# Copy compiled output from builder (tsc outputs to api/dist/ with rootDir: "..")
+COPY --from=builder /app/api/dist ./dist
 COPY --from=builder /app/packages ./packages
 
 # Create /data for SQLite persistence and set ownership
