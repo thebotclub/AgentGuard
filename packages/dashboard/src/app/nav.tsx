@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: '/hitl', label: 'HITL Queue' },
   { href: '/report', label: 'Report' },
   { href: '/alerts', label: 'Alerts' },
+  { href: '/settings/sso', label: '🔐 SSO' },
 ];
 
 export default function Nav() {

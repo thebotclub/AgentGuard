@@ -44,6 +44,7 @@ import { createMcpPolicyRoutes } from './routes/mcp-policy.js';
 import { createSlackHitlRoutes } from './routes/slack-hitl.js';
 import { createAgentHierarchyRoutes } from './routes/agent-hierarchy.js';
 import { createSsoRoutes } from './routes/sso.js';
+import { createPolicyGitWebhookRoutes } from './routes/policy-git-webhook.js';
 import { createSiemRoutes } from './routes/siem.js';
 import { getSiemForwarder } from './lib/siem-forwarder.js';
 import { createHealthRoutes } from './routes/health.js';
@@ -202,6 +203,8 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 // Stripe requires the raw body for HMAC signature verification.
 // Use express.raw() for this specific path to capture it as a Buffer.
 app.use('/api/v1/webhooks/stripe', express.raw({ type: 'application/json', limit: '1mb' }));
+// GitHub webhook raw body (for HMAC-SHA256 signature verification)
+app.use('/api/v1/policies/webhook/github', express.raw({ type: 'application/json', limit: '2mb' }));
 
 app.use(express.json({ limit: '50kb' }));
 // URL-encoded body parsing (for non-Slack paths, after the raw body middleware)
@@ -595,6 +598,9 @@ async function main(): Promise<void> {
 
   // ── SSO Configuration ─────────────────────────────────────────────────
   app.use(createSsoRoutes(db, auth));
+
+  // ── Policy-as-Code Git Webhook (GitOps) ───────────────────────────────
+  app.use(createPolicyGitWebhookRoutes(db, auth));
 
   // ── SIEM Export ───────────────────────────────────────────────────────
   app.use(createSiemRoutes(db, auth));

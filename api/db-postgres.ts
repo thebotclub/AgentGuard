@@ -23,6 +23,8 @@ import type {
   IntegrationRow,
   SsoConfigRow,
   SsoProvider,
+  SsoProtocol,
+  SsoUserRow,
   SiemConfigRow,
   ChildAgentRow,
   UsageAnalytics,
@@ -35,6 +37,8 @@ import type {
   PolicyVersionRow,
   TeamMemberRow,
   JobRow,
+  GitWebhookConfigRow,
+  GitSyncLogRow,
 } from './db-interface.js';
 import { randomUUID } from 'crypto';
 import crypto from 'crypto';
@@ -245,12 +249,70 @@ const SCHEMA_SQL = `
     id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     tenant_id TEXT NOT NULL UNIQUE REFERENCES tenants(id),
     provider TEXT NOT NULL,
+    protocol TEXT NOT NULL DEFAULT 'oidc',
     domain TEXT NOT NULL,
     client_id TEXT NOT NULL,
     client_secret_encrypted TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    discovery_url TEXT,
+    redirect_uri TEXT,
+    scopes TEXT,
+    force_sso INTEGER NOT NULL DEFAULT 0,
+    role_claim_name TEXT,
+    admin_group TEXT,
+    member_group TEXT,
+    idp_metadata_xml TEXT,
+    sp_entity_id TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ
   );
   CREATE INDEX IF NOT EXISTS idx_sso_configs_tenant ON sso_configs(tenant_id);
+
+  CREATE TABLE IF NOT EXISTS sso_states (
+    state TEXT PRIMARY KEY,
+    data TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE TABLE IF NOT EXISTS sso_users (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    tenant_id TEXT NOT NULL,
+    idp_sub TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    email TEXT,
+    name TEXT,
+    role TEXT NOT NULL DEFAULT 'viewer',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_login_at TIMESTAMPTZ,
+    UNIQUE(tenant_id, idp_sub)
+  );
+  CREATE INDEX IF NOT EXISTS idx_sso_users_tenant ON sso_users(tenant_id);
+
+  CREATE TABLE IF NOT EXISTS git_webhook_configs (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    tenant_id TEXT NOT NULL UNIQUE,
+    repo_url TEXT NOT NULL,
+    webhook_secret TEXT NOT NULL,
+    branch TEXT NOT NULL DEFAULT 'main',
+    policy_dir TEXT NOT NULL DEFAULT 'agentguard/policies',
+    github_token TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ
+  );
+  CREATE INDEX IF NOT EXISTS idx_git_webhook_tenant ON git_webhook_configs(tenant_id);
+
+  CREATE TABLE IF NOT EXISTS git_sync_logs (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    tenant_id TEXT NOT NULL,
+    commit_sha TEXT NOT NULL,
+    branch TEXT NOT NULL,
+    policies_updated INTEGER NOT NULL DEFAULT 0,
+    policies_skipped INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'success',
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  CREATE INDEX IF NOT EXISTS idx_git_sync_tenant ON git_sync_logs(tenant_id);
 
   -- SIEM Configurations
   CREATE TABLE IF NOT EXISTS siem_configs (
@@ -1668,21 +1730,48 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
     // ── SSO Configurations ─────────────────────────────────────────────────────
     async upsertSsoConfig(
       tenantId: string,
-      provider: SsoProvider,
-      domain: string,
-      clientId: string,
-      clientSecretEncrypted: string,
+      config: {
+        provider: SsoProvider;
+        protocol: SsoProtocol;
+        domain: string;
+        clientId: string;
+        clientSecretEncrypted: string;
+        discoveryUrl?: string | null;
+        redirectUri?: string | null;
+        scopes?: string | null;
+        forceSso?: boolean;
+        roleClaimName?: string | null;
+        adminGroup?: string | null;
+        memberGroup?: string | null;
+        idpMetadataXml?: string | null;
+        spEntityId?: string | null;
+      },
     ): Promise<SsoConfigRow> {
       const res = await pool.query<SsoConfigRow>(
-        `INSERT INTO sso_configs (tenant_id, provider, domain, client_id, client_secret_encrypted)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO sso_configs (
+           tenant_id, provider, protocol, domain, client_id, client_secret_encrypted,
+           discovery_url, redirect_uri, scopes, force_sso,
+           role_claim_name, admin_group, member_group, idp_metadata_xml, sp_entity_id, updated_at
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
          ON CONFLICT (tenant_id) DO UPDATE SET
-           provider = EXCLUDED.provider,
-           domain = EXCLUDED.domain,
-           client_id = EXCLUDED.client_id,
-           client_secret_encrypted = EXCLUDED.client_secret_encrypted
+           provider = EXCLUDED.provider, protocol = EXCLUDED.protocol,
+           domain = EXCLUDED.domain, client_id = EXCLUDED.client_id,
+           client_secret_encrypted = EXCLUDED.client_secret_encrypted,
+           discovery_url = EXCLUDED.discovery_url, redirect_uri = EXCLUDED.redirect_uri,
+           scopes = EXCLUDED.scopes, force_sso = EXCLUDED.force_sso,
+           role_claim_name = EXCLUDED.role_claim_name, admin_group = EXCLUDED.admin_group,
+           member_group = EXCLUDED.member_group, idp_metadata_xml = EXCLUDED.idp_metadata_xml,
+           sp_entity_id = EXCLUDED.sp_entity_id, updated_at = NOW()
          RETURNING *`,
-        [tenantId, provider, domain, clientId, clientSecretEncrypted]
+        [
+          tenantId, config.provider, config.protocol, config.domain,
+          config.clientId, config.clientSecretEncrypted,
+          config.discoveryUrl ?? null, config.redirectUri ?? null,
+          config.scopes ?? null, config.forceSso ? 1 : 0,
+          config.roleClaimName ?? null, config.adminGroup ?? null, config.memberGroup ?? null,
+          config.idpMetadataXml ?? null, config.spEntityId ?? null,
+        ]
       );
       return res.rows[0]!;
     },
@@ -1697,6 +1786,115 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
 
     async deleteSsoConfig(tenantId: string): Promise<void> {
       await pool.query('DELETE FROM sso_configs WHERE tenant_id = $1', [tenantId]);
+    },
+
+    // ── SSO State ─────────────────────────────────────────────────────────────
+    async storeSsoState(state: string, data: string, expiresAt: string): Promise<void> {
+      await pool.query(
+        `INSERT INTO sso_states (state, data, expires_at) VALUES ($1, $2, $3)
+         ON CONFLICT (state) DO UPDATE SET data = EXCLUDED.data, expires_at = EXCLUDED.expires_at`,
+        [state, data, expiresAt]
+      );
+    },
+
+    async getSsoState(state: string): Promise<{ data: string; expires_at: string } | undefined> {
+      const res = await pool.query<{ data: string; expires_at: string }>(
+        'SELECT data, expires_at FROM sso_states WHERE state = $1 AND expires_at > NOW()',
+        [state]
+      );
+      return res.rows[0];
+    },
+
+    async deleteSsoState(state: string): Promise<void> {
+      await pool.query('DELETE FROM sso_states WHERE state = $1', [state]);
+      await pool.query('DELETE FROM sso_states WHERE expires_at < NOW()');
+    },
+
+    // ── SSO Users ─────────────────────────────────────────────────────────────
+    async upsertSsoUser(
+      tenantId: string,
+      idpSub: string,
+      provider: SsoProvider,
+      email: string | null,
+      name: string | null,
+      role: string,
+    ): Promise<SsoUserRow> {
+      const res = await pool.query<SsoUserRow>(
+        `INSERT INTO sso_users (tenant_id, idp_sub, provider, email, name, role, last_login_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+         ON CONFLICT (tenant_id, idp_sub) DO UPDATE SET
+           email = EXCLUDED.email, name = EXCLUDED.name, role = EXCLUDED.role, last_login_at = NOW()
+         RETURNING *`,
+        [tenantId, idpSub, provider, email, name, role]
+      );
+      return res.rows[0]!;
+    },
+
+    async getSsoUser(tenantId: string, idpSub: string): Promise<SsoUserRow | undefined> {
+      const res = await pool.query<SsoUserRow>(
+        'SELECT * FROM sso_users WHERE tenant_id = $1 AND idp_sub = $2',
+        [tenantId, idpSub]
+      );
+      return res.rows[0];
+    },
+
+    // ── Git Webhook Config ────────────────────────────────────────────────────
+    async upsertGitWebhookConfig(
+      tenantId: string,
+      repoUrl: string,
+      webhookSecret: string,
+      branch: string,
+      policyDir: string,
+      githubToken: string | null,
+    ): Promise<GitWebhookConfigRow> {
+      const res = await pool.query<GitWebhookConfigRow>(
+        `INSERT INTO git_webhook_configs (tenant_id, repo_url, webhook_secret, branch, policy_dir, github_token, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+         ON CONFLICT (tenant_id) DO UPDATE SET
+           repo_url = EXCLUDED.repo_url, webhook_secret = EXCLUDED.webhook_secret,
+           branch = EXCLUDED.branch, policy_dir = EXCLUDED.policy_dir,
+           github_token = EXCLUDED.github_token, updated_at = NOW()
+         RETURNING *`,
+        [tenantId, repoUrl, webhookSecret, branch, policyDir, githubToken]
+      );
+      return res.rows[0]!;
+    },
+
+    async getGitWebhookConfig(tenantId: string): Promise<GitWebhookConfigRow | undefined> {
+      const res = await pool.query<GitWebhookConfigRow>(
+        'SELECT * FROM git_webhook_configs WHERE tenant_id = $1',
+        [tenantId]
+      );
+      return res.rows[0];
+    },
+
+    async deleteGitWebhookConfig(tenantId: string): Promise<void> {
+      await pool.query('DELETE FROM git_webhook_configs WHERE tenant_id = $1', [tenantId]);
+    },
+
+    async insertGitSyncLog(
+      tenantId: string,
+      commitSha: string,
+      branch: string,
+      policiesUpdated: number,
+      policiesSkipped: number,
+      status: 'success' | 'error',
+      errorMessage: string | null,
+    ): Promise<GitSyncLogRow> {
+      const res = await pool.query<GitSyncLogRow>(
+        `INSERT INTO git_sync_logs (tenant_id, commit_sha, branch, policies_updated, policies_skipped, status, error_message)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [tenantId, commitSha, branch, policiesUpdated, policiesSkipped, status, errorMessage]
+      );
+      return res.rows[0]!;
+    },
+
+    async listGitSyncLogs(tenantId: string, limit = 50): Promise<GitSyncLogRow[]> {
+      const res = await pool.query<GitSyncLogRow>(
+        'SELECT * FROM git_sync_logs WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2',
+        [tenantId, limit]
+      );
+      return res.rows;
     },
 
     // ── SIEM Configurations ────────────────────────────────────────────────────

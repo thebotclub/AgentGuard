@@ -170,16 +170,73 @@ export interface IntegrationRow {
   created_at: string;
 }
 
-export type SsoProvider = 'auth0' | 'okta' | 'azure_ad';
+export type SsoProvider = 'auth0' | 'okta' | 'azure_ad' | 'google' | 'saml' | 'oidc';
+export type SsoProtocol = 'oidc' | 'saml';
 
 export interface SsoConfigRow {
   id: string;
   tenant_id: string;
   provider: SsoProvider;
+  protocol: SsoProtocol;
   domain: string;
   client_id: string;
   /** AES-GCM encrypted client secret — never returned raw to callers */
   client_secret_encrypted: string;
+  /** OIDC discovery URL (.well-known/openid-configuration) */
+  discovery_url: string | null;
+  /** OAuth redirect / ACS callback URI */
+  redirect_uri: string | null;
+  /** Space-separated OIDC scopes */
+  scopes: string | null;
+  /** Force SSO — disable password login for this tenant */
+  force_sso: number;
+  /** OIDC claim name that contains roles/groups */
+  role_claim_name: string | null;
+  /** Group name that maps to 'admin' role */
+  admin_group: string | null;
+  /** Group name that maps to 'member' role */
+  member_group: string | null;
+  /** SAML IdP metadata XML (for SAML protocol) */
+  idp_metadata_xml: string | null;
+  /** SAML SP entity ID */
+  sp_entity_id: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface SsoUserRow {
+  id: string;
+  tenant_id: string;
+  idp_sub: string;
+  provider: SsoProvider;
+  email: string | null;
+  name: string | null;
+  role: string;
+  created_at: string;
+  last_login_at: string | null;
+}
+
+export interface GitWebhookConfigRow {
+  id: string;
+  tenant_id: string;
+  repo_url: string;
+  webhook_secret: string;
+  branch: string;
+  policy_dir: string;
+  github_token: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface GitSyncLogRow {
+  id: string;
+  tenant_id: string;
+  commit_sha: string;
+  branch: string;
+  policies_updated: number;
+  policies_skipped: number;
+  status: string;
+  error_message: string | null;
   created_at: string;
 }
 
@@ -560,13 +617,63 @@ export interface IDatabase {
   // ── SSO Configurations ────────────────────────────────────────────────────
   upsertSsoConfig(
     tenantId: string,
-    provider: SsoProvider,
-    domain: string,
-    clientId: string,
-    clientSecretEncrypted: string,
+    config: {
+      provider: SsoProvider;
+      protocol: SsoProtocol;
+      domain: string;
+      clientId: string;
+      clientSecretEncrypted: string;
+      discoveryUrl?: string | null;
+      redirectUri?: string | null;
+      scopes?: string | null;
+      forceSso?: boolean;
+      roleClaimName?: string | null;
+      adminGroup?: string | null;
+      memberGroup?: string | null;
+      idpMetadataXml?: string | null;
+      spEntityId?: string | null;
+    },
   ): Promise<SsoConfigRow>;
   getSsoConfig(tenantId: string): Promise<SsoConfigRow | undefined>;
   deleteSsoConfig(tenantId: string): Promise<void>;
+
+  // ── SSO State (PKCE/nonce for OAuth flows) ────────────────────────────────
+  storeSsoState(state: string, data: string, expiresAt: string): Promise<void>;
+  getSsoState(state: string): Promise<{ data: string; expires_at: string } | undefined>;
+  deleteSsoState(state: string): Promise<void>;
+
+  // ── SSO User Accounts (provisioned from IdP) ──────────────────────────────
+  upsertSsoUser(
+    tenantId: string,
+    idpSub: string,
+    provider: SsoProvider,
+    email: string | null,
+    name: string | null,
+    role: string,
+  ): Promise<SsoUserRow>;
+  getSsoUser(tenantId: string, idpSub: string): Promise<SsoUserRow | undefined>;
+
+  // ── Git Webhook Config ────────────────────────────────────────────────────
+  upsertGitWebhookConfig(
+    tenantId: string,
+    repoUrl: string,
+    webhookSecret: string,
+    branch: string,
+    policyDir: string,
+    githubToken: string | null,
+  ): Promise<GitWebhookConfigRow>;
+  getGitWebhookConfig(tenantId: string): Promise<GitWebhookConfigRow | undefined>;
+  deleteGitWebhookConfig(tenantId: string): Promise<void>;
+  insertGitSyncLog(
+    tenantId: string,
+    commitSha: string,
+    branch: string,
+    policiesUpdated: number,
+    policiesSkipped: number,
+    status: 'success' | 'error',
+    errorMessage: string | null,
+  ): Promise<GitSyncLogRow>;
+  listGitSyncLogs(tenantId: string, limit?: number): Promise<GitSyncLogRow[]>;
 
   // ── SIEM Configurations ───────────────────────────────────────────────────
   upsertSiemConfig(
