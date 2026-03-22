@@ -1,0 +1,49 @@
+---
+# API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "agentguard.fullname" . }}-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+  {{- with .Values.service.api.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.api.type }}
+  ports:
+    - port: {{ .Values.service.api.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "agentguard.api.selectorLabels" . | nindent 4 }}
+
+{{- if .Values.dashboard.enabled }}
+---
+# Dashboard Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "agentguard.fullname" . }}-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dashboard
+  {{- with .Values.service.dashboard.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.dashboard.type }}
+  ports:
+    - port: {{ .Values.service.dashboard.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "agentguard.dashboard.selectorLabels" . | nindent 4 }}
+{{- end }}

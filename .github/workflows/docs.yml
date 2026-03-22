@@ -1,0 +1,41 @@
+name: Docs Build
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths:
+      - 'vitepress-docs/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [main, master, develop]
+    paths:
+      - 'vitepress-docs/**'
+      - '.github/workflows/docs.yml'
+
+jobs:
+  build-docs:
+    name: Build VitePress Docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --include=dev
+
+      - name: Build docs
+        run: npm run docs:build
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitepress-dist
+          path: vitepress-docs/.vitepress/dist
+          retention-days: 7

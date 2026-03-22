@@ -1,0 +1,231 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agentguard.fullname" . }}-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+  annotations:
+    # Force pod restart when config or secrets change
+    checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+spec:
+  {{- if not .Values.api.autoscaling.enabled }}
+  replicas: {{ .Values.api.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "agentguard.api.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0   # Never reduce below desired — zero-downtime rollout
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.api.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "agentguard.api.selectorLabels" . | nindent 8 }}
+        {{- with .Values.api.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.api.terminationGracePeriodSeconds }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "agentguard.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
+      containers:
+        - name: api
+          securityContext:
+            {{- toYaml .Values.api.securityContext | nindent 12 }}
+          image: {{ include "agentguard.api.image" . }}
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.api.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.port }}
+              protocol: TCP
+          env:
+            # ── ConfigMap values ────────────────────────────────────────────
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "agentguard.configMapName" . }}
+                  key: PORT
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "agentguard.configMapName" . }}
+                  key: NODE_ENV
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "agentguard.configMapName" . }}
+                  key: LOG_LEVEL
+            - name: DB_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "agentguard.configMapName" . }}
+                  key: DB_TYPE
+            # ── Database ────────────────────────────────────────────────────
+            {{- if .Values.postgresql.enabled }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgresql
+                  key: password
+            - name: DATABASE_URL
+              value: {{ include "agentguard.databaseUrl" . | quote }}
+            {{- else }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: database-url
+            {{- end }}
+            # ── Redis ───────────────────────────────────────────────────────
+            {{- if .Values.redis.enabled }}
+            {{- if .Values.redis.auth.enabled }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-redis
+                  key: redis-password
+            {{- end }}
+            - name: REDIS_URL
+              value: {{ include "agentguard.redisUrl" . | quote }}
+            {{- else if .Values.secrets.redisSentinels }}
+            - name: REDIS_SENTINELS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: redis-sentinels
+            - name: REDIS_SENTINEL_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "agentguard.configMapName" . }}
+                  key: REDIS_SENTINEL_NAME
+                  optional: true
+            {{- if .Values.secrets.redisPassword }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: redis-password
+                  optional: true
+            {{- end }}
+            {{- if .Values.secrets.redisSentinelPassword }}
+            - name: REDIS_SENTINEL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: redis-sentinel-password
+                  optional: true
+            {{- end }}
+            {{- else }}
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: redis-url
+                  optional: true
+            {{- end }}
+            # ── App secrets ─────────────────────────────────────────────────
+            - name: AGENTGUARD_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: license-key
+                  optional: true
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: api-key
+                  optional: true
+            - name: ADMIN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: admin-key
+                  optional: true
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: jwt-secret
+                  optional: true
+            - name: STRIPE_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: stripe-webhook-secret
+                  optional: true
+            - name: SLACK_SIGNING_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: slack-signing-secret
+                  optional: true
+            # ── Extra env vars ──────────────────────────────────────────────
+            {{- range $key, $value := .Values.api.extraEnv }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- with .Values.api.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          # ── Probes ─────────────────────────────────────────────────────────
+          # /healthz — liveness (process alive, no external deps)
+          # /readyz  — readiness (DB + Redis + migrations)
+          livenessProbe:
+            {{- toYaml .Values.api.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.api.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.api.startupProbe | nindent 12 }}
+          # ── Lifecycle ──────────────────────────────────────────────────────
+          lifecycle:
+            preStop:
+              exec:
+                # Allow load balancer to drain connections before SIGTERM
+                command: ["/bin/sleep", "5"]
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "agentguard.fullname" . }}-data
+      {{- end }}
+      {{- with .Values.api.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
