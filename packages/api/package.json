@@ -17,6 +17,9 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
+    "db:partition:migrate": "psql $DATABASE_URL -f prisma/partition-audit-events.sql",
+    "db:partition:maintain": "tsx scripts/partition-maintenance.ts",
+    "db:partition:maintain:dry": "tsx scripts/partition-maintenance.ts --dry-run",
     "clean": "rm -rf dist"
   },
   "dependencies": {
