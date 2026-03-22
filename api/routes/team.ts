@@ -75,7 +75,7 @@ export function createTeamRoutes(db: IDatabase, auth: AuthMiddleware): Router {
     async (req: Request, res: Response) => {
       try {
         const tenantId = req.tenantId!;
-        const { userId } = req.params;
+        const userId = req.params.userId as string;
         await db.removeTeamMember(tenantId, userId);
         res.json({ success: true });
       } catch (e) {
@@ -98,7 +98,7 @@ export function createTeamRoutes(db: IDatabase, auth: AuthMiddleware): Router {
 
       try {
         const tenantId = req.tenantId!;
-        const { userId } = req.params;
+        const userId = req.params.userId as string;
         const { role } = parsed.data;
         await db.updateTeamMemberRole(tenantId, userId, role);
         res.json({ success: true, role });

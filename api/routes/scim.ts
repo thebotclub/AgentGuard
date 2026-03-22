@@ -313,9 +313,10 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
 
   router.delete('/api/scim/v2/tokens/:id', auth.requireTenantAuth, async (req: Request, res: Response) => {
     const tenantId = req.tenantId!;
+    const id = req.params.id as string;
     try {
-      await db.revokeScimToken(req.params.id, tenantId);
-      await auditScim(db, tenantId, 'revoke', 'token', req.params.id, 'success');
+      await db.revokeScimToken(id, tenantId);
+      await auditScim(db, tenantId, 'revoke', 'token', id, 'success');
       res.status(204).send();
     } catch (err) {
       logger.error({ err }, '[SCIM] revokeToken error');
@@ -352,10 +353,11 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   // GET /Users/:id
   router.get('/api/scim/v2/Users/:id', scimAuth, async (req: Request, res: Response) => {
     const tenantId = req.tenantId!;
+    const id = req.params.id as string;
     try {
-      const user = await db.getScimUser(req.params.id, tenantId);
+      const user = await db.getScimUser(id, tenantId);
       if (!user || user.deleted_at) {
-        return scimError(res, 404, `User ${req.params.id} not found`);
+        return scimError(res, 404, `User ${id} not found`);
       }
       res.type(SCIM_CONTENT_TYPE).json(formatUser(user, getBaseUrl(req)));
     } catch (err) {
@@ -416,11 +418,12 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   // PUT /Users/:id — replace (full update)
   router.put('/api/scim/v2/Users/:id', scimAuth, async (req: Request, res: Response) => {
     const tenantId = req.tenantId!;
+    const id = req.params.id as string;
     const body = req.body;
 
-    const existing = await db.getScimUser(req.params.id, tenantId);
+    const existing = await db.getScimUser(id, tenantId);
     if (!existing || existing.deleted_at) {
-      return scimError(res, 404, `User ${req.params.id} not found`);
+      return scimError(res, 404, `User ${id} not found`);
     }
 
     const email = Array.isArray(body.emails) ? body.emails[0]?.value : body.emails;
@@ -431,7 +434,7 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
     const role = enterpriseExt?.organization ?? existing.role;
 
     try {
-      const updated = await db.updateScimUser(req.params.id, tenantId, {
+      const updated = await db.updateScimUser(id, tenantId, {
         external_id: body.externalId ?? null,
         user_name: body.userName ?? existing.user_name,
         display_name: displayName ?? null,
@@ -442,8 +445,8 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
         role,
       });
 
-      if (!updated) return scimError(res, 404, `User ${req.params.id} not found`);
-      await auditScim(db, tenantId, 'replace', 'user', req.params.id, 'success');
+      if (!updated) return scimError(res, 404, `User ${id} not found`);
+      await auditScim(db, tenantId, 'replace', 'user', id, 'success');
 
       res.type(SCIM_CONTENT_TYPE).json(formatUser(updated, getBaseUrl(req)));
     } catch (err) {
@@ -455,6 +458,7 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   // PATCH /Users/:id — partial update (SCIM Patch Operations)
   router.patch('/api/scim/v2/Users/:id', scimAuth, async (req: Request, res: Response) => {
     const tenantId = req.tenantId!;
+    const id = req.params.id as string;
     const body = req.body;
 
     // Validate PatchOp schema
@@ -462,9 +466,9 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
       return scimError(res, 400, 'Missing PatchOp schema', 'invalidValue');
     }
 
-    const existing = await db.getScimUser(req.params.id, tenantId);
+    const existing = await db.getScimUser(id, tenantId);
     if (!existing || existing.deleted_at) {
-      return scimError(res, 404, `User ${req.params.id} not found`);
+      return scimError(res, 404, `User ${id} not found`);
     }
 
     const updates: Partial<ScimUserRow> = {};
@@ -510,10 +514,10 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
         }
       }
 
-      const updated = await db.updateScimUser(req.params.id, tenantId, updates);
-      if (!updated) return scimError(res, 404, `User ${req.params.id} not found`);
+      const updated = await db.updateScimUser(id, tenantId, updates);
+      if (!updated) return scimError(res, 404, `User ${id} not found`);
 
-      await auditScim(db, tenantId, 'patch', 'user', req.params.id, 'success');
+      await auditScim(db, tenantId, 'patch', 'user', id, 'success');
       res.type(SCIM_CONTENT_TYPE).json(formatUser(updated, getBaseUrl(req)));
     } catch (err) {
       logger.error({ err }, '[SCIM] patchUser error');
@@ -524,13 +528,14 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   // DELETE /Users/:id — deprovision (soft delete)
   router.delete('/api/scim/v2/Users/:id', scimAuth, async (req: Request, res: Response) => {
     const tenantId = req.tenantId!;
+    const id = req.params.id as string;
     try {
-      const existing = await db.getScimUser(req.params.id, tenantId);
+      const existing = await db.getScimUser(id, tenantId);
       if (!existing || existing.deleted_at) {
-        return scimError(res, 404, `User ${req.params.id} not found`);
+        return scimError(res, 404, `User ${id} not found`);
       }
-      await db.deleteScimUser(req.params.id, tenantId);
-      await auditScim(db, tenantId, 'delete', 'user', req.params.id, 'success', `Deprovisioned user ${existing.user_name}`);
+      await db.deleteScimUser(id, tenantId);
+      await auditScim(db, tenantId, 'delete', 'user', id, 'success', `Deprovisioned user ${existing.user_name}`);
       res.status(204).send();
     } catch (err) {
       logger.error({ err }, '[SCIM] deleteUser error');
@@ -572,11 +577,12 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   // GET /Groups/:id
   router.get('/api/scim/v2/Groups/:id', scimAuth, async (req: Request, res: Response) => {
     const tenantId = req.tenantId!;
+    const id = req.params.id as string;
     try {
-      const group = await db.getScimGroup(req.params.id, tenantId);
-      if (!group) return scimError(res, 404, `Group ${req.params.id} not found`);
+      const group = await db.getScimGroup(id, tenantId);
+      if (!group) return scimError(res, 404, `Group ${id} not found`);
 
-      const members = await db.getScimGroupMembers(req.params.id, tenantId);
+      const members = await db.getScimGroupMembers(id, tenantId);
       res.type(SCIM_CONTENT_TYPE).json(
         await formatGroup(group, members, db, getBaseUrl(req), tenantId)
       );
@@ -625,14 +631,15 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   // PATCH /Groups/:id — update membership
   router.patch('/api/scim/v2/Groups/:id', scimAuth, async (req: Request, res: Response) => {
     const tenantId = req.tenantId!;
+    const id = req.params.id as string;
     const body = req.body;
 
     if (!body?.schemas?.includes(SCIM_SCHEMAS.PATCH_OP)) {
       return scimError(res, 400, 'Missing PatchOp schema', 'invalidValue');
     }
 
-    const group = await db.getScimGroup(req.params.id, tenantId);
-    if (!group) return scimError(res, 404, `Group ${req.params.id} not found`);
+    const group = await db.getScimGroup(id, tenantId);
+    if (!group) return scimError(res, 404, `Group ${id} not found`);
 
     try {
       let updatedName = group.display_name;
@@ -647,13 +654,13 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           if (path === 'members' || (!path && Array.isArray(value?.members))) {
             const memberList = path === 'members' ? (Array.isArray(value) ? value : []) : value.members;
             const userIds = memberList.map((m: { value: string }) => m.value).filter(Boolean);
-            await db.replaceScimGroupMembers(req.params.id, tenantId, userIds);
+            await db.replaceScimGroupMembers(id, tenantId, userIds);
           }
         } else if (opType === 'add' || opType === 'Add') {
           if (path === 'members') {
             const members = Array.isArray(value) ? value : [value];
             for (const m of members) {
-              if (m?.value) await db.addScimGroupMember(req.params.id, m.value, tenantId);
+              if (m?.value) await db.addScimGroupMember(id, m.value, tenantId);
             }
           }
         } else if (opType === 'remove' || opType === 'Remove') {
@@ -661,10 +668,10 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
             // path can be: members, members[value eq "userId"]
             const filterMatch = path.match(/members\[value eq "([^"]+)"\]/);
             if (filterMatch) {
-              await db.removeScimGroupMember(req.params.id, filterMatch[1], tenantId);
+              await db.removeScimGroupMember(id, filterMatch[1], tenantId);
             } else if (Array.isArray(value)) {
               for (const m of value) {
-                if (m?.value) await db.removeScimGroupMember(req.params.id, m.value, tenantId);
+                if (m?.value) await db.removeScimGroupMember(id, m.value, tenantId);
               }
             }
           }
@@ -672,13 +679,13 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
       }
 
       if (updatedName !== group.display_name) {
-        await db.updateScimGroup(req.params.id, tenantId, updatedName);
+        await db.updateScimGroup(id, tenantId, updatedName);
       }
 
-      await auditScim(db, tenantId, 'patch', 'group', req.params.id, 'success');
+      await auditScim(db, tenantId, 'patch', 'group', id, 'success');
 
-      const updatedGroup = await db.getScimGroup(req.params.id, tenantId);
-      const members = await db.getScimGroupMembers(req.params.id, tenantId);
+      const updatedGroup = await db.getScimGroup(id, tenantId);
+      const members = await db.getScimGroupMembers(id, tenantId);
 
       res.type(SCIM_CONTENT_TYPE).json(
         await formatGroup(updatedGroup ?? group, members, db, getBaseUrl(req), tenantId)
@@ -692,11 +699,12 @@ export function createScimRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   // DELETE /Groups/:id
   router.delete('/api/scim/v2/Groups/:id', scimAuth, async (req: Request, res: Response) => {
     const tenantId = req.tenantId!;
+    const id = req.params.id as string;
     try {
-      const group = await db.getScimGroup(req.params.id, tenantId);
-      if (!group) return scimError(res, 404, `Group ${req.params.id} not found`);
-      await db.deleteScimGroup(req.params.id, tenantId);
-      await auditScim(db, tenantId, 'delete', 'group', req.params.id, 'success');
+      const group = await db.getScimGroup(id, tenantId);
+      if (!group) return scimError(res, 404, `Group ${id} not found`);
+      await db.deleteScimGroup(id, tenantId);
+      await auditScim(db, tenantId, 'delete', 'group', id, 'success');
       res.status(204).send();
     } catch (err) {
       logger.error({ err }, '[SCIM] deleteGroup error');
