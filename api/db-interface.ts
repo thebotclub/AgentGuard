@@ -405,6 +405,48 @@ export interface JobRow {
   completed_at: string | null;
 }
 
+// ── SCIM Row Types ────────────────────────────────────────────────────────
+
+export interface ScimTokenRow {
+  id: string;
+  tenant_id: string;
+  token_hash: string;
+  label: string;
+  active: number;
+  created_at: string;
+  last_used_at: string | null;
+}
+
+export interface ScimUserRow {
+  id: string;
+  tenant_id: string;
+  external_id: string | null;
+  user_name: string;
+  display_name: string | null;
+  given_name: string | null;
+  family_name: string | null;
+  email: string | null;
+  active: number;
+  role: string;
+  created_at: string;
+  updated_at: string | null;
+  deleted_at: string | null;
+}
+
+export interface ScimGroupRow {
+  id: string;
+  tenant_id: string;
+  display_name: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ScimGroupMemberRow {
+  group_id: string;
+  user_id: string;
+  tenant_id: string;
+}
+
 // ── Database Interface ─────────────────────────────────────────────────────
 
 export interface IDatabase {
@@ -741,4 +783,30 @@ export interface IDatabase {
   claimPendingJob(): Promise<JobRow | undefined>;
   completeJob(jobId: string, result: string): Promise<void>;
   failJob(jobId: string, error: string): Promise<void>;
+
+  // ── SCIM Tokens ───────────────────────────────────────────────────────────
+  createScimToken(tenantId: string, tokenHash: string, label: string): Promise<ScimTokenRow>;
+  getScimTokenByHash(tokenHash: string): Promise<ScimTokenRow | undefined>;
+  listScimTokens(tenantId: string): Promise<ScimTokenRow[]>;
+  revokeScimToken(id: string, tenantId: string): Promise<void>;
+  touchScimToken(id: string): Promise<void>;
+
+  // ── SCIM Users ────────────────────────────────────────────────────────────
+  createScimUser(tenantId: string, user: Omit<ScimUserRow, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'tenant_id'>): Promise<ScimUserRow>;
+  getScimUser(id: string, tenantId: string): Promise<ScimUserRow | undefined>;
+  getScimUserByUserName(tenantId: string, userName: string): Promise<ScimUserRow | undefined>;
+  listScimUsers(tenantId: string, opts?: { filter?: string; startIndex?: number; count?: number }): Promise<{ users: ScimUserRow[]; total: number }>;
+  updateScimUser(id: string, tenantId: string, updates: Partial<ScimUserRow>): Promise<ScimUserRow | undefined>;
+  deleteScimUser(id: string, tenantId: string): Promise<void>;
+
+  // ── SCIM Groups ───────────────────────────────────────────────────────────
+  createScimGroup(tenantId: string, displayName: string): Promise<ScimGroupRow>;
+  getScimGroup(id: string, tenantId: string): Promise<ScimGroupRow | undefined>;
+  listScimGroups(tenantId: string, opts?: { startIndex?: number; count?: number }): Promise<{ groups: ScimGroupRow[]; total: number }>;
+  updateScimGroup(id: string, tenantId: string, displayName: string): Promise<ScimGroupRow | undefined>;
+  deleteScimGroup(id: string, tenantId: string): Promise<void>;
+  getScimGroupMembers(groupId: string, tenantId: string): Promise<ScimGroupMemberRow[]>;
+  addScimGroupMember(groupId: string, userId: string, tenantId: string): Promise<void>;
+  removeScimGroupMember(groupId: string, userId: string, tenantId: string): Promise<void>;
+  replaceScimGroupMembers(groupId: string, tenantId: string, userIds: string[]): Promise<void>;
 }

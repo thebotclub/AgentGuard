@@ -39,6 +39,10 @@ import type {
   JobRow,
   GitWebhookConfigRow,
   GitSyncLogRow,
+  ScimTokenRow,
+  ScimUserRow,
+  ScimGroupRow,
+  ScimGroupMemberRow,
 } from './db-interface.js';
 import { randomUUID } from 'crypto';
 import crypto from 'crypto';
@@ -451,6 +455,58 @@ const SCHEMA_SQL = `
   );
   CREATE INDEX IF NOT EXISTS idx_jobs_tenant ON evaluation_jobs(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_jobs_status ON evaluation_jobs(status);
+
+  -- Wave 9: SCIM 2.0 provisioning tables
+  CREATE TABLE IF NOT EXISTS scim_tokens (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    tenant_id TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    label TEXT NOT NULL DEFAULT 'default',
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    last_used_at TIMESTAMPTZ
+  );
+  CREATE INDEX IF NOT EXISTS idx_scim_tokens_tenant ON scim_tokens(tenant_id);
+
+  CREATE TABLE IF NOT EXISTS scim_users (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    tenant_id TEXT NOT NULL,
+    external_id TEXT,
+    user_name TEXT NOT NULL,
+    display_name TEXT,
+    given_name TEXT,
+    family_name TEXT,
+    email TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
+    role TEXT NOT NULL DEFAULT 'member',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+    deleted_at TIMESTAMPTZ,
+    UNIQUE(tenant_id, user_name)
+  );
+  CREATE INDEX IF NOT EXISTS idx_scim_users_tenant ON scim_users(tenant_id);
+  CREATE INDEX IF NOT EXISTS idx_scim_users_external ON scim_users(tenant_id, external_id);
+
+  CREATE TABLE IF NOT EXISTS scim_groups (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    tenant_id TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+    UNIQUE(tenant_id, display_name)
+  );
+  CREATE INDEX IF NOT EXISTS idx_scim_groups_tenant ON scim_groups(tenant_id);
+
+  CREATE TABLE IF NOT EXISTS scim_group_members (
+    group_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    tenant_id TEXT NOT NULL,
+    PRIMARY KEY (group_id, user_id),
+    FOREIGN KEY (group_id) REFERENCES scim_groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES scim_users(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_scim_group_members_group ON scim_group_members(group_id);
+  CREATE INDEX IF NOT EXISTS idx_scim_group_members_user ON scim_group_members(user_id);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -2261,6 +2317,177 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         "UPDATE evaluation_jobs SET status = 'failed', error = $1, completed_at = NOW() WHERE id = $2",
         [error, jobId]
       );
+    },
+
+    // ── SCIM Tokens (Wave 9) ──────────────────────────────────────────────
+    async createScimToken(tenantId: string, tokenHash: string, label: string): Promise<ScimTokenRow> {
+      const id = crypto.randomUUID();
+      const res = await pool.query(
+        'INSERT INTO scim_tokens (id, tenant_id, token_hash, label) VALUES ($1, $2, $3, $4) RETURNING *',
+        [id, tenantId, tokenHash, label]
+      );
+      return res.rows[0] as ScimTokenRow;
+    },
+
+    async getScimTokenByHash(tokenHash: string): Promise<ScimTokenRow | undefined> {
+      const res = await pool.query('SELECT * FROM scim_tokens WHERE token_hash = $1 AND active = 1', [tokenHash]);
+      return res.rows[0] as ScimTokenRow | undefined;
+    },
+
+    async listScimTokens(tenantId: string): Promise<ScimTokenRow[]> {
+      const res = await pool.query('SELECT * FROM scim_tokens WHERE tenant_id = $1 ORDER BY created_at DESC', [tenantId]);
+      return res.rows as ScimTokenRow[];
+    },
+
+    async revokeScimToken(id: string, tenantId: string): Promise<void> {
+      await pool.query('UPDATE scim_tokens SET active = 0 WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    },
+
+    async touchScimToken(id: string): Promise<void> {
+      await pool.query('UPDATE scim_tokens SET last_used_at = NOW() WHERE id = $1', [id]);
+    },
+
+    // ── SCIM Users (Wave 9) ───────────────────────────────────────────────
+    async createScimUser(tenantId: string, user: Omit<ScimUserRow, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'tenant_id'>): Promise<ScimUserRow> {
+      const id = crypto.randomUUID();
+      const res = await pool.query(
+        `INSERT INTO scim_users (id, tenant_id, external_id, user_name, display_name, given_name, family_name, email, active, role)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        [id, tenantId, user.external_id ?? null, user.user_name, user.display_name ?? null,
+         user.given_name ?? null, user.family_name ?? null, user.email ?? null,
+         user.active ?? 1, user.role ?? 'member']
+      );
+      return res.rows[0] as ScimUserRow;
+    },
+
+    async getScimUser(id: string, tenantId: string): Promise<ScimUserRow | undefined> {
+      const res = await pool.query('SELECT * FROM scim_users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+      return res.rows[0] as ScimUserRow | undefined;
+    },
+
+    async getScimUserByUserName(tenantId: string, userName: string): Promise<ScimUserRow | undefined> {
+      const res = await pool.query('SELECT * FROM scim_users WHERE tenant_id = $1 AND user_name = $2', [tenantId, userName]);
+      return res.rows[0] as ScimUserRow | undefined;
+    },
+
+    async listScimUsers(tenantId: string, opts: { filter?: string; startIndex?: number; count?: number } = {}): Promise<{ users: ScimUserRow[]; total: number }> {
+      const { startIndex = 1, count = 100 } = opts;
+      const offset = Math.max(0, startIndex - 1);
+      let where = 'tenant_id = $1 AND deleted_at IS NULL';
+      const params: unknown[] = [tenantId];
+
+      if (opts.filter) {
+        const m = opts.filter.match(/^userName\s+eq\s+"([^"]+)"$/i);
+        if (m) { where += ` AND user_name = $${params.length + 1}`; params.push(m[1]); }
+      }
+
+      const countRes = await pool.query(`SELECT COUNT(*) AS c FROM scim_users WHERE ${where}`, params);
+      const total = parseInt(countRes.rows[0]?.c ?? '0', 10);
+      const listRes = await pool.query(
+        `SELECT * FROM scim_users WHERE ${where} ORDER BY created_at ASC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+        [...params, count, offset]
+      );
+      return { users: listRes.rows as ScimUserRow[], total };
+    },
+
+    async updateScimUser(id: string, tenantId: string, updates: Partial<ScimUserRow>): Promise<ScimUserRow | undefined> {
+      const fields: string[] = [];
+      const vals: unknown[] = [];
+      const allowed = ['external_id','user_name','display_name','given_name','family_name','email','active','role'] as const;
+      for (const k of allowed) {
+        if (k in updates) { fields.push(`${k} = $${vals.length + 1}`); vals.push((updates as Record<string,unknown>)[k]); }
+      }
+      if (fields.length === 0) return this.getScimUser(id, tenantId);
+      fields.push(`updated_at = NOW()`);
+      vals.push(id, tenantId);
+      const res = await pool.query(
+        `UPDATE scim_users SET ${fields.join(', ')} WHERE id = $${vals.length - 1} AND tenant_id = $${vals.length} RETURNING *`,
+        vals
+      );
+      return res.rows[0] as ScimUserRow | undefined;
+    },
+
+    async deleteScimUser(id: string, tenantId: string): Promise<void> {
+      await pool.query(
+        'UPDATE scim_users SET deleted_at = NOW(), active = 0, updated_at = NOW() WHERE id = $1 AND tenant_id = $2',
+        [id, tenantId]
+      );
+    },
+
+    // ── SCIM Groups (Wave 9) ──────────────────────────────────────────────
+    async createScimGroup(tenantId: string, displayName: string): Promise<ScimGroupRow> {
+      const id = crypto.randomUUID();
+      const res = await pool.query(
+        'INSERT INTO scim_groups (id, tenant_id, display_name) VALUES ($1, $2, $3) RETURNING *',
+        [id, tenantId, displayName]
+      );
+      return res.rows[0] as ScimGroupRow;
+    },
+
+    async getScimGroup(id: string, tenantId: string): Promise<ScimGroupRow | undefined> {
+      const res = await pool.query('SELECT * FROM scim_groups WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+      return res.rows[0] as ScimGroupRow | undefined;
+    },
+
+    async listScimGroups(tenantId: string, opts: { startIndex?: number; count?: number } = {}): Promise<{ groups: ScimGroupRow[]; total: number }> {
+      const { startIndex = 1, count = 100 } = opts;
+      const offset = Math.max(0, startIndex - 1);
+      const countRes = await pool.query('SELECT COUNT(*) AS c FROM scim_groups WHERE tenant_id = $1', [tenantId]);
+      const total = parseInt(countRes.rows[0]?.c ?? '0', 10);
+      const listRes = await pool.query(
+        'SELECT * FROM scim_groups WHERE tenant_id = $1 ORDER BY created_at ASC LIMIT $2 OFFSET $3',
+        [tenantId, count, offset]
+      );
+      return { groups: listRes.rows as ScimGroupRow[], total };
+    },
+
+    async updateScimGroup(id: string, tenantId: string, displayName: string): Promise<ScimGroupRow | undefined> {
+      const res = await pool.query(
+        'UPDATE scim_groups SET display_name = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3 RETURNING *',
+        [displayName, id, tenantId]
+      );
+      return res.rows[0] as ScimGroupRow | undefined;
+    },
+
+    async deleteScimGroup(id: string, tenantId: string): Promise<void> {
+      await pool.query('DELETE FROM scim_group_members WHERE group_id = $1 AND tenant_id = $2', [id, tenantId]);
+      await pool.query('DELETE FROM scim_groups WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    },
+
+    async getScimGroupMembers(groupId: string, tenantId: string): Promise<ScimGroupMemberRow[]> {
+      const res = await pool.query('SELECT * FROM scim_group_members WHERE group_id = $1 AND tenant_id = $2', [groupId, tenantId]);
+      return res.rows as ScimGroupMemberRow[];
+    },
+
+    async addScimGroupMember(groupId: string, userId: string, tenantId: string): Promise<void> {
+      await pool.query(
+        'INSERT INTO scim_group_members (group_id, user_id, tenant_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+        [groupId, userId, tenantId]
+      );
+    },
+
+    async removeScimGroupMember(groupId: string, userId: string, tenantId: string): Promise<void> {
+      await pool.query('DELETE FROM scim_group_members WHERE group_id = $1 AND user_id = $2 AND tenant_id = $3', [groupId, userId, tenantId]);
+    },
+
+    async replaceScimGroupMembers(groupId: string, tenantId: string, userIds: string[]): Promise<void> {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query('DELETE FROM scim_group_members WHERE group_id = $1 AND tenant_id = $2', [groupId, tenantId]);
+        for (const userId of userIds) {
+          await client.query(
+            'INSERT INTO scim_group_members (group_id, user_id, tenant_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+            [groupId, userId, tenantId]
+          );
+        }
+        await client.query('COMMIT');
+      } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+      } finally {
+        client.release();
+      }
     },
   };
 

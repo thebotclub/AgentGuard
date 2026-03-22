@@ -46,6 +46,7 @@ import { createAgentHierarchyRoutes } from './routes/agent-hierarchy.js';
 import { createSsoRoutes } from './routes/sso.js';
 import { createPolicyGitWebhookRoutes } from './routes/policy-git-webhook.js';
 import { createSiemRoutes } from './routes/siem.js';
+import { createScimRoutes } from './routes/scim.js';
 import { getSiemForwarder } from './lib/siem-forwarder.js';
 import { createHealthRoutes } from './routes/health.js';
 import { createHealthProbeRoutes } from './routes/health-probes.js';
@@ -610,6 +611,7 @@ async function main(): Promise<void> {
 
   // ── SIEM Export ───────────────────────────────────────────────────────
   app.use(createSiemRoutes(db, auth));
+  app.use(createScimRoutes(db, auth));
 
   // ── Start SIEM Forwarder ──────────────────────────────────────────────
   getSiemForwarder(db);
