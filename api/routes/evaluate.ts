@@ -25,6 +25,7 @@ import { HeuristicDetectionPlugin } from '../lib/detection/heuristic.js';
 import type { DetectionResult } from '../lib/detection/types.js';
 import { evaluateToolAgainstPolicy, type AgentPolicy } from '../lib/policy-inheritance.js';
 import { enrichDecision } from '../lib/decision-enricher.js';
+import { getOtelExporter } from '../lib/otel-exporter.js';
 
 // getLastHash is no longer called directly — storeAuditEvent is now atomic
 const NOOP_PREV_HASH = '';
@@ -570,6 +571,24 @@ export function createEvaluateRoutes(
           NOOP_PREV_HASH,
           agentId,
         );
+      }
+
+      // ── OpenTelemetry: export policy decision span ─────────────────────────
+      try {
+        getOtelExporter().recordPolicyDecision({
+          agentId: resolvedAgentId,
+          tenantId: tenantId ?? undefined,
+          sessionId: ctx.sessionId,
+          toolName: tool,
+          decision: decision.result as 'allow' | 'block' | 'require_approval' | 'monitor',
+          riskScore: decision.riskScore ?? undefined,
+          ruleId: decision.matchedRuleId ?? null,
+          latencyMs: ms,
+          piiDetected: piiBlock ? true : false,
+          piiEntityCount: piiBlock?.entitiesFound ?? 0,
+        });
+      } catch {
+        // OTel export must never break the evaluation path
       }
 
       // Increment custom rate limit counter after successful evaluation
