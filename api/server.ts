@@ -20,7 +20,12 @@ import {
 } from './validation-routes.js';
 import { createDb } from './db-factory.js';
 import { createAuthMiddleware } from './middleware/auth.js';
-import { rateLimitMiddleware, bruteForceMiddleware } from './middleware/rate-limit.js';
+import {
+  rateLimitMiddleware,
+  bruteForceMiddleware,
+  authEndpointRateLimitMiddleware,
+  scimRateLimitMiddleware,
+} from './middleware/rate-limit.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { csrfMiddleware } from './middleware/csrf.js';
 import { logger } from './lib/logger.js';
@@ -239,9 +244,24 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 // ── IP Rate Limiting ───────────────────────────────────────────────────────
 app.use(rateLimitMiddleware);
 
+// ── Stricter rate limiting for auth/signup/SSO endpoints ─────────────────
+// Auth endpoints get a tighter per-IP limit (20 req/min) separate from the
+// global bucket, to throttle credential-stuffing and account-creation abuse.
+app.use(
+  ['/api/v1/signup', '/api/v1/auth', '/api/v1/sso', '/api/v1/recover'],
+  authEndpointRateLimitMiddleware,
+);
+
+// ── SCIM endpoint rate limiting (separate bucket) ─────────────────────────
+// Okta/Azure AD connectors use SCIM at low volume; 30 req/min is generous.
+// Isolating SCIM into its own bucket prevents provisioning abuse from
+// consuming the general auth/API quota.
+app.use('/api/scim', scimRateLimitMiddleware);
+
 // ── Brute-Force Protection ─────────────────────────────────────────────────
 // Applied to auth-sensitive endpoints only (signup, evaluate, key-verification paths)
 // Must run before the auth middleware processes the key.
+// Lockout threshold: 5 failures / 15 min; 30 min cooldown.
 app.use(['/api/v1/signup', '/api/v1/evaluate', '/api/v1/evaluate/batch', '/api/v1/mcp/evaluate'], bruteForceMiddleware);
 
 // ── Main: Init DB then start server ───────────────────────────────────────

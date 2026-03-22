@@ -28,7 +28,9 @@ export interface BruteForceResult {
 const WINDOW_MS = 60_000;           // 1 minute sliding window
 const AUTH_LIMIT = 100;             // authenticated req/min
 const UNAUTH_LIMIT = 10;            // unauthenticated req/min
-const BF_MAX_ATTEMPTS = 10;         // max failed auth attempts
+const AUTH_ENDPOINT_LIMIT = 20;     // stricter limit for auth endpoints (login/signup/SSO)
+const SCIM_LIMIT = 30;              // SCIM provisioning endpoints (separate bucket)
+const BF_MAX_ATTEMPTS = 5;          // max failed auth attempts before lockout (was 10)
 const BF_WINDOW_MS = 15 * 60_000;  // 15 minute window
 const BF_BLOCK_MS = 30 * 60_000;   // 30 minute block
 
@@ -302,6 +304,32 @@ export async function checkRateLimit(
     return redisCheck(redis, key, limit);
   }
   return inMemCheck(key, limit);
+}
+
+/**
+ * Check the rate limit for auth endpoints (stricter: 20 req/min regardless of auth state).
+ * Applies to: /api/v1/signup, /api/v1/auth/*, /api/v1/sso/*, /api/v1/scim/*
+ */
+export async function checkAuthEndpointRateLimit(ip: string): Promise<RateLimitResult> {
+  const key = `auth-ep:${ip}`;
+  const redis = await getRedis();
+  if (redis && redisAvailable) {
+    return redisCheck(redis, key, AUTH_ENDPOINT_LIMIT);
+  }
+  return inMemCheck(key, AUTH_ENDPOINT_LIMIT);
+}
+
+/**
+ * Check the rate limit for SCIM endpoints (separate bucket: 30 req/min).
+ * SCIM provisioning is typically done by IdP connectors (Okta, Azure AD) at low volume.
+ */
+export async function checkScimRateLimit(ip: string): Promise<RateLimitResult> {
+  const key = `scim:${ip}`;
+  const redis = await getRedis();
+  if (redis && redisAvailable) {
+    return redisCheck(redis, key, SCIM_LIMIT);
+  }
+  return inMemCheck(key, SCIM_LIMIT);
 }
 
 /**
