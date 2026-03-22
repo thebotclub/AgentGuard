@@ -475,7 +475,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
     requireRole('owner', 'admin'),
     async (req: Request, res: Response) => {
       const tenantId = req.tenantId!;
-      const version = parseInt(req.params['version'] ?? '', 10);
+      const version = parseInt((req.params['version'] as string) ?? '', 10);
 
       if (isNaN(version) || version < 1) {
         return res.status(400).json({ error: 'Invalid version number' });
