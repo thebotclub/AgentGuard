@@ -153,6 +153,21 @@ export type Targets = z.infer<typeof TargetsSchema>;
 
 // ─── Policy Document (YAML DSL source) ───────────────────────────────────────
 
+// ─── Prompt Injection Check (Policy-level) ───────────────────────────────────
+
+export const PromptInjectionCheckSchema = z.object({
+  type: z.literal('prompt_injection'),
+  sensitivity: z.enum(['low', 'medium', 'high']).default('medium'),
+  action: z.enum(['block', 'warn', 'log']).default('block'),
+  adapters: z.array(z.string()).default(['builtin']),
+});
+export type PromptInjectionCheck = z.infer<typeof PromptInjectionCheckSchema>;
+
+export const PolicyCheckSchema = PromptInjectionCheckSchema;
+export type PolicyCheck = z.infer<typeof PolicyCheckSchema>;
+
+// ─── Policy Document (YAML DSL source) ───────────────────────────────────────
+
 export const PolicyDocumentSchema = z.object({
   id: z.string().min(1).max(200),
   name: z.string().min(1).max(200),
@@ -162,6 +177,7 @@ export const PolicyDocumentSchema = z.object({
   default: z.enum(['allow', 'block']).default('block'),
   targets: TargetsSchema.optional(),
   budgets: BudgetsSchema.optional(),
+  checks: z.array(PolicyCheckSchema).optional(),
   rules: z.array(PolicyRuleSchema).min(0).max(500),
 });
 export type PolicyDocument = z.infer<typeof PolicyDocumentSchema>;
@@ -196,6 +212,7 @@ export const PolicyBundleSchema = z.object({
   compiledAt: z.string().datetime(),
   defaultAction: z.enum(['allow', 'block']),
   budgets: BudgetsSchema.optional(),
+  promptInjectionConfig: PromptInjectionCheckSchema.optional(),
   rules: z.array(CompiledRuleSchema),
   toolIndex: z.record(z.string(), z.array(z.number())),
   checksum: z.string(),

@@ -16,6 +16,8 @@ import { prisma } from '../lib/prisma.js';
 import { redis } from '../lib/redis.js';
 import { ValidationError } from '../lib/errors.js';
 import { broadcastToTenant } from './events.js';
+import { getDefaultDetector } from '../services/prompt-injection/detector.js';
+import type { InjectionDetectionResult } from '../services/prompt-injection/detector.js';
 
 export const actionsRouter = new Hono();
 
@@ -90,7 +92,73 @@ actionsRouter.post('/evaluate', async (c) => {
     });
   }
 
-  // ── Step 3: Build action request + agent context ───────────────────────────
+  // ── Step 3: Prompt Injection Check (pre-policy, if configured) ────────────
+  // If the active policy has a prompt_injection check, run it against all
+  // string-valued tool params. Injection detected → block immediately or warn.
+  let injectionResult: InjectionDetectionResult | null = null;
+
+  if (bundle.promptInjectionConfig) {
+    const injConfig = bundle.promptInjectionConfig;
+    const detector = getDefaultDetector();
+
+    // Collect all string values from tool params for analysis
+    const textToAnalyse = [
+      input.tool,
+      ...Object.values(input.params)
+        .filter((v): v is string => typeof v === 'string')
+        .filter((s) => s.length > 0),
+    ].join('\n');
+
+    injectionResult = detector.detectSync(textToAnalyse, {
+      sensitivity: injConfig.sensitivity,
+      action: injConfig.action,
+      adapters: injConfig.adapters,
+    });
+
+    if (injectionResult.detected && injConfig.action === 'block') {
+      // Log async and return block immediately
+      void logInjectionEvent(ctx, agentId, input.sessionId ?? `session_${agentId}`, input, injectionResult);
+      void broadcastToTenant(ctx.tenantId, {
+        type: 'audit_event',
+        data: {
+          agentId,
+          tool: input.tool,
+          decision: 'block',
+          riskScore: 950,
+          matchedRuleId: `prompt_injection:${injectionResult.triggeredBy.join(',')}`,
+          timestamp: new Date().toISOString(),
+          injectionDetected: true,
+          confidence: injectionResult.confidence,
+        },
+      });
+
+      return c.json({
+        result: 'block',
+        matchedRuleId: null,
+        monitorRuleIds: [],
+        riskScore: Math.min(1000, 700 + injectionResult.confidence * 3),
+        reason: `Prompt injection detected (confidence: ${injectionResult.confidence}%, sensitivity: ${injConfig.sensitivity}, triggered by: ${injectionResult.triggeredBy.join(', ')})`,
+        gateId: null,
+        gateTimeoutSec: null,
+        policyVersion: bundle.version,
+        evaluatedAt: new Date().toISOString(),
+        durationMs: injectionResult.durationMs,
+        promptInjection: {
+          detected: true,
+          confidence: injectionResult.confidence,
+          sensitivity: injectionResult.sensitivity,
+          triggeredBy: injectionResult.triggeredBy,
+          topPatterns: injectionResult.builtin.patternMatches.slice(0, 3).map((p) => ({
+            id: p.patternId,
+            category: p.category,
+            description: p.description,
+          })),
+        },
+      }, 403);
+    }
+  }
+
+  // ── Step 4: Build action request + agent context ───────────────────────────
   const actionRequest = {
     id: crypto.randomUUID(),
     agentId,
@@ -108,16 +176,16 @@ actionsRouter.post('/evaluate', async (c) => {
     sessionContext: input.context,
   };
 
-  // ── Step 4: Evaluate ───────────────────────────────────────────────────────
+  // ── Step 5: Evaluate policy rules ─────────────────────────────────────────
   const decision = policyService.evaluate(bundle, actionRequest, agentCtx);
 
-  // ── Step 5: Log to audit (async — non-blocking on hot path) ────────────────
+  // ── Step 6: Log to audit (async — non-blocking on hot path) ────────────────
   void logAuditEvent(ctx, agentId, agentCtx.sessionId, input, decision);
 
   // Broadcast to WebSocket clients
   void broadcastDecision(ctx.tenantId, agentId, input.tool, decision);
 
-  // ── Step 6: Handle require_approval — create HITL gate ────────────────────
+  // ── Step 7: Handle require_approval — create HITL gate ────────────────────
   if (decision.result === 'require_approval' && decision.gateId) {
     const hitlService = new HITLService(prisma, ctx, redis);
     await hitlService.createGate({
@@ -210,6 +278,40 @@ async function logKillSwitchEvent(
         riskScore: 1000,
         matchedRuleIds: [],
         inputDataLabels: [],
+        outputDataLabels: [],
+        ragSourceIds: [],
+        priorEventIds: [],
+      }],
+    });
+  } catch {
+    // Non-fatal
+  }
+}
+
+async function logInjectionEvent(
+  ctx: ReturnType<typeof getContext>,
+  agentId: string,
+  sessionId: string,
+  input: { tool: string; params: Record<string, unknown>; inputDataLabels: string[] },
+  detection: InjectionDetectionResult,
+): Promise<void> {
+  try {
+    const auditService = new AuditService(prisma, ctx, redis);
+    await auditService.ingestBatch({
+      agentId,
+      events: [{
+        clientEventId: crypto.randomUUID(),
+        sessionId,
+        occurredAt: new Date().toISOString(),
+        processingMs: Math.round(detection.durationMs),
+        actionType: 'PROMPT_INJECTION',
+        toolName: input.tool,
+        actionParams: input.params,
+        decision: 'block',
+        blockReason: `Prompt injection detected (confidence: ${detection.confidence}%, triggered by: ${detection.triggeredBy.join(', ')})`,
+        riskScore: Math.min(1000, 700 + detection.confidence * 3),
+        matchedRuleIds: [],
+        inputDataLabels: input.inputDataLabels,
         outputDataLabels: [],
         ragSourceIds: [],
         priorEventIds: [],

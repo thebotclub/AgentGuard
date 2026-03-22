@@ -22,12 +22,12 @@ export declare const AuditEventSchema: z.ZodObject<{
     eventHash: z.ZodString;
     previousHash: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    policyVersion: string;
     tool: string;
     matchedRuleId: string | null;
     monitorRuleIds: string[];
     riskScore: number;
     reason: string;
+    policyVersion: string;
     durationMs: number;
     decision: "allow" | "block" | "monitor" | "require_approval";
     agentId: string;
@@ -41,12 +41,12 @@ export declare const AuditEventSchema: z.ZodObject<{
     result?: unknown;
     error?: string | undefined;
 }, {
-    policyVersion: string;
     tool: string;
     matchedRuleId: string | null;
     monitorRuleIds: string[];
     riskScore: number;
     reason: string;
+    policyVersion: string;
     durationMs: number;
     decision: "allow" | "block" | "monitor" | "require_approval";
     agentId: string;
@@ -75,9 +75,9 @@ export declare const QueryAuditEventsSchema: z.ZodObject<{
     limit: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     limit: number;
+    decision?: "KILLED" | "ALLOW" | "BLOCK" | "MONITOR" | "HITL_PENDING" | "HITL_APPROVED" | "HITL_REJECTED" | "HITL_TIMEOUT" | "ERROR" | undefined;
     riskTier?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined;
     cursor?: string | undefined;
-    decision?: "KILLED" | "ALLOW" | "BLOCK" | "MONITOR" | "HITL_PENDING" | "HITL_APPROVED" | "HITL_REJECTED" | "HITL_TIMEOUT" | "ERROR" | undefined;
     agentId?: string | undefined;
     sessionId?: string | undefined;
     actionType?: string | undefined;
@@ -85,10 +85,10 @@ export declare const QueryAuditEventsSchema: z.ZodObject<{
     fromDate?: string | undefined;
     toDate?: string | undefined;
 }, {
+    decision?: "KILLED" | "ALLOW" | "BLOCK" | "MONITOR" | "HITL_PENDING" | "HITL_APPROVED" | "HITL_REJECTED" | "HITL_TIMEOUT" | "ERROR" | undefined;
     riskTier?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined;
     cursor?: string | undefined;
     limit?: number | undefined;
-    decision?: "KILLED" | "ALLOW" | "BLOCK" | "MONITOR" | "HITL_PENDING" | "HITL_APPROVED" | "HITL_REJECTED" | "HITL_TIMEOUT" | "ERROR" | undefined;
     agentId?: string | undefined;
     sessionId?: string | undefined;
     actionType?: string | undefined;

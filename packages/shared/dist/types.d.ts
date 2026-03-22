@@ -4,7 +4,7 @@
  * Re-exported from schema files; this file adds types that are
  * not schema-derived (e.g. response shapes, service interfaces).
  */
-export type { PolicyAction, PolicyRule, PolicyDocument, PolicyBundle, CompiledRule, RateLimit, Budgets, Targets, WhenCondition, ToolCondition, StringConstraint, NumericConstraint, ValueConstraint, DayOfWeek, TimeWindow, TimeWindowRange, PolicyDecision, ActionRequest, AgentContext, AuditEvent, } from './schemas/index.js';
+export type { PolicyAction, PolicyRule, PolicyDocument, PolicyBundle, CompiledRule, RateLimit, Budgets, Targets, WhenCondition, ToolCondition, StringConstraint, NumericConstraint, ValueConstraint, DayOfWeek, TimeWindow, TimeWindowRange, PolicyDecision, ActionRequest, AgentContext, AuditEvent, PromptInjectionCheck, PolicyCheck, } from './schemas/index.js';
 export type UserRole = 'owner' | 'admin' | 'analyst' | 'operator' | 'auditor' | 'agent';
 export interface ServiceContext {
     readonly tenantId: string;
