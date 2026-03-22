@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@agentguard/shared": "*",
+    "@tanstack/react-query": "^5.94.5",
+    "date-fns": "^4.1.0",
     "next": "^15.1.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
