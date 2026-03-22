@@ -17,15 +17,21 @@ const FEATURE_CARDS = [
   },
   {
     title: '📜 Policies',
-    description: 'Define and deploy security policies via YAML DSL.',
+    description: 'Define and deploy security policies via YAML DSL. Version history, dry-run testing.',
     href: '/policies',
     color: '#8b5cf6',
   },
   {
     title: '👤 HITL Queue',
-    description: 'Review and approve pending human-in-the-loop decisions.',
+    description: 'Review and approve pending human-in-the-loop decisions in real-time.',
     href: '/hitl',
     color: '#f59e0b',
+  },
+  {
+    title: '📊 Compliance Report',
+    description: 'Generate OWASP LLM compliance reports with policy summary and audit events. Export to PDF.',
+    href: '/report',
+    color: '#06b6d4',
   },
   {
     title: '🔔 Alerts',
@@ -113,6 +119,10 @@ export default function DashboardPage() {
           <li>Set <code style={{ background: '#f1f5f9', padding: '1px 4px', borderRadius: '3px' }}>NEXT_PUBLIC_AGENTGUARD_JWT</code> or save your JWT via localStorage <code style={{ background: '#f1f5f9', padding: '1px 4px', borderRadius: '3px' }}>ag_token</code></li>
           <li>Navigate to <Link href="/audit" style={{ color: '#3b82f6' }}>Audit Log</Link> to see live events</li>
           <li>Navigate to <Link href="/agents" style={{ color: '#3b82f6' }}>Agents</Link> to manage agent kill switches</li>
+          <li>
+            <strong>New to AgentGuard?</strong>{' '}
+            <Link href="/onboarding" style={{ color: '#8b5cf6', fontWeight: 600 }}>🚀 Run the 5-minute setup wizard</Link>
+          </li>
         </ol>
       </div>
     </div>
