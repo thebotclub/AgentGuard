@@ -26,6 +26,7 @@ import { agentsRouter } from './routes/agents.js';
 import { policiesRouter } from './routes/policies.js';
 import { actionsRouter } from './routes/actions.js';
 import { auditRouter } from './routes/audit.js';
+import { auditAnalyticsRouter } from './routes/audit-analytics.js';
 import { killswitchRouter } from './routes/killswitch.js';
 import { hitlRouter } from './routes/hitl.js';
 import { eventsRouter } from './routes/events.js';
@@ -111,6 +112,7 @@ export function createApp(): Hono {
   app.route('/v1/policies', policiesRouter);
   app.route('/v1/actions', actionsRouter);
   app.route('/v1/audit', auditRouter);
+  app.route('/v1/audit/analytics', auditAnalyticsRouter);
   app.route('/v1/killswitch', killswitchRouter);
   app.route('/v1/hitl', hitlRouter);
   app.route('/v1/compliance', complianceRouter);

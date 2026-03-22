@@ -99,15 +99,19 @@ auditRouter.get('/export', async (c) => {
     if (values[0] !== undefined) flatQuery[key] = values[0];
   }
 
-  const format = (flatQuery['format'] ?? 'json') as 'csv' | 'json';
+  const format = (flatQuery['format'] ?? 'json') as 'csv' | 'json' | 'cef' | 'leef';
   delete flatQuery['format'];
   delete flatQuery['token'];
 
   // Parse filters but override limit for streaming (we handle pagination ourselves)
   const filters = QueryAuditEventsSchema.parse({ ...flatQuery, limit: 200 });
 
-  const contentType = format === 'csv' ? 'text/csv' : 'application/json';
-  const filename = `agentguard-audit-${new Date().toISOString().slice(0, 10)}.${format}`;
+  const contentType =
+    format === 'csv' ? 'text/csv' :
+    format === 'cef' || format === 'leef' ? 'text/plain' :
+    'application/json';
+  const fileExt = format === 'json' ? 'json' : format === 'csv' ? 'csv' : 'log';
+  const filename = `agentguard-audit-${format}-${new Date().toISOString().slice(0, 10)}.${fileExt}`;
 
   c.header('Content-Type', contentType);
   c.header('Content-Disposition', `attachment; filename="${filename}"`);
@@ -117,7 +121,22 @@ auditRouter.get('/export', async (c) => {
   const service = new AuditService(prisma, ctx, redis);
 
   return stream(c, async (s) => {
-    if (format === 'csv') {
+    if (format === 'cef' || format === 'leef') {
+      // SIEM streaming export
+      let cursor: string | undefined;
+      let hasMore = true;
+
+      while (hasMore) {
+        const events = await service.queryEvents({ ...filters, cursor });
+        for (const e of events) {
+          const row = auditEventToResponse(e);
+          const line = format === 'cef' ? formatCEF(row) : formatLEEF(row);
+          await s.write(line + '\n');
+        }
+        hasMore = events.length === filters.limit;
+        cursor = events.length > 0 ? events[events.length - 1]?.id : undefined;
+      }
+    } else if (format === 'csv') {
       // CSV header
       await s.write(
         'id,tenantId,agentId,sessionId,occurredAt,processingMs,actionType,toolName,toolTarget,' +
@@ -250,4 +269,81 @@ function csvEscape(val: string): string {
     return `"${val.replace(/"/g, '""')}"`;
   }
   return val;
+}
+
+// ─── SIEM Format Helpers ──────────────────────────────────────────────────────
+
+type AuditEventResponse = ReturnType<typeof auditEventToResponse>;
+
+/**
+ * CEF (Common Event Format) — ArcSight / generic SIEM
+ * CEF:Version|Device Vendor|Device Product|Device Version|Signature ID|Name|Severity|Extension
+ */
+function formatCEF(e: AuditEventResponse): string {
+  const severity = ({ CRITICAL: 10, HIGH: 8, MEDIUM: 5, LOW: 2 } as Record<string, number>)[e.riskTier] ?? 0;
+  const signatureId = `AGENTGUARD_${e.policyDecision}_${e.actionType}`;
+  const name = `Agent action ${e.policyDecision}: ${e.actionType}`;
+
+  const ext = [
+    `rt=${new Date(e.occurredAt).getTime()}`,
+    `src=${e.tenantId}`,
+    `dvchost=${e.agentId}`,
+    `suid=${e.sessionId}`,
+    `act=${e.policyDecision}`,
+    `outcome=${e.policyDecision}`,
+    e.blockReason ? `reason=${siemEscape(e.blockReason)}` : '',
+    e.toolName ? `cs1=${siemEscape(e.toolName)}` : '',
+    e.toolName ? `cs1Label=toolName` : '',
+    e.toolTarget ? `cs2=${siemEscape(e.toolTarget)}` : '',
+    e.toolTarget ? `cs2Label=toolTarget` : '',
+    `cs3=${e.riskScore}`,
+    `cs3Label=riskScore`,
+    `cs4=${e.riskTier}`,
+    `cs4Label=riskTier`,
+    e.matchedRuleId ? `cs5=${e.matchedRuleId}` : '',
+    e.matchedRuleId ? `cs5Label=matchedRuleId` : '',
+    `cn1=${e.processingMs}`,
+    `cn1Label=processingMs`,
+    `flexString1=${e.eventHash.slice(0, 32)}`,
+    `flexString1Label=eventHash`,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return `CEF:0|AgentGuard|AgentGuard Runtime Security|1.0|${signatureId}|${name}|${severity}|${ext}`;
+}
+
+/**
+ * LEEF (Log Event Extended Format) — IBM QRadar
+ * LEEF:Version|Vendor|Product|Version|EventID|\tattributes
+ */
+function formatLEEF(e: AuditEventResponse): string {
+  const eventId = `AGENTGUARD_${e.policyDecision}_${e.actionType}`;
+
+  const attrs = [
+    `devTime=${e.occurredAt}`,
+    `devTimeFormat=ISO 8601`,
+    `src=${e.tenantId}`,
+    `usrName=${e.agentId}`,
+    `sessionId=${e.sessionId}`,
+    `action=${e.policyDecision}`,
+    `toolName=${leefEscape(e.toolName ?? '')}`,
+    `toolTarget=${leefEscape(e.toolTarget ?? '')}`,
+    `riskScore=${e.riskScore}`,
+    `riskTier=${e.riskTier}`,
+    `blockReason=${leefEscape(e.blockReason ?? '')}`,
+    `matchedRuleId=${e.matchedRuleId ?? ''}`,
+    `processingMs=${e.processingMs}`,
+    `eventHash=${e.eventHash.slice(0, 32)}`,
+  ].join('\t');
+
+  return `LEEF:2.0|AgentGuard|AgentGuard Runtime Security|1.0|${eventId}|\t${attrs}`;
+}
+
+function siemEscape(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/=/g, '\\=').replace(/\n/g, '\\n');
+}
+
+function leefEscape(s: string): string {
+  return s.replace(/\t/g, ' ').replace(/\n/g, ' ');
 }
