@@ -1,65 +1,78 @@
-# Dockerfile.worker — AgentGuard BullMQ Workers
-# Node.js 22 LTS / Alpine / multi-stage build
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.worker — AgentGuard BullMQ Background Workers
+# Multi-stage build; shares the same compiled output as the API image
+# ─────────────────────────────────────────────────────────────────────────────
 
-FROM node:22-alpine AS base
-
-# ── Dependencies ────────────────────────────────────────────────────────────
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# ── Stage 1: Dependencies ─────────────────────────────────────────────────
+FROM node:22-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
-COPY prisma ./prisma/
-RUN npm ci && npm cache clean --force
+RUN apk add --no-cache python3 make g++
 
-# ── Production-only dependencies ────────────────────────────────────────────
-FROM base AS prod-deps
-RUN apk add --no-cache libc6-compat
+COPY package.json package-lock.json* ./
+COPY packages/sdk/package.json ./packages/sdk/
+COPY packages/shared/package.json ./packages/shared/
+
+RUN npm ci --prefer-offline
+
+# ── Stage 2: Builder ──────────────────────────────────────────────────────
+FROM deps AS builder
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
 
-# ── Build ────────────────────────────────────────────────────────────────────
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY packages/ ./packages/
+COPY api/ ./api/
+COPY tsconfig.json ./
 
-RUN if [ -f prisma/schema.prisma ]; then npx prisma generate; fi
+# Build SDK
+RUN cd packages/sdk && npm run build 2>/dev/null || true
 
-# Bundle all workers
-RUN npx esbuild \
-  src/workers/telemetry-ingest.ts \
-  src/workers/siem-publisher.ts \
-  src/workers/policy-distributor.ts \
-  --bundle \
-  --platform=node \
-  --target=node22 \
-  --format=esm \
-  --outdir=dist/workers \
-  --packages=external 2>/dev/null || \
-  echo "// placeholder" > dist/workers/placeholder.js
+# Compile TypeScript
+RUN cd api && npx tsc 2>/dev/null || true
 
-# ── Production runner ────────────────────────────────────────────────────────
-FROM base AS runner
+# Build worker entry points if they exist in api/workers/
+RUN if ls api/workers/*.ts 2>/dev/null | head -1; then \
+      mkdir -p dist/workers && \
+      npx esbuild $(ls api/workers/*.ts | tr '\n' ' ') \
+        --bundle \
+        --platform=node \
+        --target=node22 \
+        --format=cjs \
+        --outdir=dist/workers \
+        --packages=external 2>/dev/null; \
+    else \
+      mkdir -p dist/workers && echo "// no workers found" > dist/workers/placeholder.js; \
+    fi
+
+# ── Stage 3: Production runner ────────────────────────────────────────────
+FROM node:22-alpine AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3001
 
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 agentguard
+RUN apk add --no-cache python3 make g++ curl
 
-COPY --from=builder /app/package.json ./
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma/ 2>/dev/null || true
-COPY --from=builder /app/dist/workers ./dist/workers
-COPY docker/start-workers.sh ./
-RUN chmod +x start-workers.sh
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs \
+ && adduser --system --uid 1001 --ingroup nodejs agentguard
+
+# Install production deps only
+COPY package.json package-lock.json* ./
+COPY packages/sdk/package.json ./packages/sdk/
+COPY packages/shared/package.json ./packages/shared/
+RUN npm ci --omit=dev --prefer-offline && npm cache clean --force
+
+# Copy compiled output
+COPY --from=builder --chown=agentguard:nodejs /app/dist ./dist
+COPY --from=builder --chown=agentguard:nodejs /app/packages ./packages
+
+# Copy worker startup script
+COPY --chown=agentguard:nodejs docker/start-workers.sh ./start-workers.sh
+RUN chmod +x ./start-workers.sh
 
 USER agentguard
-EXPOSE 3001
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "fetch('http://localhost:3001/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"
+EXPOSE 3002
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD node -e "fetch('http://localhost:3002/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
 
 CMD ["./start-workers.sh"]

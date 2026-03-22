@@ -1,43 +1,161 @@
-version: '3.9'
-
-# AgentGuard — Local Development Stack
-# Usage: docker compose up -d
-# API:   http://localhost:3000
-# Redis: localhost:6379
+# ─────────────────────────────────────────────────────────────────────────────
+# AgentGuard — Self-Hosted Docker Compose (build from source)
+# ─────────────────────────────────────────────────────────────────────────────
+# Usage:
+#   cp .env.example .env          # edit with your values
+#   docker compose build          # build all images
+#   docker compose up -d          # start all services
+#   docker compose logs -f        # watch logs
+# ─────────────────────────────────────────────────────────────────────────────
 
 services:
-  api:
+
+  # ── PostgreSQL 16 ────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: agentguard
+      POSTGRES_USER: agentguard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentguard -d agentguard"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    networks:
+      - agentguard-net
+
+  # ── Redis 7 ──────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - agentguard-net
+
+  # ── AgentGuard API (Hono / Express) ──────────────────────────────────────
+  agentguard-api:
     build:
       context: .
       dockerfile: Dockerfile.api
+    restart: unless-stopped
     ports:
-      - '3000:3000'
+      - "${API_PORT:-3000}:3000"
     environment:
-      NODE_ENV: development
-      PORT: '3000'
-      DB_TYPE: sqlite
+      NODE_ENV: production
+      PORT: 3000
+      DB_TYPE: postgres
+      DATABASE_URL: postgresql://agentguard:${POSTGRES_PASSWORD}@postgres:5432/agentguard
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
+      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:?INTEGRATION_ENCRYPTION_KEY must be set in .env}
+      ADMIN_KEY: ${ADMIN_KEY:?ADMIN_KEY must be set in .env}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      RATE_LIMIT_PER_MIN: ${RATE_LIMIT_PER_MIN:-100}
+      SIGNUP_RATE_LIMIT_PER_HOUR: ${SIGNUP_RATE_LIMIT_PER_HOUR:-5}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      JWT_JWKS_URL: ${JWT_JWKS_URL:-}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-}
+      JWT_ISSUER: ${JWT_ISSUER:-}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      SLACK_CHANNEL_ID: ${SLACK_CHANNEL_ID:-}
+      AGENTGUARD_LICENSE_KEY: ${AGENTGUARD_LICENSE_KEY:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      AGENTGUARD_NO_TELEMETRY: ${AGENTGUARD_NO_TELEMETRY:-}
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./agentguard.db:/app/agentguard.db
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - '6379:6379'
-    volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))\""]
+      interval: 15s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    volumes:
+      - api-data:/data
+    networks:
+      - agentguard-net
+
+  # ── AgentGuard Dashboard (Next.js) ────────────────────────────────────────
+  agentguard-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
     restart: unless-stopped
+    ports:
+      - "${DASHBOARD_PORT:-3001}:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3001}
+      NEXTAUTH_SECRET: ${JWT_SECRET}
+    depends_on:
+      agentguard-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3001/api/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>fetch('http://localhost:3001').then(r=>process.exit(0)).catch(()=>process.exit(1)))\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - agentguard-net
+
+  # ── AgentGuard Worker (BullMQ background jobs) ────────────────────────────
+  agentguard-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://agentguard:${POSTGRES_PASSWORD}@postgres:5432/agentguard
+      REDIS_URL: redis://redis:6379
+      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      agentguard-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3001/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    networks:
+      - agentguard-net
 
 volumes:
+  pg-data:
+    driver: local
   redis-data:
     driver: local
+  api-data:
+    driver: local
+
+networks:
+  agentguard-net:
+    driver: bridge
