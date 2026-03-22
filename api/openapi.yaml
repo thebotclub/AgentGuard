@@ -75,6 +75,32 @@ tags:
     description: Emergency stop controls
   - name: Health
     description: System health and status
+  - name: Alerts
+    description: Anomaly detection alerts and custom alerting rules
+  - name: Dashboard
+    description: Real-time evaluation statistics and activity feed
+  - name: Billing
+    description: Stripe subscription management (checkout, portal, status)
+  - name: Costs
+    description: Tool-call cost attribution and tracking
+  - name: Evaluation Jobs
+    description: Async evaluation job queue
+  - name: License
+    description: Enterprise license key lifecycle management
+  - name: Rate Limits
+    description: Per-tenant API rate limit configuration
+  - name: SIEM
+    description: SIEM export integrations (Splunk HEC, Azure Sentinel)
+  - name: SSO
+    description: Single Sign-On (SAML/OIDC) configuration and flows
+  - name: Team
+    description: Team member management with RBAC roles
+  - name: SCIM
+    description: SCIM 2.0 user/group provisioning for IdP sync
+  - name: Pricing
+    description: Public pricing tiers and feature limits
+  - name: Policy Git
+    description: GitOps policy management via webhook sync
 
 components:
   securitySchemes:
@@ -756,6 +782,32 @@ paths:
   # ── EVALUATE ──────────────────────────────────────────────────────────────
 
   /evaluate:
+    get:
+      tags: [Evaluate]
+      summary: Evaluate endpoint info
+      description: Returns a description of the evaluate endpoint and usage instructions. No authentication required.
+      operationId: getEvaluateInfo
+      security: []
+      responses:
+        '200':
+          description: Endpoint info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  endpoint:
+                    type: string
+                  method:
+                    type: string
+                  description:
+                    type: string
+                  requiredFields:
+                    type: array
+                    items:
+                      type: string
+                  example:
+                    type: object
     post:
       tags: [Evaluate]
       summary: Evaluate an agent action
@@ -1171,6 +1223,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AgentObject'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Agents]
+      summary: Delete agent
+      description: Permanently delete an agent and revoke its API key.
+      operationId: deleteAgent
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agent ID
+      responses:
+        '200':
+          description: Agent deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  deleted:
+                    type: boolean
         '401':
           description: Unauthorized
           content:
@@ -2886,6 +2976,26 @@ paths:
   # ── KILL SWITCH ──────────────────────────────────────────────────────────
 
   /killswitch:
+    get:
+      tags: [Kill Switch]
+      summary: Get kill switch status
+      description: Returns the current state of the global platform kill switch.
+      operationId: getKillswitchStatus
+      security: []
+      responses:
+        '200':
+          description: Kill switch state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  active:
+                    type: boolean
+                  activatedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
     post:
       tags: [Kill Switch]
       summary: Toggle tenant kill switch
@@ -3037,3 +3147,4086 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  # ── APPROVALS (approve/deny) ─────────────────────────────────────────────
+
+  /approvals/{id}/approve:
+    post:
+      tags: [Approvals]
+      summary: Approve a pending request
+      description: Approve a pending human-in-the-loop approval request.
+      operationId: approveApproval
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Approval ID
+      responses:
+        '200':
+          description: Approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [approved]
+                  resolvedAt:
+                    type: string
+                    format: date-time
+                  resolvedBy:
+                    type: string
+        '404':
+          description: Approval not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Approval already resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /approvals/{id}/deny:
+    post:
+      tags: [Approvals]
+      summary: Deny a pending request
+      description: Deny a pending human-in-the-loop approval request.
+      operationId: denyApproval
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Approval ID
+      responses:
+        '200':
+          description: Denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [denied]
+                  resolvedAt:
+                    type: string
+                    format: date-time
+                  resolvedBy:
+                    type: string
+        '404':
+          description: Approval not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Approval already resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── ALERTS ───────────────────────────────────────────────────────────────
+
+  /alerts:
+    get:
+      tags: [Alerts]
+      summary: List alerts
+      description: |
+        List anomaly-detection alerts for the authenticated tenant.
+        Optionally filter by severity or resolved state.
+      operationId: listAlerts
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [info, warning, critical]
+          description: Filter by severity level
+        - name: resolved
+          in: query
+          schema:
+            type: boolean
+          description: "Filter by resolved state (true=resolved, false=open)"
+      responses:
+        '200':
+          description: Alert list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AlertObject'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /alerts/{id}/acknowledge:
+    post:
+      tags: [Alerts]
+      summary: Acknowledge alert
+      description: Mark an alert as acknowledged (resolved). Idempotent for already-resolved alerts.
+      operationId: acknowledgeAlert
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Alert ID
+      responses:
+        '200':
+          description: Alert acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  acknowledged:
+                    type: boolean
+        '400':
+          description: Alert already resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Alert not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /alerts/rules:
+    get:
+      tags: [Alerts]
+      summary: List anomaly rules
+      description: List custom anomaly detection rules for the authenticated tenant.
+      operationId: listAnomalyRules
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Anomaly rules
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AnomalyRule'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags: [Alerts]
+      summary: Create anomaly rule
+      description: Create a custom anomaly detection rule that generates alerts when triggered.
+      operationId: createAnomalyRule
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, metric, condition, threshold, windowMinutes]
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                  description: Human-readable rule name
+                  example: "High block rate alert"
+                metric:
+                  type: string
+                  enum: [block_rate, evaluate_volume, unique_tools, error_rate, latency_p99]
+                  description: Metric to monitor
+                condition:
+                  type: string
+                  enum: [gt, lt, spike, drop]
+                  description: Comparison operator
+                threshold:
+                  type: number
+                  description: Threshold value to compare against
+                  example: 0.2
+                windowMinutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 1440
+                  description: Evaluation window in minutes
+                  example: 60
+                severity:
+                  type: string
+                  enum: [info, warning, critical]
+                  default: warning
+                enabled:
+                  type: boolean
+                  default: true
+            example:
+              name: "High block rate"
+              metric: "block_rate"
+              condition: "gt"
+              threshold: 0.2
+              windowMinutes: 60
+              severity: "warning"
+      responses:
+        '201':
+          description: Rule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnomalyRule'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /alerts/rules/{id}:
+    put:
+      tags: [Alerts]
+      summary: Update anomaly rule
+      description: Update an existing anomaly detection rule. All fields are optional (partial update).
+      operationId: updateAnomalyRule
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Rule ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                metric:
+                  type: string
+                  enum: [block_rate, evaluate_volume, unique_tools, error_rate, latency_p99]
+                condition:
+                  type: string
+                  enum: [gt, lt, spike, drop]
+                threshold:
+                  type: number
+                windowMinutes:
+                  type: integer
+                  minimum: 1
+                  maximum: 1440
+                severity:
+                  type: string
+                  enum: [info, warning, critical]
+                enabled:
+                  type: boolean
+      responses:
+        '200':
+          description: Rule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnomalyRule'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Rule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [Alerts]
+      summary: Delete anomaly rule
+      description: Delete a custom anomaly detection rule.
+      operationId: deleteAnomalyRule
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Rule ID
+      responses:
+        '200':
+          description: Rule deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  deleted:
+                    type: boolean
+        '404':
+          description: Rule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── AUDIT (verify + export) ───────────────────────────────────────────────
+
+  /audit/verify:
+    get:
+      tags: [Audit]
+      summary: Verify audit chain integrity
+      description: |
+        Re-verify the SHA-256 hash chain for the tenant's entire audit trail.
+        Returns a pass/fail result with error details if tampering is detected.
+      operationId: verifyAuditChain
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Chain verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    description: True if the hash chain is intact
+                  eventCount:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    description: Details of any chain violations detected
+                  message:
+                    type: string
+              example:
+                valid: true
+                eventCount: 1250
+                errors: []
+                message: "All 1250 events verified successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /audit/export:
+    get:
+      tags: [Audit]
+      summary: Export audit trail
+      description: |
+        Export the full audit trail as CSV or JSON. Supports date range filtering.
+        For large tenants, use `from`/`to` to paginate by date range.
+      operationId: exportAudit
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, json]
+            default: csv
+          description: Export format
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start of date range (ISO 8601 inclusive)
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End of date range (ISO 8601 inclusive)
+      responses:
+        '200':
+          description: Exported audit data
+          content:
+            text/csv:
+              schema:
+                type: string
+                description: CSV file with audit entries
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEntry'
+        '400':
+          description: Invalid date parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── AUTH (recover + admin killswitch) ────────────────────────────────────
+
+  /signup/recover:
+    post:
+      tags: [Auth]
+      summary: Recover account by email
+      description: |
+        Issue a new API key by verifying email ownership. Invalidates all previous keys.
+        Rate limited to 2 recovery attempts per hour per IP.
+        Returns a generic 404 when the email is not found to avoid enumeration.
+      operationId: recoverAccount
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "security@acme.com"
+      responses:
+        '200':
+          description: New API key issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiKey:
+                    type: string
+                    description: New API key — previous key invalidated
+                  message:
+                    type: string
+        '400':
+          description: Email required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No account found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/killswitch:
+    post:
+      tags: [Kill Switch]
+      summary: Toggle global kill switch (admin)
+      description: |
+        Activate or deactivate the **global platform-wide** kill switch.
+        When active, **all tenant evaluations** return `block` immediately.
+        **Requires admin key.** Use with extreme caution.
+      operationId: toggleGlobalKillswitch
+      security:
+        - AdminKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [active]
+              properties:
+                active:
+                  type: boolean
+                  description: true to activate, false to deactivate
+            example:
+              active: true
+      responses:
+        '200':
+          description: Global kill switch updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  active:
+                    type: boolean
+                  activatedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  message:
+                    type: string
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Admin key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── BILLING ───────────────────────────────────────────────────────────────
+
+  /billing/checkout:
+    post:
+      tags: [Billing]
+      summary: Create Stripe checkout session
+      description: |
+        Create a Stripe Checkout session for upgrading to Pro or Enterprise plan.
+        Returns a checkout URL — redirect the user to this URL to complete payment.
+        Requires `STRIPE_SECRET_KEY` environment variable to be configured.
+      operationId: createCheckoutSession
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plan]
+              properties:
+                plan:
+                  type: string
+                  enum: [pro, enterprise]
+                  description: Subscription plan to purchase
+                successUrl:
+                  type: string
+                  format: uri
+                  description: Redirect URL after successful payment
+                cancelUrl:
+                  type: string
+                  format: uri
+                  description: Redirect URL if checkout is cancelled
+            example:
+              plan: "pro"
+      responses:
+        '200':
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkoutUrl:
+                    type: string
+                    format: uri
+                    description: Stripe Checkout URL — redirect user here
+                  sessionId:
+                    type: string
+                    description: Stripe Checkout session ID
+              example:
+                checkoutUrl: "https://checkout.stripe.com/c/pay/cs_test_..."
+                sessionId: "cs_test_a1b2c3..."
+        '400':
+          description: Invalid plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Billing not configured (Stripe key missing)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /billing/portal:
+    post:
+      tags: [Billing]
+      summary: Create Stripe customer portal session
+      description: |
+        Create a Stripe Customer Portal session for managing existing subscriptions
+        (cancel, change plan, update payment method). Returns a portal URL.
+        Requires an active subscription.
+      operationId: createPortalSession
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                returnUrl:
+                  type: string
+                  format: uri
+                  description: URL to return to after leaving the portal
+      responses:
+        '200':
+          description: Portal session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  portalUrl:
+                    type: string
+                    format: uri
+                    description: Stripe Customer Portal URL
+              example:
+                portalUrl: "https://billing.stripe.com/p/session/live_..."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No active subscription found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /billing/status:
+    get:
+      tags: [Billing]
+      summary: Get subscription status
+      description: Returns the current subscription tier, status, and limits for the authenticated tenant.
+      operationId: getBillingStatus
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Subscription status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenantId:
+                    type: string
+                  tier:
+                    type: string
+                    enum: [free, pro, enterprise]
+                  status:
+                    type: string
+                    enum: [active, trialing, past_due, canceled, none]
+                  currentPeriodEnd:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  cancelAtPeriodEnd:
+                    type: boolean
+                  evaluationLimit:
+                    type: integer
+                    nullable: true
+                    description: Monthly evaluation limit (null=unlimited)
+              example:
+                tenantId: "550e8400-e29b-41d4-a716-446655440000"
+                tier: "pro"
+                status: "active"
+                currentPeriodEnd: "2024-02-15T00:00:00Z"
+                cancelAtPeriodEnd: false
+                evaluationLimit: 100000
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── COMPLIANCE (generic reports) ──────────────────────────────────────────
+
+  /compliance/reports:
+    get:
+      tags: [Compliance]
+      summary: List compliance reports
+      description: List all compliance reports generated for the authenticated tenant.
+      operationId: listComplianceReports
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Report list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reports:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ComplianceReport'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /compliance/reports/generate:
+    post:
+      tags: [Compliance]
+      summary: Generate compliance report
+      description: |
+        Generate a compliance report. Supports multiple report types including OWASP Agentic Top 10.
+        The generated report is persisted and retrievable by ID.
+      operationId: generateComplianceReport
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reportType:
+                  type: string
+                  enum: [owasp-agentic-top10]
+                  default: owasp-agentic-top10
+                agentId:
+                  type: string
+                  description: Optional — scope report to a specific agent
+      responses:
+        '201':
+          description: Report generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceReport'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /compliance/reports/{reportId}:
+    get:
+      tags: [Compliance]
+      summary: Get compliance report by ID
+      description: Retrieve a specific compliance report by its ID.
+      operationId: getComplianceReportById
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Report UUID
+      responses:
+        '200':
+          description: Compliance report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceReport'
+        '404':
+          description: Report not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── COSTS ─────────────────────────────────────────────────────────────────
+
+  /costs/track:
+    post:
+      tags: [Costs]
+      summary: Track cost event
+      description: |
+        Record an estimated cost event for a tool call. Costs are attributed to
+        the agent and aggregated for reporting. If `estimatedCostCents` is omitted,
+        a default cost is inferred from the tool name.
+      operationId: trackCost
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tool]
+              properties:
+                tool:
+                  type: string
+                  maxLength: 200
+                  description: Tool name that incurred the cost
+                  example: "llm_call"
+                agentId:
+                  type: string
+                  maxLength: 100
+                  description: Agent that made the call
+                estimatedCostCents:
+                  type: number
+                  minimum: 0
+                  description: Estimated cost in cents (USD). Inferred if omitted.
+                  example: 5
+                currency:
+                  type: string
+                  default: USD
+                  maxLength: 3
+                metadata:
+                  type: object
+                  description: Arbitrary key-value metadata
+            example:
+              tool: "llm_call"
+              agentId: "customer-support-bot"
+              estimatedCostCents: 5
+      responses:
+        '201':
+          description: Cost event recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  tool:
+                    type: string
+                  estimatedCostCents:
+                    type: number
+                  currency:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /costs/summary:
+    get:
+      tags: [Costs]
+      summary: Cost summary
+      description: |
+        Aggregated cost breakdown for the authenticated tenant.
+        Includes totals by time window, top expensive tools, and daily cost trend.
+      operationId: getCostSummary
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start of date range (ISO 8601)
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End of date range (ISO 8601)
+      responses:
+        '200':
+          description: Cost summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalCostCents:
+                    type: number
+                    description: Total estimated cost in cents
+                  currency:
+                    type: string
+                    example: USD
+                  eventCount:
+                    type: integer
+                  topTools:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tool:
+                          type: string
+                        totalCostCents:
+                          type: number
+                        callCount:
+                          type: integer
+                  dailyCosts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                        totalCostCents:
+                          type: number
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /costs/agents:
+    get:
+      tags: [Costs]
+      summary: Per-agent cost summary
+      description: Cost breakdown grouped by agent for the authenticated tenant.
+      operationId: getAgentCosts
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Per-agent cost summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        agentId:
+                          type: string
+                          nullable: true
+                        totalCostCents:
+                          type: number
+                        callCount:
+                          type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── DASHBOARD ─────────────────────────────────────────────────────────────
+
+  /dashboard/stats:
+    get:
+      tags: [Dashboard]
+      summary: Dashboard statistics
+      description: |
+        Aggregated real-time statistics for the tenant dashboard:
+        evaluation counts (24h/7d/30d), block rate, average latency,
+        active agent count, top blocked tools, and hourly evaluation breakdown.
+      operationId: getDashboardStats
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  evaluations:
+                    type: object
+                    properties:
+                      last24h:
+                        type: integer
+                      last7d:
+                        type: integer
+                      last30d:
+                        type: integer
+                  blockRatePercent:
+                    type: number
+                    description: Percentage of evaluations blocked in last 24h
+                  avgLatencyMs:
+                    type: number
+                    description: Average evaluation latency in milliseconds (last 24h)
+                  activeAgents24h:
+                    type: integer
+                    description: Distinct active agents in last 24h
+                  topBlockedTools:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tool:
+                          type: string
+                        count:
+                          type: integer
+                  evaluationsByHour:
+                    type: array
+                    description: Hourly breakdown for the last 24h
+                    items:
+                      type: object
+                      properties:
+                        hour:
+                          type: string
+                          format: date-time
+                        total:
+                          type: integer
+                        blocked:
+                          type: integer
+                        allowed:
+                          type: integer
+                        monitored:
+                          type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /dashboard/feed:
+    get:
+      tags: [Dashboard]
+      summary: Activity feed
+      description: |
+        Recent evaluation events stream for the live activity feed.
+        Use `since` for incremental polling — only events newer than that timestamp are returned.
+      operationId: getDashboardFeed
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Return only events after this ISO 8601 timestamp (for polling)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+          description: Maximum number of events to return
+      responses:
+        '200':
+          description: Activity feed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        tenantId:
+                          type: string
+                        sessionId:
+                          type: string
+                          nullable: true
+                        tool:
+                          type: string
+                        result:
+                          type: string
+                          enum: [allow, block, monitor, require_approval]
+                        ruleId:
+                          type: string
+                          nullable: true
+                        riskScore:
+                          type: integer
+                          nullable: true
+                        reason:
+                          type: string
+                          nullable: true
+                        durationMs:
+                          type: number
+                          nullable: true
+                        createdAt:
+                          type: string
+                          format: date-time
+                  count:
+                    type: integer
+                  fetchedAt:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid timestamp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /dashboard/agents:
+    get:
+      tags: [Dashboard]
+      summary: Per-agent activity breakdown
+      description: Per-agent evaluation activity and cost breakdown for the specified date range (default last 7 days).
+      operationId: getDashboardAgents
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Start of date range (ISO 8601, default 7 days ago)
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: End of date range (ISO 8601, default now)
+      responses:
+        '200':
+          description: Per-agent activity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        agentId:
+                          type: string
+                          nullable: true
+                        agentName:
+                          type: string
+                          nullable: true
+                        totalEvaluations:
+                          type: integer
+                        totalBlocks:
+                          type: integer
+                        totalAllows:
+                          type: integer
+                        totalMonitors:
+                          type: integer
+                        lastActive:
+                          type: string
+                          format: date-time
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── EVALUATION JOBS ───────────────────────────────────────────────────────
+
+  /evaluations/async:
+    post:
+      tags: [Evaluation Jobs]
+      summary: Submit async evaluation
+      description: |
+        Submit a tool evaluation to be processed asynchronously by the job queue.
+        Returns a `jobId` and `pollUrl` to check the result. Use when you need
+        fire-and-forget evaluation without blocking on the response.
+      operationId: submitAsyncEvaluation
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [toolName, toolInput]
+              properties:
+                toolName:
+                  type: string
+                  description: Name of the tool to evaluate
+                  example: "file_read"
+                toolInput:
+                  type: object
+                  description: Tool input parameters (key-value pairs)
+                agentId:
+                  type: string
+                  description: Agent ID for scoped evaluation
+                context:
+                  type: object
+                  description: Additional evaluation context
+            example:
+              toolName: "db_query"
+              toolInput:
+                table: "users"
+              agentId: "my-agent-001"
+      responses:
+        '202':
+          description: Job enqueued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [pending]
+                  pollUrl:
+                    type: string
+                    description: URL to poll for job status
+              example:
+                jobId: "550e8400-e29b-41d4-a716-446655440099"
+                status: "pending"
+                pollUrl: "/api/v1/evaluations/jobs/550e8400-e29b-41d4-a716-446655440099"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /evaluations/jobs/{jobId}:
+    get:
+      tags: [Evaluation Jobs]
+      summary: Get job status
+      description: Poll a specific async evaluation job for its status and result.
+      operationId: getEvaluationJob
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Job ID returned by POST /evaluations/async
+      responses:
+        '200':
+          description: Job status and result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [pending, running, completed, failed]
+                  jobType:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                  startedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  completedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  result:
+                    $ref: '#/components/schemas/PolicyDecision'
+                    description: Present only when status=completed
+                  error:
+                    type: string
+                    nullable: true
+                    description: Error message when status=failed
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /evaluations/jobs:
+    get:
+      tags: [Evaluation Jobs]
+      summary: List evaluation jobs
+      description: List async evaluation jobs for the authenticated tenant.
+      operationId: listEvaluationJobs
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Job list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        jobId:
+                          type: string
+                        status:
+                          type: string
+                          enum: [pending, running, completed, failed]
+                        jobType:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+                        completedAt:
+                          type: string
+                          format: date-time
+                          nullable: true
+                  total:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── LICENSE ───────────────────────────────────────────────────────────────
+
+  /license/issue:
+    post:
+      tags: [License]
+      summary: Issue license key (admin)
+      description: |
+        Issue a new enterprise license key for a tenant.
+        The raw `AGKEY-...` string is returned **once** — only its SHA-256 hash is stored.
+        **Requires admin key.**
+      operationId: issueLicense
+      security:
+        - AdminKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenantId, tier]
+              properties:
+                tenantId:
+                  type: string
+                  format: uuid
+                  description: Target tenant ID
+                tier:
+                  type: string
+                  enum: [free, pro, enterprise]
+                features:
+                  type: array
+                  items:
+                    type: string
+                  description: Optional feature overrides
+                customLimits:
+                  type: object
+                  description: Custom limits (overrides tier defaults)
+                expiresAt:
+                  type: string
+                  format: date-time
+                  description: License expiry date (null=no expiry)
+                stripeSubscriptionId:
+                  type: string
+                  description: Stripe subscription ID for billing linkage
+                metadata:
+                  type: object
+      responses:
+        '201':
+          description: License issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  licenseKey:
+                    type: string
+                    description: "Raw license key (AGKEY-...) — shown once only"
+                  tenantId:
+                    type: string
+                  tier:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Admin key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /license/status:
+    get:
+      tags: [License]
+      summary: Get license status
+      description: Returns the current license tier, feature flags, limits, and this month's usage.
+      operationId: getLicenseStatus
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: License status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tier:
+                    type: string
+                    enum: [free, pro, enterprise]
+                  status:
+                    type: string
+                    enum: [active, expired, revoked, none]
+                  features:
+                    type: array
+                    items:
+                      type: string
+                  limits:
+                    type: object
+                    description: Feature-specific limits for this tier
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  usage:
+                    type: object
+                    description: Current month usage counters
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /license/validate:
+    post:
+      tags: [License]
+      summary: Validate license key (public)
+      description: |
+        Validate a license key against the certificate revocation list (CRL).
+        Public endpoint — no authentication required.
+      operationId: validateLicense
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [licenseKey]
+              properties:
+                licenseKey:
+                  type: string
+                  description: The AGKEY-... license key to validate
+                  example: "AGKEY-a1b2c3d4..."
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  tier:
+                    type: string
+                    nullable: true
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  revoked:
+                    type: boolean
+        '400':
+          description: Missing or invalid license key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /license/revoke:
+    post:
+      tags: [License]
+      summary: Revoke license key (admin)
+      description: |
+        Revoke a tenant's license key, adding it to the CRL.
+        The tenant immediately loses access to paid features.
+        **Requires admin key.**
+      operationId: revokeLicense
+      security:
+        - AdminKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenantId]
+              properties:
+                tenantId:
+                  type: string
+                  description: Tenant whose license to revoke
+                reason:
+                  type: string
+                  description: Reason for revocation
+      responses:
+        '200':
+          description: License revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revoked:
+                    type: boolean
+                  tenantId:
+                    type: string
+        '401':
+          description: Admin key required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No active license for tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /license/usage:
+    get:
+      tags: [License]
+      summary: License usage history
+      description: Monthly usage history for the last 12 months (evaluations, blocked calls, etc.)
+      operationId: getLicenseUsage
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Monthly usage history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenantId:
+                    type: string
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        month:
+                          type: string
+                          description: "Month in YYYY-MM format"
+                          example: "2024-01"
+                        evaluations:
+                          type: integer
+                        blocked:
+                          type: integer
+                        costCents:
+                          type: number
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── PLAYGROUND (additional) ───────────────────────────────────────────────
+
+  /playground/evaluate:
+    post:
+      tags: [Playground]
+      summary: Evaluate in playground session
+      description: |
+        Evaluate a tool call within an existing playground session.
+        Results are stored in the session's in-memory audit log but not persisted.
+        Authentication: tenant API key or unauthenticated (uses default policy).
+      operationId: playgroundEvaluate
+      security:
+        - ApiKeyAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tool]
+              properties:
+                sessionId:
+                  type: string
+                  format: uuid
+                  description: Playground session ID (from POST /playground/session)
+                tool:
+                  type: string
+                  maxLength: 200
+                  example: "file_read"
+                params:
+                  type: object
+                context:
+                  type: object
+            example:
+              sessionId: "550e8400-e29b-41d4-a716-446655440099"
+              tool: "file_delete"
+              params:
+                path: "/etc/hosts"
+      responses:
+        '200':
+          description: Playground evaluation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyDecision'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /playground/audit/{sessionId}:
+    get:
+      tags: [Playground]
+      summary: Get playground session audit log
+      description: Retrieve the in-memory audit log for a specific playground session.
+      operationId: getPlaygroundAudit
+      security:
+        - ApiKeyAuth: []
+        - {}
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Playground session ID
+      responses:
+        '200':
+          description: Session audit log
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tool:
+                          type: string
+                        result:
+                          type: string
+                          enum: [allow, block, monitor, require_approval]
+                        riskScore:
+                          type: integer
+                        reason:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /playground/policy:
+    get:
+      tags: [Playground]
+      summary: Get active playground policy
+      description: Returns the effective policy in use for the playground environment.
+      operationId: getPlaygroundPolicy
+      security:
+        - ApiKeyAuth: []
+        - {}
+      responses:
+        '200':
+          description: Active playground policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyDocument'
+
+  /playground/scenarios:
+    get:
+      tags: [Playground]
+      summary: List playground scenarios
+      description: |
+        List pre-built test scenarios for the playground (e.g., prompt injection, SSRF, PII leakage).
+        No authentication required.
+      operationId: listPlaygroundScenarios
+      security: []
+      responses:
+        '200':
+          description: Available scenarios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scenarios:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        tool:
+                          type: string
+                        params:
+                          type: object
+                        expectedResult:
+                          type: string
+                          enum: [allow, block, monitor, require_approval]
+
+  # ── POLICY (extended) ─────────────────────────────────────────────────────
+
+  /policy/bundle:
+    get:
+      tags: [Policy]
+      summary: Get compiled policy bundle
+      description: |
+        Returns the compiled `PolicyBundle` optimised for client-side local evaluation.
+        Supports ETag-based conditional requests — clients should send `If-None-Match`
+        to avoid re-downloading an unchanged bundle. Cached for 60 seconds.
+      operationId: getPolicyBundle
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: If-None-Match
+          in: header
+          schema:
+            type: string
+          description: ETag from a previous response (returns 304 if unchanged)
+      responses:
+        '200':
+          description: Compiled policy bundle
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: Bundle checksum for conditional requests
+            Cache-Control:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Compiled PolicyBundle (SDK-compatible format)
+                properties:
+                  checksum:
+                    type: string
+                  compiledAt:
+                    type: string
+                    format: date-time
+                  rules:
+                    type: array
+                    items:
+                      type: object
+        '304':
+          description: Not Modified (ETag matched — bundle is unchanged)
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /policy/coverage:
+    post:
+      tags: [Policy]
+      summary: Check policy coverage for tools
+      description: |
+        Dry-run a list of tool names through the policy engine and return per-tool
+        coverage decisions. Used to identify gaps before agent certification.
+      operationId: checkPolicyCoverage
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tools]
+              properties:
+                tools:
+                  type: array
+                  minItems: 1
+                  maxItems: 200
+                  items:
+                    type: string
+                    minLength: 1
+                  description: Tool names to check coverage for
+            example:
+              tools: ["file_read", "shell_exec", "db_query", "send_email"]
+      responses:
+        '200':
+          description: Coverage results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  coveragePercent:
+                    type: number
+                    description: Percentage of tools with explicit policy rules
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tool:
+                          type: string
+                        decision:
+                          type: string
+                          enum: [allow, block, monitor, require_approval]
+                        ruleId:
+                          type: string
+                          nullable: true
+                        riskScore:
+                          type: integer
+                        covered:
+                          type: boolean
+                          description: True if matched an explicit rule (not default)
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /policy/versions:
+    get:
+      tags: [Policy]
+      summary: List policy versions
+      description: |
+        List all saved policy versions for the authenticated tenant (up to the most recent 50).
+        Use POST /policy/revert/{version} to restore a previous version.
+      operationId: listPolicyVersions
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Policy version history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenantId:
+                    type: string
+                  versions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        version:
+                          type: integer
+                        savedAt:
+                          type: string
+                          format: date-time
+                        ruleCount:
+                          type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /policy/revert/{version}:
+    post:
+      tags: [Policy]
+      summary: Revert policy to a previous version
+      description: |
+        Restore the policy to a previously saved version. The current policy is
+        automatically saved before reverting (creating a new version).
+      operationId: revertPolicy
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: Version number to revert to (from GET /policy/versions)
+      responses:
+        '200':
+          description: Policy reverted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenantId:
+                    type: string
+                  revertedTo:
+                    type: integer
+                    description: Version number restored
+                  message:
+                    type: string
+        '400':
+          description: Invalid version number
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Version not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── POLICY GIT ────────────────────────────────────────────────────────────
+
+  /policies/git/config:
+    get:
+      tags: [Policy Git]
+      summary: Get Git sync configuration
+      description: Retrieve the GitOps policy sync configuration for the tenant.
+      operationId: getGitConfig
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Git configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitConfig'
+        '404':
+          description: No Git configuration found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Policy Git]
+      summary: Set Git sync configuration
+      description: |
+        Configure GitOps policy sync from a GitHub/GitLab repository.
+        The policy file at `policyPath` is fetched on every sync and replaces
+        the tenant's custom policy. Use POST /policies/git/sync to trigger a manual sync.
+      operationId: setGitConfig
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [repoUrl, branch, policyPath]
+              properties:
+                repoUrl:
+                  type: string
+                  format: uri
+                  description: HTTPS URL of the Git repository
+                  example: "https://github.com/acme/policies"
+                branch:
+                  type: string
+                  default: main
+                  description: Branch to sync from
+                policyPath:
+                  type: string
+                  description: Path to the policy YAML/JSON file within the repo
+                  example: "agentguard/policy.yaml"
+                token:
+                  type: string
+                  description: Personal access token for private repos (stored encrypted)
+                enabled:
+                  type: boolean
+                  default: true
+            example:
+              repoUrl: "https://github.com/acme/policies"
+              branch: "main"
+              policyPath: "agentguard/policy.yaml"
+              enabled: true
+      responses:
+        '200':
+          description: Git configuration saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitConfig'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [Policy Git]
+      summary: Delete Git sync configuration
+      description: Remove the GitOps policy sync configuration. Policy is NOT deleted.
+      operationId: deleteGitConfig
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Configuration deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+        '404':
+          description: No configuration found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /policies/git/logs:
+    get:
+      tags: [Policy Git]
+      summary: Get Git sync logs
+      description: List recent Git policy sync events (successes and failures).
+      operationId: getGitSyncLogs
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Sync log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        status:
+                          type: string
+                          enum: [success, failure]
+                        syncedAt:
+                          type: string
+                          format: date-time
+                        commitSha:
+                          type: string
+                          nullable: true
+                        message:
+                          type: string
+                          nullable: true
+
+  /policies/git/sync:
+    post:
+      tags: [Policy Git]
+      summary: Trigger manual Git sync
+      description: |
+        Manually trigger a policy sync from the configured Git repository.
+        Fetches the policy file and updates the tenant's active policy.
+      operationId: triggerGitSync
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Sync triggered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  synced:
+                    type: boolean
+                  commitSha:
+                    type: string
+                    nullable: true
+                  ruleCount:
+                    type: integer
+                  message:
+                    type: string
+        '400':
+          description: Git configuration not found or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /policies/rollback/{version}:
+    post:
+      tags: [Policy Git]
+      summary: Rollback policy to version
+      description: Rollback the policy to a specific Git-synced version.
+      operationId: rollbackPolicyToVersion
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Version identifier (commit SHA or version number)
+      responses:
+        '200':
+          description: Policy rolled back
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rolledBack:
+                    type: boolean
+                  version:
+                    type: string
+        '404':
+          description: Version not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /policies/webhook/github:
+    post:
+      tags: [Policy Git]
+      summary: GitHub webhook receiver
+      description: |
+        Receives GitHub push events to trigger automatic policy sync.
+        **Not for direct use** — configure this URL as a GitHub webhook.
+        Verifies the `X-Hub-Signature-256` HMAC before processing.
+        Triggers a sync when the configured policy file is modified on the target branch.
+      operationId: githubWebhook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: GitHub webhook push event payload
+      responses:
+        '200':
+          description: Webhook processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  syncTriggered:
+                    type: boolean
+        '401':
+          description: Invalid HMAC signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── PRICING ───────────────────────────────────────────────────────────────
+
+  /pricing:
+    get:
+      tags: [Pricing]
+      summary: Get pricing tiers
+      description: |
+        Returns pricing tier information including limits, feature flags, and prices.
+        Public endpoint — no authentication required. Response is cached for 5 minutes.
+      operationId: getPricing
+      security: []
+      responses:
+        '200':
+          description: Pricing tiers
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: public, max-age=300
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tiers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          enum: [free, pro, enterprise]
+                        name:
+                          type: string
+                        priceMonthly:
+                          type: number
+                          nullable: true
+                          description: Monthly price in USD cents (null=custom)
+                        evaluationLimit:
+                          type: integer
+                          nullable: true
+                          description: Monthly evaluation limit (null=unlimited)
+                        features:
+                          type: array
+                          items:
+                            type: string
+                        limits:
+                          type: object
+
+  # ── RATE LIMITS ───────────────────────────────────────────────────────────
+
+  /rate-limits:
+    get:
+      tags: [Rate Limits]
+      summary: List rate limit rules
+      description: List custom per-tenant API rate limit rules.
+      operationId: listRateLimits
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Rate limit rules
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RateLimitRule'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags: [Rate Limits]
+      summary: Create rate limit rule
+      description: Create a custom rate limit rule for a specific endpoint or agent.
+      operationId: createRateLimitRule
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [endpoint, maxRequests, windowSeconds]
+              properties:
+                endpoint:
+                  type: string
+                  description: Endpoint path or pattern to rate limit
+                  example: "/api/v1/evaluate"
+                agentId:
+                  type: string
+                  description: Scope rule to a specific agent
+                maxRequests:
+                  type: integer
+                  minimum: 1
+                  description: Maximum requests allowed per window
+                  example: 100
+                windowSeconds:
+                  type: integer
+                  minimum: 1
+                  maximum: 86400
+                  description: Time window in seconds
+                  example: 60
+                action:
+                  type: string
+                  enum: [block, throttle, log]
+                  default: block
+                  description: Action taken when limit is exceeded
+            example:
+              endpoint: "/api/v1/evaluate"
+              maxRequests: 100
+              windowSeconds: 60
+              action: "block"
+      responses:
+        '201':
+          description: Rate limit rule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitRule'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /rate-limits/{id}:
+    delete:
+      tags: [Rate Limits]
+      summary: Delete rate limit rule
+      description: Remove a custom rate limit rule.
+      operationId: deleteRateLimitRule
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Rate limit rule ID
+      responses:
+        '200':
+          description: Rule deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  deleted:
+                    type: boolean
+        '404':
+          description: Rule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── SIEM ──────────────────────────────────────────────────────────────────
+
+  /siem/splunk/configure:
+    post:
+      tags: [SIEM]
+      summary: Configure Splunk HEC integration
+      description: |
+        Configure Splunk HTTP Event Collector (HEC) integration for real-time audit
+        event forwarding. Requires the `siem_export` feature (Pro+ plan).
+        The HEC token is encrypted at rest.
+      operationId: configureSplunk
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hecUrl, hecToken]
+              properties:
+                hecUrl:
+                  type: string
+                  format: uri
+                  description: Splunk HEC endpoint URL
+                  example: "https://splunk.acme.com:8088/services/collector"
+                hecToken:
+                  type: string
+                  description: Splunk HEC token (encrypted at rest)
+                index:
+                  type: string
+                  default: main
+                  description: Splunk index to write events to
+                source:
+                  type: string
+                  default: agentguard
+                  description: Splunk source field value
+            example:
+              hecUrl: "https://splunk.acme.com:8088/services/collector"
+              hecToken: "splunk-hec-token-here"
+              index: "security"
+      responses:
+        '200':
+          description: Splunk integration configured
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured:
+                    type: boolean
+                  hecUrl:
+                    type: string
+                  index:
+                    type: string
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Feature not available on current plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /siem/splunk/config:
+    get:
+      tags: [SIEM]
+      summary: Get Splunk configuration
+      description: Retrieve current Splunk HEC configuration. Token is masked.
+      operationId: getSplunkConfig
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Splunk configuration (token masked)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured:
+                    type: boolean
+                  hecUrl:
+                    type: string
+                  index:
+                    type: string
+                    nullable: true
+                  source:
+                    type: string
+                    nullable: true
+        '404':
+          description: No Splunk configuration found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [SIEM]
+      summary: Delete Splunk configuration
+      description: Remove the Splunk HEC integration configuration.
+      operationId: deleteSplunkConfig
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Configuration deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+
+  /siem/splunk/test:
+    post:
+      tags: [SIEM]
+      summary: Test Splunk integration
+      description: Send a test event to Splunk HEC to verify the configuration.
+      operationId: testSplunkIntegration
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Test event sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: Splunk not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Test event delivery failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /siem/sentinel/configure:
+    post:
+      tags: [SIEM]
+      summary: Configure Azure Sentinel integration
+      description: |
+        Configure Azure Sentinel (Log Analytics) integration for real-time audit
+        event forwarding. Requires the `siem_export` feature (Pro+ plan).
+        The shared key is encrypted at rest.
+      operationId: configureSentinel
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workspaceId, sharedKey]
+              properties:
+                workspaceId:
+                  type: string
+                  description: Azure Log Analytics workspace ID
+                  example: "12345678-1234-1234-1234-123456789012"
+                sharedKey:
+                  type: string
+                  description: Log Analytics workspace primary/secondary key (base64, encrypted at rest)
+                logType:
+                  type: string
+                  default: AgentGuard_CL
+                  description: Custom log type name in Log Analytics
+      responses:
+        '200':
+          description: Azure Sentinel integration configured
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured:
+                    type: boolean
+                  workspaceId:
+                    type: string
+                  logType:
+                    type: string
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Feature not available on current plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /siem/sentinel/config:
+    get:
+      tags: [SIEM]
+      summary: Get Azure Sentinel configuration
+      description: Retrieve current Azure Sentinel configuration. Shared key is masked.
+      operationId: getSentinelConfig
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Sentinel configuration (key masked)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured:
+                    type: boolean
+                  workspaceId:
+                    type: string
+                  logType:
+                    type: string
+                    nullable: true
+        '404':
+          description: No Sentinel configuration found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [SIEM]
+      summary: Delete Azure Sentinel configuration
+      description: Remove the Azure Sentinel integration configuration.
+      operationId: deleteSentinelConfig
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Configuration deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+
+  /siem/sentinel/test:
+    post:
+      tags: [SIEM]
+      summary: Test Azure Sentinel integration
+      description: Send a test event to Azure Sentinel Log Analytics to verify the configuration.
+      operationId: testSentinelIntegration
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Test event sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: Sentinel not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Test event delivery failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── SSO ───────────────────────────────────────────────────────────────────
+
+  /auth/sso/config:
+    get:
+      tags: [SSO]
+      summary: Get SSO configuration
+      description: Retrieve current SSO (SAML/OIDC) configuration for the tenant. Client secret is masked.
+      operationId: getSSOConfig
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: SSO configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SSOConfig'
+        '404':
+          description: No SSO configuration found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [SSO]
+      summary: Set SSO configuration
+      description: |
+        Configure SAML 2.0 or OIDC single sign-on for the tenant.
+        Requires the `sso` feature (Enterprise plan).
+      operationId: setSSOConfig
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, protocol]
+              properties:
+                provider:
+                  type: string
+                  description: SSO provider name
+                  example: "okta"
+                protocol:
+                  type: string
+                  enum: [saml, oidc]
+                  description: SSO protocol
+                entityId:
+                  type: string
+                  description: SAML Entity ID (for SAML)
+                ssoUrl:
+                  type: string
+                  format: uri
+                  description: SAML SSO URL or OIDC authorization endpoint
+                certificate:
+                  type: string
+                  description: SAML signing certificate (PEM)
+                clientId:
+                  type: string
+                  description: OIDC client ID
+                clientSecret:
+                  type: string
+                  description: OIDC client secret (encrypted at rest)
+                discoveryUrl:
+                  type: string
+                  format: uri
+                  description: OIDC discovery URL (e.g., /.well-known/openid-configuration)
+                enabled:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: SSO configuration saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SSOConfig'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Feature not available on current plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/sso/test:
+    post:
+      tags: [SSO]
+      summary: Test SSO configuration
+      description: Validate the SSO configuration by performing a metadata/discovery check.
+      operationId: testSSOConfig
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: SSO test result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  message:
+                    type: string
+                  details:
+                    type: object
+
+  /auth/sso/authorize:
+    get:
+      tags: [SSO]
+      summary: Initiate SSO login
+      description: |
+        Initiate an SSO login flow. Redirects to the configured IdP.
+        For SAML: generates and sends a SAMLRequest. For OIDC: redirects to authorization endpoint.
+      operationId: initiateSSOLogin
+      security: []
+      parameters:
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Tenant ID to identify the SSO configuration
+        - name: returnTo
+          in: query
+          schema:
+            type: string
+          description: URL to redirect to after successful login
+      responses:
+        '302':
+          description: Redirect to IdP
+          headers:
+            Location:
+              schema:
+                type: string
+              description: IdP login URL
+        '400':
+          description: Invalid or missing tenantId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No SSO configuration for tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/sso/callback:
+    post:
+      tags: [SSO]
+      summary: OIDC callback (POST)
+      description: |
+        OIDC authorization code callback. Processes the `code` and `state` parameters
+        from the IdP, exchanges the code for tokens, and establishes a session.
+        **Not for direct use** — this is the redirect target configured in your IdP.
+      operationId: oidcCallback
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                state:
+                  type: string
+      responses:
+        '302':
+          description: Redirect to dashboard (or returnTo URL)
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          description: Invalid callback parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags: [SSO]
+      summary: SAML callback (GET)
+      description: |
+        SAML 2.0 Assertion Consumer Service (ACS) endpoint — GET variant.
+        Some IdPs POST the SAMLResponse; this GET variant handles providers that redirect.
+        **Not for direct use** — configure this as the ACS URL in your SAML IdP.
+      operationId: samlCallbackGet
+      security: []
+      parameters:
+        - name: SAMLResponse
+          in: query
+          schema:
+            type: string
+          description: Base64-encoded SAML assertion
+        - name: RelayState
+          in: query
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to dashboard (or returnTo URL)
+        '400':
+          description: Invalid SAML response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sso/configure:
+    post:
+      tags: [SSO]
+      summary: Configure SSO (legacy)
+      description: |
+        Configure SSO. This is the legacy endpoint — prefer PUT /auth/sso/config.
+        Both endpoints share the same underlying configuration.
+      operationId: configureSSOLegacy
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider:
+                  type: string
+                protocol:
+                  type: string
+                  enum: [saml, oidc]
+                entityId:
+                  type: string
+                ssoUrl:
+                  type: string
+                certificate:
+                  type: string
+                clientId:
+                  type: string
+                clientSecret:
+                  type: string
+                discoveryUrl:
+                  type: string
+                enabled:
+                  type: boolean
+      responses:
+        '200':
+          description: SSO configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SSOConfig'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sso/config:
+    get:
+      tags: [SSO]
+      summary: Get SSO config (legacy)
+      description: Get SSO configuration. Legacy alias for GET /auth/sso/config.
+      operationId: getSSOConfigLegacy
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: SSO configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SSOConfig'
+        '404':
+          description: Not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [SSO]
+      summary: Delete SSO config (legacy)
+      description: Remove SSO configuration. Legacy alias for DELETE /auth/sso/config.
+      operationId: deleteSSOConfigLegacy
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: SSO configuration deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+
+  # ── TEAM ──────────────────────────────────────────────────────────────────
+
+  /team/members:
+    get:
+      tags: [Team]
+      summary: List team members
+      description: |
+        List all team members for the authenticated tenant.
+        Requires `owner` or `admin` role.
+      operationId: listTeamMembers
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Team members
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  members:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TeamMember'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role (owner or admin required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags: [Team]
+      summary: Invite team member
+      description: |
+        Invite a new team member by email address.
+        Requires `owner` or `admin` role.
+      operationId: inviteTeamMember
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "alice@acme.com"
+                role:
+                  type: string
+                  enum: [admin, member, viewer]
+                  default: member
+                  description: Role to assign to the new member
+            example:
+              email: "alice@acme.com"
+              role: "member"
+      responses:
+        '201':
+          description: Member invited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMember'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Member already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /team/members/{userId}:
+    delete:
+      tags: [Team]
+      summary: Remove team member
+      description: |
+        Remove a team member from the tenant.
+        Requires `owner` role.
+      operationId: removeTeamMember
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID to remove
+      responses:
+        '200':
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '403':
+          description: Owner role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /team/members/{userId}/role:
+    patch:
+      tags: [Team]
+      summary: Change team member role
+      description: |
+        Update a team member's role.
+        Requires `owner` role.
+      operationId: changeTeamMemberRole
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [admin, member, viewer]
+                  description: New role to assign
+            example:
+              role: "admin"
+      responses:
+        '200':
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  role:
+                    type: string
+        '400':
+          description: Invalid role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Owner role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── SCIM 2.0 ─────────────────────────────────────────────────────────────
+  # SCIM endpoints use base path https://api.agentguard.tech (no /api/v1 prefix)
+
+  /api/scim/v2/ServiceProviderConfig:
+    servers:
+      - url: https://api.agentguard.tech
+        description: SCIM base (no /api/v1 prefix)
+    get:
+      tags: [SCIM]
+      summary: SCIM service provider configuration
+      description: Returns SCIM 2.0 service provider configuration (RFC 7643).
+      operationId: scimServiceProviderConfig
+      security: []
+      responses:
+        '200':
+          description: Service provider configuration
+          content:
+            application/scim+json:
+              schema:
+                type: object
+
+  /api/scim/v2/Schemas:
+    servers:
+      - url: https://api.agentguard.tech
+    get:
+      tags: [SCIM]
+      summary: SCIM schemas
+      description: Returns supported SCIM 2.0 schemas (User, Group).
+      operationId: scimSchemas
+      security: []
+      responses:
+        '200':
+          description: SCIM schemas
+          content:
+            application/scim+json:
+              schema:
+                type: object
+
+  /api/scim/v2/tokens:
+    servers:
+      - url: https://api.agentguard.tech
+    post:
+      tags: [SCIM]
+      summary: Create SCIM provisioning token
+      description: |
+        Create a SCIM bearer token for use by your IdP (Okta, Azure AD, etc.)
+        to authenticate SCIM provisioning calls.
+      operationId: createScimToken
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '201':
+          description: SCIM token created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  token:
+                    type: string
+                    description: Bearer token — shown once only
+                  createdAt:
+                    type: string
+                    format: date-time
+
+    get:
+      tags: [SCIM]
+      summary: List SCIM tokens
+      description: List all active SCIM provisioning tokens for the tenant (tokens are masked).
+      operationId: listScimTokens
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: SCIM token list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        createdAt:
+                          type: string
+                          format: date-time
+
+  /api/scim/v2/tokens/{id}:
+    servers:
+      - url: https://api.agentguard.tech
+    delete:
+      tags: [SCIM]
+      summary: Delete SCIM token
+      description: Revoke a SCIM provisioning token.
+      operationId: deleteScimToken
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+
+  /api/scim/v2/Users:
+    servers:
+      - url: https://api.agentguard.tech
+    get:
+      tags: [SCIM]
+      summary: List SCIM users
+      description: List users via SCIM 2.0 protocol. Supports `filter`, `startIndex`, and `count`.
+      operationId: scimListUsers
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: filter
+          in: query
+          schema:
+            type: string
+          description: SCIM filter expression (e.g., `userName eq "alice@acme.com"`)
+        - name: startIndex
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: count
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: SCIM ListResponse (Users)
+          content:
+            application/scim+json:
+              schema:
+                $ref: '#/components/schemas/SCIMListResponse'
+
+    post:
+      tags: [SCIM]
+      summary: Create SCIM user
+      description: Create a new user via SCIM 2.0 protocol.
+      operationId: scimCreateUser
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/scim+json:
+            schema:
+              $ref: '#/components/schemas/SCIMUser'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/scim+json:
+              schema:
+                $ref: '#/components/schemas/SCIMUser'
+        '409':
+          description: User already exists
+          content:
+            application/scim+json:
+              schema:
+                type: object
+
+  /api/scim/v2/Users/{id}:
+    servers:
+      - url: https://api.agentguard.tech
+    get:
+      tags: [SCIM]
+      summary: Get SCIM user
+      description: Retrieve a specific user by SCIM ID.
+      operationId: scimGetUser
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: SCIM user
+          content:
+            application/scim+json:
+              schema:
+                $ref: '#/components/schemas/SCIMUser'
+        '404':
+          description: User not found
+          content:
+            application/scim+json:
+              schema:
+                type: object
+
+    put:
+      tags: [SCIM]
+      summary: Replace SCIM user
+      description: Replace a user's attributes via SCIM 2.0 PUT (full replacement).
+      operationId: scimReplaceUser
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/scim+json:
+            schema:
+              $ref: '#/components/schemas/SCIMUser'
+      responses:
+        '200':
+          description: User replaced
+          content:
+            application/scim+json:
+              schema:
+                $ref: '#/components/schemas/SCIMUser'
+
+    patch:
+      tags: [SCIM]
+      summary: Patch SCIM user
+      description: |
+        Partial update of a user via SCIM 2.0 PATCH operations (RFC 7644).
+        Supports `add`, `remove`, and `replace` operations.
+      operationId: scimPatchUser
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/scim+json:
+            schema:
+              type: object
+              properties:
+                schemas:
+                  type: array
+                  items:
+                    type: string
+                Operations:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      op:
+                        type: string
+                        enum: [add, remove, replace]
+                      path:
+                        type: string
+                      value:
+                        type: object
+      responses:
+        '200':
+          description: User patched
+          content:
+            application/scim+json:
+              schema:
+                $ref: '#/components/schemas/SCIMUser'
+
+    delete:
+      tags: [SCIM]
+      summary: Delete SCIM user
+      description: Deprovision (delete) a user via SCIM 2.0.
+      operationId: scimDeleteUser
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: User deleted
+        '404':
+          description: User not found
+          content:
+            application/scim+json:
+              schema:
+                type: object
+
+  /api/scim/v2/Groups:
+    servers:
+      - url: https://api.agentguard.tech
+    get:
+      tags: [SCIM]
+      summary: List SCIM groups
+      description: List groups via SCIM 2.0 protocol.
+      operationId: scimListGroups
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: filter
+          in: query
+          schema:
+            type: string
+        - name: startIndex
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: count
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: SCIM ListResponse (Groups)
+          content:
+            application/scim+json:
+              schema:
+                $ref: '#/components/schemas/SCIMListResponse'
+
+    post:
+      tags: [SCIM]
+      summary: Create SCIM group
+      description: Create a new group via SCIM 2.0.
+      operationId: scimCreateGroup
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/scim+json:
+            schema:
+              $ref: '#/components/schemas/SCIMGroup'
+      responses:
+        '201':
+          description: Group created
+          content:
+            application/scim+json:
+              schema:
+                $ref: '#/components/schemas/SCIMGroup'
+
+  /api/scim/v2/Groups/{id}:
+    servers:
+      - url: https://api.agentguard.tech
+    get:
+      tags: [SCIM]
+      summary: Get SCIM group
+      description: Retrieve a specific group by SCIM ID.
+      operationId: scimGetGroup
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: SCIM group
+          content:
+            application/scim+json:
+              schema:
+                $ref: '#/components/schemas/SCIMGroup'
+        '404':
+          description: Group not found
+          content:
+            application/scim+json:
+              schema:
+                type: object
+
+    patch:
+      tags: [SCIM]
+      summary: Patch SCIM group
+      description: Partial update of a group via SCIM 2.0 PATCH operations.
+      operationId: scimPatchGroup
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/scim+json:
+            schema:
+              type: object
+              properties:
+                schemas:
+                  type: array
+                  items:
+                    type: string
+                Operations:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      op:
+                        type: string
+                        enum: [add, remove, replace]
+                      path:
+                        type: string
+                      value:
+                        type: object
+      responses:
+        '200':
+          description: Group patched
+          content:
+            application/scim+json:
+              schema:
+                $ref: '#/components/schemas/SCIMGroup'
+
+    delete:
+      tags: [SCIM]
+      summary: Delete SCIM group
+      description: Delete a group via SCIM 2.0.
+      operationId: scimDeleteGroup
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Group deleted
+        '404':
+          description: Group not found
+          content:
+            application/scim+json:
+              schema:
+                type: object
+
+  # ── STRIPE WEBHOOK ────────────────────────────────────────────────────────
+
+  /stripe/webhook:
+    post:
+      tags: [Billing]
+      summary: Stripe webhook receiver
+      description: |
+        Receives Stripe webhook events for subscription lifecycle management.
+        **Not for direct use** — configure this URL in your Stripe dashboard.
+        Verifies the `Stripe-Signature` header before processing.
+        Handles: `checkout.session.completed`, `customer.subscription.updated`,
+        `customer.subscription.deleted`, `invoice.payment_failed`.
+      operationId: stripeWebhook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Stripe event object
+      responses:
+        '200':
+          description: Event processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+        '400':
+          description: Invalid signature or payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    # ── NEW SCHEMAS ────────────────────────────────────────────────────────
+
+    AlertObject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        message:
+          type: string
+        metric:
+          type: string
+        value:
+          type: number
+        threshold:
+          type: number
+        ruleId:
+          type: string
+          nullable: true
+        ruleName:
+          type: string
+          nullable: true
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    AnomalyRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        metric:
+          type: string
+          enum: [block_rate, evaluate_volume, unique_tools, error_rate, latency_p99]
+        condition:
+          type: string
+          enum: [gt, lt, spike, drop]
+        threshold:
+          type: number
+        windowMinutes:
+          type: integer
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    ComplianceReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+        reportType:
+          type: string
+          enum: [owasp-agentic-top10]
+        generatedAt:
+          type: string
+          format: date-time
+        score:
+          type: number
+          description: Overall compliance score (0-100)
+        findings:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+              status:
+                type: string
+                enum: [pass, fail, warn, na]
+              description:
+                type: string
+
+    GitConfig:
+      type: object
+      properties:
+        repoUrl:
+          type: string
+          format: uri
+        branch:
+          type: string
+        policyPath:
+          type: string
+        enabled:
+          type: boolean
+        lastSyncedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastCommitSha:
+          type: string
+          nullable: true
+
+    RateLimitRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        endpoint:
+          type: string
+        agentId:
+          type: string
+          nullable: true
+        maxRequests:
+          type: integer
+        windowSeconds:
+          type: integer
+        action:
+          type: string
+          enum: [block, throttle, log]
+        createdAt:
+          type: string
+          format: date-time
+
+    SSOConfig:
+      type: object
+      properties:
+        provider:
+          type: string
+        protocol:
+          type: string
+          enum: [saml, oidc]
+        entityId:
+          type: string
+          nullable: true
+        ssoUrl:
+          type: string
+          nullable: true
+        clientId:
+          type: string
+          nullable: true
+        discoveryUrl:
+          type: string
+          nullable: true
+        enabled:
+          type: boolean
+        acsUrl:
+          type: string
+          description: ACS callback URL to configure in your IdP
+        entityServiceUrl:
+          type: string
+          description: Entity/audience URL to configure in your IdP
+
+    TeamMember:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [owner, admin, member, viewer]
+        joinedAt:
+          type: string
+          format: date-time
+
+    PolicyDocument:
+      type: object
+      description: AgentGuard policy document with rules
+      properties:
+        version:
+          type: string
+        defaultAction:
+          type: string
+          enum: [allow, block, monitor, require_approval]
+        rules:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              tool:
+                type: string
+              action:
+                type: string
+                enum: [allow, block, monitor, require_approval]
+              riskScore:
+                type: integer
+              conditions:
+                type: array
+                items:
+                  type: object
+
+    SCIMListResponse:
+      type: object
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+        totalResults:
+          type: integer
+        startIndex:
+          type: integer
+        itemsPerPage:
+          type: integer
+        Resources:
+          type: array
+          items:
+            type: object
+
+    SCIMUser:
+      type: object
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+          example:
+            - "urn:ietf:params:scim:schemas:core:2.0:User"
+        id:
+          type: string
+        userName:
+          type: string
+          format: email
+          example: "alice@acme.com"
+        displayName:
+          type: string
+        active:
+          type: boolean
+        emails:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              primary:
+                type: boolean
+        groups:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              display:
+                type: string
+        meta:
+          type: object
+          properties:
+            resourceType:
+              type: string
+            created:
+              type: string
+              format: date-time
+            lastModified:
+              type: string
+              format: date-time
+
+    SCIMGroup:
+      type: object
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+          example:
+            - "urn:ietf:params:scim:schemas:core:2.0:Group"
+        id:
+          type: string
+        displayName:
+          type: string
+          example: "Engineering"
+        members:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+                description: User SCIM ID
+              display:
+                type: string
+        meta:
+          type: object
+          properties:
+            resourceType:
+              type: string
+            created:
+              type: string
+              format: date-time
+            lastModified:
+              type: string
+              format: date-time
