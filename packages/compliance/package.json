@@ -1,0 +1,26 @@
+{
+  "name": "@agentguard/compliance",
+  "version": "0.1.0",
+  "description": "AgentGuard Compliance Evidence Automation — SOC 2 / ISO 27001 evidence collection",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@agentguard/shared": "*",
+    "@prisma/client": "^6.1.0",
+    "hono": "^4.12.7",
+    "ioredis": "^5.4.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

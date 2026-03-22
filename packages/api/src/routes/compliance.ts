@@ -1,15 +1,81 @@
 /**
  * Compliance report routes — /v1/compliance
  *
- * GET  /v1/compliance/report  — aggregated compliance data for PDF export
+ * GET  /v1/compliance/report              — aggregated compliance data for PDF export
+ * POST /v1/compliance/evidence/collect    — trigger SOC2/ISO27001 evidence collection
+ * GET  /v1/compliance/evidence/report     — generate full compliance evidence report
  *
  * Returns OWASP score, policy summary, recent audit events, and agent health.
  */
 import { Hono } from 'hono';
 import { getContext } from '../middleware/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { ComplianceReportGenerator, ContinuousComplianceMonitor } from '@agentguard/compliance';
 
 export const complianceRouter = new Hono();
+
+// ─── Evidence Collection Routes ───────────────────────────────────────────────
+
+/**
+ * POST /v1/compliance/evidence/collect
+ *
+ * Trigger a fresh SOC 2 / ISO 27001 evidence collection run.
+ */
+complianceRouter.post('/evidence/collect', async (c) => {
+  const ctx = getContext(c);
+  if (!['admin', 'owner'].includes(ctx.role)) {
+    return c.json({ error: { code: 'FORBIDDEN', message: 'Requires admin role' } }, 403);
+  }
+
+  const body = await c.req.json().catch(() => ({})) as {
+    periodDays?: number;
+    frameworks?: string[];
+  };
+
+  const generator = new ComplianceReportGenerator(prisma);
+  const report = await generator.generate({
+    tenantId: ctx.tenantId,
+    periodDays: body.periodDays ?? 30,
+    frameworks: body.frameworks ?? ['SOC2', 'ISO27001'],
+  });
+
+  return c.json({
+    data: report,
+    meta: { collectedAt: new Date().toISOString(), version: '1.0' },
+  });
+});
+
+/**
+ * GET /v1/compliance/evidence/report
+ *
+ * Generate and return compliance evidence report with alerts.
+ */
+complianceRouter.get('/evidence/report', async (c) => {
+  const ctx = getContext(c);
+  if (!['admin', 'owner', 'operator'].includes(ctx.role)) {
+    return c.json({ error: { code: 'FORBIDDEN', message: 'Requires operator role or higher' } }, 403);
+  }
+
+  const periodDays = parseInt(c.req.query('periodDays') ?? '30', 10);
+  const frameworks = c.req.query('frameworks')?.split(',') ?? ['SOC2', 'ISO27001'];
+
+  const monitor = new ContinuousComplianceMonitor(prisma);
+  const { report, alerts } = await monitor.runCheck(ctx.tenantId);
+
+  return c.json({
+    data: {
+      report,
+      alerts,
+      alertSummary: {
+        total: alerts.length,
+        critical: alerts.filter((a) => a.severity === 'CRITICAL').length,
+        high: alerts.filter((a) => a.severity === 'HIGH').length,
+        medium: alerts.filter((a) => a.severity === 'MEDIUM').length,
+      },
+    },
+    meta: { generatedAt: new Date().toISOString(), periodDays, frameworks },
+  });
+});
 
 /** GET /v1/compliance/report?fromDate=&toDate= */
 complianceRouter.get('/report', async (c) => {
