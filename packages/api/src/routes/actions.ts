@@ -226,7 +226,7 @@ async function broadcastDecision(
   tool: string,
   decision: { result: string; riskScore: number; matchedRuleId: string | null },
 ): Promise<void> {
-  broadcastToTenant(tenantId, {
+  void broadcastToTenant(tenantId, {
     type: 'audit_event',
     data: {
       agentId,

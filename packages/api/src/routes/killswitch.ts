@@ -30,7 +30,7 @@ killswitchRouter.post('/halt/:agentId', async (c) => {
   const command = await service.issueKill(agentId, input);
 
   // Broadcast kill switch event to connected dashboard clients
-  broadcastToTenant(ctx.tenantId, {
+  void broadcastToTenant(ctx.tenantId, {
     type: 'kill_switch',
     data: {
       agentId,
@@ -60,7 +60,7 @@ killswitchRouter.post('/halt-all', async (c) => {
   const { affectedAgents } = await service.haltAll(input);
 
   // Broadcast global halt event
-  broadcastToTenant(ctx.tenantId, {
+  void broadcastToTenant(ctx.tenantId, {
     type: 'kill_switch',
     data: {
       agentId: '*',
@@ -91,7 +91,7 @@ killswitchRouter.post('/resume/:agentId', async (c) => {
   await service.resumeAgent(agentId, input.reason);
 
   // Broadcast resume event
-  broadcastToTenant(ctx.tenantId, {
+  void broadcastToTenant(ctx.tenantId, {
     type: 'kill_switch',
     data: {
       agentId,
