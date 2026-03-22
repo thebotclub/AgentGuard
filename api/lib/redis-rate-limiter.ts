@@ -114,6 +114,7 @@ function inMemBfClear(ip: string): void {
 
 type RedisLike = {
   status: string;
+  ping(): Promise<string>;
   zadd(key: string, score: number, member: string): Promise<unknown>;
   zremrangebyscore(key: string, min: string | number, max: number): Promise<unknown>;
   zcard(key: string): Promise<number>;

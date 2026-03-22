@@ -40,7 +40,7 @@ async function checkRedisSentinel(): Promise<{ ok: boolean; latencyMs: number; m
   }
   try {
     const { getSentinelClient } = await import('../lib/redis-sentinel.js');
-    const client = getSentinelClient();
+    const client = await getSentinelClient();
     if (!client) return { ok: true, latencyMs: 0, mode: 'sentinel-unconfigured' };
     const start = Date.now();
     await client.ping();

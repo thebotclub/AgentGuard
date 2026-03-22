@@ -13,8 +13,8 @@ import type { AuthMiddleware } from '../middleware/auth.js';
 const AsyncEvalSchema = z.object({
   agentId: z.string().optional(),
   toolName: z.string(),
-  toolInput: z.record(z.unknown()),
-  context: z.record(z.unknown()).optional(),
+  toolInput: z.record(z.string(), z.unknown()),
+  context: z.record(z.string(), z.unknown()).optional(),
 });
 
 export function createJobRoutes(db: IDatabase, auth: AuthMiddleware): Router {

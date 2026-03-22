@@ -104,7 +104,7 @@ if (process.env['CORS_ORIGINS']) {
 }
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       const isAllowed =
         !origin ||
         ALLOWED_ORIGINS.includes(origin) ||
@@ -762,7 +762,7 @@ async function main(): Promise<void> {
     }
 
     // 1b. Stop accepting new connections (server.close)
-    server.close(async (closeErr) => {
+    server.close(async (closeErr?: Error) => {
       if (closeErr) {
         logger.error({ error: String(closeErr) }, 'Error closing HTTP server');
       } else {
