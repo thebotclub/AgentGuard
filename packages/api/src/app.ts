@@ -30,6 +30,7 @@ import { killswitchRouter } from './routes/killswitch.js';
 import { hitlRouter } from './routes/hitl.js';
 import { eventsRouter } from './routes/events.js';
 import { complianceRouter } from './routes/compliance.js';
+import { mcpRouter } from './routes/mcp.js';
 
 export function createApp(): Hono {
   const app = new Hono();
@@ -113,6 +114,7 @@ export function createApp(): Hono {
   app.route('/v1/killswitch', killswitchRouter);
   app.route('/v1/hitl', hitlRouter);
   app.route('/v1/compliance', complianceRouter);
+  app.route('/v1/mcp', mcpRouter);
 
   // ── 404 fallback ──────────────────────────────────────────────────────────────
   app.notFound((c) =>

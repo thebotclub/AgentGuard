@@ -18,6 +18,7 @@ from .openai import openai_guard
 from .crewai import crewai_guard, AgentGuardBlockError
 from .autogen import AutoGenGuard, create_guarded_agent
 from .a2a import A2AGuard
+from .mcp import McpGuard, McpDecision, wrap_server, createMcpProxy
 
 __all__ = [
     "AgentGuardCallbackHandler",
@@ -28,4 +29,9 @@ __all__ = [
     "AutoGenGuard",
     "create_guarded_agent",
     "A2AGuard",
+    # MCP
+    "McpGuard",
+    "McpDecision",
+    "wrap_server",
+    "createMcpProxy",
 ]
