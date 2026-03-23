@@ -367,7 +367,7 @@ function Step2Framework({
 
       {framework && (
         <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '6px', padding: '12px 14px', marginBottom: '20px' }}>
-          <span style={{ fontSize: '13px', color: '#0369a1' }}>
+          <span style={{ fontSize: '13px', color: '#60a5fa' }}>
             📦 Install command:
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
@@ -541,7 +541,7 @@ Authorization: Bearer ${apiKey ? apiKey.slice(0, 20) + '...' : 'your-api-key'}
           <div style={{ fontSize: '16px', fontWeight: 700, color: '#4ade80', marginBottom: '8px' }}>
             ✅ Event received by AgentGuard!
           </div>
-          <div style={{ fontSize: '13px', color: '#166534', marginBottom: '12px' }}>
+          <div style={{ fontSize: '13px', color: '#4ade80', marginBottom: '12px' }}>
             Decision: <strong>{String(result['decision'])}</strong> · Risk Score: <strong>{String(result['riskScore'] ?? 'N/A')}</strong>
           </div>
           <pre style={{ background: '#0f172a', color: '#e2e8f0', borderRadius: '6px', padding: '12px', fontSize: '11px', overflow: 'auto', maxHeight: '150px', margin: 0 }}>

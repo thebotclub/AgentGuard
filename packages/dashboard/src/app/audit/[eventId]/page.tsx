@@ -83,7 +83,7 @@ function HashChainIndicator({ sessionId }: { sessionId: string }) {
       style={{
         padding: '14px 18px',
         borderRadius: '8px',
-        background: data.chainValid ? '#f0fdf4' : '#fef2f2',
+        background: data.chainValid ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
         border: `1px solid ${data.chainValid ? '#86efac' : '#fca5a5'}`,
       }}
     >
@@ -239,7 +239,7 @@ export default function AuditEventDetailPage({
             style={{
               marginTop: '12px',
               padding: '12px',
-              background: '#fef2f2',
+              background: 'rgba(239,68,68,0.1)',
               borderRadius: '6px',
               borderLeft: '3px solid #ef4444',
               fontSize: '13px',
@@ -280,7 +280,7 @@ export default function AuditEventDetailPage({
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {event.outputDataLabels.map((l) => (
-                    <span key={l} style={{ background: '#f0fdf4', color: '#4ade80', padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                    <span key={l} style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80', padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>
                       {l}
                     </span>
                   ))}
