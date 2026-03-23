@@ -35,8 +35,20 @@ jobs:
         # a security product shipping with known HIGH CVEs is a credibility risk.
         run: npm audit --audit-level=high
 
+      - name: TypeScript type check
+        # Mandatory gate — catches type errors before they reach production.
+        # Uses tsconfig.json (strict mode). Fix errors locally with `npx tsc --noEmit`.
+        run: npx tsc --noEmit
+
       - name: Run unit tests with coverage
         run: npm run test:coverage
+
+      - name: E2E tests
+        # Runs tests/e2e.test.ts — self-manages server lifecycle (starts/stops on localhost:3001).
+        # Uses Node.js built-in test runner via tsx. No external framework required.
+        run: npm run test:e2e
+        env:
+          NODE_ENV: test
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
