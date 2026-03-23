@@ -110,3 +110,244 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Navigation ───────────────────────────────────────────────────────────────*/
+.ag-nav {
+  background: #0f172a;
+  color: #f1f5f9;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.ag-nav-brand {
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  margin-right: 32px;
+  letter-spacing: -0.02em;
+  border-radius: 4px;
+  padding: 4px 2px;
+  flex-shrink: 0;
+}
+
+.ag-nav-links {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ag-nav-link {
+  color: #94a3b8;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  background: transparent;
+  transition: color 0.15s, background 0.15s;
+  display: block;
+}
+
+.ag-nav-link--active {
+  color: #38bdf8;
+  font-weight: 600;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.ag-nav-link:hover:not(.ag-nav-link--active) {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ag-nav-version {
+  font-size: 12px;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+/* Hamburger toggle — hidden on desktop */
+.ag-nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  margin-left: 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.ag-nav-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ag-nav-toggle-bar {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #94a3b8;
+  border-radius: 2px;
+  transition: background 0.15s;
+}
+
+.ag-nav-toggle:hover .ag-nav-toggle-bar {
+  background: #e2e8f0;
+}
+
+/* Mobile menu — hidden by default */
+.ag-mobile-menu {
+  display: none;
+  background: #0f172a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 56px;
+  z-index: 99;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.25s ease;
+}
+
+.ag-mobile-menu--open {
+  max-height: 400px;
+}
+
+.ag-mobile-links {
+  list-style: none;
+  margin: 0;
+  padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ag-mobile-link {
+  display: block;
+  color: #94a3b8;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 400;
+  transition: color 0.15s, background 0.15s;
+}
+
+.ag-mobile-link--active {
+  color: #38bdf8;
+  font-weight: 600;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.ag-mobile-link:hover:not(.ag-mobile-link--active) {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Show hamburger + mobile menu on small screens */
+@media (max-width: 767px) {
+  .ag-nav-links {
+    display: none;
+  }
+
+  .ag-nav-version {
+    display: none;
+  }
+
+  .ag-nav-toggle {
+    display: flex;
+  }
+
+  .ag-mobile-menu {
+    display: block;
+  }
+}
+
+/* ── Common layout utilities (extracted from repeated inline styles) ─────────*/
+
+/* flex column with tight gap — used in form field wrappers */
+.flex-col-gap-1 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Small uppercase label — used for field labels throughout dashboard */
+.label-sm {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Standard table cell padding (compact) */
+.td-sm {
+  padding: 10px 14px;
+}
+
+/* Page header row: title left, actions right */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+/* Standard page title */
+.page-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Section sub-heading */
+.section-title {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Standard white card */
+.card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+/* Card with top border removed (for tab panels below header) */
+.card-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  padding: 24px;
+}
+
+/* Inline button group row */
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* Modal/panel footer action row */
+.action-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

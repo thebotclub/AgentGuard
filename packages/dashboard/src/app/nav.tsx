@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 
 const NAV_LINKS = [
   { href: '/', label: 'Overview' },
@@ -16,82 +17,124 @@ const NAV_LINKS = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        toggleRef.current &&
+        !toggleRef.current.contains(e.target as Node)
+      ) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpen]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+        toggleRef.current?.focus();
+      }
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [menuOpen]);
 
   return (
-    <nav
-      aria-label="Main navigation"
-      style={{
-        background: '#0f172a',
-        color: '#f1f5f9',
-        padding: '0 24px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0',
-        height: '56px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-      }}
-    >
-      <Link
-        href="/"
-        aria-label="AgentGuard — Home"
-        style={{
-          color: '#38bdf8',
-          fontWeight: 700,
-          fontSize: '16px',
-          textDecoration: 'none',
-          marginRight: '32px',
-          letterSpacing: '-0.02em',
-          borderRadius: '4px',
-          padding: '4px 2px',
-        }}
+    <>
+      <nav
+        aria-label="Main navigation"
+        className="ag-nav"
       >
-        🛡️ AgentGuard
-      </Link>
+        <Link
+          href="/"
+          aria-label="AgentGuard — Home"
+          className="ag-nav-brand"
+        >
+          🛡️ AgentGuard
+        </Link>
 
-      {/* Nav links as a <ul> for proper list semantics */}
-      <ul
-        role="list"
-        style={{
-          display: 'flex',
-          gap: '4px',
-          flex: 1,
-          margin: 0,
-          padding: 0,
-          listStyle: 'none',
-        }}
+        {/* Desktop nav links */}
+        <ul
+          role="list"
+          className="ag-nav-links"
+        >
+          {NAV_LINKS.map((link) => {
+            const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+            return (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={active ? 'ag-nav-link ag-nav-link--active' : 'ag-nav-link'}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="ag-nav-version" aria-label="Version 0.9.0">
+          v0.9.0
+        </div>
+
+        {/* Hamburger button — mobile only */}
+        <button
+          ref={toggleRef}
+          className="ag-nav-toggle"
+          aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={menuOpen}
+          aria-controls="ag-mobile-menu"
+          onClick={() => setMenuOpen((o) => !o)}
+        >
+          <span className="ag-nav-toggle-bar" />
+          <span className="ag-nav-toggle-bar" />
+          <span className="ag-nav-toggle-bar" />
+        </button>
+      </nav>
+
+      {/* Mobile dropdown menu */}
+      <div
+        id="ag-mobile-menu"
+        ref={menuRef}
+        className={menuOpen ? 'ag-mobile-menu ag-mobile-menu--open' : 'ag-mobile-menu'}
+        aria-hidden={!menuOpen}
       >
-        {NAV_LINKS.map((link) => {
-          const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
-          return (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                aria-current={active ? 'page' : undefined}
-                style={{
-                  color: active ? '#38bdf8' : '#94a3b8',
-                  textDecoration: 'none',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: active ? 600 : 400,
-                  background: active ? 'rgba(56, 189, 248, 0.1)' : 'transparent',
-                  transition: 'color 0.15s, background 0.15s',
-                  display: 'block',
-                }}
-              >
-                {link.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-
-      <div style={{ fontSize: '12px', color: '#475569' }} aria-label="Version 0.9.0">
-        v0.9.0
+        <ul role="list" className="ag-mobile-links">
+          {NAV_LINKS.map((link) => {
+            const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+            return (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={active ? 'ag-mobile-link ag-mobile-link--active' : 'ag-mobile-link'}
+                  tabIndex={menuOpen ? 0 : -1}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </div>
-    </nav>
+    </>
   );
 }

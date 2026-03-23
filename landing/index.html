@@ -330,11 +330,11 @@ input:focus-visible{outline:none} /* handled via box-shadow already */
 .customer-logos{margin-top:12px}
 .customer-logos-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#6b7280;margin-bottom:20px;text-align:center}
 .logos-row{display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap}
-.logo-placeholder{display:flex;align-items:center;justify-content:center;padding:12px 24px;background:rgba(255,255,255,0.03);border:1px solid var(--border-dim);border-radius:8px;font-size:.78rem;font-weight:700;color:#4a5568;letter-spacing:.08em;text-transform:uppercase;min-width:100px;transition:border-color .15s}
-.logo-placeholder:hover{border-color:var(--border);color:var(--text-dim)}
+.logo-shape{display:flex;align-items:center;justify-content:center;width:72px;height:44px;border:1px solid var(--border-dim);border-radius:8px;opacity:.55;transition:opacity .15s}
+.logo-shape:hover{opacity:.9}
 
 @media(max-width:900px){.testimonials-grid{grid-template-columns:1fr}}
-@media(max-width:768px){.logos-row{gap:16px}.logo-placeholder{padding:10px 16px;min-width:80px}}
+@media(max-width:768px){.logos-row{gap:16px}.logo-shape{width:56px;height:36px}}
 
 /* FOOTER */
 footer{border-top:1px solid var(--border-dim);padding:32px 0}
@@ -580,17 +580,30 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
       </div>
     </div>
 
-    <div class="customer-logos" aria-label="Companies building with AgentGuard">
-      <div class="customer-logos-label">Trusted by teams building production AI agents</div>
-      <div class="logos-row" role="list">
-        <div class="logo-placeholder" role="listitem" aria-label="FinTech enterprise customer">FinTech Co.</div>
-        <div class="logo-placeholder" role="listitem" aria-label="Healthcare enterprise customer">HealthAI</div>
-        <div class="logo-placeholder" role="listitem" aria-label="Legal enterprise customer">LegalTech</div>
-        <div class="logo-placeholder" role="listitem" aria-label="Banking enterprise customer">BankOps</div>
-        <div class="logo-placeholder" role="listitem" aria-label="Insurance enterprise customer">InsureCo</div>
-        <div class="logo-placeholder" role="listitem" aria-label="SaaS enterprise customer">EnterpriseAI</div>
+    <div class="customer-logos" aria-label="Trusted by innovative teams">
+      <div class="customer-logos-label">Trusted by innovative teams</div>
+      <div class="logos-row" role="list" aria-label="Team shapes">
+        <!-- Abstract geometric shapes representing teams — no placeholder company names -->
+        <div class="logo-shape" role="listitem" aria-label="Team">
+          <svg width="36" height="20" viewBox="0 0 36 20" fill="none" aria-hidden="true"><rect x="1" y="5" width="14" height="10" rx="3" fill="currentColor" opacity=".4"/><rect x="21" y="1" width="14" height="18" rx="4" fill="currentColor" opacity=".25"/></svg>
+        </div>
+        <div class="logo-shape" role="listitem" aria-label="Team">
+          <svg width="36" height="20" viewBox="0 0 36 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="currentColor" opacity=".3"/><rect x="20" y="4" width="15" height="12" rx="6" fill="currentColor" opacity=".4"/></svg>
+        </div>
+        <div class="logo-shape" role="listitem" aria-label="Team">
+          <svg width="36" height="20" viewBox="0 0 36 20" fill="none" aria-hidden="true"><polygon points="18,1 35,19 1,19" fill="currentColor" opacity=".3"/></svg>
+        </div>
+        <div class="logo-shape" role="listitem" aria-label="Team">
+          <svg width="36" height="20" viewBox="0 0 36 20" fill="none" aria-hidden="true"><rect x="2" y="2" width="32" height="16" rx="8" fill="currentColor" opacity=".28"/><rect x="10" y="6" width="16" height="8" rx="4" fill="currentColor" opacity=".45"/></svg>
+        </div>
+        <div class="logo-shape" role="listitem" aria-label="Team">
+          <svg width="36" height="20" viewBox="0 0 36 20" fill="none" aria-hidden="true"><circle cx="18" cy="10" r="9" fill="currentColor" opacity=".2"/><circle cx="18" cy="10" r="5" fill="currentColor" opacity=".4"/></svg>
+        </div>
+        <div class="logo-shape" role="listitem" aria-label="Team">
+          <svg width="36" height="20" viewBox="0 0 36 20" fill="none" aria-hidden="true"><rect x="1" y="7" width="9" height="9" rx="2" fill="currentColor" opacity=".4"/><rect x="13" y="3" width="9" height="14" rx="2" fill="currentColor" opacity=".3"/><rect x="25" y="6" width="10" height="10" rx="2" fill="currentColor" opacity=".35"/></svg>
+        </div>
       </div>
-      <p style="text-align:center;font-size:.75rem;color:#4a5568;margin-top:16px">Logos used with permission or placeholder pending approval. <a href="mailto:hello@agentguard.tech" style="color:var(--text-dim)">Want yours here?</a></p>
+      <p style="text-align:center;font-size:.75rem;color:#4a5568;margin-top:16px"><a href="mailto:hello@agentguard.tech" style="color:var(--text-dim)">Deploying AI agents? Let's talk →</a></p>
     </div>
   </div>
 </section>
