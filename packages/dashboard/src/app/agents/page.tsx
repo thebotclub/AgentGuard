@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   listAgents,
@@ -9,6 +9,7 @@ import {
   getKillSwitchStatus,
   type Agent,
 } from '../../lib/api';
+import { TableSkeleton, ErrorBox, EmptyBox } from '../ui';
 
 // ─── Kill switch status indicator ─────────────────────────────────────────────
 
@@ -71,9 +72,21 @@ interface KillDialogProps {
 function KillDialog({ agent, onConfirm, onCancel, isLoading }: KillDialogProps) {
   const [tier, setTier] = useState<'SOFT' | 'HARD'>('SOFT');
   const [reason, setReason] = useState('');
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const headingId = 'kill-dialog-heading';
+
+  // Focus the dialog on mount; restore focus on unmount
+  useEffect(() => {
+    const firstBtn = dialogRef.current?.querySelector<HTMLElement>('button, [tabindex="0"]');
+    firstBtn?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onCancel]);
 
   return (
     <div
+      role="presentation"
       style={{
         position: 'fixed',
         inset: 0,
@@ -86,6 +99,10 @@ function KillDialog({ agent, onConfirm, onCancel, isLoading }: KillDialogProps) 
       onClick={onCancel}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={headingId}
         style={{
           background: '#fff',
           borderRadius: '12px',
@@ -96,7 +113,7 @@ function KillDialog({ agent, onConfirm, onCancel, isLoading }: KillDialogProps) 
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+        <h2 id={headingId} style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
           🔴 Kill Switch — Confirm
         </h2>
         <p style={{ margin: '0 0 20px', color: '#64748b', fontSize: '14px' }}>
@@ -204,9 +221,20 @@ function KillDialog({ agent, onConfirm, onCancel, isLoading }: KillDialogProps) 
 
 function ResumeDialog({ agent, onConfirm, onCancel, isLoading }: { agent: Agent; onConfirm: (reason: string) => void; onCancel: () => void; isLoading: boolean }) {
   const [reason, setReason] = useState('');
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const headingId = 'resume-dialog-heading';
+
+  useEffect(() => {
+    const firstBtn = dialogRef.current?.querySelector<HTMLElement>('button, input');
+    firstBtn?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onCancel]);
 
   return (
     <div
+      role="presentation"
       style={{
         position: 'fixed',
         inset: 0,
@@ -219,6 +247,10 @@ function ResumeDialog({ agent, onConfirm, onCancel, isLoading }: { agent: Agent;
       onClick={onCancel}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={headingId}
         style={{
           background: '#fff',
           borderRadius: '12px',
@@ -229,7 +261,7 @@ function ResumeDialog({ agent, onConfirm, onCancel, isLoading }: { agent: Agent;
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+        <h2 id={headingId} style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
           ✅ Resume Agent
         </h2>
         <p style={{ margin: '0 0 20px', color: '#64748b', fontSize: '14px' }}>
@@ -344,8 +376,8 @@ function AgentRow({ agent }: { agent: Agent }) {
         </td>
 
         {/* Last seen */}
-        <td style={{ padding: '14px 16px', fontSize: '12px', color: '#94a3b8', whiteSpace: 'nowrap' }}>
-          {agent.lastSeenAt ? new Date(agent.lastSeenAt).toLocaleString() : '—'}
+        <td style={{ padding: '14px 16px', fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+          {agent.lastSeenAt ? new Date(agent.lastSeenAt).toLocaleString() : <span style={{ color: '#94a3b8' }} aria-label="Never seen">—</span>}
         </td>
 
         {/* Kill switch controls */}
@@ -353,6 +385,7 @@ function AgentRow({ agent }: { agent: Agent }) {
           {isKilled || agent.status === 'KILLED' ? (
             <button
               onClick={() => setResumeDialog(true)}
+              aria-label={`Resume agent ${agent.name}`}
               style={{
                 padding: '6px 12px',
                 background: '#f0fdf4',
@@ -369,6 +402,7 @@ function AgentRow({ agent }: { agent: Agent }) {
           ) : (
             <button
               onClick={() => setKillDialog(true)}
+              aria-label={`Kill agent ${agent.name}`}
               style={{
                 padding: '6px 12px',
                 background: '#fef2f2',
@@ -477,6 +511,7 @@ export default function AgentsPage() {
           </select>
           <button
             onClick={() => refetch()}
+            aria-label="Refresh agents list"
             style={{ padding: '6px 12px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: '#374151' }}
           >
             ↺ Refresh
@@ -505,20 +540,37 @@ export default function AgentsPage() {
 
       {/* Error */}
       {isError && (
-        <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
-          ⚠️ {(error as Error).message}
-        </div>
+        <ErrorBox
+          message={(error as Error).message}
+          onRetry={() => refetch()}
+          style={{ marginBottom: 16 }}
+        />
       )}
 
       {/* Table */}
       <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
         {isLoading ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Loading agents…</div>
+          <TableSkeleton rows={6} cols={7} />
         ) : agents.length === 0 ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
-            No agents found.
-            {statusFilter && ' Try clearing the status filter.'}
-          </div>
+          <EmptyBox
+            icon="🤖"
+            title={statusFilter ? 'No agents match this filter' : 'No agents configured yet'}
+            description={
+              statusFilter
+                ? 'Try clearing the status filter to see all agents.'
+                : 'Register your first agent via the API or use the onboarding wizard to get started.'
+            }
+            action={
+              statusFilter ? (
+                <button
+                  onClick={() => setStatusFilter('')}
+                  style={{ padding: '8px 20px', background: '#3b82f6', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+                >
+                  Clear filter
+                </button>
+              ) : undefined
+            }
+          />
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>

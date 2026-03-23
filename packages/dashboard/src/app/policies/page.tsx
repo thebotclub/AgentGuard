@@ -7,7 +7,7 @@
  * Delete with confirmation. Version history (last 5). Test Policy dry-run.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow, format } from 'date-fns';
 import {
@@ -23,6 +23,7 @@ import {
   type PolicyVersion,
   type PolicyTestResult,
 } from '../../lib/api';
+import { CardSkeleton, ErrorBox } from '../ui';
 
 // ── Default YAML template ──────────────────────────────────────────────────────
 
@@ -197,25 +198,47 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
 
   const loading = createMutation.isPending || updateMutation.isPending;
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const headingId = 'policy-editor-heading';
+
+  useEffect(() => {
+    const firstInput = dialogRef.current?.querySelector<HTMLElement>('input, textarea, button');
+    firstInput?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.6)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 1000, padding: '20px',
-    }}>
-      <div style={{
-        background: '#fff', borderRadius: '12px',
-        width: '800px', maxWidth: '95vw', maxHeight: '90vh',
-        display: 'flex', flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
-      }}>
+    <div
+      role="presentation"
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.6)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 1000, padding: '20px',
+      }}
+      onClick={onClose}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={headingId}
+        style={{
+          background: '#fff', borderRadius: '12px',
+          width: '800px', maxWidth: '95vw', maxHeight: '90vh',
+          display: 'flex', flexDirection: 'column',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
+          <h2 id={headingId} style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
             {isEditing ? `✏️ Edit Policy: ${policy.name}` : '📜 Create New Policy'}
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#94a3b8' }}>✕</button>
+          <button onClick={onClose} aria-label="Close policy editor" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#64748b' }}>✕</button>
         </div>
 
         {/* Body */}
@@ -355,7 +378,7 @@ function VersionHistoryPanel({
         📚 Version History (last 5)
       </h4>
       {versions.length === 0 && (
-        <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>No versions yet.</p>
+        <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>No versions yet.</p>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {versions.map((v: PolicyVersion) => (
@@ -453,22 +476,44 @@ function TestPolicyModal({
     testMutation.mutate(sampleTests);
   }, [testMutation]);
 
+  const testDialogRef = useRef<HTMLDivElement>(null);
+  const testHeadingId = 'test-policy-heading';
+
+  useEffect(() => {
+    testDialogRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 1001, padding: '20px',
-    }}>
-      <div style={{
-        background: '#fff', borderRadius: '12px', width: '700px', maxWidth: '95vw',
-        maxHeight: '90vh', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
-      }}>
+    <div
+      role="presentation"
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 1001, padding: '20px',
+      }}
+      onClick={onClose}
+    >
+      <div
+        ref={testDialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={testHeadingId}
+        tabIndex={-1}
+        style={{
+          background: '#fff', borderRadius: '12px', width: '700px', maxWidth: '95vw',
+          maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
+          <h2 id={testHeadingId} style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
             🧪 Test Policy: {policyName}
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#94a3b8' }}>✕</button>
+          <button onClick={onClose} aria-label="Close test dialog" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#64748b' }}>✕</button>
         </div>
 
         <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
@@ -698,13 +743,15 @@ export default function PoliciesPage() {
 
       {/* Error */}
       {error && (
-        <div style={{ background: '#fee2e2', color: '#dc2626', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
-          Error loading policies: {error instanceof Error ? error.message : 'Unknown error'}
-        </div>
+        <ErrorBox
+          message={`Error loading policies: ${error instanceof Error ? error.message : 'Unknown error'}`}
+          onRetry={() => void queryClient.invalidateQueries({ queryKey: ['policies'] })}
+          style={{ marginBottom: 16 }}
+        />
       )}
 
       {/* Loading */}
-      {isLoading && <div style={{ color: '#64748b', padding: '20px' }}>Loading policies…</div>}
+      {isLoading && <CardSkeleton count={3} />}
 
       {/* Empty state */}
       {!isLoading && policies.length === 0 && (
@@ -764,15 +811,25 @@ export default function PoliciesPage() {
 
       {/* Delete confirmation */}
       {deleteTarget && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: '12px', padding: '28px',
-            width: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-          }}>
-            <h2 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+        <div
+          role="presentation"
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          }}
+          onClick={() => setDeleteTarget(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-policy-heading"
+            style={{
+              background: '#fff', borderRadius: '12px', padding: '28px',
+              width: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="delete-policy-heading" style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
               🗑 Delete Policy
             </h2>
             <p style={{ margin: '0 0 20px', fontSize: '14px', color: '#475569' }}>

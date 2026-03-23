@@ -1,0 +1,112 @@
+/**
+ * AgentGuard Dashboard — Global Styles
+ * UX improvements: focus management, skeleton loaders, WCAG AA compliance
+ */
+
+/* ── Focus Management (WCAG 2.4.7 — Focus Visible) ─────────────────────────── */
+
+/*
+  Provide visible focus styles for ALL interactive elements.
+  Using :focus-visible so mouse users don't see the ring, keyboard users do.
+*/
+:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove default outline only when :focus-visible is supported */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Extra: nav links need the focus ring to be visible on dark bg */
+nav a:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+/* ── Skip-to-Content Link ─────────────────────────────────────────────────────
+   First focusable element on the page — allows keyboard users to skip nav.
+*/
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 8px;
+  z-index: 9999;
+  padding: 8px 16px;
+  background: #38bdf8;
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 0 0 6px 6px;
+  text-decoration: none;
+  transition: top 0.15s;
+}
+.skip-to-content:focus {
+  top: 0;
+  outline: 2px solid #0f172a;
+  outline-offset: 2px;
+}
+
+/* ── Skeleton Loaders ─────────────────────────────────────────────────────────*/
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.4s infinite linear;
+}
+
+/* ── Accessible Spinner ───────────────────────────────────────────────────────*/
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ── Button base reset (accessible hover/active) ─────────────────────────────*/
+button {
+  /* Ensures buttons participate in focus-visible correctly */
+  font-family: inherit;
+}
+
+/* ── Screen-reader only utility ──────────────────────────────────────────────*/
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Reduced motion support ───────────────────────────────────────────────────*/
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background: #e2e8f0;
+  }
+  .spinner {
+    animation-duration: 1.5s;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}

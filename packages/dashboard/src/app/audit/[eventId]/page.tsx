@@ -30,7 +30,7 @@ function Field({ label, value, mono = false }: { label: string; value: React.Rea
           wordBreak: 'break-all',
         }}
       >
-        {value ?? <span style={{ color: '#94a3b8' }}>—</span>}
+        {value ?? <span style={{ color: '#64748b' }} aria-label="Not set">—</span>}
       </div>
     </div>
   );
@@ -64,7 +64,7 @@ function HashChainIndicator({ sessionId }: { sessionId: string }) {
 
   if (isLoading) {
     return (
-      <div style={{ color: '#94a3b8', fontSize: '13px' }}>
+      <div role="status" style={{ color: '#475569', fontSize: '13px' }}>
         Verifying hash chain…
       </div>
     );
@@ -131,8 +131,13 @@ export default function AuditEventDetailPage({
 
   if (isLoading) {
     return (
-      <div style={{ textAlign: 'center', padding: '80px', color: '#94a3b8' }}>
-        Loading event…
+      <div
+        role="status"
+        aria-label="Loading event"
+        style={{ textAlign: 'center', padding: '80px', color: '#475569', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}
+      >
+        <div className="spinner" style={{ width: 28, height: 28, border: '2px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+        <span>Loading event…</span>
       </div>
     );
   }
@@ -255,7 +260,7 @@ export default function AuditEventDetailPage({
                 Input Labels
               </div>
               {event.inputDataLabels.length === 0 ? (
-                <span style={{ color: '#94a3b8', fontSize: '13px' }}>None</span>
+                <span style={{ color: '#64748b', fontSize: '13px' }}>None</span>
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {event.inputDataLabels.map((l) => (
@@ -271,7 +276,7 @@ export default function AuditEventDetailPage({
                 Output Labels
               </div>
               {event.outputDataLabels.length === 0 ? (
-                <span style={{ color: '#94a3b8', fontSize: '13px' }}>None</span>
+                <span style={{ color: '#64748b', fontSize: '13px' }}>None</span>
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {event.outputDataLabels.map((l) => (

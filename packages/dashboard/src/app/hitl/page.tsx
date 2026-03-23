@@ -10,7 +10,7 @@
  * Slack notifications are sent automatically by the API when a gate is created.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow, format } from 'date-fns';
 import {
@@ -20,6 +20,7 @@ import {
   rejectGate,
   type HITLGate,
 } from '../../lib/api';
+import { TableSkeleton, ErrorBox } from '../ui';
 
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/v1';
 
@@ -68,20 +69,41 @@ interface DecisionDialogProps {
 function DecisionDialog({ gate, decision, onClose, onSubmit, loading }: DecisionDialogProps) {
   const [note, setNote] = useState('');
   const isApprove = decision === 'approve';
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const headingId = 'hitl-dialog-heading';
+
+  useEffect(() => {
+    const firstEl = dialogRef.current?.querySelector<HTMLElement>('textarea, button');
+    firstEl?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !loading) onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose, loading]);
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.5)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 1000,
-    }}>
-      <div style={{
-        background: '#fff', borderRadius: '12px', padding: '28px',
-        width: '480px', maxWidth: '90vw',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-      }}>
-        <h2 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+    <div
+      role="presentation"
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 1000,
+      }}
+      onClick={() => { if (!loading) onClose(); }}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={headingId}
+        style={{
+          background: '#fff', borderRadius: '12px', padding: '28px',
+          width: '480px', maxWidth: '90vw',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id={headingId} style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
           {isApprove ? '✅ Approve Action' : '❌ Reject Action'}
         </h2>
         <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b' }}>
@@ -127,6 +149,7 @@ function DecisionDialog({ gate, decision, onClose, onSubmit, loading }: Decision
           <button
             onClick={onClose}
             disabled={loading}
+            aria-label="Cancel and close dialog"
             style={{
               padding: '8px 16px', borderRadius: '6px', border: '1px solid #e2e8f0',
               background: '#fff', cursor: 'pointer', fontSize: '13px',
@@ -170,7 +193,7 @@ function GateRow({ gate, onDecide, showActions = true }: GateRowProps) {
             {gate.agentId.slice(0, 12)}…
           </div>
           <div style={{ color: '#0f172a', fontWeight: 500, marginTop: '2px' }}>
-            {gate.toolName ?? <span style={{ color: '#94a3b8' }}>unknown-tool</span>}
+            {gate.toolName ?? <span style={{ color: '#64748b', fontStyle: 'italic' }}>unknown tool</span>}
           </div>
         </td>
         <td style={{ padding: '12px 16px', fontSize: '13px', color: '#475569' }}>
@@ -211,6 +234,8 @@ function GateRow({ gate, onDecide, showActions = true }: GateRowProps) {
             {gate.decisionNote && (
               <button
                 onClick={() => setExpanded(!expanded)}
+                aria-expanded={expanded}
+                aria-label={expanded ? 'Hide decision note' : 'Show decision note'}
                 style={{ marginLeft: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#3b82f6', fontSize: '11px' }}
               >{expanded ? 'Hide' : 'Note'}</button>
             )}
@@ -245,7 +270,7 @@ function GateTable({ gates, onDecide, showActions, emptyMsg }: {
     return (
       <div style={{
         background: '#fff', borderRadius: '8px', padding: '48px 24px',
-        textAlign: 'center', color: '#94a3b8', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        textAlign: 'center', color: '#475569', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
       }}>
         <div style={{ fontSize: '32px', marginBottom: '8px' }}>✅</div>
         <p style={{ margin: 0, fontSize: '14px' }}>{emptyMsg}</p>
@@ -435,11 +460,16 @@ export default function HitlPage() {
       {/* Pending Tab */}
       {activeTab === 'pending' && (
         <>
-          {pendingLoading && <div style={{ color: '#64748b', padding: '20px' }}>Loading…</div>}
-          {pendingError && (
-            <div style={{ background: '#fee2e2', color: '#dc2626', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
-              Error loading gates: {pendingError instanceof Error ? pendingError.message : 'Unknown error'}
+          {pendingLoading && (
+            <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+              <TableSkeleton rows={4} cols={5} />
             </div>
+          )}
+          {pendingError && (
+            <ErrorBox
+              message={`Error loading gates: ${pendingError instanceof Error ? pendingError.message : 'Unknown error'}`}
+              style={{ marginBottom: 16 }}
+            />
           )}
           {!pendingLoading && (
             <GateTable
@@ -456,11 +486,12 @@ export default function HitlPage() {
       {activeTab === 'history' && (
         <>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', alignItems: 'center' }}>
-            <label style={{ fontSize: '13px', color: '#64748b' }}>Filter:</label>
+            <label style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Filter:</label>
             {['', 'APPROVED', 'REJECTED', 'TIMED_OUT'].map((s) => (
               <button
                 key={s}
                 onClick={() => setHistoryStatus(s)}
+                aria-pressed={historyStatus === s}
                 style={{
                   padding: '4px 12px', borderRadius: '5px',
                   border: '1px solid #e2e8f0',
@@ -473,7 +504,11 @@ export default function HitlPage() {
               </button>
             ))}
           </div>
-          {historyLoading && <div style={{ color: '#64748b', padding: '20px' }}>Loading…</div>}
+          {historyLoading && (
+            <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+              <TableSkeleton rows={5} cols={5} />
+            </div>
+          )}
           {!historyLoading && (
             <GateTable
               gates={historyGates}

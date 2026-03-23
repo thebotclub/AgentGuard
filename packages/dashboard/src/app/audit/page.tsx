@@ -8,6 +8,7 @@ import {
   buildExportUrl,
   type AuditQueryParams,
 } from '../../lib/api';
+import { TableSkeleton, ErrorBox, EmptyBox } from '../ui';
 
 // ─── Types & constants ────────────────────────────────────────────────────────
 
@@ -194,7 +195,7 @@ export default function AuditLogPage() {
   const [filters, setFilters] = useState<AuditQueryParams>({ limit: 50 });
   const [cursorStack, setCursorStack] = useState<string[]>([]);
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['audit', filters],
     queryFn: () => listAuditEvents(filters),
   });
@@ -249,6 +250,7 @@ export default function AuditLogPage() {
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => handleExport('csv')}
+            aria-label="Export audit log as CSV"
             style={{
               padding: '8px 16px',
               background: '#fff',
@@ -264,6 +266,7 @@ export default function AuditLogPage() {
           </button>
           <button
             onClick={() => handleExport('json')}
+            aria-label="Export audit log as JSON"
             style={{
               padding: '8px 16px',
               background: '#fff',
@@ -285,18 +288,11 @@ export default function AuditLogPage() {
 
       {/* Error state */}
       {isError && (
-        <div
-          style={{
-            background: '#fee2e2',
-            color: '#b91c1c',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            marginBottom: '16px',
-            fontSize: '14px',
-          }}
-        >
-          ⚠️ Failed to load audit events: {(error as Error).message}
-        </div>
+        <ErrorBox
+          message={`Failed to load audit events: ${(error as Error).message}`}
+          onRetry={() => void refetch()}
+          style={{ marginBottom: 16 }}
+        />
       )}
 
       {/* Table */}
@@ -309,13 +305,21 @@ export default function AuditLogPage() {
         }}
       >
         {isLoading ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
-            Loading audit events…
-          </div>
+          <TableSkeleton rows={7} cols={8} />
         ) : events.length === 0 ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
-            No audit events found matching the current filters.
-          </div>
+          <EmptyBox
+            icon="📋"
+            title="No audit events found"
+            description="No events match the current filters. Try adjusting or clearing your filters."
+            action={
+              <button
+                onClick={() => handleFilterChange({ limit: 50 })}
+                style={{ padding: '8px 20px', background: '#3b82f6', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+              >
+                Clear all filters
+              </button>
+            }
+          />
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>

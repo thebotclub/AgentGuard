@@ -14,6 +14,7 @@ import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, subDays } from 'date-fns';
 import { getComplianceReport, type ComplianceReport, type OWASPControl } from '../../lib/api';
+import { LoadingBox, ErrorBox } from '../ui';
 
 // ── Score Gauge ────────────────────────────────────────────────────────────────
 
@@ -172,7 +173,7 @@ function ReportView({ report }: { report: ComplianceReport }) {
           Policy Summary
         </h2>
         {report.policies.length === 0 ? (
-          <p style={{ color: '#94a3b8', fontSize: '14px' }}>No policies configured.</p>
+          <p style={{ color: '#475569', fontSize: '14px' }}>No policies configured.</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -244,7 +245,7 @@ function ReportView({ report }: { report: ComplianceReport }) {
           Recent Audit Events (last 20)
         </h2>
         {report.auditSummary.recentEvents.length === 0 ? (
-          <p style={{ color: '#94a3b8', fontSize: '14px' }}>No audit events in this period.</p>
+          <p style={{ color: '#475569', fontSize: '14px' }}>No audit events in this period.</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -257,7 +258,7 @@ function ReportView({ report }: { report: ComplianceReport }) {
             <tbody>
               {report.auditSummary.recentEvents.map((e) => (
                 <tr key={e.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '8px 12px', fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{format(new Date(e.occurredAt), 'PP p')}</td>
+                  <td style={{ padding: '8px 12px', fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>{format(new Date(e.occurredAt), 'PP p')}</td>
                   <td style={{ padding: '8px 12px', fontSize: '11px', fontFamily: 'monospace', color: '#64748b' }}>{e.agentId.slice(0, 8)}…</td>
                   <td style={{ padding: '8px 12px', fontSize: '12px', color: '#475569' }}>{e.actionType}</td>
                   <td style={{ padding: '8px 12px', fontSize: '12px', color: '#475569' }}>{e.toolName ?? '—'}</td>
@@ -403,8 +404,17 @@ export default function ReportPage() {
 
       {/* Error */}
       {error && (
-        <div style={{ background: '#fee2e2', color: '#dc2626', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
-          Error generating report: {error instanceof Error ? error.message : 'Unknown error'}
+        <ErrorBox
+          message={`Error generating report: ${error instanceof Error ? error.message : 'Unknown error'}`}
+          onRetry={handleGenerate}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      {/* Loading */}
+      {isLoading && (
+        <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <LoadingBox message="Generating compliance report…" style={{ padding: '80px 24px' }} />
         </div>
       )}
 
