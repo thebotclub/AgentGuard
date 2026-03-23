@@ -18,7 +18,9 @@ export default defineConfig({
     siteTitle: 'AgentGuard',
 
     nav: [
+      { text: 'Quickstart', link: '/getting-started/quickstart' },
       { text: 'Guide', link: '/guide/getting-started' },
+      { text: 'Integrations', link: '/integrations/langchain' },
       { text: 'API Reference', link: '/api/overview' },
       { text: 'Architecture', link: '/architecture/overview' },
       { text: 'Security', link: '/security/hardening' },
@@ -32,10 +34,31 @@ export default defineConfig({
     ],
 
     sidebar: {
+      '/getting-started/': [
+        {
+          text: 'Getting Started',
+          items: [
+            { text: 'Quickstart', link: '/getting-started/quickstart' },
+            { text: 'Architecture', link: '/getting-started/architecture' },
+            { text: 'Troubleshooting', link: '/getting-started/troubleshooting' },
+          ],
+        },
+      ],
+      '/integrations/': [
+        {
+          text: 'Framework Integrations',
+          items: [
+            { text: 'LangChain', link: '/integrations/langchain' },
+            { text: 'CrewAI', link: '/integrations/crewai' },
+            { text: 'AutoGen / AG2', link: '/integrations/autogen' },
+          ],
+        },
+      ],
       '/guide/': [
         {
           text: 'Getting Started',
           items: [
+            { text: '5-Minute Quickstart', link: '/getting-started/quickstart' },
             { text: 'Introduction', link: '/guide/introduction' },
             { text: 'Installation', link: '/guide/getting-started' },
             { text: 'Quick Start', link: '/guide/quick-start' },
@@ -56,7 +79,9 @@ export default defineConfig({
           items: [
             { text: 'TypeScript SDK', link: '/guide/sdk-typescript' },
             { text: 'Python SDK', link: '/guide/sdk-python' },
-            { text: 'LangChain', link: '/guide/integration-langchain' },
+            { text: 'LangChain', link: '/integrations/langchain' },
+            { text: 'CrewAI', link: '/integrations/crewai' },
+            { text: 'AutoGen / AG2', link: '/integrations/autogen' },
             { text: 'MCP Servers', link: '/guide/mcp-servers' },
           ],
         },
