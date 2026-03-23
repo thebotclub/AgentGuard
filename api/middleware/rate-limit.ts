@@ -115,8 +115,11 @@ export function rateLimitMiddleware(req: Request, res: Response, next: NextFunct
 
   checkRateLimit(ip, hasAuth)
     .then((result: RateLimitResult) => {
+      // Unix timestamp (seconds) when the current rate-limit window resets
+      const resetTimestamp = Math.ceil((Date.now() + 60_000) / 1000);
       res.setHeader('X-RateLimit-Limit', String(result.limit));
       res.setHeader('X-RateLimit-Remaining', String(result.remaining));
+      res.setHeader('X-RateLimit-Reset', String(resetTimestamp));
 
       if (!result.allowed) {
         const retryAfter = result.retryAfter ?? 60;
@@ -189,8 +192,10 @@ export function authEndpointRateLimitMiddleware(req: Request, res: Response, nex
 
   checkAuthEndpointRateLimit(ip)
     .then((result: RateLimitResult) => {
+      const resetTimestamp = Math.ceil((Date.now() + 60_000) / 1000);
       res.setHeader('X-RateLimit-Limit', String(result.limit));
       res.setHeader('X-RateLimit-Remaining', String(result.remaining));
+      res.setHeader('X-RateLimit-Reset', String(resetTimestamp));
 
       if (!result.allowed) {
         const retryAfter = result.retryAfter ?? 60;
@@ -218,8 +223,10 @@ export function scimRateLimitMiddleware(req: Request, res: Response, next: NextF
 
   checkScimRateLimit(ip)
     .then((result: RateLimitResult) => {
+      const resetTimestamp = Math.ceil((Date.now() + 60_000) / 1000);
       res.setHeader('X-RateLimit-Limit', String(result.limit));
       res.setHeader('X-RateLimit-Remaining', String(result.remaining));
+      res.setHeader('X-RateLimit-Reset', String(resetTimestamp));
 
       if (!result.allowed) {
         const retryAfter = result.retryAfter ?? 60;
