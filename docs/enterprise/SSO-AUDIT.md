@@ -97,9 +97,15 @@ Overall risk rating: **LOW** for production use; recommendations below are harde
 
 ### ⚠️ Gaps & Recommendations
 
-#### G-SSO-01: Callback does not issue a proper session JWT (HIGH — functional gap)
+#### ~~G-SSO-01: Callback does not issue a proper session JWT~~ ✅ FIXED (2026-03-23)
 **Finding:** After successful SSO, `POST /api/v1/auth/sso/callback` returns user info but does not issue a signed session JWT. The `returnTo` redirect passes `sso_user_id` as a query param, which is insecure (appears in server logs, browser history).  
-**Recommendation:** Issue a short-lived signed JWT (15 min) after SSO success. Store session in `HttpOnly` cookie or return as Bearer token. Remove `sso_user_id` from query string.
+**Fix:** Implemented in `api/lib/sso-jwt.ts` + `api/routes/sso.ts`:
+- Issues a signed HS256 JWT (15-min TTL) after successful SSO (both OIDC and SAML paths)
+- JWT claims: `sub` (user ID), `iss` (agentguard), `iat`, `exp`, `tenant_id`, `email`, `role`, `sso: true`
+- Token set as `HttpOnly; SameSite=Lax` cookie (`ag_session`) and returned in response body
+- `returnTo` redirect no longer appends `sso_user_id`/`sso_role`/`sso_email` to query string
+- Signing key from `JWT_SECRET` env var (≥32 chars required); dev fallback prints warning
+- Tests: `api/tests/routes/sso.test.ts` (11 tests covering both POST and GET callbacks)
 
 #### G-SSO-02: Duplicate callback logic (GET + POST) — code duplication (MEDIUM)
 **Finding:** The GET callback (`/api/v1/auth/sso/callback GET`) duplicates the POST handler logic rather than sharing a common implementation. This creates maintenance risk.  
@@ -145,7 +151,7 @@ Overall risk rating: **LOW** for production use; recommendations below are harde
 
 | Priority | Item | Effort |
 |----------|------|--------|
-| P1 | G-SSO-01: Issue proper session JWT after SSO | Medium |
+| ~~P1~~ | ~~G-SSO-01: Issue proper session JWT after SSO~~ | ✅ FIXED 2026-03-23 |
 | P2 | G-SSO-05: Enforce forceSso in auth middleware | Small |
 | P2 | G-SSO-06: Audit log SSO login events | Small |
 | P3 | G-SSO-03: SAML SP metadata endpoint | Small |

@@ -41,6 +41,7 @@ import {
 } from '../lib/saml-provider.js';
 import type { SsoProvider, SsoProtocol } from '../db-interface.js';
 import { z } from 'zod';
+import { signSsoJwt, SSO_JWT_COOKIE } from '../lib/sso-jwt.js';
 
 // ── Schemas ───────────────────────────────────────────────────────────────
 
@@ -510,11 +511,27 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
 
         console.log(`[sso/callback] tenant ${tenantId}: SSO login for sub=${ssoUser.sub} email=${ssoUser.email} role=${ssoUser.role}`);
 
-        // Return session info
-        // In a full implementation, this would issue a JWT session token.
-        // For now, return the provisioned user info.
+        // Issue a signed JWT session token (G-SSO-01 fix)
+        const sessionToken = await signSsoJwt({
+          sub: provisionedUser.id,
+          tenant_id: provisionedUser.tenant_id,
+          email: provisionedUser.email,
+          role: provisionedUser.role,
+        });
+
+        // Set token as HttpOnly, Secure, SameSite=Lax cookie
+        const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+        res.cookie(SSO_JWT_COOKIE, sessionToken, {
+          httpOnly: true,
+          secure: isSecure,
+          sameSite: 'lax',
+          maxAge: 15 * 60 * 1000, // 15 minutes (matches JWT exp)
+          path: '/',
+        });
+
         const responsePayload = {
           success: true,
+          token: sessionToken,
           user: {
             id: provisionedUser.id,
             tenantId: provisionedUser.tenant_id,
@@ -527,14 +544,9 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           returnTo: returnTo ?? null,
         };
 
-        // If returnTo is set, redirect with a token cookie (dashboard flow)
+        // If returnTo is set, redirect — NO user-identifying data in query string
         if (returnTo) {
-          const params = new URLSearchParams({
-            sso_user_id: provisionedUser.id,
-            sso_role: provisionedUser.role,
-            sso_email: provisionedUser.email ?? '',
-          });
-          return res.redirect(302, `${returnTo}?${params.toString()}`);
+          return res.redirect(302, returnTo);
         }
 
         return res.json(responsePayload);
@@ -609,17 +621,32 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
 
         console.log(`[sso/callback GET] tenant ${tenantId}: SSO login for ${user.email} role=${role}`);
 
+        // Issue a signed JWT session token (G-SSO-01 fix)
+        const sessionToken = await signSsoJwt({
+          sub: provisionedUser.id,
+          tenant_id: provisionedUser.tenant_id,
+          email: provisionedUser.email,
+          role: provisionedUser.role,
+        });
+
+        // Set token as HttpOnly, Secure, SameSite=Lax cookie
+        const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+        res.cookie(SSO_JWT_COOKIE, sessionToken, {
+          httpOnly: true,
+          secure: isSecure,
+          sameSite: 'lax',
+          maxAge: 15 * 60 * 1000, // 15 minutes (matches JWT exp)
+          path: '/',
+        });
+
+        // If returnTo is set, redirect — NO user-identifying data in query string
         if (returnTo) {
-          const params = new URLSearchParams({
-            sso_user_id: provisionedUser.id,
-            sso_role: provisionedUser.role,
-            sso_email: provisionedUser.email ?? '',
-          });
-          return res.redirect(302, `${returnTo}?${params.toString()}`);
+          return res.redirect(302, returnTo);
         }
 
         return res.json({
           success: true,
+          token: sessionToken,
           user: {
             id: provisionedUser.id, tenantId, email: provisionedUser.email,
             name: provisionedUser.name, role, provider: config.provider,
