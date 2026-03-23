@@ -18,15 +18,15 @@ export default defineConfig({
     siteTitle: 'AgentGuard',
 
     nav: [
-      { text: 'Quickstart', link: '/getting-started/quickstart' },
-      { text: 'Guide', link: '/guide/getting-started' },
+      { text: 'Getting Started', link: '/getting-started/quickstart' },
+      { text: 'Guide', link: '/guide/introduction' },
       { text: 'Integrations', link: '/integrations/langchain' },
       { text: 'API Reference', link: '/api/overview' },
-      { text: 'Architecture', link: '/architecture/overview' },
       { text: 'Security', link: '/security/hardening' },
       {
         text: 'v0.9.0',
         items: [
+          { text: 'Architecture', link: '/architecture/overview' },
           { text: 'Changelog', link: '/changelog' },
           { text: 'Roadmap', link: '/roadmap' },
         ],
@@ -58,10 +58,8 @@ export default defineConfig({
         {
           text: 'Getting Started',
           items: [
-            { text: '5-Minute Quickstart', link: '/getting-started/quickstart' },
             { text: 'Introduction', link: '/guide/introduction' },
             { text: 'Installation', link: '/guide/getting-started' },
-            { text: 'Quick Start', link: '/guide/quick-start' },
             { text: 'Configuration', link: '/guide/configuration' },
           ],
         },
@@ -75,14 +73,12 @@ export default defineConfig({
           ],
         },
         {
-          text: 'Integrations',
+          text: 'SDKs & Integrations',
           items: [
             { text: 'TypeScript SDK', link: '/guide/sdk-typescript' },
             { text: 'Python SDK', link: '/guide/sdk-python' },
-            { text: 'LangChain', link: '/integrations/langchain' },
-            { text: 'CrewAI', link: '/integrations/crewai' },
-            { text: 'AutoGen / AG2', link: '/integrations/autogen' },
             { text: 'MCP Servers', link: '/guide/mcp-servers' },
+            { text: '→ Framework Integrations', link: '/integrations/langchain' },
           ],
         },
       ],

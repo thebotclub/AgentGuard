@@ -29,10 +29,10 @@ const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000/v1'
 function statusBadge(status: HITLGate['status']) {
   const cfg: Record<string, { bg: string; color: string; label: string }> = {
     PENDING:   { bg: '#fef3c7', color: '#b45309', label: '⏳ Pending' },
-    APPROVED:  { bg: '#dcfce7', color: '#15803d', label: '✅ Approved' },
+    APPROVED:  { bg: '#dcfce7', color: '#4ade80', label: '✅ Approved' },
     REJECTED:  { bg: '#fee2e2', color: '#dc2626', label: '❌ Rejected' },
-    TIMED_OUT: { bg: '#f1f5f9', color: '#64748b', label: '⏰ Timed Out' },
-    CANCELLED: { bg: '#f1f5f9', color: '#64748b', label: '🚫 Cancelled' },
+    TIMED_OUT: { bg: '#f1f5f9', color: 'var(--text-muted)', label: '⏰ Timed Out' },
+    CANCELLED: { bg: '#f1f5f9', color: 'var(--text-muted)', label: '🚫 Cancelled' },
   };
   const c = cfg[status] ?? cfg['PENDING']!;
   return (
@@ -97,39 +97,39 @@ function DecisionDialog({ gate, decision, onClose, onSubmit, loading }: Decision
         aria-modal="true"
         aria-labelledby={headingId}
         style={{
-          background: '#fff', borderRadius: '12px', padding: '28px',
+          background: 'var(--bg-card)', borderRadius: '12px', padding: '28px',
           width: '480px', maxWidth: '90vw',
           boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id={headingId} style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+        <h2 id={headingId} style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: 'var(--text-bright)' }}>
           {isApprove ? '✅ Approve Action' : '❌ Reject Action'}
         </h2>
-        <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b' }}>
+        <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--text-muted)' }}>
           {isApprove
             ? 'The agent will be allowed to proceed with this action.'
             : 'The agent will be blocked from executing this action.'}
         </p>
 
-        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '13px' }}>
+        <div style={{ background: 'var(--bg-page)', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '13px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <div><span style={{ color: '#64748b' }}>Agent:</span><br /><strong>{gate.agentId.slice(0, 8)}…</strong></div>
-            <div><span style={{ color: '#64748b' }}>Tool:</span><br /><strong>{gate.toolName ?? '—'}</strong></div>
-            <div><span style={{ color: '#64748b' }}>Rule:</span><br /><strong>{gate.matchedRuleId}</strong></div>
-            <div><span style={{ color: '#64748b' }}>Timeout:</span><br /><strong>{format(new Date(gate.timeoutAt), 'HH:mm:ss')}</strong></div>
+            <div><span style={{ color: 'var(--text-muted)' }}>Agent:</span><br /><strong>{gate.agentId.slice(0, 8)}…</strong></div>
+            <div><span style={{ color: 'var(--text-muted)' }}>Tool:</span><br /><strong>{gate.toolName ?? '—'}</strong></div>
+            <div><span style={{ color: 'var(--text-muted)' }}>Rule:</span><br /><strong>{gate.matchedRuleId}</strong></div>
+            <div><span style={{ color: 'var(--text-muted)' }}>Timeout:</span><br /><strong>{format(new Date(gate.timeoutAt), 'HH:mm:ss')}</strong></div>
           </div>
           {gate.toolParams && (
             <div style={{ marginTop: '8px' }}>
-              <span style={{ color: '#64748b' }}>Params:</span>
-              <pre style={{ margin: '4px 0 0', fontSize: '11px', background: '#fff', padding: '8px', borderRadius: '4px', overflow: 'auto', maxHeight: '100px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Params:</span>
+              <pre style={{ margin: '4px 0 0', fontSize: '11px', background: 'var(--bg-card)', padding: '8px', borderRadius: '4px', overflow: 'auto', maxHeight: '100px' }}>
                 {JSON.stringify(gate.toolParams, null, 2)}
               </pre>
             </div>
           )}
         </div>
 
-        <label style={{ fontSize: '13px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '6px' }}>
+        <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
           Reason (optional)
         </label>
         <textarea
@@ -139,7 +139,7 @@ function DecisionDialog({ gate, decision, onClose, onSubmit, loading }: Decision
           rows={3}
           style={{
             width: '100%', boxSizing: 'border-box',
-            border: '1px solid #e2e8f0', borderRadius: '6px',
+            border: '1px solid var(--border)', borderRadius: '6px',
             padding: '8px 10px', fontSize: '13px', fontFamily: 'inherit',
             resize: 'vertical', outline: 'none',
           }}
@@ -151,8 +151,8 @@ function DecisionDialog({ gate, decision, onClose, onSubmit, loading }: Decision
             disabled={loading}
             aria-label="Cancel and close dialog"
             style={{
-              padding: '8px 16px', borderRadius: '6px', border: '1px solid #e2e8f0',
-              background: '#fff', cursor: 'pointer', fontSize: '13px',
+              padding: '8px 16px', borderRadius: '6px', border: '1px solid var(--border)',
+              background: 'var(--bg-card)', cursor: 'pointer', fontSize: '13px',
             }}
           >Cancel</button>
           <button
@@ -187,22 +187,22 @@ function GateRow({ gate, onDecide, showActions = true }: GateRowProps) {
 
   return (
     <>
-      <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+      <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <td style={{ padding: '12px 16px', fontSize: '13px' }}>
-          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#64748b' }}>
+          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--text-muted)' }}>
             {gate.agentId.slice(0, 12)}…
           </div>
-          <div style={{ color: '#0f172a', fontWeight: 500, marginTop: '2px' }}>
-            {gate.toolName ?? <span style={{ color: '#64748b', fontStyle: 'italic' }}>unknown tool</span>}
+          <div style={{ color: 'var(--text-bright)', fontWeight: 500, marginTop: '2px' }}>
+            {gate.toolName ?? <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>unknown tool</span>}
           </div>
         </td>
-        <td style={{ padding: '12px 16px', fontSize: '13px', color: '#475569' }}>
+        <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-secondary)' }}>
           {gate.matchedRuleId}
         </td>
         <td style={{ padding: '12px 16px' }}>
           {statusBadge(gate.status)}
         </td>
-        <td style={{ padding: '12px 16px', fontSize: '12px', color: '#64748b' }}>
+        <td style={{ padding: '12px 16px', fontSize: '12px', color: 'var(--text-muted)' }}>
           {formatDistanceToNow(new Date(gate.createdAt), { addSuffix: true })}
         </td>
         {showActions && gate.status === 'PENDING' && (
@@ -229,7 +229,7 @@ function GateRow({ gate, onDecide, showActions = true }: GateRowProps) {
           </td>
         )}
         {showActions && gate.status !== 'PENDING' && (
-          <td style={{ padding: '12px 16px', fontSize: '12px', color: '#64748b' }}>
+          <td style={{ padding: '12px 16px', fontSize: '12px', color: 'var(--text-muted)' }}>
             {gate.decidedAt ? formatDistanceToNow(new Date(gate.decidedAt), { addSuffix: true }) : '—'}
             {gate.decisionNote && (
               <button
@@ -242,14 +242,14 @@ function GateRow({ gate, onDecide, showActions = true }: GateRowProps) {
           </td>
         )}
         {!showActions && (
-          <td style={{ padding: '12px 16px', fontSize: '12px', color: '#64748b' }}>
+          <td style={{ padding: '12px 16px', fontSize: '12px', color: 'var(--text-muted)' }}>
             {gate.decidedAt ? formatDistanceToNow(new Date(gate.decidedAt), { addSuffix: true }) : timeUntilTimeout(gate.timeoutAt)}
           </td>
         )}
       </tr>
       {expanded && gate.decisionNote && (
         <tr>
-          <td colSpan={5} style={{ padding: '0 16px 12px 32px', fontSize: '12px', color: '#475569', fontStyle: 'italic' }}>
+          <td colSpan={5} style={{ padding: '0 16px 12px 32px', fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
             Note: {gate.decisionNote}
           </td>
         </tr>
@@ -269,8 +269,8 @@ function GateTable({ gates, onDecide, showActions, emptyMsg }: {
   if (gates.length === 0) {
     return (
       <div style={{
-        background: '#fff', borderRadius: '8px', padding: '48px 24px',
-        textAlign: 'center', color: '#475569', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        background: 'var(--bg-card)', borderRadius: '8px', padding: '48px 24px',
+        textAlign: 'center', color: 'var(--text-secondary)', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
       }}>
         <div style={{ fontSize: '32px', marginBottom: '8px' }}>✅</div>
         <p style={{ margin: 0, fontSize: '14px' }}>{emptyMsg}</p>
@@ -279,12 +279,12 @@ function GateTable({ gates, onDecide, showActions, emptyMsg }: {
   }
 
   return (
-    <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+    <div style={{ background: 'var(--bg-card)', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
-          <tr style={{ background: '#f8fafc' }}>
+          <tr style={{ background: 'var(--bg-page)' }}>
             {['Agent / Tool', 'Matched Rule', 'Status', 'Created', showActions ? 'Action' : 'Resolved'].map((h) => (
-              <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {h}
               </th>
             ))}
@@ -404,18 +404,18 @@ export default function HitlPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 6px', color: '#0f172a' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 6px', color: 'var(--text-bright)' }}>
             👤 HITL Approval Queue
           </h1>
-          <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: 0 }}>
             Human-in-the-loop decisions — approve or reject pending agent actions.
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '6px 12px', background: '#f8fafc', borderRadius: '6px',
-            fontSize: '12px', color: '#64748b',
+            padding: '6px 12px', background: 'var(--bg-page)', borderRadius: '6px',
+            fontSize: '12px', color: 'var(--text-muted)',
           }}>
             <span style={{
               width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block',
@@ -435,7 +435,7 @@ export default function HitlPage() {
 
       {/* Slack notice */}
       <div style={{
-        background: '#f0f9ff', border: '1px solid #bae6fd',
+        background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)',
         borderRadius: '8px', padding: '12px 16px', marginBottom: '20px',
         fontSize: '13px', color: '#0369a1',
         display: 'flex', alignItems: 'center', gap: '8px',
@@ -448,7 +448,7 @@ export default function HitlPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: '#f1f5f9', padding: '4px', borderRadius: '8px', width: 'fit-content' }}>
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: 'var(--bg-card-alt)', padding: '4px', borderRadius: '8px', width: 'fit-content' }}>
         <button style={tabStyle('pending')} onClick={() => setActiveTab('pending')}>
           Pending {pendingGates.length > 0 && <span style={{ background: '#ef4444', color: '#fff', borderRadius: '10px', padding: '1px 6px', fontSize: '11px', marginLeft: '6px' }}>{pendingGates.length}</span>}
         </button>
@@ -461,7 +461,7 @@ export default function HitlPage() {
       {activeTab === 'pending' && (
         <>
           {pendingLoading && (
-            <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
               <TableSkeleton rows={4} cols={5} />
             </div>
           )}
@@ -486,7 +486,7 @@ export default function HitlPage() {
       {activeTab === 'history' && (
         <>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', alignItems: 'center' }}>
-            <label style={{ fontSize: '13px', color: '#475569', fontWeight: 500 }}>Filter:</label>
+            <label style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Filter:</label>
             {['', 'APPROVED', 'REJECTED', 'TIMED_OUT'].map((s) => (
               <button
                 key={s}
@@ -494,7 +494,7 @@ export default function HitlPage() {
                 aria-pressed={historyStatus === s}
                 style={{
                   padding: '4px 12px', borderRadius: '5px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--border)',
                   background: historyStatus === s ? '#3b82f6' : '#fff',
                   color: historyStatus === s ? '#fff' : '#475569',
                   cursor: 'pointer', fontSize: '12px',
@@ -505,7 +505,7 @@ export default function HitlPage() {
             ))}
           </div>
           {historyLoading && (
-            <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
               <TableSkeleton rows={5} cols={5} />
             </div>
           )}

@@ -1,6 +1,7 @@
 /**
  * Shared UI primitives — AgentGuard Dashboard
  * Loading skeletons, error states, empty states, accessible spinner
+ * Dark theme — uses CSS custom properties from globals.css
  */
 'use client';
 
@@ -8,7 +9,7 @@ import type { ReactNode, CSSProperties } from 'react';
 
 // ── Spinner ────────────────────────────────────────────────────────────────────
 
-export function Spinner({ size = 20, color = '#3b82f6' }: { size?: number; color?: string }) {
+export function Spinner({ size = 20 }: { size?: number }) {
   return (
     <span
       role="status"
@@ -17,8 +18,8 @@ export function Spinner({ size = 20, color = '#3b82f6' }: { size?: number; color
         display: 'inline-block',
         width: size,
         height: size,
-        border: `2px solid #e2e8f0`,
-        borderTopColor: color,
+        border: `2px solid rgba(148,163,184,0.2)`,
+        borderTopColor: 'var(--accent)',
         borderRadius: '50%',
         animation: 'spin 0.7s linear infinite',
         flexShrink: 0,
@@ -66,7 +67,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
             gridTemplateColumns: `repeat(${cols}, 1fr)`,
             gap: 12,
             padding: '14px 16px',
-            borderBottom: '1px solid #f1f5f9',
+            borderBottom: '1px solid var(--border-subtle)',
           }}
         >
           {Array.from({ length: cols }).map((_, ci) => (
@@ -91,7 +92,7 @@ export function CardSkeleton({ count = 3 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          style={{ background: '#fff', borderRadius: 10, padding: '16px 20px', border: '1px solid #f1f5f9' }}
+          style={{ background: 'var(--bg-card)', borderRadius: 10, padding: '16px 20px', border: '1px solid var(--border)' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Skeleton width={200} height={18} />
@@ -119,7 +120,7 @@ export function LoadingBox({ message = 'Loading…', style }: { message?: string
         flexDirection: 'column',
         alignItems: 'center',
         gap: 12,
-        color: '#64748b',
+        color: 'var(--text-secondary)',
         fontSize: 14,
         ...style,
       }}
@@ -145,8 +146,8 @@ export function ErrorBox({
     <div
       role="alert"
       style={{
-        background: '#fee2e2',
-        border: '1px solid #fca5a5',
+        background: 'rgba(239,68,68,0.12)',
+        border: '1px solid rgba(239,68,68,0.3)',
         borderRadius: 8,
         padding: '16px 20px',
         display: 'flex',
@@ -157,18 +158,18 @@ export function ErrorBox({
     >
       <span aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
       <div style={{ flex: 1 }}>
-        <div style={{ color: '#b91c1c', fontSize: 14, fontWeight: 500 }}>{message}</div>
+        <div style={{ color: '#f87171', fontSize: 14, fontWeight: 500 }}>{message}</div>
         {onRetry && (
           <button
             onClick={onRetry}
             style={{
               marginTop: 10,
               padding: '6px 14px',
-              background: '#fff',
-              border: '1px solid #fca5a5',
+              background: 'rgba(239,68,68,0.15)',
+              border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 6,
               fontSize: 13,
-              color: '#b91c1c',
+              color: '#f87171',
               cursor: 'pointer',
               fontWeight: 500,
             }}
@@ -201,14 +202,14 @@ export function EmptyBox({
       style={{
         padding: '60px 24px',
         textAlign: 'center',
-        color: '#475569',
+        color: 'var(--text-secondary)',
         ...style,
       }}
     >
       {icon && <div style={{ fontSize: 48, marginBottom: 12, lineHeight: 1 }}>{icon}</div>}
-      <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600, color: '#1e293b' }}>{title}</h3>
+      <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600, color: 'var(--text-bright)' }}>{title}</h3>
       {description && (
-        <p style={{ margin: '0 0 20px', fontSize: 14, color: '#64748b', maxWidth: 400, marginLeft: 'auto', marginRight: 'auto' }}>
+        <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--text-secondary)', maxWidth: 400, marginLeft: 'auto', marginRight: 'auto' }}>
           {description}
         </p>
       )}

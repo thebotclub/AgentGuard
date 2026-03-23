@@ -166,7 +166,7 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <span style={{ fontSize: '12px', color: '#64748b' }}>Step {step} of {total}</span>
+        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Step {step} of {total}</span>
         <span style={{ fontSize: '12px', color: '#3b82f6', fontWeight: 600 }}>{pct}% complete</span>
       </div>
       <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
@@ -213,7 +213,7 @@ function CopyButton({ text }: { text: string }) {
       }}
       style={{
         padding: '6px 14px', borderRadius: '5px',
-        border: '1px solid #e2e8f0', background: copied ? '#dcfce7' : '#fff',
+        border: '1px solid var(--border)', background: copied ? '#dcfce7' : '#fff',
         color: copied ? '#16a34a' : '#475569',
         cursor: 'pointer', fontSize: '12px', fontWeight: 500,
         transition: 'all 0.2s',
@@ -260,17 +260,17 @@ function Step1GenerateKey({
 
   return (
     <div>
-      <h2 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
+      <h2 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: 'var(--text-bright)' }}>
         🔑 Step 1: Generate Your API Key
       </h2>
-      <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
+      <p style={{ margin: '0 0 24px', fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
         Each agent needs an API key to authenticate with AgentGuard. This key will be shown only once — save it securely.
       </p>
 
       {!generated ? (
         <div>
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: '#374151' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--text-secondary)' }}>
               Agent Name
             </label>
             <input
@@ -279,7 +279,7 @@ function Step1GenerateKey({
               placeholder="e.g. finance-agent, support-bot"
               style={{
                 width: '100%', boxSizing: 'border-box',
-                border: '1px solid #e2e8f0', borderRadius: '6px',
+                border: '1px solid var(--border)', borderRadius: '6px',
                 padding: '10px 12px', fontSize: '14px',
               }}
             />
@@ -301,14 +301,14 @@ function Step1GenerateKey({
         <div>
           <div style={{ background: '#0f172a', borderRadius: '8px', padding: '16px 20px', marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Your API Key (shown once)</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Your API Key (shown once)</span>
               <CopyButton text={apiKey} />
             </div>
             <code style={{ fontSize: '14px', color: '#38bdf8', fontFamily: 'monospace', wordBreak: 'break-all' }}>
               {apiKey}
             </code>
           </div>
-          <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '6px', padding: '10px 14px', marginBottom: '20px', fontSize: '13px', color: '#92400e' }}>
+          <div style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid #fde68a', borderRadius: '6px', padding: '10px 14px', marginBottom: '20px', fontSize: '13px', color: '#fbbf24' }}>
             ⚠️ <strong>Save this key now.</strong> For security, it will not be shown again.
           </div>
           <button
@@ -339,10 +339,10 @@ function Step2Framework({
 }) {
   return (
     <div>
-      <h2 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
+      <h2 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: 'var(--text-bright)' }}>
         🧩 Step 2: Choose Your Framework
       </h2>
-      <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#64748b' }}>
+      <p style={{ margin: '0 0 24px', fontSize: '14px', color: 'var(--text-muted)' }}>
         Select the framework you use to build your AI agents.
       </p>
 
@@ -359,8 +359,8 @@ function Step2Framework({
             }}
           >
             <div style={{ fontSize: '28px', marginBottom: '6px' }}>{fw.icon}</div>
-            <div style={{ fontSize: '15px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>{fw.label}</div>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>{fw.description}</div>
+            <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-bright)', marginBottom: '4px' }}>{fw.label}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{fw.description}</div>
           </button>
         ))}
       </div>
@@ -371,7 +371,7 @@ function Step2Framework({
             📦 Install command:
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-            <code style={{ flex: 1, fontSize: '13px', color: '#0f172a', background: '#e0f2fe', padding: '6px 10px', borderRadius: '4px', fontFamily: 'monospace' }}>
+            <code style={{ flex: 1, fontSize: '13px', color: 'var(--text-bright)', background: 'rgba(96,165,250,0.15)', padding: '6px 10px', borderRadius: '4px', fontFamily: 'monospace' }}>
               {getInstallCommand(framework)}
             </code>
             <CopyButton text={getInstallCommand(framework)} />
@@ -380,7 +380,7 @@ function Step2Framework({
       )}
 
       <div style={{ display: 'flex', gap: '10px' }}>
-        <button onClick={onBack} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '14px' }}>
+        <button onClick={onBack} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '14px' }}>
           ← Back
         </button>
         <button
@@ -416,16 +416,16 @@ function Step3Snippet({
 
   return (
     <div>
-      <h2 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
+      <h2 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: 'var(--text-bright)' }}>
         📝 Step 3: Add the Wrapper Code
       </h2>
-      <p style={{ margin: '0 0 20px', fontSize: '14px', color: '#64748b' }}>
+      <p style={{ margin: '0 0 20px', fontSize: '14px', color: 'var(--text-muted)' }}>
         Add this code to your {fw.label} {fw.icon} agent to route all tool calls through AgentGuard.
       </p>
 
       <div style={{ background: '#0f172a', borderRadius: '8px', marginBottom: '20px', overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid #1e293b' }}>
-          <span style={{ fontSize: '12px', color: '#64748b' }}>Python · {fw.label} Integration</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Python · {fw.label} Integration</span>
           <CopyButton text={snippet} />
         </div>
         <pre style={{
@@ -438,12 +438,12 @@ function Step3Snippet({
         </pre>
       </div>
 
-      <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '10px 14px', marginBottom: '20px', fontSize: '13px', color: '#15803d' }}>
+      <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '10px 14px', marginBottom: '20px', fontSize: '13px', color: '#4ade80' }}>
         💡 All tool calls are now evaluated by AgentGuard before execution. Blocked calls throw a <code>PermissionError</code>.
       </div>
 
       <div style={{ display: 'flex', gap: '10px' }}>
-        <button onClick={onBack} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '14px' }}>
+        <button onClick={onBack} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '14px' }}>
           ← Back
         </button>
         <button
@@ -510,17 +510,17 @@ function Step4TestEvent({
 
   return (
     <div>
-      <h2 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
+      <h2 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: 'var(--text-bright)' }}>
         🧪 Step 4: Send a Test Event
       </h2>
-      <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
+      <p style={{ margin: '0 0 24px', fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
         Fire a test evaluation to verify your agent is connected. Check the{' '}
         <Link href="/audit" style={{ color: '#3b82f6' }}>Audit Log</Link> to see it appear in real-time.
       </p>
 
       {status === 'idle' && (
-        <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '20px', marginBottom: '20px' }}>
-          <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
+        <div style={{ background: 'var(--bg-page)', borderRadius: '8px', padding: '20px', marginBottom: '20px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
             This will send a test <code>tool_call</code> evaluation to the AgentGuard API using your new API key.
           </div>
           <pre style={{ background: '#0f172a', color: '#e2e8f0', borderRadius: '6px', padding: '12px', fontSize: '12px', overflow: 'auto', margin: 0 }}>
@@ -537,8 +537,8 @@ Authorization: Bearer ${apiKey ? apiKey.slice(0, 20) + '...' : 'your-api-key'}
       )}
 
       {status === 'success' && result && (
-        <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '20px', marginBottom: '20px' }}>
-          <div style={{ fontSize: '16px', fontWeight: 700, color: '#15803d', marginBottom: '8px' }}>
+        <div style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '20px', marginBottom: '20px' }}>
+          <div style={{ fontSize: '16px', fontWeight: 700, color: '#4ade80', marginBottom: '8px' }}>
             ✅ Event received by AgentGuard!
           </div>
           <div style={{ fontSize: '13px', color: '#166534', marginBottom: '12px' }}>
@@ -551,16 +551,16 @@ Authorization: Bearer ${apiKey ? apiKey.slice(0, 20) + '...' : 'your-api-key'}
       )}
 
       {status === 'error' && (
-        <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', padding: '16px', marginBottom: '20px', fontSize: '13px', color: '#dc2626' }}>
+        <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid #fecaca', borderRadius: '8px', padding: '16px', marginBottom: '20px', fontSize: '13px', color: '#dc2626' }}>
           ⚠ {error}
-          <div style={{ marginTop: '8px', color: '#64748b', fontSize: '12px' }}>
+          <div style={{ marginTop: '8px', color: 'var(--text-muted)', fontSize: '12px' }}>
             Make sure your API URL is configured correctly in your environment ({apiUrl}).
           </div>
         </div>
       )}
 
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-        <button onClick={onBack} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '14px' }}>
+        <button onClick={onBack} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '14px' }}>
           ← Back
         </button>
         {status !== 'success' && (
@@ -603,10 +603,10 @@ function Step5Success({ framework }: { framework: Framework | null }) {
   return (
     <div style={{ textAlign: 'center' }}>
       <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
-      <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>
+      <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: 800, color: 'var(--text-bright)' }}>
         You&apos;re all set!
       </h2>
-      <p style={{ margin: '0 0 32px', fontSize: '15px', color: '#64748b', lineHeight: 1.6, maxWidth: '480px', marginLeft: 'auto', marginRight: 'auto' }}>
+      <p style={{ margin: '0 0 32px', fontSize: '15px', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '480px', marginLeft: 'auto', marginRight: 'auto' }}>
         AgentGuard is protecting your agents. Explore the dashboard to monitor events,
         manage policies, and review HITL approvals.
       </p>
@@ -622,13 +622,13 @@ function Step5Success({ framework }: { framework: Framework | null }) {
             href={link.href}
             style={{
               display: 'block', padding: '16px', borderRadius: '10px', textDecoration: 'none',
-              border: '1px solid #e2e8f0', background: '#fff', color: 'inherit',
+              border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'inherit',
               transition: 'all 0.2s',
             }}
           >
             <div style={{ fontSize: '24px', marginBottom: '6px' }}>{link.icon}</div>
-            <div style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '2px' }}>{link.title}</div>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>{link.desc}</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-bright)', marginBottom: '2px' }}>{link.title}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{link.desc}</div>
           </Link>
         ))}
       </div>
@@ -638,7 +638,7 @@ function Step5Success({ framework }: { framework: Framework | null }) {
           href="https://docs.agentguard.tech"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', textDecoration: 'none', color: '#475569', fontSize: '14px', fontWeight: 500 }}
+          style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-card)', textDecoration: 'none', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500 }}
         >
           📚 Read the Docs
         </a>
@@ -680,10 +680,10 @@ export default function OnboardingPage() {
       {/* Header */}
       <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 4px', color: '#0f172a' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 4px', color: 'var(--text-bright)' }}>
             🚀 AgentGuard Setup
           </h1>
-          <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
+          <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-muted)' }}>
             Get your first agent protected in under 5 minutes.
           </p>
         </div>
@@ -700,14 +700,14 @@ export default function OnboardingPage() {
 
       {/* Progress */}
       {!isDone && (
-        <div style={{ background: '#fff', borderRadius: '10px', padding: '20px 24px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <div style={{ background: 'var(--bg-card)', borderRadius: '10px', padding: '20px 24px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <ProgressBar step={step} total={TOTAL_STEPS} />
         </div>
       )}
 
       {/* Step content */}
       <div style={{
-        background: '#fff', borderRadius: '12px', padding: '32px',
+        background: 'var(--bg-card)', borderRadius: '12px', padding: '32px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
       }}>
         {step === 1 && (

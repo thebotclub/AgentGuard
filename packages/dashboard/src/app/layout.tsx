@@ -19,7 +19,7 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: 'system-ui, -apple-system, sans-serif', background: '#f8fafc', color: '#0f172a' }}>
+      <body style={{ margin: 0, fontFamily: 'system-ui, -apple-system, sans-serif', background: 'var(--bg-page)', color: 'var(--text-primary)' }}>
         {/* Skip-to-content link for keyboard users (WCAG 2.4.1) */}
         <a href="#main-content" className="skip-to-content">
           Skip to main content

@@ -38,12 +38,12 @@ function AgentStatusDot({ status }: { status: string }) {
 
 function RiskTierBadge({ tier }: { tier: string }) {
   const colors: Record<string, { bg: string; color: string }> = {
-    LOW: { bg: '#dcfce7', color: '#15803d' },
-    MEDIUM: { bg: '#fef3c7', color: '#92400e' },
-    HIGH: { bg: '#fee2e2', color: '#b91c1c' },
-    CRITICAL: { bg: '#7f1d1d', color: '#fef2f2' },
+    LOW: { bg: '#dcfce7', color: '#4ade80' },
+    MEDIUM: { bg: '#fef3c7', color: '#fbbf24' },
+    HIGH: { bg: '#fee2e2', color: '#f87171' },
+    CRITICAL: { bg: 'rgba(239,68,68,0.3)', color: '#fca5a5' },
   };
-  const c = colors[tier] ?? { bg: '#f1f5f9', color: '#475569' };
+  const c = colors[tier] ?? { bg: '#f1f5f9', color: 'var(--text-secondary)' };
   return (
     <span
       style={{
@@ -104,7 +104,7 @@ function KillDialog({ agent, onConfirm, onCancel, isLoading }: KillDialogProps) 
         aria-modal="true"
         aria-labelledby={headingId}
         style={{
-          background: '#fff',
+          background: 'var(--bg-card)',
           borderRadius: '12px',
           padding: '28px',
           width: '420px',
@@ -113,18 +113,18 @@ function KillDialog({ agent, onConfirm, onCancel, isLoading }: KillDialogProps) 
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id={headingId} style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+        <h2 id={headingId} style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: 'var(--text-bright)' }}>
           🔴 Kill Switch — Confirm
         </h2>
-        <p style={{ margin: '0 0 20px', color: '#64748b', fontSize: '14px' }}>
+        <p style={{ margin: '0 0 20px', color: 'var(--text-muted)', fontSize: '14px' }}>
           You are about to halt agent{' '}
-          <strong style={{ color: '#0f172a' }}>{agent.name}</strong>.
+          <strong style={{ color: 'var(--text-bright)' }}>{agent.name}</strong>.
           {' '}This will immediately reject all pending and future actions.
         </p>
 
         {/* Tier selection */}
         <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
             Kill Tier
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -137,7 +137,7 @@ function KillDialog({ agent, onConfirm, onCancel, isLoading }: KillDialogProps) 
                   padding: '10px',
                   border: `2px solid ${tier === t ? (t === 'HARD' ? '#ef4444' : '#f59e0b') : '#e2e8f0'}`,
                   borderRadius: '8px',
-                  background: tier === t ? (t === 'HARD' ? '#fef2f2' : '#fffbeb') : '#fff',
+                  background: tier === t ? (t === 'HARD' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)') : 'var(--bg-input)',
                   cursor: 'pointer',
                   fontWeight: tier === t ? 600 : 400,
                   color: tier === t ? (t === 'HARD' ? '#b91c1c' : '#92400e') : '#374151',
@@ -146,7 +146,7 @@ function KillDialog({ agent, onConfirm, onCancel, isLoading }: KillDialogProps) 
                 }}
               >
                 {t === 'SOFT' ? '🟡 SOFT' : '🔴 HARD'}
-                <div style={{ fontSize: '11px', fontWeight: 400, marginTop: '3px', color: '#64748b' }}>
+                <div style={{ fontSize: '11px', fontWeight: 400, marginTop: '3px', color: 'var(--text-muted)' }}>
                   {t === 'SOFT' ? 'Graceful shutdown' : 'Immediate termination'}
                 </div>
               </button>
@@ -156,7 +156,7 @@ function KillDialog({ agent, onConfirm, onCancel, isLoading }: KillDialogProps) 
 
         {/* Reason */}
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>
+          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>
             Reason (optional)
           </label>
           <textarea
@@ -167,11 +167,11 @@ function KillDialog({ agent, onConfirm, onCancel, isLoading }: KillDialogProps) 
             style={{
               width: '100%',
               padding: '8px 10px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--border)',
               borderRadius: '6px',
               fontSize: '13px',
               resize: 'vertical',
-              color: '#0f172a',
+              color: 'var(--text-bright)',
               boxSizing: 'border-box',
             }}
           />
@@ -184,12 +184,12 @@ function KillDialog({ agent, onConfirm, onCancel, isLoading }: KillDialogProps) 
             disabled={isLoading}
             style={{
               padding: '8px 18px',
-              background: '#f1f5f9',
-              border: '1px solid #e2e8f0',
+              background: 'var(--bg-card-alt)',
+              border: '1px solid var(--border)',
               borderRadius: '6px',
               fontSize: '14px',
               cursor: 'pointer',
-              color: '#374151',
+              color: 'var(--text-secondary)',
             }}
           >
             Cancel
@@ -252,7 +252,7 @@ function ResumeDialog({ agent, onConfirm, onCancel, isLoading }: { agent: Agent;
         aria-modal="true"
         aria-labelledby={headingId}
         style={{
-          background: '#fff',
+          background: 'var(--bg-card)',
           borderRadius: '12px',
           padding: '28px',
           width: '380px',
@@ -261,14 +261,14 @@ function ResumeDialog({ agent, onConfirm, onCancel, isLoading }: { agent: Agent;
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id={headingId} style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+        <h2 id={headingId} style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: 'var(--text-bright)' }}>
           ✅ Resume Agent
         </h2>
-        <p style={{ margin: '0 0 20px', color: '#64748b', fontSize: '14px' }}>
-          Resume agent <strong style={{ color: '#0f172a' }}>{agent.name}</strong> — it will start accepting actions again.
+        <p style={{ margin: '0 0 20px', color: 'var(--text-muted)', fontSize: '14px' }}>
+          Resume agent <strong style={{ color: 'var(--text-bright)' }}>{agent.name}</strong> — it will start accepting actions again.
         </p>
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>
+          <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '6px' }}>
             Reason (optional)
           </label>
           <input
@@ -278,16 +278,16 @@ function ResumeDialog({ agent, onConfirm, onCancel, isLoading }: { agent: Agent;
             style={{
               width: '100%',
               padding: '8px 10px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--border)',
               borderRadius: '6px',
               fontSize: '13px',
-              color: '#0f172a',
+              color: 'var(--text-bright)',
               boxSizing: 'border-box',
             }}
           />
         </div>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-          <button onClick={onCancel} style={{ padding: '8px 18px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', cursor: 'pointer', color: '#374151' }}>
+          <button onClick={onCancel} style={{ padding: '8px 18px', background: 'var(--bg-card-alt)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '14px', cursor: 'pointer', color: 'var(--text-secondary)' }}>
             Cancel
           </button>
           <button
@@ -340,27 +340,27 @@ function AgentRow({ agent }: { agent: Agent }) {
   return (
     <>
       <tr
-        style={{ borderBottom: '1px solid #f1f5f9' }}
+        style={{ borderBottom: '1px solid var(--border-subtle)' }}
         onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = '#f8fafc'; }}
         onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = ''; }}
       >
         {/* Status indicator */}
         <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
           <AgentStatusDot status={agent.status} />
-          <span style={{ fontSize: '13px', color: '#374151', fontWeight: 500 }}>{agent.status}</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>{agent.status}</span>
         </td>
 
         {/* Name */}
         <td style={{ padding: '14px 16px' }}>
-          <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '14px' }}>{agent.name}</div>
+          <div style={{ fontWeight: 600, color: 'var(--text-bright)', fontSize: '14px' }}>{agent.name}</div>
           {agent.description && (
-            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{agent.description}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{agent.description}</div>
           )}
         </td>
 
         {/* ID */}
         <td style={{ padding: '14px 16px' }}>
-          <code style={{ fontSize: '11px', background: '#f1f5f9', padding: '2px 5px', borderRadius: '3px', color: '#374151' }}>
+          <code style={{ fontSize: '11px', background: 'var(--bg-card-alt)', padding: '2px 5px', borderRadius: '3px', color: 'var(--text-secondary)' }}>
             {agent.id.slice(0, 16)}…
           </code>
         </td>
@@ -371,12 +371,12 @@ function AgentRow({ agent }: { agent: Agent }) {
         </td>
 
         {/* Framework */}
-        <td style={{ padding: '14px 16px', fontSize: '13px', color: '#64748b' }}>
+        <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>
           {agent.framework ?? '—'}
         </td>
 
         {/* Last seen */}
-        <td style={{ padding: '14px 16px', fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+        <td style={{ padding: '14px 16px', fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
           {agent.lastSeenAt ? new Date(agent.lastSeenAt).toLocaleString() : <span style={{ color: '#94a3b8' }} aria-label="Never seen">—</span>}
         </td>
 
@@ -388,12 +388,12 @@ function AgentRow({ agent }: { agent: Agent }) {
               aria-label={`Resume agent ${agent.name}`}
               style={{
                 padding: '6px 12px',
-                background: '#f0fdf4',
-                border: '1px solid #86efac',
+                background: 'rgba(34,197,94,0.1)',
+                border: '1px solid rgba(34,197,94,0.3)',
                 borderRadius: '6px',
                 fontSize: '12px',
                 cursor: 'pointer',
-                color: '#15803d',
+                color: '#4ade80',
                 fontWeight: 600,
               }}
             >
@@ -405,12 +405,12 @@ function AgentRow({ agent }: { agent: Agent }) {
               aria-label={`Kill agent ${agent.name}`}
               style={{
                 padding: '6px 12px',
-                background: '#fef2f2',
-                border: '1px solid #fca5a5',
+                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.3)',
                 borderRadius: '6px',
                 fontSize: '12px',
                 cursor: 'pointer',
-                color: '#b91c1c',
+                color: '#f87171',
                 fontWeight: 600,
               }}
             >
@@ -423,7 +423,7 @@ function AgentRow({ agent }: { agent: Agent }) {
       {/* Kill error */}
       {killMutation.isError && (
         <tr>
-          <td colSpan={7} style={{ padding: '8px 16px', background: '#fee2e2', color: '#b91c1c', fontSize: '13px' }}>
+          <td colSpan={7} style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.12)', color: '#f87171', fontSize: '13px' }}>
             ⚠️ Kill failed: {(killMutation.error as Error).message}
           </td>
         </tr>
@@ -483,10 +483,10 @@ export default function AgentsPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 4px', color: '#0f172a' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 4px', color: 'var(--text-bright)' }}>
             🤖 Agents
           </h1>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}>
             Monitor agent status and manage kill switches.
           </p>
         </div>
@@ -496,11 +496,11 @@ export default function AgentsPage() {
             onChange={(e) => { setStatusFilter(e.target.value); setCursor(undefined); setPrevCursors([]); }}
             style={{
               padding: '6px 10px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--border)',
               borderRadius: '6px',
               fontSize: '13px',
-              background: '#fff',
-              color: '#374151',
+              background: 'var(--bg-card)',
+              color: 'var(--text-secondary)',
             }}
           >
             <option value="">All statuses</option>
@@ -512,7 +512,7 @@ export default function AgentsPage() {
           <button
             onClick={() => refetch()}
             aria-label="Refresh agents list"
-            style={{ padding: '6px 12px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: '#374151' }}
+            style={{ padding: '6px 12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--text-secondary)' }}
           >
             ↺ Refresh
           </button>
@@ -524,12 +524,12 @@ export default function AgentsPage() {
             }}
             style={{
               padding: '6px 14px',
-              background: '#fef2f2',
-              border: '1px solid #fca5a5',
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: '6px',
               fontSize: '13px',
               cursor: 'pointer',
-              color: '#b91c1c',
+              color: '#f87171',
               fontWeight: 600,
             }}
           >
@@ -548,7 +548,7 @@ export default function AgentsPage() {
       )}
 
       {/* Table */}
-      <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-card)', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
         {isLoading ? (
           <TableSkeleton rows={6} cols={7} />
         ) : agents.length === 0 ? (
@@ -574,9 +574,9 @@ export default function AgentsPage() {
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <tr style={{ background: 'var(--bg-page)', borderBottom: '1px solid var(--border-subtle)' }}>
                 {['Status', 'Name', 'ID', 'Risk', 'Framework', 'Last Seen', 'Action'].map((h) => (
-                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: '#64748b', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {h}
                   </th>
                 ))}
@@ -594,7 +594,7 @@ export default function AgentsPage() {
       {/* Pagination */}
       {!isLoading && agents.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px' }}>
-          <span style={{ fontSize: '13px', color: '#64748b' }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
             {agents.length} agents shown
           </span>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -606,7 +606,7 @@ export default function AgentsPage() {
                 setPrevCursors(prev);
                 setCursor(c || undefined);
               }}
-              style={{ padding: '6px 14px', background: prevCursors.length === 0 ? '#f1f5f9' : '#fff', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', cursor: prevCursors.length === 0 ? 'not-allowed' : 'pointer', color: prevCursors.length === 0 ? '#94a3b8' : '#374151' }}
+              style={{ padding: '6px 14px', background: prevCursors.length === 0 ? 'var(--bg-card-alt)' : 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', cursor: prevCursors.length === 0 ? 'not-allowed' : 'pointer', color: prevCursors.length === 0 ? 'var(--text-muted)' : 'var(--text-primary)' }}
             >
               ← Prev
             </button>
@@ -616,7 +616,7 @@ export default function AgentsPage() {
                 setPrevCursors((prev) => [...prev, cursor ?? '']);
                 setCursor(data?.pagination.cursor ?? undefined);
               }}
-              style={{ padding: '6px 14px', background: !data?.pagination.hasMore ? '#f1f5f9' : '#fff', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', cursor: !data?.pagination.hasMore ? 'not-allowed' : 'pointer', color: !data?.pagination.hasMore ? '#94a3b8' : '#374151' }}
+              style={{ padding: '6px 14px', background: !data?.pagination.hasMore ? 'var(--bg-card-alt)' : 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', cursor: !data?.pagination.hasMore ? 'not-allowed' : 'pointer', color: !data?.pagination.hasMore ? 'var(--text-muted)' : 'var(--text-primary)' }}
             >
               Next →
             </button>

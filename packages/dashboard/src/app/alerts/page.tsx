@@ -5,17 +5,17 @@
 export default function AlertsPage() {
   return (
     <div>
-      <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 8px', color: '#0f172a' }}>
+      <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 8px', color: 'var(--text-bright)' }}>
         🔔 Alerts
       </h1>
-      <p style={{ color: '#475569', fontSize: '14px', margin: '0 0 24px' }}>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '0 0 24px' }}>
         SIEM integrations, alert webhooks, and anomaly notifications.
       </p>
 
       {/* Status card */}
       <div
         style={{
-          background: '#fff',
+          background: 'var(--bg-card)',
           borderRadius: '12px',
           padding: '48px 24px',
           boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
@@ -24,10 +24,10 @@ export default function AlertsPage() {
         }}
       >
         <div style={{ fontSize: '48px', marginBottom: '12px', lineHeight: 1 }}>🔔</div>
-        <h2 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>
+        <h2 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: 'var(--text-bright)' }}>
           Alert UI Coming Soon
         </h2>
-        <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#475569', maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
+        <p style={{ margin: '0 0 24px', fontSize: '14px', color: 'var(--text-secondary)', maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
           The in-dashboard alert configuration UI is planned for a future release. In the meantime, configure SIEM integrations and webhooks directly via the API.
         </p>
         <a
@@ -52,20 +52,20 @@ export default function AlertsPage() {
       {/* What's available via API */}
       <div
         style={{
-          background: '#fff',
+          background: 'var(--bg-card)',
           borderRadius: '12px',
           padding: '24px',
           boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
         }}
       >
-        <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 600, color: '#0f172a' }}>
+        <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 600, color: 'var(--text-bright)' }}>
           Available via API today
         </h3>
         <ul
-          style={{ margin: 0, paddingLeft: '20px', color: '#475569', lineHeight: '2', fontSize: '14px' }}
+          style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-secondary)', lineHeight: '2', fontSize: '14px' }}
         >
           <li>
-            <strong>Slack webhooks</strong> — <code style={{ background: '#f1f5f9', padding: '1px 4px', borderRadius: 3 }}>POST /v1/alert-webhooks</code>
+            <strong>Slack webhooks</strong> — <code style={{ background: 'var(--bg-card-alt)', padding: '1px 4px', borderRadius: 3 }}>POST /v1/alert-webhooks</code>
           </li>
           <li>
             <strong>Splunk / DataDog SIEM</strong> — configure HEC / Forwarder endpoints

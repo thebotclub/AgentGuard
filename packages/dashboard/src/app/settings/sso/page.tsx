@@ -90,7 +90,7 @@ function Input({
           outline: 'none',
         }}
       />
-      {hint && <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>{hint}</p>}
+      {hint && <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{hint}</p>}
     </div>
   );
 }
@@ -107,14 +107,14 @@ function Toggle({ label, checked, onChange, hint }: { label: string; checked: bo
         }}
       >
         <div style={{
-          width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
+          width: '18px', height: '18px', borderRadius: '50%', background: 'var(--bg-card)',
           position: 'absolute', top: '3px', left: checked ? '23px' : '3px',
           transition: 'left 0.2s',
         }} />
       </button>
       <div>
         <div style={{ fontSize: '14px', color: '#f1f5f9' }}>{label}</div>
-        {hint && <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{hint}</div>}
+        {hint && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{hint}</div>}
       </div>
     </div>
   );
@@ -311,7 +311,7 @@ export default function SsoSettingsPage() {
             <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0, color: '#f1f5f9' }}>
               🔐 Single Sign-On (SSO)
             </h1>
-            <p style={{ color: '#64748b', marginTop: '6px', fontSize: '14px' }}>
+            <p style={{ color: 'var(--text-muted)', marginTop: '6px', fontSize: '14px' }}>
               Configure OIDC or SAML 2.0 authentication for enterprise users.
             </p>
           </div>
@@ -332,7 +332,7 @@ export default function SsoSettingsPage() {
       )}
 
       {loading ? (
-        <Card><p style={{ color: '#64748b', textAlign: 'center' }}>Loading SSO configuration...</p></Card>
+        <Card><p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>Loading SSO configuration...</p></Card>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
@@ -429,7 +429,7 @@ export default function SsoSettingsPage() {
                     fontSize: '13px', fontFamily: 'monospace', boxSizing: 'border-box', resize: 'vertical',
                   }}
                 />
-                <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
                   Download from your IdP's admin portal. Contains endpoints and signing certificate.
                 </p>
               </div>
@@ -467,7 +467,7 @@ export default function SsoSettingsPage() {
             <h2 style={{ fontSize: '16px', fontWeight: 600, marginTop: 0, marginBottom: '20px', color: '#f1f5f9' }}>
               Role Mapping
             </h2>
-            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>
               Map IdP groups or roles to AgentGuard roles. Users not matching any group get <strong>viewer</strong> access.
             </p>
 
@@ -517,7 +517,7 @@ export default function SsoSettingsPage() {
               { label: 'Callback / ACS URL', url: callbackUrl },
             ].map(({ label, url }) => (
               <div key={label} style={{ marginBottom: '12px' }}>
-                <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 4px 0' }}>{label}</p>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 4px 0' }}>{label}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <code style={{ fontSize: '13px', color: '#38bdf8', background: '#0f172a', padding: '6px 10px', borderRadius: '6px', flex: 1, overflowX: 'auto' }}>
                     {url}

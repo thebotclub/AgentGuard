@@ -14,7 +14,7 @@ function Field({ label, value, mono = false }: { label: string; value: React.Rea
         style={{
           fontSize: '11px',
           fontWeight: 600,
-          color: '#64748b',
+          color: 'var(--text-muted)',
           textTransform: 'uppercase',
           letterSpacing: '0.05em',
           marginBottom: '4px',
@@ -25,12 +25,12 @@ function Field({ label, value, mono = false }: { label: string; value: React.Rea
       <div
         style={{
           fontSize: '14px',
-          color: '#0f172a',
+          color: 'var(--text-bright)',
           fontFamily: mono ? 'monospace' : undefined,
           wordBreak: 'break-all',
         }}
       >
-        {value ?? <span style={{ color: '#64748b' }} aria-label="Not set">—</span>}
+        {value ?? <span style={{ color: 'var(--text-muted)' }} aria-label="Not set">—</span>}
       </div>
     </div>
   );
@@ -40,14 +40,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <div
       style={{
-        background: '#fff',
+        background: 'var(--bg-card)',
         borderRadius: '8px',
         padding: '20px 24px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
         marginBottom: '16px',
       }}
     >
-      <h2 style={{ fontSize: '15px', fontWeight: 600, margin: '0 0 16px', color: '#0f172a' }}>
+      <h2 style={{ fontSize: '15px', fontWeight: 600, margin: '0 0 16px', color: 'var(--text-bright)' }}>
         {title}
       </h2>
       {children}
@@ -64,7 +64,7 @@ function HashChainIndicator({ sessionId }: { sessionId: string }) {
 
   if (isLoading) {
     return (
-      <div role="status" style={{ color: '#475569', fontSize: '13px' }}>
+      <div role="status" style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
         Verifying hash chain…
       </div>
     );
@@ -90,14 +90,14 @@ function HashChainIndicator({ sessionId }: { sessionId: string }) {
       <div style={{ fontWeight: 600, color: data.chainValid ? '#15803d' : '#b91c1c', fontSize: '14px', marginBottom: '6px' }}>
         {data.chainValid ? '✅ Hash chain intact' : '❌ Chain integrity violation detected'}
       </div>
-      <div style={{ color: '#374151', fontSize: '13px' }}>
+      <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
         <strong>{data.eventCount}</strong> events verified in session{' '}
-        <code style={{ background: '#f1f5f9', padding: '1px 5px', borderRadius: '3px', fontSize: '11px' }}>
+        <code style={{ background: 'var(--bg-card-alt)', padding: '1px 5px', borderRadius: '3px', fontSize: '11px' }}>
           {sessionId}
         </code>
       </div>
       {data.firstBrokenAt && (
-        <div style={{ marginTop: '8px', color: '#b91c1c', fontSize: '12px' }}>
+        <div style={{ marginTop: '8px', color: '#f87171', fontSize: '12px' }}>
           First broken at position {data.firstBrokenAt.position} (event:{' '}
           <code>{data.firstBrokenAt.eventId}</code>)
           {data.firstBrokenAt.expected && (
@@ -134,7 +134,7 @@ export default function AuditEventDetailPage({
       <div
         role="status"
         aria-label="Loading event"
-        style={{ textAlign: 'center', padding: '80px', color: '#475569', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}
+        style={{ textAlign: 'center', padding: '80px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}
       >
         <div className="spinner" style={{ width: 28, height: 28, border: '2px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
         <span>Loading event…</span>
@@ -144,25 +144,25 @@ export default function AuditEventDetailPage({
 
   if (isError || !event) {
     return (
-      <div style={{ padding: '24px', background: '#fee2e2', borderRadius: '8px', color: '#b91c1c' }}>
+      <div style={{ padding: '24px', background: 'rgba(239,68,68,0.12)', borderRadius: '8px', color: '#f87171' }}>
         ⚠️ Failed to load event: {(error as Error)?.message ?? 'Not found'}
       </div>
     );
   }
 
   const decisionColors: Record<string, { bg: string; color: string }> = {
-    ALLOW: { bg: '#dcfce7', color: '#15803d' },
-    BLOCK: { bg: '#fee2e2', color: '#b91c1c' },
-    MONITOR: { bg: '#dbeafe', color: '#1d4ed8' },
-    HITL_PENDING: { bg: '#fef3c7', color: '#92400e' },
-    KILLED: { bg: '#fee2e2', color: '#7f1d1d' },
+    ALLOW: { bg: '#dcfce7', color: '#4ade80' },
+    BLOCK: { bg: '#fee2e2', color: '#f87171' },
+    MONITOR: { bg: '#dbeafe', color: '#93c5fd' },
+    HITL_PENDING: { bg: '#fef3c7', color: '#fbbf24' },
+    KILLED: { bg: '#fee2e2', color: '#f87171' },
   };
-  const dc = decisionColors[event.policyDecision] ?? { bg: '#f1f5f9', color: '#475569' };
+  const dc = decisionColors[event.policyDecision] ?? { bg: '#f1f5f9', color: 'var(--text-secondary)' };
 
   return (
     <div>
       {/* Breadcrumb */}
-      <div style={{ marginBottom: '16px', fontSize: '13px', color: '#64748b' }}>
+      <div style={{ marginBottom: '16px', fontSize: '13px', color: 'var(--text-muted)' }}>
         <Link href="/audit" style={{ color: '#3b82f6', textDecoration: 'none' }}>
           ← Audit Log
         </Link>
@@ -171,10 +171,10 @@ export default function AuditEventDetailPage({
       {/* Header */}
       <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, margin: '0 0 4px', color: '#0f172a', fontFamily: 'monospace' }}>
+          <h1 style={{ fontSize: '20px', fontWeight: 700, margin: '0 0 4px', color: 'var(--text-bright)', fontFamily: 'monospace' }}>
             {event.id}
           </h1>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}>
             {new Date(event.occurredAt).toLocaleString()} · {event.processingMs}ms processing
           </p>
         </div>
@@ -243,7 +243,7 @@ export default function AuditEventDetailPage({
               borderRadius: '6px',
               borderLeft: '3px solid #ef4444',
               fontSize: '13px',
-              color: '#b91c1c',
+              color: '#f87171',
             }}
           >
             <strong>Block reason:</strong> {event.blockReason}
@@ -256,15 +256,15 @@ export default function AuditEventDetailPage({
         <Section title="🏷️ Data Labels">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
-              <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Input Labels
               </div>
               {event.inputDataLabels.length === 0 ? (
-                <span style={{ color: '#64748b', fontSize: '13px' }}>None</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>None</span>
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {event.inputDataLabels.map((l) => (
-                    <span key={l} style={{ background: '#eff6ff', color: '#1d4ed8', padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                    <span key={l} style={{ background: 'rgba(96,165,250,0.12)', color: '#93c5fd', padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>
                       {l}
                     </span>
                   ))}
@@ -272,15 +272,15 @@ export default function AuditEventDetailPage({
               )}
             </div>
             <div>
-              <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Output Labels
               </div>
               {event.outputDataLabels.length === 0 ? (
-                <span style={{ color: '#64748b', fontSize: '13px' }}>None</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>None</span>
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {event.outputDataLabels.map((l) => (
-                    <span key={l} style={{ background: '#f0fdf4', color: '#15803d', padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                    <span key={l} style={{ background: '#f0fdf4', color: '#4ade80', padding: '3px 8px', borderRadius: '4px', fontSize: '12px' }}>
                       {l}
                     </span>
                   ))}
@@ -297,8 +297,8 @@ export default function AuditEventDetailPage({
           style={{
             margin: 0,
             fontSize: '12px',
-            color: '#0f172a',
-            background: '#f8fafc',
+            color: 'var(--text-bright)',
+            background: 'var(--bg-page)',
             padding: '16px',
             borderRadius: '6px',
             overflow: 'auto',

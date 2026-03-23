@@ -226,7 +226,7 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
         aria-modal="true"
         aria-labelledby={headingId}
         style={{
-          background: '#fff', borderRadius: '12px',
+          background: 'var(--bg-card)', borderRadius: '12px',
           width: '800px', maxWidth: '95vw', maxHeight: '90vh',
           display: 'flex', flexDirection: 'column',
           boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
@@ -234,11 +234,11 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 id={headingId} style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 id={headingId} style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: 'var(--text-bright)' }}>
             {isEditing ? `✏️ Edit Policy: ${policy.name}` : '📜 Create New Policy'}
           </h2>
-          <button onClick={onClose} aria-label="Close policy editor" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#64748b' }}>✕</button>
+          <button onClick={onClose} aria-label="Close policy editor" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: 'var(--text-muted)' }}>✕</button>
         </div>
 
         {/* Body */}
@@ -246,7 +246,7 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
           {!isEditing && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: '#374151' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: 'var(--text-secondary)' }}>
                   Policy Name *
                 </label>
                 <input
@@ -255,13 +255,13 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
                   placeholder="e.g. finance-agent-policy"
                   style={{
                     width: '100%', boxSizing: 'border-box',
-                    border: '1px solid #e2e8f0', borderRadius: '6px',
+                    border: '1px solid var(--border)', borderRadius: '6px',
                     padding: '8px 10px', fontSize: '13px',
                   }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: '#374151' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: 'var(--text-secondary)' }}>
                   Description
                 </label>
                 <input
@@ -270,7 +270,7 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
                   placeholder="Optional description"
                   style={{
                     width: '100%', boxSizing: 'border-box',
-                    border: '1px solid #e2e8f0', borderRadius: '6px',
+                    border: '1px solid var(--border)', borderRadius: '6px',
                     padding: '8px 10px', fontSize: '13px',
                   }}
                 />
@@ -280,7 +280,7 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
 
           {isEditing && description !== undefined && (
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: '#374151' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: 'var(--text-secondary)' }}>
                 Description
               </label>
               <input
@@ -288,7 +288,7 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
                 onChange={(e) => setDescription(e.target.value)}
                 style={{
                   width: '100%', boxSizing: 'border-box',
-                  border: '1px solid #e2e8f0', borderRadius: '6px',
+                  border: '1px solid var(--border)', borderRadius: '6px',
                   padding: '8px 10px', fontSize: '13px',
                 }}
               />
@@ -297,7 +297,7 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
 
           <div style={{ marginBottom: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>
                 YAML Policy Content
               </label>
               <span style={{ fontSize: '11px', color: '#94a3b8' }}>Tab = 2 spaces</span>
@@ -306,7 +306,7 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: '#374151' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: 'var(--text-secondary)' }}>
               Changelog {isEditing && '(new version description)'}
             </label>
             <input
@@ -315,7 +315,7 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
               placeholder="e.g. Added rule to block production deployments"
               style={{
                 width: '100%', boxSizing: 'border-box',
-                border: '1px solid #e2e8f0', borderRadius: '6px',
+                border: '1px solid var(--border)', borderRadius: '6px',
                 padding: '8px 10px', fontSize: '13px',
               }}
             />
@@ -323,8 +323,8 @@ function PolicyEditor({ policy, initialYaml, onClose, onSaved }: PolicyEditorPro
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-          <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '13px' }}>
             Cancel
           </button>
           <button
@@ -370,40 +370,40 @@ function VersionHistoryPanel({
 
   const versions = (versionsData?.data ?? []).slice(0, 5);
 
-  if (isLoading) return <div style={{ padding: '12px', fontSize: '13px', color: '#64748b' }}>Loading versions…</div>;
+  if (isLoading) return <div style={{ padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>Loading versions…</div>;
 
   return (
-    <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px' }}>
-      <h4 style={{ margin: '0 0 12px', fontSize: '13px', fontWeight: 600, color: '#374151' }}>
+    <div style={{ background: 'var(--bg-page)', borderRadius: '8px', padding: '16px' }}>
+      <h4 style={{ margin: '0 0 12px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
         📚 Version History (last 5)
       </h4>
       {versions.length === 0 && (
-        <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>No versions yet.</p>
+        <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>No versions yet.</p>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {versions.map((v: PolicyVersion) => (
           <div key={v.id} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '8px 12px',
-            background: '#fff', borderRadius: '6px',
+            background: 'var(--bg-card)', borderRadius: '6px',
             border: v.version === activeVersion ? '1px solid #3b82f6' : '1px solid #e2e8f0',
           }}>
             <div>
-              <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600, color: '#0f172a' }}>v{v.version}</span>
+              <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600, color: 'var(--text-bright)' }}>v{v.version}</span>
               {v.version === activeVersion && (
-                <span style={{ marginLeft: '6px', background: '#dbeafe', color: '#1d4ed8', padding: '1px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600 }}>ACTIVE</span>
+                <span style={{ marginLeft: '6px', background: 'rgba(96,165,250,0.12)', color: '#93c5fd', padding: '1px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600 }}>ACTIVE</span>
               )}
               <span style={{ marginLeft: '8px', fontSize: '11px', color: '#94a3b8' }}>
                 {v.ruleCount} rules · {formatDistanceToNow(new Date(v.createdAt), { addSuffix: true })}
               </span>
               {v.changelog && (
-                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{v.changelog}</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{v.changelog}</div>
               )}
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
               <button
                 onClick={() => setSelectedVersion(selectedVersion === v.version ? null : v.version)}
-                style={{ padding: '3px 8px', borderRadius: '4px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '11px' }}
+                style={{ padding: '3px 8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '11px' }}
               >
                 {selectedVersion === v.version ? 'Hide YAML' : 'View YAML'}
               </button>
@@ -503,65 +503,65 @@ function TestPolicyModal({
         aria-labelledby={testHeadingId}
         tabIndex={-1}
         style={{
-          background: '#fff', borderRadius: '12px', width: '700px', maxWidth: '95vw',
+          background: 'var(--bg-card)', borderRadius: '12px', width: '700px', maxWidth: '95vw',
           maxHeight: '90vh', display: 'flex', flexDirection: 'column',
           boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 id={testHeadingId} style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 id={testHeadingId} style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: 'var(--text-bright)' }}>
             🧪 Test Policy: {policyName}
           </h2>
-          <button onClick={onClose} aria-label="Close test dialog" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#64748b' }}>✕</button>
+          <button onClick={onClose} aria-label="Close test dialog" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: 'var(--text-muted)' }}>✕</button>
         </div>
 
         <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
-          <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748b' }}>
+          <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--text-muted)' }}>
             Dry-run test cases against the active policy version. No side effects.
           </p>
 
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: '#374151' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--text-secondary)' }}>
               Test Cases (YAML preview — sample cases used for dry-run)
             </label>
             <YamlEditor value={testYaml} onChange={setTestYaml} />
           </div>
 
           {error && (
-            <div style={{ background: '#fee2e2', color: '#dc2626', padding: '10px 14px', borderRadius: '6px', fontSize: '13px', marginBottom: '12px' }}>
+            <div style={{ background: 'rgba(239,68,68,0.12)', color: '#dc2626', padding: '10px 14px', borderRadius: '6px', fontSize: '13px', marginBottom: '12px' }}>
               {error}
             </div>
           )}
 
           {result && (
-            <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '16px' }}>
+            <div style={{ background: 'var(--bg-page)', borderRadius: '8px', padding: '16px' }}>
               <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>{result.summary.total}</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>Total</div>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-bright)' }}>{result.summary.total}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Total</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '24px', fontWeight: 700, color: '#16a34a' }}>{result.summary.passed}</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>Passed</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Passed</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '24px', fontWeight: 700, color: '#dc2626' }}>{result.summary.failed}</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>Failed</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Failed</div>
                 </div>
               </div>
 
               {result.results.map((r, i) => (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '8px 12px', background: '#fff', borderRadius: '6px',
+                  padding: '8px 12px', background: 'var(--bg-card)', borderRadius: '6px',
                   border: `1px solid ${r.passed ? '#dcfce7' : '#fee2e2'}`,
                   marginBottom: '6px',
                 }}>
                   <span style={{ fontSize: '16px' }}>{r.passed ? '✅' : '❌'}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 500, color: '#0f172a' }}>{r.name}</div>
-                    <div style={{ fontSize: '11px', color: '#64748b' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-bright)' }}>{r.name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                       Decision: <strong>{r.decision}</strong>
                       {r.expectedDecision && r.decision !== r.expectedDecision && (
                         <span style={{ color: '#dc2626' }}> (expected: {r.expectedDecision})</span>
@@ -576,8 +576,8 @@ function TestPolicyModal({
           )}
         </div>
 
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-          <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '13px' }}>
             Close
           </button>
           <button
@@ -628,9 +628,9 @@ function PolicyCard({
 
   return (
     <div style={{
-      background: '#fff', borderRadius: '10px',
+      background: 'var(--bg-card)', borderRadius: '10px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-      border: '1px solid #f1f5f9',
+      border: '1px solid var(--border-subtle)',
       overflow: 'hidden',
     }}>
       {/* Card header */}
@@ -638,10 +638,10 @@ function PolicyCard({
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#0f172a' }}>
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--text-bright)' }}>
                 {policy.name}
               </h3>
-              <span style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '4px', padding: '1px 7px', fontSize: '11px', color: '#64748b', fontFamily: 'monospace' }}>
+              <span style={{ background: 'var(--bg-page)', border: '1px solid var(--border)', borderRadius: '4px', padding: '1px 7px', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
                 {policy.activeVersion ? `v${policy.activeVersion}` : 'no version'}
               </span>
               <span style={{ background: defaultActionColor + '15', color: defaultActionColor, borderRadius: '4px', padding: '1px 7px', fontSize: '11px', fontWeight: 600 }}>
@@ -649,7 +649,7 @@ function PolicyCard({
               </span>
             </div>
             {policy.description && (
-              <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#64748b' }}>{policy.description}</p>
+              <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text-muted)' }}>{policy.description}</p>
             )}
             <span style={{ fontSize: '11px', color: '#94a3b8' }}>
               Updated {formatDistanceToNow(new Date(policy.updatedAt), { addSuffix: true })}
@@ -660,19 +660,19 @@ function PolicyCard({
           <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
             <button
               onClick={() => onTest(policy)}
-              style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '12px', color: '#8b5cf6' }}
+              style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '12px', color: '#8b5cf6' }}
             >🧪 Test</button>
             <button
               onClick={() => setShowVersions(!showVersions)}
-              style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '12px', color: '#3b82f6' }}
+              style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '12px', color: '#3b82f6' }}
             >📚 History</button>
             <button
               onClick={() => onEdit(policy)}
-              style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '12px' }}
+              style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '12px' }}
             >✏️ Edit</button>
             <button
               onClick={() => onDelete(policy)}
-              style={{ padding: '5px 10px', borderRadius: '5px', border: 'none', background: '#fee2e2', color: '#dc2626', cursor: 'pointer', fontSize: '12px' }}
+              style={{ padding: '5px 10px', borderRadius: '5px', border: 'none', background: 'rgba(239,68,68,0.12)', color: '#dc2626', cursor: 'pointer', fontSize: '12px' }}
             >🗑 Delete</button>
           </div>
         </div>
@@ -680,7 +680,7 @@ function PolicyCard({
 
       {/* Version history */}
       {showVersions && (
-        <div style={{ padding: '16px 20px', background: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ padding: '16px 20px', background: '#fafafa', borderTop: '1px solid var(--border-subtle)' }}>
           <VersionHistoryPanel
             policyId={policy.id}
             activeVersion={policy.activeVersion}
@@ -722,10 +722,10 @@ export default function PoliciesPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 6px', color: '#0f172a' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 6px', color: 'var(--text-bright)' }}>
             📜 Policies
           </h1>
-          <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: 0 }}>
             Define and manage YAML-based security policies for your agents.
           </p>
         </div>
@@ -756,12 +756,12 @@ export default function PoliciesPage() {
       {/* Empty state */}
       {!isLoading && policies.length === 0 && (
         <div style={{
-          background: '#fff', borderRadius: '12px', padding: '60px 24px',
+          background: 'var(--bg-card)', borderRadius: '12px', padding: '60px 24px',
           textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
         }}>
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>📜</div>
-          <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#0f172a' }}>No policies yet</h3>
-          <p style={{ color: '#64748b', marginBottom: '20px', fontSize: '14px' }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: 'var(--text-bright)' }}>No policies yet</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '20px', fontSize: '14px' }}>
             Create your first policy to start protecting your agents.
           </p>
           <button
@@ -824,22 +824,22 @@ export default function PoliciesPage() {
             aria-modal="true"
             aria-labelledby="delete-policy-heading"
             style={{
-              background: '#fff', borderRadius: '12px', padding: '28px',
+              background: 'var(--bg-card)', borderRadius: '12px', padding: '28px',
               width: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 id="delete-policy-heading" style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+            <h2 id="delete-policy-heading" style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: 'var(--text-bright)' }}>
               🗑 Delete Policy
             </h2>
-            <p style={{ margin: '0 0 20px', fontSize: '14px', color: '#475569' }}>
+            <p style={{ margin: '0 0 20px', fontSize: '14px', color: 'var(--text-secondary)' }}>
               Are you sure you want to delete <strong>{deleteTarget.name}</strong>?
               This action soft-deletes the policy — it can be recovered via the API.
             </p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => setDeleteTarget(null)}
-                style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '13px' }}
+                style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '13px' }}
               >Cancel</button>
               <button
                 onClick={() => deleteMutation.mutate(deleteTarget.id)}

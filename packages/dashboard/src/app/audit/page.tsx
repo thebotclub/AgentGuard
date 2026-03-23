@@ -16,22 +16,22 @@ const DECISIONS = ['', 'ALLOW', 'BLOCK', 'MONITOR', 'HITL_PENDING', 'HITL_APPROV
 const RISK_TIERS = ['', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
 const DECISION_COLORS: Record<string, { bg: string; color: string }> = {
-  ALLOW: { bg: '#dcfce7', color: '#15803d' },
-  BLOCK: { bg: '#fee2e2', color: '#b91c1c' },
-  MONITOR: { bg: '#dbeafe', color: '#1d4ed8' },
-  HITL_PENDING: { bg: '#fef3c7', color: '#92400e' },
-  HITL_APPROVED: { bg: '#d1fae5', color: '#065f46' },
-  HITL_REJECTED: { bg: '#fee2e2', color: '#991b1b' },
-  HITL_TIMEOUT: { bg: '#f3f4f6', color: '#374151' },
-  KILLED: { bg: '#fee2e2', color: '#7f1d1d' },
-  ERROR: { bg: '#f3f4f6', color: '#374151' },
+  ALLOW: { bg: '#dcfce7', color: '#4ade80' },
+  BLOCK: { bg: '#fee2e2', color: '#f87171' },
+  MONITOR: { bg: '#dbeafe', color: '#93c5fd' },
+  HITL_PENDING: { bg: '#fef3c7', color: '#fbbf24' },
+  HITL_APPROVED: { bg: '#d1fae5', color: '#4ade80' },
+  HITL_REJECTED: { bg: '#fee2e2', color: '#f87171' },
+  HITL_TIMEOUT: { bg: '#f3f4f6', color: 'var(--text-secondary)' },
+  KILLED: { bg: '#fee2e2', color: '#f87171' },
+  ERROR: { bg: '#f3f4f6', color: 'var(--text-secondary)' },
 };
 
 const RISK_COLORS: Record<string, { bg: string; color: string }> = {
-  LOW: { bg: '#dcfce7', color: '#15803d' },
-  MEDIUM: { bg: '#fef3c7', color: '#92400e' },
-  HIGH: { bg: '#fee2e2', color: '#b91c1c' },
-  CRITICAL: { bg: '#7f1d1d', color: '#fef2f2' },
+  LOW: { bg: '#dcfce7', color: '#4ade80' },
+  MEDIUM: { bg: '#fef3c7', color: '#fbbf24' },
+  HIGH: { bg: '#fee2e2', color: '#f87171' },
+  CRITICAL: { bg: 'rgba(239,68,68,0.3)', color: '#fca5a5' },
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ function Badge({
   label: string;
   colors?: { bg: string; color: string };
 }) {
-  const c = colors ?? { bg: '#f1f5f9', color: '#475569' };
+  const c = colors ?? { bg: '#f1f5f9', color: 'var(--text-secondary)' };
   return (
     <span
       style={{
@@ -70,11 +70,11 @@ function FilterBar({
 }) {
   const inputStyle = {
     padding: '6px 10px',
-    border: '1px solid #e2e8f0',
+    border: '1px solid var(--border)',
     borderRadius: '6px',
     fontSize: '13px',
-    background: '#fff',
-    color: '#0f172a',
+    background: 'var(--bg-card)',
+    color: 'var(--text-bright)',
     outline: 'none',
   };
 
@@ -85,7 +85,7 @@ function FilterBar({
         flexWrap: 'wrap',
         gap: '12px',
         padding: '16px',
-        background: '#fff',
+        background: 'var(--bg-card)',
         borderRadius: '8px',
         marginBottom: '16px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
@@ -93,7 +93,7 @@ function FilterBar({
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Agent ID
         </label>
         <input
@@ -105,7 +105,7 @@ function FilterBar({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Decision
         </label>
         <select
@@ -120,7 +120,7 @@ function FilterBar({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Risk Tier
         </label>
         <select
@@ -135,7 +135,7 @@ function FilterBar({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Tool Name
         </label>
         <input
@@ -147,7 +147,7 @@ function FilterBar({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           From
         </label>
         <input
@@ -159,7 +159,7 @@ function FilterBar({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           To
         </label>
         <input
@@ -173,12 +173,12 @@ function FilterBar({
       <button
         style={{
           padding: '6px 14px',
-          background: '#f1f5f9',
-          border: '1px solid #e2e8f0',
+          background: 'var(--bg-card-alt)',
+          border: '1px solid var(--border)',
           borderRadius: '6px',
           fontSize: '13px',
           cursor: 'pointer',
-          color: '#475569',
+          color: 'var(--text-secondary)',
           alignSelf: 'flex-end',
         }}
         onClick={() => onChange({ limit: 50 })}
@@ -238,10 +238,10 @@ export default function AuditLogPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 4px', color: '#0f172a' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: '0 0 4px', color: 'var(--text-bright)' }}>
             📋 Audit Log
           </h1>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}>
             Tamper-evident audit trail with SHA-256 hash chain verification.
           </p>
         </div>
@@ -253,12 +253,12 @@ export default function AuditLogPage() {
             aria-label="Export audit log as CSV"
             style={{
               padding: '8px 16px',
-              background: '#fff',
-              border: '1px solid #e2e8f0',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
               borderRadius: '6px',
               fontSize: '13px',
               cursor: 'pointer',
-              color: '#374151',
+              color: 'var(--text-secondary)',
               fontWeight: 500,
             }}
           >
@@ -269,12 +269,12 @@ export default function AuditLogPage() {
             aria-label="Export audit log as JSON"
             style={{
               padding: '8px 16px',
-              background: '#fff',
-              border: '1px solid #e2e8f0',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
               borderRadius: '6px',
               fontSize: '13px',
               cursor: 'pointer',
-              color: '#374151',
+              color: 'var(--text-secondary)',
               fontWeight: 500,
             }}
           >
@@ -298,7 +298,7 @@ export default function AuditLogPage() {
       {/* Table */}
       <div
         style={{
-          background: '#fff',
+          background: 'var(--bg-card)',
           borderRadius: '8px',
           boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
           overflow: 'hidden',
@@ -325,8 +325,8 @@ export default function AuditLogPage() {
             <thead>
               <tr
                 style={{
-                  background: '#f8fafc',
-                  borderBottom: '1px solid #e2e8f0',
+                  background: 'var(--bg-page)',
+                  borderBottom: '1px solid var(--border-subtle)',
                 }}
               >
                 {['Time', 'Agent', 'Tool', 'Decision', 'Risk', 'Score', 'Chain', ''].map((h) => (
@@ -336,7 +336,7 @@ export default function AuditLogPage() {
                       padding: '10px 14px',
                       textAlign: 'left',
                       fontWeight: 600,
-                      color: '#64748b',
+                      color: 'var(--text-muted)',
                       fontSize: '11px',
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
@@ -359,8 +359,8 @@ export default function AuditLogPage() {
                   onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = '#f8fafc'; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = ''; }}
                 >
-                  <td style={{ padding: '10px 14px', color: '#374151', whiteSpace: 'nowrap' }}>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>
+                  <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                       {new Date(event.occurredAt).toLocaleDateString()}
                     </div>
                     <div>
@@ -371,10 +371,10 @@ export default function AuditLogPage() {
                     <code
                       style={{
                         fontSize: '11px',
-                        background: '#f1f5f9',
+                        background: 'var(--bg-card-alt)',
                         padding: '2px 5px',
                         borderRadius: '3px',
-                        color: '#374151',
+                        color: 'var(--text-secondary)',
                         display: 'block',
                         maxWidth: '160px',
                         overflow: 'hidden',
@@ -392,7 +392,7 @@ export default function AuditLogPage() {
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        color: '#374151',
+                        color: 'var(--text-secondary)',
                       }}
                       title={event.toolName ?? event.actionType}
                     >
@@ -411,7 +411,7 @@ export default function AuditLogPage() {
                       colors={RISK_COLORS[event.riskTier]}
                     />
                   </td>
-                  <td style={{ padding: '10px 14px', color: '#374151' }}>
+                  <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
                     <div
                       style={{
                         fontWeight: 600,
@@ -461,7 +461,7 @@ export default function AuditLogPage() {
             padding: '12px 0',
           }}
         >
-          <span style={{ fontSize: '13px', color: '#64748b' }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
             Page {page} · {events.length} events
           </span>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -470,8 +470,8 @@ export default function AuditLogPage() {
               disabled={cursorStack.length === 0}
               style={{
                 padding: '7px 16px',
-                background: cursorStack.length === 0 ? '#f1f5f9' : '#fff',
-                border: '1px solid #e2e8f0',
+                background: cursorStack.length === 0 ? 'var(--bg-card-alt)' : 'var(--bg-input)',
+                border: '1px solid var(--border)',
                 borderRadius: '6px',
                 fontSize: '13px',
                 cursor: cursorStack.length === 0 ? 'not-allowed' : 'pointer',
@@ -485,12 +485,12 @@ export default function AuditLogPage() {
               disabled={!data?.pagination.hasMore}
               style={{
                 padding: '7px 16px',
-                background: !data?.pagination.hasMore ? '#f1f5f9' : '#fff',
-                border: '1px solid #e2e8f0',
+                background: !data?.pagination.hasMore ? 'var(--bg-card-alt)' : 'var(--bg-input)',
+                border: '1px solid var(--border)',
                 borderRadius: '6px',
                 fontSize: '13px',
                 cursor: !data?.pagination.hasMore ? 'not-allowed' : 'pointer',
-                color: !data?.pagination.hasMore ? '#94a3b8' : '#374151',
+                color: !data?.pagination.hasMore ? 'var(--text-muted)' : 'var(--text-primary)',
               }}
             >
               Next →
