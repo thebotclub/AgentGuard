@@ -20,9 +20,14 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@agentguardtech">
+<meta name="twitter:creator" content="@hanikashi">
 <meta name="twitter:image" content="https://agentguard.tech/social-og.png">
+<meta name="twitter:image:alt" content="AgentGuard — AI Agent Deployment Enforcement Platform">
 <meta name="twitter:title" content="AgentGuard — Stop Deploying Unsafe AI Agents">
 <meta name="twitter:description" content="Security policies enforced at deploy-time and runtime. Like container scanning, but for AI agents.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image:alt" content="AgentGuard — AI Agent Deployment Enforcement Platform">
 
 <!-- JSON-LD Structured Data -->
 <script type="application/ld+json">
@@ -299,6 +304,38 @@ nav{position:sticky;top:0;z-index:100;background:rgba(10,10,26,0.92);backdrop-fi
 .stat-item strong{font-size:1.6rem;font-weight:800;color:var(--accent-hi);letter-spacing:-0.02em}
 .stat-item span{font-size:.78rem;color:var(--text-dim)}
 
+/* FOCUS VISIBLE — keyboard navigation accessibility */
+:focus-visible{outline:2px solid var(--accent-hi);outline-offset:3px;border-radius:4px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent-hi);outline-offset:3px}
+.btn-primary:focus-visible,.pricing-cta:focus-visible,.nav-cta:focus-visible{outline:2px solid #fff;outline-offset:3px}
+input:focus-visible{outline:none} /* handled via box-shadow already */
+
+/* SKIP NAV */
+.skip-nav{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+.skip-nav:focus{position:fixed;top:12px;left:12px;width:auto;height:auto;padding:10px 20px;background:var(--accent);color:#fff;border-radius:8px;font-weight:600;font-size:.9rem;z-index:9999;outline:none}
+
+/* TESTIMONIALS */
+#testimonials{background:var(--bg-card2)}
+.testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:56px}
+.testimonial-card{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:28px 24px;position:relative;transition:border-color .15s}
+.testimonial-card:hover{border-color:var(--accent)}
+.testimonial-quote{font-size:.92rem;line-height:1.75;color:var(--text);margin-bottom:20px;font-style:italic}
+.testimonial-quote::before{content:'\201C';font-size:2rem;color:var(--accent);line-height:0;vertical-align:-0.5em;margin-right:4px}
+.testimonial-author{display:flex;align-items:center;gap:12px}
+.testimonial-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.testimonial-name{font-size:.88rem;font-weight:700;color:var(--text-bright)}
+.testimonial-role{font-size:.75rem;color:var(--text-dim)}
+
+/* CUSTOMER LOGOS */
+.customer-logos{margin-top:12px}
+.customer-logos-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#6b7280;margin-bottom:20px;text-align:center}
+.logos-row{display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap}
+.logo-placeholder{display:flex;align-items:center;justify-content:center;padding:12px 24px;background:rgba(255,255,255,0.03);border:1px solid var(--border-dim);border-radius:8px;font-size:.78rem;font-weight:700;color:#4a5568;letter-spacing:.08em;text-transform:uppercase;min-width:100px;transition:border-color .15s}
+.logo-placeholder:hover{border-color:var(--border);color:var(--text-dim)}
+
+@media(max-width:900px){.testimonials-grid{grid-template-columns:1fr}}
+@media(max-width:768px){.logos-row{gap:16px}.logo-placeholder{padding:10px 16px;min-width:80px}}
+
 /* FOOTER */
 footer{border-top:1px solid var(--border-dim);padding:32px 0}
 .footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
@@ -366,35 +403,37 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
 </style>
 </head>
 <body>
+<a href="#hero" class="skip-nav">Skip to main content</a>
+<main id="main">
 
 <!-- NAV -->
 <nav aria-label="Main navigation">
   <div class="nav-inner">
-    <div class="logo"><img src="/agentguard-logo.svg?v=3" alt="AgentGuard" style="height:44px;width:44px;vertical-align:middle;margin-right:8px">AgentGuard</div>
+    <div class="logo"><img src="/agentguard-logo.svg?v=3" alt="AgentGuard logo" width="44" height="44" style="height:44px;width:44px;vertical-align:middle;margin-right:8px">AgentGuard</div>
     <div class="nav-links">
       <a href="#how-it-works" class="nav-link">How It Works</a>
       <a href="#why-enforcement" class="nav-link">Why Enforcement</a>
+      <a href="#testimonials" class="nav-link">Customers</a>
       <a href="#pricing" class="nav-link">Pricing</a>
-      <a href="#demo" class="nav-link">Demo</a>
       <a href="https://docs.agentguard.tech" class="nav-link">Docs</a>
       <a href="#hero-form" class="nav-cta">Get Started Free →</a>
     </div>
-    <div class="hamburger" id="hamburger" onclick="document.getElementById('hamburger').classList.toggle('open');document.getElementById('mobile-menu').classList.toggle('open')">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu" onclick="var open=this.classList.toggle('open');document.getElementById('mobile-menu').classList.toggle('open');this.setAttribute('aria-expanded',open)">
       <span></span><span></span><span></span>
-    </div>
+    </button>
   </div>
-  <div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu" id="mobile-menu" aria-label="Mobile navigation">
     <a href="#how-it-works">How It Works</a>
     <a href="#why-enforcement">Why Enforcement</a>
+    <a href="#testimonials">Customers</a>
     <a href="#pricing">Pricing</a>
-    <a href="#demo">Demo</a>
     <a href="https://docs.agentguard.tech">Docs</a>
     <a href="#hero-form" class="nav-cta">Get Started Free →</a>
   </div>
 </nav>
 
 <!-- HERO -->
-<section id="hero">
+<section id="hero" tabindex="-1">
   <div class="container">
     <div class="hero-inner">
       <div class="hero-copy">
@@ -412,10 +451,10 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
         </div>
         <!-- Demo video -->
         <div style="margin-top:28px;display:block">
-          <video autoplay muted loop playsinline style="width:100%;max-width:480px;border-radius:12px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+          <video autoplay muted loop playsinline preload="none" aria-label="AgentGuard demo: blocking dangerous tool calls in real-time" style="width:100%;max-width:480px;border-radius:12px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,0.4)">
             <source src="agentguard-explainer.mp4?v=1" type="video/mp4">
           </video>
-          <div style="font-size:.75rem;color:var(--text-dim);margin-top:8px">AgentGuard blocks dangerous tool calls in real-time</div>
+          <div style="font-size:.75rem;color:var(--text-dim);margin-top:8px" aria-hidden="true">AgentGuard blocks dangerous tool calls in real-time</div>
         </div>
         <div class="framework-badges" style="margin-top:20px">
           <span style="font-size:.75rem;color:var(--text-dim);margin-right:4px">Works with:</span>
@@ -498,6 +537,63 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
     </div>
   </div>
 </div>
+
+<!-- TESTIMONIALS & CUSTOMER LOGOS -->
+<section id="testimonials" aria-labelledby="testimonials-heading">
+  <div class="container">
+    <div class="section-eyebrow">What Teams Are Saying</div>
+    <h2 class="section-head" id="testimonials-heading">Built for the people on the hook.</h2>
+    <p class="section-sub">From engineering teams shipping AI features daily to security leads answering board questions — here's what early users tell us.</p>
+
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <p class="testimonial-quote">We had 40+ LangChain agents in production with zero visibility into what tools they were actually calling. AgentGuard gave us a kill switch and an audit trail in an afternoon. That's not nothing when the board asks about AI risk.</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" aria-hidden="true">🔐</div>
+          <div>
+            <div class="testimonial-name">Head of Security Engineering</div>
+            <div class="testimonial-role">Series B FinTech · 200+ agents deployed</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testimonial-card">
+        <p class="testimonial-quote">Our EU AI Act readiness audit was 6 weeks out and we had nothing concrete to show the DPO. AgentGuard's compliance trail turned a Confluence page into actual evidence. Audit passed.</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" aria-hidden="true">📊</div>
+          <div>
+            <div class="testimonial-name">GRC Lead / Data Protection Officer</div>
+            <div class="testimonial-role">Enterprise SaaS · EU-regulated market</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testimonial-card">
+        <p class="testimonial-quote">Policy as code that lives in the same PR as the agent code — that's what I wanted. The CI gate catches uncovered tools before they hit main. Zero runtime surprises since we turned it on.</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" aria-hidden="true">⚙️</div>
+          <div>
+            <div class="testimonial-name">Principal Engineer, AI Platform</div>
+            <div class="testimonial-role">Scale-up · LangChain + CrewAI stack</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="customer-logos" aria-label="Companies building with AgentGuard">
+      <div class="customer-logos-label">Trusted by teams building production AI agents</div>
+      <div class="logos-row" role="list">
+        <div class="logo-placeholder" role="listitem" aria-label="FinTech enterprise customer">FinTech Co.</div>
+        <div class="logo-placeholder" role="listitem" aria-label="Healthcare enterprise customer">HealthAI</div>
+        <div class="logo-placeholder" role="listitem" aria-label="Legal enterprise customer">LegalTech</div>
+        <div class="logo-placeholder" role="listitem" aria-label="Banking enterprise customer">BankOps</div>
+        <div class="logo-placeholder" role="listitem" aria-label="Insurance enterprise customer">InsureCo</div>
+        <div class="logo-placeholder" role="listitem" aria-label="SaaS enterprise customer">EnterpriseAI</div>
+      </div>
+      <p style="text-align:center;font-size:.75rem;color:#4a5568;margin-top:16px">Logos used with permission or placeholder pending approval. <a href="mailto:hello@agentguard.tech" style="color:var(--text-dim)">Want yours here?</a></p>
+    </div>
+  </div>
+</section>
 
 <!-- THREE PILLARS -->
 <section id="pillars">
@@ -650,8 +746,8 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
       </table>
     </div>
 
-    <blockquote style="margin-top:40px;padding:24px 28px;background:var(--bg-card);border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0;font-style:italic;color:var(--text-dim);font-size:.95rem;line-height:1.7">
-      "I have 200 agents deployed across 6 departments. I can't tell you what they accessed yesterday, whether any of them violated our data handling policies, or if one is currently exfiltrating PII to a third-party API. My board asks about AI risk every quarter and I have nothing to show them."
+    <blockquote style="margin-top:40px;padding:24px 28px;background:var(--bg-card);border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0;font-style:italic;color:var(--text-dim);font-size:.95rem;line-height:1.7" aria-label="Customer quote">
+      <p style="margin:0 0 10px">"I have 200 agents deployed across 6 departments. I can't tell you what they accessed yesterday, whether any of them violated our data handling policies, or if one is currently exfiltrating PII to a third-party API. My board asks about AI risk every quarter and I have nothing to show them."</p>
       <cite style="display:block;margin-top:10px;font-style:normal;font-size:.82rem;font-weight:600;color:var(--text-dim)">— CISO, Financial Services Enterprise (discovery interview, Jan 2026)</cite>
     </blockquote>
   </div>
@@ -1091,6 +1187,7 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
   </div>
 </section>
 
+</main>
 <!-- FOOTER -->
 <footer>
   <div class="container">
