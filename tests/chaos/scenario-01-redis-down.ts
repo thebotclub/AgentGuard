@@ -91,7 +91,7 @@ export async function runScenario01(): Promise<ChaosResult> {
     const isFailClosed =
       !evalRes.ok || // 5xx error = fail-closed
       evalRes.status === 503 || // Service unavailable = fail-closed
-      evalRes.body?.data?.decision === 'BLOCK'; // or blocked by policy fallback
+      (evalRes.body?.data as Record<string, unknown>)?.['decision'] === 'BLOCK'; // or blocked by policy fallback
 
     // ── Cleanup: Restart Redis ────────────────────────────────────────────────
     console.log('  [chaos] Restarting Redis...');
@@ -118,7 +118,7 @@ export async function runScenario01(): Promise<ChaosResult> {
         ? 'FAIL-CLOSED: Actions blocked when Redis unavailable'
         : 'FAIL-OPEN: Actions allowed when Redis unavailable (UNSAFE)',
       details: JSON.stringify({
-        redisDown: { evalStatus: evalRes.status, decision: evalRes.body?.data?.decision },
+        redisDown: { evalStatus: evalRes.status, decision: (evalRes.body?.data as Record<string, unknown>)?.['decision'] },
         healthStatus: healthBody?.status,
         recoveryOk: recoveryStatus.ok,
       }),

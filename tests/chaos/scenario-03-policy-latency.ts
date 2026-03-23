@@ -112,7 +112,7 @@ export async function runScenario03(): Promise<ChaosResult> {
     const blockOnTimeout = stressResults.filter(
       (r) =>
         (r.status === 0 || r.status === 504 || r.latencyMs > TIMEOUT_THRESHOLD_MS) &&
-        r.body?.data?.decision !== 'ALLOW',
+        (r.body?.data as Record<string, unknown>)?.['decision'] !== 'ALLOW',
     ).length;
 
     // ── Verify Timeout Handling ────────────────────────────────────────────────

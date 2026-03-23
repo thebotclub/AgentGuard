@@ -12,7 +12,7 @@
  */
 import crypto from 'node:crypto';
 import { importJWK, jwtVerify, decodeJwt } from 'jose';
-import type { JWTPayload } from 'jose';
+import type { JWTPayload, JWK } from 'jose';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -115,13 +115,13 @@ export async function fetchDiscovery(discoveryUrl: string): Promise<OidcDiscover
 
 // ── JWKS ──────────────────────────────────────────────────────────────────
 
-const jwksCache = new Map<string, { keys: JsonWebKey[]; expiresAt: number }>();
+const jwksCache = new Map<string, { keys: JWK[]; expiresAt: number }>();
 const JWKS_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 /**
  * Fetch the JWKS from the IdP.
  */
-async function fetchJwks(jwksUri: string): Promise<JsonWebKey[]> {
+async function fetchJwks(jwksUri: string): Promise<JWK[]> {
   const cached = jwksCache.get(jwksUri);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.keys;
@@ -136,7 +136,7 @@ async function fetchJwks(jwksUri: string): Promise<JsonWebKey[]> {
     throw new Error(`JWKS fetch failed: ${res.status} from ${jwksUri}`);
   }
 
-  const body = (await res.json()) as { keys: JsonWebKey[] };
+  const body = (await res.json()) as { keys: JWK[] };
   const keys = body.keys ?? [];
   jwksCache.set(jwksUri, { keys, expiresAt: Date.now() + JWKS_TTL_MS });
   return keys;

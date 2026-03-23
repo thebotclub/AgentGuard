@@ -31,7 +31,7 @@ vi.mock('../../routes/audit.js', () => ({
 }));
 
 vi.mock('../../lib/rate-limit-db.js', () => ({
-  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true, resetAt: null }),
+  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: -1, resetAt: 0 }),
   incrementRateCounter: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -92,7 +92,7 @@ describe('GET /api/v1/evaluate (discovery)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getGlobalKillSwitch).mockResolvedValue({ active: false, at: null });
-    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, resetAt: null });
+    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, remaining: -1, resetAt: 0 });
     mockDb = createMockDb();
     app = buildEvalApp(mockDb);
   });
@@ -114,7 +114,7 @@ describe('POST /api/v1/evaluate — anonymous (demo) mode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getGlobalKillSwitch).mockResolvedValue({ active: false, at: null });
-    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, resetAt: null });
+    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, remaining: -1, resetAt: 0 });
     vi.mocked(storeAuditEvent).mockResolvedValue('mock-hash');
     mockDb = createMockDb();
     app = buildEvalApp(mockDb);
@@ -214,7 +214,7 @@ describe('POST /api/v1/evaluate — authenticated tenant', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getGlobalKillSwitch).mockResolvedValue({ active: false, at: null });
-    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, resetAt: null });
+    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, remaining: -1, resetAt: 0 });
     vi.mocked(storeAuditEvent).mockResolvedValue('mock-hash');
     vi.mocked(incrementRateCounter).mockResolvedValue(undefined);
     mockDb = createMockDb();
@@ -300,7 +300,8 @@ describe('POST /api/v1/evaluate — authenticated tenant', () => {
   it('returns 429 when rate limit is exceeded', async () => {
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
-      resetAt: new Date(Date.now() + 60000).toISOString(),
+      remaining: 0,
+      resetAt: Date.now() + 60000,
     });
 
     const res = await request(app)
@@ -321,7 +322,7 @@ describe('POST /api/v1/evaluate — kill switch', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getGlobalKillSwitch).mockResolvedValue({ active: false, at: null });
-    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, resetAt: null });
+    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, remaining: -1, resetAt: 0 });
     vi.mocked(storeAuditEvent).mockResolvedValue('mock-hash');
     mockDb = createMockDb();
     app = buildEvalApp(mockDb);
@@ -399,7 +400,7 @@ describe('POST /api/v1/evaluate — agent key requests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getGlobalKillSwitch).mockResolvedValue({ active: false, at: null });
-    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, resetAt: null });
+    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, remaining: -1, resetAt: 0 });
     vi.mocked(storeAuditEvent).mockResolvedValue('mock-hash');
     vi.mocked(incrementRateCounter).mockResolvedValue(undefined);
     mockDb = createMockDb();
@@ -435,7 +436,7 @@ describe('POST /api/v1/evaluate — decision types', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getGlobalKillSwitch).mockResolvedValue({ active: false, at: null });
-    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, resetAt: null });
+    vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, remaining: -1, resetAt: 0 });
     vi.mocked(storeAuditEvent).mockResolvedValue('mock-hash');
     vi.mocked(incrementRateCounter).mockResolvedValue(undefined);
     vi.mocked(createPendingApproval).mockResolvedValue('approval-uuid-123');
@@ -493,7 +494,7 @@ describe('POST /api/v1/evaluate — decision types', () => {
       ],
     });
     (mockDb.getCustomPolicy as ReturnType<typeof vi.fn>).mockResolvedValue(hitlPolicy);
-    (mockDb.insertApproval as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'approval-123' });
+    (mockDb.createApproval as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'approval-123' });
 
     const res = await request(app)
       .post('/api/v1/evaluate')

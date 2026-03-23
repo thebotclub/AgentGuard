@@ -542,7 +542,7 @@ describe('Multi-Tenant Data Isolation', () => {
 
   // ── 10. No-Auth Requests Are Rejected ────────────────────────────────
   describe('Authentication Enforcement', () => {
-    const PROTECTED_ENDPOINTS = [
+    const PROTECTED_ENDPOINTS: [string, string][] = [
       ['GET', '/api/v1/audit'],
       ['GET', '/api/v1/policy'],
       ['GET', '/api/v1/agents'],

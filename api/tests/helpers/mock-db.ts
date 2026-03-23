@@ -110,7 +110,7 @@ export function createMockDb(): IDatabase {
     updateSessionActivity: vi.fn().mockResolvedValue(undefined),
 
     // Approvals
-    insertApproval: vi.fn().mockResolvedValue({ id: 'approval-1', tenant_id: 'tenant-123', agent_id: null, tool: 'test', params_json: null, status: 'pending', created_at: '2024-01-01T00:00:00.000Z', resolved_at: null, resolved_by: null }),
+    createApproval: vi.fn().mockResolvedValue({ id: 'approval-1', tenant_id: 'tenant-123', agent_id: null, tool: 'test', params_json: null, status: 'pending', created_at: '2024-01-01T00:00:00.000Z', resolved_at: null, resolved_by: null }),
     getApproval: vi.fn().mockResolvedValue(undefined),
     getApprovalsByTenant: vi.fn().mockResolvedValue([]),
     resolveApproval: vi.fn().mockResolvedValue(undefined),
