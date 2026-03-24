@@ -13,10 +13,11 @@ export default defineConfig({
   test: {
     globals: false,
     environment: 'node',
-    // Include tests from SDK package (Vitest-based unit tests)
+    // Include tests from SDK package and API routes
     include: [
       'packages/sdk/src/**/*.test.ts',
       'packages/sdk/src/**/__tests__/**/*.test.ts',
+      'api/tests/**/*.test.ts',
     ],
     coverage: {
       provider: 'v8',

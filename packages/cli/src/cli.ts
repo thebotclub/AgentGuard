@@ -20,62 +20,6 @@ import type { ValidateOptions } from './commands/validate.js';
 
 const VERSION = '0.9.0';
 
-// ── ASCII Banner ──────────────────────────────────────────────────────────────
-//
-//  Design: a sharp geometric shield emblem on the left, with the wordmark
-//  "AGENTGUARD" in clean block letters on the right.  Teal/cyan palette via
-//  chalk.  Falls back gracefully when colour is unavailable.
-//
-//  Render width: 73 chars (comfortably under 80).  Compact variant for
-//  narrower terminals.
-
-const BANNER = `
-  ██████╗  ██████╗  ██████╗ ███╗   ███╗     ██████╗ ██╗   ██╗███╗   ██╗██╗  ██╗███████╗██████╗
- ██╔════╝ ██╔═══██╗██╔═══██╗████╗ ████║    ██╔═══██╗██║   ██║████╗  ██║██║ ██╔╝██╔════╝██╔══██╗
- ██║  ███╗██║   ██║██║   ██║██╔████╔██║    ██║   ██║██║   ██║██╔██╗ ██║█████╔╝ █████╗  ██████╔╝
- ██║   ██║██║   ██║██║   ██║██║╚██╔╝██║    ██║   ██║██║   ██║██║╚██╗██║██╔═██╗ ██╔══╝  ██╔══██╗
- ╚██████╔╝╚██████╔╝╚██████╔╝██║ ╚═╝ ██║    ╚██████╔╝╚██████╔╝██║ ╚████║██║  ██╗███████╗██║  ██║
-  ╚═════╝  ╚═════╝  ╚═════╝ ╚═╝     ╚═╝     ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝`;
-
-const BANNER_COMPACT = `
-  ██╗   ██╗███████╗██████╗ ███████╗
-  ██║   ██║██╔════╝██╔══██╗██╔════╝
-  ██║   ██║█████╗  ██████╔╝█████╗
-  ╚██╗ ██╔╝██╔══╝  ██╔══██╗██╔══╝
-   ╚████╔╝ ███████╗██║  ██║███████╗
-    ╚═══╝  ╚══════╝╚═╝  ╚═╝╚══════╝`;
-
-const TAGLINE = '  Security for AI Agents  ·  https://agentguard.tech';
-
-// ── Banner helpers ────────────────────────────────────────────────────────────
-
-/** Full-width banner for normal terminals (≥70 cols). */
-function printBanner(): void {
-  console.log(chalk.bold.cyan(BANNER));
-  console.log(chalk.dim(TAGLINE));
-  console.log();
-}
-
-/** Compact banner for narrower terminals. */
-function printBannerCompact(): void {
-  console.log(chalk.bold.cyan(BANNER_COMPACT));
-  console.log(chalk.dim(TAGLINE));
-  console.log();
-}
-
-// Detect terminal width via process.stdout.columns fallbacks to 80
-function getCols(): number {
-  return process.stdout.columns || 80;
-}
-
-function selectBanner(): void {
-  if (getCols() >= 70) {
-    printBanner();
-  } else {
-    printBannerCompact();
-  }
-}
-
 // ── Program ───────────────────────────────────────────────────────────────────
 
 const program = new Command();
@@ -83,15 +27,7 @@ const program = new Command();
 program
   .name('agentguard')
   .description('AgentGuard CLI — scan AI agent code and validate policy coverage')
-  .version(VERSION)
-  .configureOutput({
-    writeOut: (str) => {
-      if (str.includes('--help') || str.includes('-h')) {
-        console.log(chalk.bold.cyan('  AgentGuard CLI') + chalk.dim(` v${VERSION}  —  Security for AI Agents`) + '\n');
-      }
-      process.stdout.write(str);
-    },
-  });
+  .version(VERSION);
 
 // ── validate ──────────────────────────────────────────────────────────────────
 
@@ -110,15 +46,14 @@ program
   .option('--verbose', 'Show files scanned and hit details')
   .action(async (directory: string | undefined, opts: ValidateOptions) => {
     try {
-      selectBanner();
       await runValidate(directory, opts);
     } catch (err) {
-      process.stderr.write(chalk.red(`Fatal error: ${(err as Error).message}\n`));
+      process.stderr.write(chalk.red(`\nFatal error: ${(err as Error).message}\n`));
       process.exit(2);
     }
   });
 
-// ── status ───────────────────────────────────────────────────────────────────
+// ── status ────────────────────────────────────────────────────────────────────
 
 program
   .command('status')
@@ -127,8 +62,6 @@ program
   .option('-u, --api-url <url>', 'AgentGuard API URL')
   .action(async (opts: { apiKey?: string; apiUrl?: string }) => {
     try {
-      selectBanner();
-
       const config = loadConfig(process.cwd());
 
       const apiKey =
@@ -143,9 +76,9 @@ program
         config.api_url ??
         'https://api.agentguard.tech';
 
-      console.log(chalk.bold('  Status Check'));
-      console.log(chalk.dim('  ' + '─'.repeat(50)));
-      console.log();
+      console.log('');
+      console.log(chalk.bold.cyan('AgentGuard Status'));
+      console.log(chalk.dim('═'.repeat(40)));
 
       const client = new AgentGuardApiClient(apiKey || 'no-key', apiUrl);
 
@@ -154,10 +87,10 @@ program
       try {
         const ping = await client.ping();
         console.log(ping.ok
-          ? chalk.green(`\u2705 reachable (${ping.latencyMs}ms)`)
-          : chalk.red('\u274c unhealthy'));
+          ? chalk.green(`✅ reachable (${ping.latencyMs}ms)`)
+          : chalk.red('❌ unhealthy'));
       } catch (err) {
-        console.log(chalk.red(`\u274c unreachable \u2014 ${(err as Error).message}`));
+        console.log(chalk.red(`❌ unreachable — ${(err as Error).message}`));
         process.exit(1);
       }
 
@@ -168,7 +101,7 @@ program
         process.stdout.write('  Tenant info ...   ');
         try {
           const status = await client.getTenantStatus();
-          console.log(chalk.green('\u2705 authenticated'));
+          console.log(chalk.green('✅ authenticated'));
           if (status && typeof status === 'object') {
             for (const [k, v] of Object.entries(status)) {
               if (k !== 'raw') {
@@ -177,11 +110,11 @@ program
             }
           }
         } catch (err) {
-          console.log(chalk.red(`\u274c ${(err as Error).message}`));
+          console.log(chalk.red(`❌ ${(err as Error).message}`));
         }
       }
 
-      console.log();
+      console.log('');
     } catch (err) {
       process.stderr.write(chalk.red(`Error: ${(err as Error).message}\n`));
       process.exit(1);
@@ -195,20 +128,19 @@ program
   .description('Create a .agentguard.yml config file in the current directory')
   .option('--force', 'Overwrite existing .agentguard.yml')
   .action((opts: { force?: boolean }) => {
-    selectBanner();
     const targetPath = path.join(process.cwd(), '.agentguard.yml');
 
     if (fs.existsSync(targetPath) && !opts.force) {
-      console.log(chalk.yellow(`\u26a0 .agentguard.yml already exists. Use --force to overwrite.`));
+      console.log(chalk.yellow(`.agentguard.yml already exists. Use --force to overwrite.`));
       process.exit(0);
     }
 
     fs.writeFileSync(targetPath, DEFAULT_CONFIG_CONTENT, 'utf8');
-    console.log(chalk.green(`\u2705 Created ${targetPath}`));
-    console.log(chalk.dim('\n  Next steps:'));
+    console.log(chalk.green(`✅ Created ${targetPath}`));
+    console.log(chalk.dim('\nNext steps:'));
     console.log(chalk.dim('  1. Set your API key: export AGENTGUARD_API_KEY=ag_live_xxx'));
     console.log(chalk.dim('  2. Run: agentguard validate .'));
-    console.log();
+    console.log('');
   });
 
 // ── Parse ─────────────────────────────────────────────────────────────────────

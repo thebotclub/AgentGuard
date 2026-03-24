@@ -10,7 +10,7 @@ interface AttemptRecord {
 }
 
 const attempts = new Map<string, AttemptRecord>();
-const MAX_ATTEMPTS = 10;       // max failed attempts per window
+const MAX_ATTEMPTS = 5;        // max failed attempts before lockout (brute-force protection)
 const WINDOW_MS = 15 * 60_000; // 15 minute window
 const BLOCK_MS = 30 * 60_000;  // 30 minute block
 

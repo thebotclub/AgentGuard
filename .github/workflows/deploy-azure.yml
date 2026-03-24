@@ -36,10 +36,14 @@ jobs:
           node-version: '22'
       - run: npm install --ignore-scripts
       - name: Security audit
-        run: npm audit --audit-level=critical --omit=dev || echo "::warning::npm audit found vulnerabilities (non-blocking)"
+        # Blocking gate — HIGH or CRITICAL CVEs must be resolved before deploy.
+        # Change audit-level to 'critical' if you want to allow high-severity through.
+        run: npm audit --audit-level=high --omit=dev
+      - name: TypeScript type check
+        # Blocking gate — type errors must be resolved before deploy.
+        # Uses tsconfig.json (strict mode). Fix locally with `npx tsc --noEmit`.
+        run: npx tsc --noEmit
       - run: npm run test
-      - name: Type check API
-        run: npx tsc --noEmit --esModuleInterop --target ES2022 --module nodenext --moduleResolution nodenext api/server.ts 2>&1 || echo "⚠️ Type check had warnings (non-blocking)"
 
   build-deploy:
     name: 🏗️ Build & Deploy
@@ -107,7 +111,8 @@ jobs:
             --max-replicas 3 \
             --set-env-vars \
               "STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}" \
-              "STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}"
+              "STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+              "JWT_SECRET=${{ secrets.JWT_SECRET }}"
           echo "✅ API deployed (min 1 replica — no cold start): ${{ github.sha }}"
 
       - name: Build & deploy Landing

@@ -104,8 +104,8 @@ export declare const TelemetryEventSchema: z.ZodObject<{
     outputDataLabels: string[];
     ragSourceIds: string[];
     priorEventIds: string[];
-    policyVersion?: string | undefined;
     matchedRuleId?: string | undefined;
+    policyVersion?: string | undefined;
     toolName?: string | undefined;
     toolTarget?: string | undefined;
     actionParams?: Record<string, unknown> | undefined;
@@ -119,9 +119,9 @@ export declare const TelemetryEventSchema: z.ZodObject<{
     occurredAt: string;
     processingMs: number;
     actionType: string;
-    policyVersion?: string | undefined;
     matchedRuleId?: string | undefined;
     riskScore?: number | undefined;
+    policyVersion?: string | undefined;
     inputDataLabels?: string[] | undefined;
     toolName?: string | undefined;
     toolTarget?: string | undefined;
@@ -171,8 +171,8 @@ export declare const TelemetryBatchSchema: z.ZodObject<{
         outputDataLabels: string[];
         ragSourceIds: string[];
         priorEventIds: string[];
-        policyVersion?: string | undefined;
         matchedRuleId?: string | undefined;
+        policyVersion?: string | undefined;
         toolName?: string | undefined;
         toolTarget?: string | undefined;
         actionParams?: Record<string, unknown> | undefined;
@@ -186,9 +186,9 @@ export declare const TelemetryBatchSchema: z.ZodObject<{
         occurredAt: string;
         processingMs: number;
         actionType: string;
-        policyVersion?: string | undefined;
         matchedRuleId?: string | undefined;
         riskScore?: number | undefined;
+        policyVersion?: string | undefined;
         inputDataLabels?: string[] | undefined;
         toolName?: string | undefined;
         toolTarget?: string | undefined;
@@ -216,8 +216,8 @@ export declare const TelemetryBatchSchema: z.ZodObject<{
         outputDataLabels: string[];
         ragSourceIds: string[];
         priorEventIds: string[];
-        policyVersion?: string | undefined;
         matchedRuleId?: string | undefined;
+        policyVersion?: string | undefined;
         toolName?: string | undefined;
         toolTarget?: string | undefined;
         actionParams?: Record<string, unknown> | undefined;
@@ -234,9 +234,9 @@ export declare const TelemetryBatchSchema: z.ZodObject<{
         occurredAt: string;
         processingMs: number;
         actionType: string;
-        policyVersion?: string | undefined;
         matchedRuleId?: string | undefined;
         riskScore?: number | undefined;
+        policyVersion?: string | undefined;
         inputDataLabels?: string[] | undefined;
         toolName?: string | undefined;
         toolTarget?: string | undefined;

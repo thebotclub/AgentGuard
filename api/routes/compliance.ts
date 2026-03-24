@@ -134,7 +134,7 @@ export function createComplianceRoutes(
         }
 
         // For SOC2/HIPAA/EU AI Act, generate from platform data
-        const evaluations = await db.getRecentEvaluations(tenantId, 1000);
+        const evaluations = await db.getAuditEvents(tenantId, 1000, 0);
         const customPolicy = await db.getCustomPolicy(tenantId);
         const report = generateFrameworkReport(
           reportType as ReportType,

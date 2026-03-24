@@ -1,7 +1,7 @@
 """AgentGuard — AutoGen Integration (Python).
 
 Production-quality integration for Microsoft's AutoGen framework (v0.2+ and
-v0.4+). Provides two integration styles:
+v0.4+). Provides three integration styles:
 
 1. **Decorator-based** — wrap individual tool functions:
 
@@ -23,8 +23,23 @@ v0.4+). Provides two integration styles:
 
         guarded = create_guarded_agent(agent, api_key="ag_...")
 
-Both approaches use duck-typing — no hard dependency on ``autogen`` or
+3. **One-liner wrap** — module-level shorthand for multi-agent pipelines:
+
+    .. code-block:: python
+
+        import agentguard.integrations.autogen as ag_autogen
+
+        guarded = ag_autogen.wrap(agent, api_key="ag_...")
+
+All approaches use duck-typing — no hard dependency on ``autogen`` or
 ``pyautogen``. Works with any structurally compatible agent or tool function.
+
+Multi-agent chain tracking
+--------------------------
+When agents form a conversation chain (GroupChat, nested ConversableAgent
+calls, etc.) you can track the full agent chain by passing ``agent_id`` to
+``wrap()`` / ``create_guarded_agent()``.  Each guarded agent reports its own
+identity in block events so that audit logs capture the full call chain.
 """
 from __future__ import annotations
 
@@ -384,6 +399,64 @@ def create_guarded_agent(
     )
     guard.patch_agent(agent)
     return agent
+
+
+# ─── Module-level wrap() shorthand ────────────────────────────────────────────
+
+
+def wrap(
+    agent: Any,
+    api_key: str,
+    base_url: str = "https://api.agentguard.tech",
+    agent_id: Optional[str] = None,
+    throw_on_block: bool = False,
+    on_block: Optional[Callable[[GuardResult], None]] = None,
+    on_allow: Optional[Callable[[GuardResult], None]] = None,
+) -> Any:
+    """One-liner shorthand to wrap an AutoGen agent with AgentGuard.
+
+    Identical to ``create_guarded_agent()`` but with a shorter name, designed
+    for use in multi-agent pipelines where brevity matters.
+
+    Usage::
+
+        import agentguard.integrations.autogen as ag_autogen
+
+        # Guard individual agents in a multi-agent pipeline
+        researcher = ag_autogen.wrap(researcher_agent, api_key="ag_...")
+        writer     = ag_autogen.wrap(writer_agent,     api_key="ag_...", agent_id="writer")
+        reviewer   = ag_autogen.wrap(reviewer_agent,   api_key="ag_...", agent_id="reviewer")
+
+        # All tool calls across the pipeline are now policy-gated
+        groupchat = GroupChat(agents=[researcher, writer, reviewer], ...)
+
+    For multi-agent chain tracking, pass a distinct ``agent_id`` for each
+    agent.  Block events will include the agent ID so audit logs capture
+    exactly *which* agent in the chain attempted the blocked action.
+
+    Args:
+        agent:          An AutoGen ConversableAgent or compatible object
+        api_key:        AgentGuard API key (``ag_...``)
+        base_url:       Override the AgentGuard API base URL
+        agent_id:       Optional agent ID; defaults to ``agent.name`` if available
+        throw_on_block: Raise ``AgentGuardBlockError`` on block (default False)
+        on_block:       Callback for blocked tool calls
+        on_allow:       Callback for allowed tool calls
+
+    Returns:
+        The same agent, with all tool functions wrapped by AgentGuard.
+    """
+    # Auto-derive agent_id from agent.name when not explicitly provided
+    resolved_id = agent_id or getattr(agent, "name", None)
+    return create_guarded_agent(
+        agent=agent,
+        api_key=api_key,
+        base_url=base_url,
+        agent_id=resolved_id,
+        throw_on_block=throw_on_block,
+        on_block=on_block,
+        on_allow=on_allow,
+    )
 
 
 # ─── Internal helpers ──────────────────────────────────────────────────────────

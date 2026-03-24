@@ -18,7 +18,7 @@ agentsRouter.get('/', zValidator('query', ListAgentsQuerySchema), async (c) => {
     const ctx = getContext(c);
     const query = c.req.valid('query');
     const service = new AgentService(prisma, ctx);
-    const agents = await service.listAgents(query.status, query.limit, query.cursor);
+    const agents = await service.listAgents(query.status, query.limit, query.cursor, query.riskTier, query.policyId);
     return c.json({
         data: agents.map(agentToResponse),
         pagination: {

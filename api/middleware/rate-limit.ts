@@ -5,16 +5,20 @@
  * Uses Redis sorted sets when REDIS_URL is set; falls back to in-memory.
  *
  * Buckets:
- *   authenticated   100 req/min
- *   unauthenticated  10 req/min
+ *   authenticated        100 req/min  — general authenticated traffic
+ *   unauthenticated       10 req/min  — anonymous traffic
+ *   auth-endpoints        20 req/min  — login/signup/SSO/key management (stricter)
+ *   scim                  30 req/min  — SCIM provisioning (separate bucket for IdP connectors)
  *
  * Brute-force protection:
  *   Tracks failed auth attempts per IP.
- *   Blocks after 10 failures in 15 min; 30 min cooldown.
+ *   Blocks after 5 failures in 15 min; 30 min cooldown.
  */
 import { Request, Response, NextFunction } from 'express';
 import {
   checkRateLimit,
+  checkAuthEndpointRateLimit,
+  checkScimRateLimit,
   checkBruteForce,
   recordBruteForce,
   clearBruteForce,
@@ -111,8 +115,11 @@ export function rateLimitMiddleware(req: Request, res: Response, next: NextFunct
 
   checkRateLimit(ip, hasAuth)
     .then((result: RateLimitResult) => {
+      // Unix timestamp (seconds) when the current rate-limit window resets
+      const resetTimestamp = Math.ceil((Date.now() + 60_000) / 1000);
       res.setHeader('X-RateLimit-Limit', String(result.limit));
       res.setHeader('X-RateLimit-Remaining', String(result.remaining));
+      res.setHeader('X-RateLimit-Reset', String(resetTimestamp));
 
       if (!result.allowed) {
         const retryAfter = result.retryAfter ?? 60;
@@ -143,7 +150,7 @@ export function rateLimitMiddleware(req: Request, res: Response, next: NextFunct
 
 /**
  * Brute-force check middleware — call BEFORE auth middleware on login routes.
- * Blocks IPs that have exceeded the failed-attempt threshold.
+ * Blocks IPs that have exceeded the failed-attempt threshold (5 failures / 15 min).
  */
 export function bruteForceMiddleware(req: Request, res: Response, next: NextFunction): void {
   const ip = getClientIp(req);
@@ -157,7 +164,7 @@ export function bruteForceMiddleware(req: Request, res: Response, next: NextFunc
           error: 'rate_limit_exceeded',
           retryAfter,
           message: 'Too many failed authentication attempts. Please try again later.',
-          limit: 10,
+          limit: 5,
           window: '15m',
           signup: {
             hint: 'Sign up for a free API key to get higher rate limits',
@@ -174,4 +181,66 @@ export function bruteForceMiddleware(req: Request, res: Response, next: NextFunc
       // Degrade gracefully — allow request through if check fails
       next();
     });
+}
+
+/**
+ * Stricter rate limiter for auth-sensitive endpoints (signup, SSO, key management).
+ * Limit: 20 req/min per IP, regardless of auth state.
+ */
+export function authEndpointRateLimitMiddleware(req: Request, res: Response, next: NextFunction): void {
+  const ip = getClientIp(req);
+
+  checkAuthEndpointRateLimit(ip)
+    .then((result: RateLimitResult) => {
+      const resetTimestamp = Math.ceil((Date.now() + 60_000) / 1000);
+      res.setHeader('X-RateLimit-Limit', String(result.limit));
+      res.setHeader('X-RateLimit-Remaining', String(result.remaining));
+      res.setHeader('X-RateLimit-Reset', String(resetTimestamp));
+
+      if (!result.allowed) {
+        const retryAfter = result.retryAfter ?? 60;
+        res.setHeader('Retry-After', String(retryAfter));
+        res.status(429).json({
+          error: 'rate_limit_exceeded',
+          retryAfter,
+          message: `Auth endpoint rate limit exceeded. Limit: ${result.limit} per minute.`,
+          limit: result.limit,
+          window: '1m',
+        });
+        return;
+      }
+      next();
+    })
+    .catch(() => next());
+}
+
+/**
+ * SCIM-specific rate limiter (separate bucket for IdP provisioning connectors).
+ * Limit: 30 req/min per IP.
+ */
+export function scimRateLimitMiddleware(req: Request, res: Response, next: NextFunction): void {
+  const ip = getClientIp(req);
+
+  checkScimRateLimit(ip)
+    .then((result: RateLimitResult) => {
+      const resetTimestamp = Math.ceil((Date.now() + 60_000) / 1000);
+      res.setHeader('X-RateLimit-Limit', String(result.limit));
+      res.setHeader('X-RateLimit-Remaining', String(result.remaining));
+      res.setHeader('X-RateLimit-Reset', String(resetTimestamp));
+
+      if (!result.allowed) {
+        const retryAfter = result.retryAfter ?? 60;
+        res.setHeader('Retry-After', String(retryAfter));
+        res.status(429).json({
+          error: 'rate_limit_exceeded',
+          retryAfter,
+          message: `SCIM endpoint rate limit exceeded. Limit: ${result.limit} per minute.`,
+          limit: result.limit,
+          window: '1m',
+        });
+        return;
+      }
+      next();
+    })
+    .catch(() => next());
 }

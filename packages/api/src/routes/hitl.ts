@@ -148,6 +148,29 @@ hitlRouter.get('/:gateId/poll', async (c) => {
   });
 });
 
+/**
+ * GET /v1/hitl/history — list resolved/historical gates.
+ * Supports status filter: APPROVED | REJECTED | TIMED_OUT | CANCELLED
+ */
+hitlRouter.get('/history', async (c) => {
+  const ctx = getContext(c);
+  const service = new HITLService(prisma, ctx, redis);
+
+  const limit = Math.min(Number(c.req.query('limit') ?? '50'), 100);
+  const cursor = c.req.query('cursor');
+  const status = c.req.query('status'); // optional filter
+
+  const gates = await service.listHistoricalGates(limit, cursor, status ?? undefined);
+
+  return c.json({
+    data: gates.map(gateToResponse),
+    pagination: {
+      cursor: gates.length === limit ? (gates[gates.length - 1]?.id ?? null) : null,
+      hasMore: gates.length === limit,
+    },
+  });
+});
+
 /** POST /v1/hitl/:gateId/cancel — cancel gate (internal/cleanup) */
 hitlRouter.post('/:gateId/cancel', async (c) => {
   const ctx = getContext(c);

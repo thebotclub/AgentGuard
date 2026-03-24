@@ -1,0 +1,57 @@
+{{- if .Values.dashboard.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agentguard.fullname" . }}-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dashboard
+spec:
+  {{- if not .Values.dashboard.autoscaling.enabled }}
+  replicas: {{ .Values.dashboard.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "agentguard.dashboard.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        {{- include "agentguard.dashboard.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "agentguard.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.dashboard.podSecurityContext | nindent 8 }}
+      containers:
+        - name: dashboard
+          securityContext:
+            {{- toYaml .Values.dashboard.securityContext | nindent 12 }}
+          image: {{ include "agentguard.dashboard.image" . }}
+          imagePullPolicy: {{ .Values.dashboard.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.dashboard.port }}
+              protocol: TCP
+          env:
+            {{- if .Values.dashboard.apiUrl }}
+            - name: VITE_API_URL
+              value: {{ .Values.dashboard.apiUrl | quote }}
+            - name: NEXT_PUBLIC_API_URL
+              value: {{ .Values.dashboard.apiUrl | quote }}
+            {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.dashboard.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.dashboard.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.dashboard.resources | nindent 12 }}
+{{- end }}

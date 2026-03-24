@@ -9,8 +9,27 @@ import type { ServiceContext, UserRole } from '@agentguard/shared';
 import { UnauthorizedError } from '../lib/errors.js';
 import { prisma } from '../lib/prisma.js';
 
+// ── JWT_SECRET production startup guard ───────────────────────────────────
+// Refuse to start in production with the default dev secret.
+// This prevents forged JWTs when the env var is not set.
+const _jwtSecretRaw = process.env['JWT_SECRET'];
+if (process.env['NODE_ENV'] === 'production') {
+  if (
+    !_jwtSecretRaw ||
+    _jwtSecretRaw.length < 32 ||
+    _jwtSecretRaw.includes('dev-') ||
+    _jwtSecretRaw.includes('change-in')
+  ) {
+    throw new Error(
+      'FATAL: JWT_SECRET must be set to a strong random secret in production ' +
+        '(minimum 32 chars, must not be the default dev secret). ' +
+        'Generate with: openssl rand -hex 32',
+    );
+  }
+}
+
 const JWT_SECRET = new TextEncoder().encode(
-  process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
+  _jwtSecretRaw ?? 'dev-secret-change-in-production',
 );
 
 interface JwtClaims {

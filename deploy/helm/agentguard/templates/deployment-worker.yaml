@@ -1,0 +1,130 @@
+{{- if .Values.worker.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agentguard.fullname" . }}-worker
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "agentguard.worker.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1   # Workers are stateless — brief unavailability is acceptable
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+      labels:
+        {{- include "agentguard.worker.selectorLabels" . | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "agentguard.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.worker.podSecurityContext | nindent 8 }}
+      containers:
+        - name: worker
+          securityContext:
+            {{- toYaml .Values.worker.securityContext | nindent 12 }}
+          image: {{ include "agentguard.worker.image" . }}
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.worker.image.pullPolicy }}
+          {{- with .Values.worker.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "agentguard.configMapName" . }}
+                  key: NODE_ENV
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "agentguard.configMapName" . }}
+                  key: LOG_LEVEL
+            - name: DB_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "agentguard.configMapName" . }}
+                  key: DB_TYPE
+            # ── Database ────────────────────────────────────────────────────
+            {{- if .Values.postgresql.enabled }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgresql
+                  key: password
+            - name: DATABASE_URL
+              value: {{ include "agentguard.databaseUrl" . | quote }}
+            {{- else }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: database-url
+            {{- end }}
+            # ── Redis ───────────────────────────────────────────────────────
+            {{- if .Values.redis.enabled }}
+            {{- if .Values.redis.auth.enabled }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-redis
+                  key: redis-password
+            {{- end }}
+            - name: REDIS_URL
+              value: {{ include "agentguard.redisUrl" . | quote }}
+            {{- else if .Values.secrets.redisSentinels }}
+            - name: REDIS_SENTINELS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: redis-sentinels
+            - name: REDIS_SENTINEL_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "agentguard.configMapName" . }}
+                  key: REDIS_SENTINEL_NAME
+                  optional: true
+            {{- if .Values.secrets.redisPassword }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: redis-password
+                  optional: true
+            {{- end }}
+            {{- else }}
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: redis-url
+                  optional: true
+            {{- end }}
+            - name: ADMIN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentguard.secretName" . }}
+                  key: admin-key
+                  optional: true
+          livenessProbe:
+            {{- toYaml .Values.worker.livenessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+{{- end }}

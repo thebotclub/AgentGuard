@@ -1,16 +1,42 @@
 /**
- * Audit log routes — GET /v1/audit
+ * Audit log routes — /v1/audit
+ *
+ * GET /audit            — query audit events (paginated, filterable)
+ * GET /audit/export     — streaming CSV/JSON export
+ * GET /audit/:eventId   — single event detail
+ * GET /audit/sessions/:sessionId/verify — hash chain integrity verification
  */
 import { Hono } from 'hono';
+import { stream } from 'hono/streaming';
+import { jwtVerify } from 'jose';
 import { QueryAuditEventsSchema } from '@agentguard/shared';
 import { AuditService } from '../services/audit.js';
 import { getContext } from '../middleware/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { redis } from '../lib/redis.js';
 export const auditRouter = new Hono();
+// ─── JWT secret (same as events.ts) ──────────────────────────────────────────
+const JWT_SECRET = new TextEncoder().encode(process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production');
+async function authenticateJwt(token) {
+    try {
+        const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ['HS256'] });
+        const claims = payload;
+        if (!claims.tenantId || !claims.sub || !claims.role)
+            return null;
+        return {
+            tenantId: claims.tenantId,
+            userId: claims.sub,
+            role: claims.role,
+            traceId: crypto.randomUUID(),
+        };
+    }
+    catch {
+        return null;
+    }
+}
 /** GET /v1/audit — query audit events */
 auditRouter.get('/', async (c) => {
     const ctx = getContext(c);
-    // c.req.queries() returns Record<string, string[]>; flatten to string for each key
     const rawQuery = c.req.queries();
     const flatQuery = {};
     for (const [key, values] of Object.entries(rawQuery)) {
@@ -18,7 +44,7 @@ auditRouter.get('/', async (c) => {
             flatQuery[key] = values[0];
     }
     const query = QueryAuditEventsSchema.parse(flatQuery);
-    const service = new AuditService(prisma, ctx);
+    const service = new AuditService(prisma, ctx, redis);
     const events = await service.queryEvents(query);
     return c.json({
         data: events.map(auditEventToResponse),
@@ -28,23 +54,118 @@ auditRouter.get('/', async (c) => {
         },
     });
 });
+/**
+ * GET /v1/audit/export — streaming export of audit events.
+ *
+ * Query params:
+ *   - Same filters as GET /audit (agentId, decision, riskTier, fromDate, toDate, toolName)
+ *   - format: 'csv' | 'json'  (default: 'json')
+ *   - token: JWT for browser-based streaming downloads (alternative to Authorization header)
+ *
+ * Streams large exports without loading all rows into memory.
+ * Batch size: 200 rows per DB query.
+ */
+auditRouter.get('/export', async (c) => {
+    // Auth: try header first, then ?token query param (for browser downloads)
+    let ctx;
+    try {
+        ctx = getContext(c);
+    }
+    catch {
+        // Fall back to token query param for browser SSE/stream clients
+        const token = c.req.query('token');
+        if (!token)
+            return c.json({ error: { code: 'UNAUTHORIZED', message: 'Missing token' } }, 401);
+        const tokenCtx = await authenticateJwt(token);
+        if (!tokenCtx)
+            return c.json({ error: { code: 'UNAUTHORIZED', message: 'Invalid token' } }, 401);
+        ctx = tokenCtx;
+    }
+    const rawQuery = c.req.queries();
+    const flatQuery = {};
+    for (const [key, values] of Object.entries(rawQuery)) {
+        if (values[0] !== undefined)
+            flatQuery[key] = values[0];
+    }
+    const format = (flatQuery['format'] ?? 'json');
+    delete flatQuery['format'];
+    delete flatQuery['token'];
+    // Parse filters but override limit for streaming (we handle pagination ourselves)
+    const filters = QueryAuditEventsSchema.parse({ ...flatQuery, limit: 200 });
+    const contentType = format === 'csv' ? 'text/csv' : 'application/json';
+    const filename = `agentguard-audit-${new Date().toISOString().slice(0, 10)}.${format}`;
+    c.header('Content-Type', contentType);
+    c.header('Content-Disposition', `attachment; filename="${filename}"`);
+    c.header('Transfer-Encoding', 'chunked');
+    c.header('Cache-Control', 'no-store');
+    const service = new AuditService(prisma, ctx, redis);
+    return stream(c, async (s) => {
+        if (format === 'csv') {
+            // CSV header
+            await s.write('id,tenantId,agentId,sessionId,occurredAt,processingMs,actionType,toolName,toolTarget,' +
+                'policyDecision,riskScore,riskTier,matchedRuleId,blockReason,previousHash,eventHash\n');
+            let cursor;
+            let hasMore = true;
+            while (hasMore) {
+                const events = await service.queryEvents({ ...filters, cursor });
+                for (const e of events) {
+                    const row = auditEventToResponse(e);
+                    const csvRow = [
+                        row.id, row.tenantId, row.agentId, row.sessionId,
+                        row.occurredAt, row.processingMs,
+                        row.actionType, csvEscape(row.toolName ?? ''), csvEscape(row.toolTarget ?? ''),
+                        row.policyDecision, row.riskScore, row.riskTier,
+                        csvEscape(row.matchedRuleId ?? ''), csvEscape(row.blockReason ?? ''),
+                        row.previousHash, row.eventHash,
+                    ].join(',') + '\n';
+                    await s.write(csvRow);
+                }
+                hasMore = events.length === filters.limit;
+                cursor = events.length > 0 ? events[events.length - 1]?.id : undefined;
+            }
+        }
+        else {
+            // JSON streaming — emit as newline-delimited JSON (NDJSON) for memory efficiency,
+            // but wrap in array for compatibility.
+            await s.write('[\n');
+            let cursor;
+            let hasMore = true;
+            let first = true;
+            while (hasMore) {
+                const events = await service.queryEvents({ ...filters, cursor });
+                for (const e of events) {
+                    const row = auditEventToResponse(e);
+                    if (!first)
+                        await s.write(',\n');
+                    await s.write(JSON.stringify(row));
+                    first = false;
+                }
+                hasMore = events.length === filters.limit;
+                cursor = events.length > 0 ? events[events.length - 1]?.id : undefined;
+            }
+            await s.write('\n]\n');
+        }
+    });
+});
+/**
+ * GET /v1/audit/sessions/:sessionId/verify
+ * Must come before /:eventId to avoid routing conflict.
+ */
+auditRouter.get('/sessions/:sessionId/verify', async (c) => {
+    const ctx = getContext(c);
+    const sessionId = c.req.param('sessionId');
+    const service = new AuditService(prisma, ctx, redis);
+    const result = await service.verifySessionChain(sessionId);
+    return c.json(result);
+});
 /** GET /v1/audit/:eventId — single event detail */
 auditRouter.get('/:eventId', async (c) => {
     const ctx = getContext(c);
     const eventId = c.req.param('eventId');
-    const service = new AuditService(prisma, ctx);
+    const service = new AuditService(prisma, ctx, redis);
     const event = await service.getEvent(eventId);
     return c.json(auditEventToResponse(event));
 });
-/** GET /v1/audit/sessions/:sessionId/verify — verify hash chain integrity */
-auditRouter.get('/sessions/:sessionId/verify', async (c) => {
-    const ctx = getContext(c);
-    const sessionId = c.req.param('sessionId');
-    const service = new AuditService(prisma, ctx);
-    const result = await service.verifySessionChain(sessionId);
-    return c.json(result);
-});
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function auditEventToResponse(e) {
     return {
         id: e.id,
@@ -68,5 +189,12 @@ function auditEventToResponse(e) {
         previousHash: e.previousHash,
         eventHash: e.eventHash,
     };
+}
+/** Escape a field for CSV (wrap in quotes if contains comma, quote, or newline). */
+function csvEscape(val) {
+    if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+        return `"${val.replace(/"/g, '""')}"`;
+    }
+    return val;
 }
 //# sourceMappingURL=audit.js.map

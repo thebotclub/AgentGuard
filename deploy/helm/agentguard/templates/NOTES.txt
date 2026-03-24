@@ -1,0 +1,99 @@
+🛡️  AgentGuard has been deployed!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Version: {{ .Chart.AppVersion }}
+
+============================================================
+ENDPOINTS
+============================================================
+
+{{- if .Values.ingress.enabled }}
+  API:       {{ if .Values.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.ingress.apiHost }}
+  {{- if .Values.dashboard.enabled }}
+  Dashboard: {{ if .Values.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.ingress.dashboardHost }}
+  {{- end }}
+{{- else }}
+  Access via port-forward:
+
+  # API
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "agentguard.fullname" . }}-api 3000:80
+  # Then: curl http://localhost:3000/healthz
+
+  {{- if .Values.dashboard.enabled }}
+  # Dashboard
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "agentguard.fullname" . }}-dashboard 8080:80
+  # Then: open http://localhost:8080
+  {{- end }}
+{{- end }}
+
+============================================================
+HEALTH PROBES
+============================================================
+
+  Liveness:  GET /healthz  (process alive — no DB check)
+  Readiness: GET /readyz   (DB + Redis + migrations)
+  Legacy:    GET /health   (combined, backward compat)
+
+  # Quick health check:
+  kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "agentguard.fullname" . }}-api -- \
+    wget -qO- http://localhost:{{ .Values.api.port }}/readyz
+
+============================================================
+DATABASE
+============================================================
+
+{{- if .Values.postgresql.enabled }}
+  Using bundled PostgreSQL (Bitnami subchart).
+  Host: {{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432
+  Database: {{ .Values.postgresql.auth.database }}
+
+  ⚠️  Bundled PostgreSQL is suitable for development/staging.
+  For production HA, use an external managed PostgreSQL:
+    postgresql.enabled=false
+    secrets.databaseUrl=postgresql://...
+{{- else }}
+  Using external PostgreSQL.
+  DATABASE_URL is configured from secrets.
+{{- end }}
+
+============================================================
+REDIS
+============================================================
+
+{{- if .Values.redis.enabled }}
+  Using bundled Redis (Bitnami subchart).
+  Host: {{ .Release.Name }}-redis-master.{{ .Release.Namespace }}.svc.cluster.local:6379
+
+  ⚠️  Bundled Redis is suitable for development/staging.
+  For production HA, use Redis Sentinel or managed Redis:
+    redis.enabled=false
+    secrets.redisSentinels=sentinel1:26379,sentinel2:26379,sentinel3:26379
+    secrets.redisSentinelName=mymaster
+{{- else if .Values.secrets.redisSentinels }}
+  Using Redis Sentinel (HA mode).
+  Sentinels: {{ .Values.secrets.redisSentinels }}
+  Master: {{ .Values.secrets.redisSentinelName }}
+{{- else }}
+  Using external Redis (standalone).
+{{- end }}
+
+============================================================
+NEXT STEPS
+============================================================
+
+  1. Create your first API key:
+     curl -X POST https://{{ .Values.ingress.apiHost }}/api/v1/signup \
+       -H "Content-Type: application/json" \
+       -d '{"name": "My Agent"}'
+
+  2. Test a policy evaluation:
+     curl -X POST https://{{ .Values.ingress.apiHost }}/api/v1/evaluate \
+       -H "X-API-Key: ag_live_..." \
+       -H "Content-Type: application/json" \
+       -d '{"tool": "shell_exec", "params": {"command": "rm -rf /"}}'
+
+  3. Access the dashboard at: https://{{ .Values.ingress.dashboardHost }}
+
+  Docs: https://agentguard.tech/docs
+  Support: hello@agentguard.tech

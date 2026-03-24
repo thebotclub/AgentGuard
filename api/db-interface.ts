@@ -170,16 +170,73 @@ export interface IntegrationRow {
   created_at: string;
 }
 
-export type SsoProvider = 'auth0' | 'okta' | 'azure_ad';
+export type SsoProvider = 'auth0' | 'okta' | 'azure_ad' | 'google' | 'saml' | 'oidc';
+export type SsoProtocol = 'oidc' | 'saml';
 
 export interface SsoConfigRow {
   id: string;
   tenant_id: string;
   provider: SsoProvider;
+  protocol: SsoProtocol;
   domain: string;
   client_id: string;
   /** AES-GCM encrypted client secret — never returned raw to callers */
   client_secret_encrypted: string;
+  /** OIDC discovery URL (.well-known/openid-configuration) */
+  discovery_url: string | null;
+  /** OAuth redirect / ACS callback URI */
+  redirect_uri: string | null;
+  /** Space-separated OIDC scopes */
+  scopes: string | null;
+  /** Force SSO — disable password login for this tenant */
+  force_sso: number;
+  /** OIDC claim name that contains roles/groups */
+  role_claim_name: string | null;
+  /** Group name that maps to 'admin' role */
+  admin_group: string | null;
+  /** Group name that maps to 'member' role */
+  member_group: string | null;
+  /** SAML IdP metadata XML (for SAML protocol) */
+  idp_metadata_xml: string | null;
+  /** SAML SP entity ID */
+  sp_entity_id: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface SsoUserRow {
+  id: string;
+  tenant_id: string;
+  idp_sub: string;
+  provider: SsoProvider;
+  email: string | null;
+  name: string | null;
+  role: string;
+  created_at: string;
+  last_login_at: string | null;
+}
+
+export interface GitWebhookConfigRow {
+  id: string;
+  tenant_id: string;
+  repo_url: string;
+  webhook_secret: string;
+  branch: string;
+  policy_dir: string;
+  github_token: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface GitSyncLogRow {
+  id: string;
+  tenant_id: string;
+  commit_sha: string;
+  branch: string;
+  policies_updated: number;
+  policies_skipped: number;
+  status: string;
+  error_message: string | null;
   created_at: string;
 }
 
@@ -346,6 +403,48 @@ export interface JobRow {
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
+}
+
+// ── SCIM Row Types ────────────────────────────────────────────────────────
+
+export interface ScimTokenRow {
+  id: string;
+  tenant_id: string;
+  token_hash: string;
+  label: string;
+  active: number;
+  created_at: string;
+  last_used_at: string | null;
+}
+
+export interface ScimUserRow {
+  id: string;
+  tenant_id: string;
+  external_id: string | null;
+  user_name: string;
+  display_name: string | null;
+  given_name: string | null;
+  family_name: string | null;
+  email: string | null;
+  active: number;
+  role: string;
+  created_at: string;
+  updated_at: string | null;
+  deleted_at: string | null;
+}
+
+export interface ScimGroupRow {
+  id: string;
+  tenant_id: string;
+  display_name: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ScimGroupMemberRow {
+  group_id: string;
+  user_id: string;
+  tenant_id: string;
 }
 
 // ── Database Interface ─────────────────────────────────────────────────────
@@ -560,13 +659,63 @@ export interface IDatabase {
   // ── SSO Configurations ────────────────────────────────────────────────────
   upsertSsoConfig(
     tenantId: string,
-    provider: SsoProvider,
-    domain: string,
-    clientId: string,
-    clientSecretEncrypted: string,
+    config: {
+      provider: SsoProvider;
+      protocol: SsoProtocol;
+      domain: string;
+      clientId: string;
+      clientSecretEncrypted: string;
+      discoveryUrl?: string | null;
+      redirectUri?: string | null;
+      scopes?: string | null;
+      forceSso?: boolean;
+      roleClaimName?: string | null;
+      adminGroup?: string | null;
+      memberGroup?: string | null;
+      idpMetadataXml?: string | null;
+      spEntityId?: string | null;
+    },
   ): Promise<SsoConfigRow>;
   getSsoConfig(tenantId: string): Promise<SsoConfigRow | undefined>;
   deleteSsoConfig(tenantId: string): Promise<void>;
+
+  // ── SSO State (PKCE/nonce for OAuth flows) ────────────────────────────────
+  storeSsoState(state: string, data: string, expiresAt: string): Promise<void>;
+  getSsoState(state: string): Promise<{ data: string; expires_at: string } | undefined>;
+  deleteSsoState(state: string): Promise<void>;
+
+  // ── SSO User Accounts (provisioned from IdP) ──────────────────────────────
+  upsertSsoUser(
+    tenantId: string,
+    idpSub: string,
+    provider: SsoProvider,
+    email: string | null,
+    name: string | null,
+    role: string,
+  ): Promise<SsoUserRow>;
+  getSsoUser(tenantId: string, idpSub: string): Promise<SsoUserRow | undefined>;
+
+  // ── Git Webhook Config ────────────────────────────────────────────────────
+  upsertGitWebhookConfig(
+    tenantId: string,
+    repoUrl: string,
+    webhookSecret: string,
+    branch: string,
+    policyDir: string,
+    githubToken: string | null,
+  ): Promise<GitWebhookConfigRow>;
+  getGitWebhookConfig(tenantId: string): Promise<GitWebhookConfigRow | undefined>;
+  deleteGitWebhookConfig(tenantId: string): Promise<void>;
+  insertGitSyncLog(
+    tenantId: string,
+    commitSha: string,
+    branch: string,
+    policiesUpdated: number,
+    policiesSkipped: number,
+    status: 'success' | 'error',
+    errorMessage: string | null,
+  ): Promise<GitSyncLogRow>;
+  listGitSyncLogs(tenantId: string, limit?: number): Promise<GitSyncLogRow[]>;
 
   // ── SIEM Configurations ───────────────────────────────────────────────────
   upsertSiemConfig(
@@ -634,4 +783,30 @@ export interface IDatabase {
   claimPendingJob(): Promise<JobRow | undefined>;
   completeJob(jobId: string, result: string): Promise<void>;
   failJob(jobId: string, error: string): Promise<void>;
+
+  // ── SCIM Tokens ───────────────────────────────────────────────────────────
+  createScimToken(tenantId: string, tokenHash: string, label: string): Promise<ScimTokenRow>;
+  getScimTokenByHash(tokenHash: string): Promise<ScimTokenRow | undefined>;
+  listScimTokens(tenantId: string): Promise<ScimTokenRow[]>;
+  revokeScimToken(id: string, tenantId: string): Promise<void>;
+  touchScimToken(id: string): Promise<void>;
+
+  // ── SCIM Users ────────────────────────────────────────────────────────────
+  createScimUser(tenantId: string, user: Omit<ScimUserRow, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'tenant_id'>): Promise<ScimUserRow>;
+  getScimUser(id: string, tenantId: string): Promise<ScimUserRow | undefined>;
+  getScimUserByUserName(tenantId: string, userName: string): Promise<ScimUserRow | undefined>;
+  listScimUsers(tenantId: string, opts?: { filter?: string; startIndex?: number; count?: number }): Promise<{ users: ScimUserRow[]; total: number }>;
+  updateScimUser(id: string, tenantId: string, updates: Partial<ScimUserRow>): Promise<ScimUserRow | undefined>;
+  deleteScimUser(id: string, tenantId: string): Promise<void>;
+
+  // ── SCIM Groups ───────────────────────────────────────────────────────────
+  createScimGroup(tenantId: string, displayName: string): Promise<ScimGroupRow>;
+  getScimGroup(id: string, tenantId: string): Promise<ScimGroupRow | undefined>;
+  listScimGroups(tenantId: string, opts?: { startIndex?: number; count?: number }): Promise<{ groups: ScimGroupRow[]; total: number }>;
+  updateScimGroup(id: string, tenantId: string, displayName: string): Promise<ScimGroupRow | undefined>;
+  deleteScimGroup(id: string, tenantId: string): Promise<void>;
+  getScimGroupMembers(groupId: string, tenantId: string): Promise<ScimGroupMemberRow[]>;
+  addScimGroupMember(groupId: string, userId: string, tenantId: string): Promise<void>;
+  removeScimGroupMember(groupId: string, userId: string, tenantId: string): Promise<void>;
+  replaceScimGroupMembers(groupId: string, tenantId: string, userIds: string[]): Promise<void>;
 }

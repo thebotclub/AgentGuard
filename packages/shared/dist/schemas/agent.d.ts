@@ -17,10 +17,10 @@ export declare const CreateAgentSchema: z.ZodObject<{
     tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     metadata: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
 }, "strip", z.ZodTypeAny, {
+    tags: string[];
     name: string;
     failBehavior: "CLOSED" | "OPEN";
     riskTier: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-    tags: string[];
     description?: string | undefined;
     policyId?: string | undefined;
     framework?: "LANGCHAIN" | "OPENAI_SDK" | "CREWAI" | "AUTOGEN" | "LLAMAINDEX" | "CUSTOM" | undefined;
@@ -29,12 +29,12 @@ export declare const CreateAgentSchema: z.ZodObject<{
 }, {
     name: string;
     description?: string | undefined;
+    tags?: string[] | undefined;
     policyId?: string | undefined;
     failBehavior?: "CLOSED" | "OPEN" | undefined;
     riskTier?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined;
     framework?: "LANGCHAIN" | "OPENAI_SDK" | "CREWAI" | "AUTOGEN" | "LLAMAINDEX" | "CUSTOM" | undefined;
     frameworkVersion?: string | undefined;
-    tags?: string[] | undefined;
     metadata?: Record<string, string> | undefined;
 }>;
 export type CreateAgentInput = z.infer<typeof CreateAgentSchema>;
@@ -48,23 +48,23 @@ export declare const UpdateAgentSchema: z.ZodObject<{
     tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     metadata: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
 }, "strip", z.ZodTypeAny, {
-    name?: string | undefined;
     description?: string | null | undefined;
+    tags?: string[] | undefined;
+    name?: string | undefined;
     policyId?: string | null | undefined;
+    policyVersion?: string | undefined;
     failBehavior?: "CLOSED" | "OPEN" | undefined;
     riskTier?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined;
-    tags?: string[] | undefined;
     metadata?: Record<string, string> | undefined;
-    policyVersion?: string | undefined;
 }, {
-    name?: string | undefined;
     description?: string | null | undefined;
+    tags?: string[] | undefined;
+    name?: string | undefined;
     policyId?: string | null | undefined;
+    policyVersion?: string | undefined;
     failBehavior?: "CLOSED" | "OPEN" | undefined;
     riskTier?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined;
-    tags?: string[] | undefined;
     metadata?: Record<string, string> | undefined;
-    policyVersion?: string | undefined;
 }>;
 export type UpdateAgentInput = z.infer<typeof UpdateAgentSchema>;
 export declare const ListAgentsQuerySchema: z.ZodObject<{
@@ -75,14 +75,14 @@ export declare const ListAgentsQuerySchema: z.ZodObject<{
     limit: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     limit: number;
+    status?: "ACTIVE" | "KILLED" | "QUARANTINED" | "INACTIVE" | undefined;
     policyId?: string | undefined;
     riskTier?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined;
-    status?: "ACTIVE" | "KILLED" | "QUARANTINED" | "INACTIVE" | undefined;
     cursor?: string | undefined;
 }, {
+    status?: "ACTIVE" | "KILLED" | "QUARANTINED" | "INACTIVE" | undefined;
     policyId?: string | undefined;
     riskTier?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined;
-    status?: "ACTIVE" | "KILLED" | "QUARANTINED" | "INACTIVE" | undefined;
     cursor?: string | undefined;
     limit?: number | undefined;
 }>;

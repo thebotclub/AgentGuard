@@ -5,7 +5,7 @@ import { BaseService } from './base.js';
 import type { PrismaClient } from '../lib/prisma.js';
 export declare class AgentService extends BaseService {
     constructor(db: PrismaClient, ctx: ServiceContext);
-    listAgents(status?: AgentStatus, limit?: number, cursor?: string): Promise<Agent[]>;
+    listAgents(status?: AgentStatus, limit?: number, cursor?: string, riskTier?: string, policyId?: string): Promise<Agent[]>;
     getAgent(agentId: string): Promise<Agent>;
     createAgent(input: CreateAgentInput): Promise<{
         agent: Agent;

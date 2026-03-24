@@ -1,0 +1,39 @@
+{{- if and .Values.serviceAccount.create .Values.rbac.create -}}
+---
+# Role: least-privilege access for the AgentGuard service account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "agentguard.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+rules:
+  # Read own ConfigMap and Secret (for runtime config reload)
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["{{ include "agentguard.configMapName" . }}"]
+    verbs: ["get", "watch"]
+  # Read own Secret
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["{{ include "agentguard.secretName" . }}"]
+    verbs: ["get"]
+---
+# RoleBinding: attach Role to the service account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "agentguard.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "agentguard.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "agentguard.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

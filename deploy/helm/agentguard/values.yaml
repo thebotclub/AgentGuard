@@ -1,0 +1,518 @@
+# =============================================================================
+# AgentGuard Helm Chart — values.yaml
+# Full HA configuration with API, Dashboard, Worker, PostgreSQL, Redis.
+# =============================================================================
+
+# -- Override chart name
+nameOverride: ""
+# -- Override full release name
+fullnameOverride: ""
+
+# =============================================================================
+# Global Image Settings
+# =============================================================================
+image:
+  # -- Container registry and repository
+  registry: ghcr.io
+  repository: 0nebot/agentguard
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag (defaults to Chart.appVersion)
+  tag: ""
+
+# -- Image pull secrets for private registries
+imagePullSecrets: []
+# - name: ghcr-secret
+
+# =============================================================================
+# Service Account + RBAC
+# =============================================================================
+serviceAccount:
+  # -- Create a Kubernetes service account
+  create: true
+  # -- Annotations for the service account (e.g. AWS IRSA, GCP Workload Identity)
+  annotations: {}
+    # eks.amazonaws.com/role-arn: arn:aws:iam::123456789:role/agentguard
+  # -- Service account name (auto-generated if empty)
+  name: ""
+  # -- Auto-mount API token (disabled for security)
+  automountServiceAccountToken: false
+
+rbac:
+  # -- Create RBAC Role + RoleBinding for the service account
+  create: true
+
+# =============================================================================
+# API Component
+# =============================================================================
+api:
+  # -- Number of API replicas (set to 2+ for HA)
+  replicaCount: 2
+
+  # -- API container image (inherits global image if empty)
+  image:
+    repository: ""
+    tag: ""
+    pullPolicy: ""
+
+  # -- Application port
+  port: 3000
+
+  # -- Node.js environment
+  nodeEnv: production
+
+  # -- Log level
+  logLevel: info
+
+  # -- Extra environment variables
+  extraEnv: {}
+  #   CUSTOM_VAR: value
+
+  # -- Extra environment variables from ConfigMaps or Secrets
+  extraEnvFrom: []
+
+  # -- Pod annotations
+  podAnnotations: {}
+
+  # -- Pod labels
+  podLabels: {}
+
+  # -- Resource limits and requests
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # -- Pod security context
+  podSecurityContext:
+    fsGroup: 1000
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  # -- Container security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    runAsUser: 1000
+    runAsGroup: 1000
+    capabilities:
+      drop:
+        - ALL
+
+  # -- Liveness probe (process alive — does NOT check DB/Redis)
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # -- Readiness probe (DB + Redis + migrations)
+  readinessProbe:
+    httpGet:
+      path: /readyz
+      port: 3000
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # -- Startup probe (allows extra time for cold start / migration run)
+  startupProbe:
+    httpGet:
+      path: /healthz
+      port: 3000
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 24   # 24 * 5s = 2 minutes startup window
+
+  # -- Terminate gracefully: allow 30s shutdown + 5s pre-stop
+  terminationGracePeriodSeconds: 35
+
+  # -- Node selector
+  nodeSelector: {}
+
+  # -- Tolerations
+  tolerations: []
+
+  # -- Affinity (e.g. spread replicas across zones)
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/component: api
+            topologyKey: kubernetes.io/hostname
+
+  # -- Topology spread constraints
+  topologySpreadConstraints: []
+  # - maxSkew: 1
+  #   topologyKey: topology.kubernetes.io/zone
+  #   whenUnsatisfiable: DoNotSchedule
+
+  # -- Pod Disruption Budget
+  podDisruptionBudget:
+    # -- Enable PDB
+    enabled: true
+    # -- Minimum available pods (set to replicaCount - 1)
+    minAvailable: 1
+
+  # -- Horizontal Pod Autoscaler
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+    # -- Custom metrics (e.g. RPS via KEDA)
+    customMetrics: []
+
+# =============================================================================
+# Dashboard Component
+# =============================================================================
+dashboard:
+  # -- Enable the dashboard deployment
+  enabled: true
+
+  # -- Number of dashboard replicas
+  replicaCount: 1
+
+  # -- Dashboard image (nginx serving built SPA)
+  image:
+    repository: ghcr.io/0nebot/agentguard-dashboard
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  # -- Dashboard container port
+  port: 80
+
+  # -- Dashboard API endpoint (injected into the SPA at runtime)
+  apiUrl: ""   # e.g. https://api.agentguard.example.com
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+  podSecurityContext:
+    runAsNonRoot: false   # nginx default user
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 5
+    periodSeconds: 30
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 3
+    periodSeconds: 10
+    failureThreshold: 3
+
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+
+# =============================================================================
+# Worker Component (BullMQ webhook delivery + anomaly detection)
+# =============================================================================
+worker:
+  # -- Enable the worker deployment
+  enabled: true
+
+  # -- Number of worker replicas (1 is usually sufficient; scale if queue depth grows)
+  replicaCount: 1
+
+  # -- Worker image (same as API by default)
+  image:
+    repository: ""   # Falls back to api image
+    tag: ""
+    pullPolicy: ""
+
+  # -- Worker start command
+  command: ["node", "dist/worker.js"]
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    runAsUser: 1000
+    runAsGroup: 1000
+    capabilities:
+      drop:
+        - ALL
+
+  livenessProbe:
+    exec:
+      command: ["node", "-e", "process.exit(0)"]
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    failureThreshold: 3
+
+  terminationGracePeriodSeconds: 60   # Workers need more time to drain jobs
+
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+
+# =============================================================================
+# Service Definitions
+# =============================================================================
+service:
+  api:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+    annotations: {}
+
+  dashboard:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+    annotations: {}
+
+# =============================================================================
+# Ingress
+# =============================================================================
+ingress:
+  # -- Enable Ingress
+  enabled: true
+
+  # -- Ingress class name (nginx, traefik, alb, etc.)
+  className: nginx
+
+  # -- Ingress annotations
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"   # Required for SSE
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+
+  # -- API hostname
+  apiHost: api.agentguard.example.com
+
+  # -- Dashboard hostname
+  dashboardHost: app.agentguard.example.com
+
+  # -- TLS configuration
+  tls:
+    # -- Enable TLS
+    enabled: true
+    # -- TLS secret name (cert-manager will populate this)
+    secretName: agentguard-tls
+
+# =============================================================================
+# Secrets
+# =============================================================================
+secrets:
+  # -- Use an existing Kubernetes secret instead of creating one
+  # If set, all other secret values below are ignored
+  existingSecret: ""
+
+  # -- PostgreSQL connection URL (used when postgresql.enabled=false)
+  databaseUrl: ""
+  # Example: postgresql://agentguard:password@pg-primary:5432/agentguard
+
+  # -- Redis connection URL (used when redis.enabled=false and no Sentinel)
+  redisUrl: ""
+  # Example: redis://:password@redis-master:6379/0
+
+  # -- Redis Sentinel configuration (preferred over redisUrl for HA)
+  # Comma-separated list of sentinel host:port pairs
+  redisSentinels: ""
+  # Example: sentinel1:26379,sentinel2:26379,sentinel3:26379
+
+  # -- Redis Sentinel master name
+  redisSentinelName: "mymaster"
+
+  # -- Redis AUTH password (for both standalone and sentinel)
+  redisPassword: ""
+
+  # -- Redis Sentinel AUTH password (if different from redisPassword)
+  redisSentinelPassword: ""
+
+  # -- AgentGuard license key (leave empty for Free tier)
+  licenseKey: ""
+
+  # -- Seed API key for the admin tenant
+  apiKey: ""
+
+  # -- Admin key for management endpoints
+  adminKey: ""
+
+  # -- JWT secret for dashboard sessions
+  jwtSecret: ""
+
+  # -- Stripe webhook secret (for billing integration)
+  stripeWebhookSecret: ""
+
+  # -- Slack signing secret (for HITL integration)
+  slackSigningSecret: ""
+
+# =============================================================================
+# Non-secret Configuration (ConfigMap)
+# =============================================================================
+config:
+  # -- Additional key-value pairs to include in the ConfigMap
+  extraConfig: {}
+  #   FEATURE_FLAG_X: "true"
+
+# =============================================================================
+# PostgreSQL (Bitnami subchart)
+# Set postgresql.enabled=false to use an external PostgreSQL instance.
+# =============================================================================
+postgresql:
+  # -- Deploy bundled PostgreSQL StatefulSet
+  enabled: true
+
+  auth:
+    # -- Database name
+    database: agentguard
+    # -- Database username
+    username: agentguard
+    # -- Database password (auto-generated if empty)
+    password: ""
+    # -- Use existing secret for PostgreSQL credentials
+    existingSecret: ""
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
+
+  primary:
+    # -- PostgreSQL primary configuration
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ""
+
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+
+    # -- Enable pg_stat_statements and connection pooling tuning
+    extendedConfiguration: |
+      shared_preload_libraries = 'pg_stat_statements'
+      max_connections = 100
+      shared_buffers = 128MB
+      work_mem = 4MB
+
+  # -- Read replicas (optional, for future read-scale support)
+  readReplicas:
+    replicaCount: 0
+
+# =============================================================================
+# Redis (Bitnami subchart)
+# Set redis.enabled=false to use an external Redis instance or Sentinel.
+# =============================================================================
+redis:
+  # -- Deploy bundled Redis
+  enabled: true
+
+  # -- Architecture: standalone or replication
+  architecture: standalone
+
+  auth:
+    # -- Enable Redis AUTH
+    enabled: true
+    # -- Redis password (auto-generated if empty)
+    password: ""
+    # -- Use existing secret
+    existingSecret: ""
+    existingSecretPasswordKey: redis-password
+
+  master:
+    persistence:
+      enabled: true
+      size: 4Gi
+      storageClass: ""
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  # -- Replica configuration (only used when architecture=replication)
+  replica:
+    replicaCount: 1
+    persistence:
+      enabled: true
+      size: 4Gi
+
+  # -- Sentinel configuration (only used when architecture=replication + sentinel enabled)
+  sentinel:
+    enabled: false
+    # -- Set to true for full HA Sentinel mode
+    # architecture must be "replication"
+    masterName: mymaster
+    quorum: 2
+
+# =============================================================================
+# Persistence (for SQLite mode — not recommended for production HA)
+# =============================================================================
+persistence:
+  # -- Enable persistent volume for /data (SQLite mode)
+  # Disable when using PostgreSQL (DB_TYPE=postgres)
+  enabled: false
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 5Gi
+
+# =============================================================================
+# Network Policy
+# =============================================================================
+networkPolicy:
+  # -- Enable NetworkPolicy resources
+  enabled: true
+
+  # -- Allow ingress from specific namespaces (empty = allow from all)
+  ingressNamespaceSelector: {}
+
+  # -- Allow ingress from pods with these labels (empty = allow from all in-namespace)
+  ingressPodSelector: {}

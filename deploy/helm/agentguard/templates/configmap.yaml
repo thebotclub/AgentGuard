@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "agentguard.configMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ .Values.api.nodeEnv | quote }}
+  LOG_LEVEL: {{ .Values.api.logLevel | quote }}
+  PORT: {{ .Values.api.port | quote }}
+  DB_TYPE: {{ if .Values.postgresql.enabled }}"postgres"{{ else }}"postgres"{{ end }}
+  {{- if .Values.secrets.redisSentinelName }}
+  REDIS_SENTINEL_NAME: {{ .Values.secrets.redisSentinelName | quote }}
+  {{- end }}
+  {{- range $key, $value := .Values.config.extraConfig }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

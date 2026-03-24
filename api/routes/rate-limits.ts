@@ -155,7 +155,7 @@ export function createRateLimitRoutes(db: IDatabase, auth: AuthMiddleware): Rout
   // ── DELETE /api/v1/rate-limits/:id — remove ──────────────────────────────
   router.delete('/api/v1/rate-limits/:id', auth.requireTenantAuth, async (req: Request, res: Response) => {
     const tenantId = (req as AuthedRequest).tenantId;
-    const id = req.params['id'];
+    const id = req.params['id'] as string;
 
     if (!id || typeof id !== 'string' || id.length > 100) {
       res.status(400).json({ error: 'Invalid rate limit ID' });

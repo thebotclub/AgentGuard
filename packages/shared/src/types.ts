@@ -10,6 +10,7 @@ export type { PolicyAction, PolicyRule, PolicyDocument, PolicyBundle, CompiledRu
   StringConstraint, NumericConstraint, ValueConstraint,
   DayOfWeek, TimeWindow, TimeWindowRange,
   PolicyDecision, ActionRequest, AgentContext, AuditEvent,
+  PromptInjectionCheck, PolicyCheck,
 } from './schemas/index.js';
 
 // ─── User Roles ───────────────────────────────────────────────────────────────

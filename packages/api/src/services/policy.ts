@@ -658,6 +658,11 @@ export class PolicyCompilerService {
       PolicyCompilerService.compileRule(rule),
     );
 
+    // Extract prompt injection check config from checks array (if present)
+    const promptInjectionConfig = doc.checks?.find(
+      (c) => c.type === 'prompt_injection',
+    );
+
     const toolIndex: Record<string, number[]> = {};
 
     for (let i = 0; i < compiledRules.length; i++) {
@@ -703,6 +708,7 @@ export class PolicyCompilerService {
       compiledAt: new Date().toISOString(),
       defaultAction: doc.default,
       budgets: doc.budgets,
+      ...(promptInjectionConfig ? { promptInjectionConfig } : {}),
       rules: compiledRules,
       toolIndex,
       checksum,

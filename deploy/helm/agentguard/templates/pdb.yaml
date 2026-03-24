@@ -1,0 +1,54 @@
+{{- if .Values.api.podDisruptionBudget.enabled }}
+---
+# PodDisruptionBudget for API
+# Prevents simultaneous termination of all API pods during node drain / upgrades
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "agentguard.fullname" . }}-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  minAvailable: {{ .Values.api.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "agentguard.api.selectorLabels" . | nindent 6 }}
+{{- end }}
+
+{{- if .Values.dashboard.podDisruptionBudget.enabled }}
+---
+# PodDisruptionBudget for Dashboard
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "agentguard.fullname" . }}-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dashboard
+spec:
+  minAvailable: {{ .Values.dashboard.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "agentguard.dashboard.selectorLabels" . | nindent 6 }}
+{{- end }}
+
+{{- if .Values.worker.podDisruptionBudget.enabled }}
+---
+# PodDisruptionBudget for Worker
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "agentguard.fullname" . }}-worker
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentguard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  minAvailable: {{ .Values.worker.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "agentguard.worker.selectorLabels" . | nindent 6 }}
+{{- end }}

@@ -1,1 +1,1 @@
-{"version":3,"file":"killswitch.d.ts","sourceRoot":"","sources":["../../src/routes/killswitch.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AACH,OAAO,EAAE,IAAI,EAAE,MAAM,MAAM,CAAC;AAO5B,eAAO,MAAM,gBAAgB,4EAAa,CAAC"}
+{"version":3,"file":"killswitch.d.ts","sourceRoot":"","sources":["../../src/routes/killswitch.ts"],"names":[],"mappings":"AAAA;;;;;;;;GAQG;AACH,OAAO,EAAE,IAAI,EAAE,MAAM,MAAM,CAAC;AAS5B,eAAO,MAAM,gBAAgB,4EAAa,CAAC"}

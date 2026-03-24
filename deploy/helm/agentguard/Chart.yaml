@@ -1,0 +1,41 @@
+apiVersion: v2
+name: agentguard
+description: |
+  AgentGuard — Runtime security platform for AI agents.
+  Policy enforcement, audit trail, HITL approvals, real-time dashboard,
+  and enterprise integrations. Supports PostgreSQL + Redis HA configurations.
+type: application
+version: 0.9.0
+appVersion: "0.9.0"
+home: https://agentguard.tech
+sources:
+  - https://github.com/thebotclub/AgentGuard
+maintainers:
+  - name: The Bot Club
+    email: hello@agentguard.tech
+    url: https://agentguard.tech
+keywords:
+  - ai
+  - security
+  - agents
+  - policy
+  - runtime-security
+  - guardrails
+  - mcp
+  - llm
+annotations:
+  artifacthub.io/license: "MIT"
+  artifacthub.io/category: security
+dependencies:
+  - name: postgresql
+    version: "16.4.4"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+    tags:
+      - database
+  - name: redis
+    version: "20.6.2"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+    tags:
+      - cache

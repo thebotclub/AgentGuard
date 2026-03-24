@@ -25,6 +25,8 @@ import type {
   IntegrationRow,
   SsoConfigRow,
   SsoProvider,
+  SsoProtocol,
+  SsoUserRow,
   SiemConfigRow,
   ChildAgentRow,
   UsageAnalytics,
@@ -37,6 +39,12 @@ import type {
   PolicyVersionRow,
   TeamMemberRow,
   JobRow,
+  GitWebhookConfigRow,
+  GitSyncLogRow,
+  ScimTokenRow,
+  ScimUserRow,
+  ScimGroupRow,
+  ScimGroupMemberRow,
 } from './db-interface.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
 
@@ -644,6 +652,137 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         );
         CREATE INDEX IF NOT EXISTS idx_jobs_tenant ON evaluation_jobs(tenant_id);
         CREATE INDEX IF NOT EXISTS idx_jobs_status ON evaluation_jobs(status);
+      `);
+
+      // Wave 7: Expand SSO config schema (SQLite doesn't support IF NOT EXISTS on ALTER)
+      const ssoColumns = [
+        `ALTER TABLE sso_configs ADD COLUMN protocol TEXT NOT NULL DEFAULT 'oidc'`,
+        `ALTER TABLE sso_configs ADD COLUMN discovery_url TEXT`,
+        `ALTER TABLE sso_configs ADD COLUMN redirect_uri TEXT`,
+        `ALTER TABLE sso_configs ADD COLUMN scopes TEXT`,
+        `ALTER TABLE sso_configs ADD COLUMN force_sso INTEGER NOT NULL DEFAULT 0`,
+        `ALTER TABLE sso_configs ADD COLUMN role_claim_name TEXT`,
+        `ALTER TABLE sso_configs ADD COLUMN admin_group TEXT`,
+        `ALTER TABLE sso_configs ADD COLUMN member_group TEXT`,
+        `ALTER TABLE sso_configs ADD COLUMN idp_metadata_xml TEXT`,
+        `ALTER TABLE sso_configs ADD COLUMN sp_entity_id TEXT`,
+        `ALTER TABLE sso_configs ADD COLUMN updated_at TEXT`,
+      ];
+      for (const sql of ssoColumns) {
+        try { db.exec(sql); } catch { /* column already exists */ }
+      }
+
+      // Wave 7: SSO state table (PKCE / nonce storage)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS sso_states (
+          state TEXT PRIMARY KEY,
+          data TEXT NOT NULL,
+          expires_at TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+      `);
+
+      // Wave 7: SSO users (provisioned from IdP)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS sso_users (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          tenant_id TEXT NOT NULL,
+          idp_sub TEXT NOT NULL,
+          provider TEXT NOT NULL,
+          email TEXT,
+          name TEXT,
+          role TEXT NOT NULL DEFAULT 'viewer',
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          last_login_at TEXT,
+          UNIQUE(tenant_id, idp_sub)
+        );
+        CREATE INDEX IF NOT EXISTS idx_sso_users_tenant ON sso_users(tenant_id);
+      `);
+
+      // Wave 7: Git webhook config (GitOps policy sync)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS git_webhook_configs (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          tenant_id TEXT NOT NULL UNIQUE,
+          repo_url TEXT NOT NULL,
+          webhook_secret TEXT NOT NULL,
+          branch TEXT NOT NULL DEFAULT 'main',
+          policy_dir TEXT NOT NULL DEFAULT 'agentguard/policies',
+          github_token TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_git_webhook_tenant ON git_webhook_configs(tenant_id);
+      `);
+
+      // Wave 7: Git sync log (audit trail for policy syncs)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS git_sync_logs (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          tenant_id TEXT NOT NULL,
+          commit_sha TEXT NOT NULL,
+          branch TEXT NOT NULL,
+          policies_updated INTEGER NOT NULL DEFAULT 0,
+          policies_skipped INTEGER NOT NULL DEFAULT 0,
+          status TEXT NOT NULL DEFAULT 'success',
+          error_message TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_git_sync_tenant ON git_sync_logs(tenant_id);
+      `);
+
+      // Wave 9: SCIM 2.0 provisioning tables
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS scim_tokens (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          tenant_id TEXT NOT NULL,
+          token_hash TEXT NOT NULL UNIQUE,
+          label TEXT NOT NULL DEFAULT 'default',
+          active INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          last_used_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_scim_tokens_tenant ON scim_tokens(tenant_id);
+
+        CREATE TABLE IF NOT EXISTS scim_users (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          tenant_id TEXT NOT NULL,
+          external_id TEXT,
+          user_name TEXT NOT NULL,
+          display_name TEXT,
+          given_name TEXT,
+          family_name TEXT,
+          email TEXT,
+          active INTEGER NOT NULL DEFAULT 1,
+          role TEXT NOT NULL DEFAULT 'member',
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT,
+          deleted_at TEXT,
+          UNIQUE(tenant_id, user_name)
+        );
+        CREATE INDEX IF NOT EXISTS idx_scim_users_tenant ON scim_users(tenant_id);
+        CREATE INDEX IF NOT EXISTS idx_scim_users_external ON scim_users(tenant_id, external_id);
+
+        CREATE TABLE IF NOT EXISTS scim_groups (
+          id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+          tenant_id TEXT NOT NULL,
+          display_name TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          updated_at TEXT,
+          UNIQUE(tenant_id, display_name)
+        );
+        CREATE INDEX IF NOT EXISTS idx_scim_groups_tenant ON scim_groups(tenant_id);
+
+        CREATE TABLE IF NOT EXISTS scim_group_members (
+          group_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          tenant_id TEXT NOT NULL,
+          PRIMARY KEY (group_id, user_id),
+          FOREIGN KEY (group_id) REFERENCES scim_groups(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES scim_users(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_scim_group_members_group ON scim_group_members(group_id);
+        CREATE INDEX IF NOT EXISTS idx_scim_group_members_user ON scim_group_members(user_id);
       `);
 
       console.log('[db] SQLite schema ready');
@@ -1324,30 +1463,60 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
     // ── SSO Configurations ─────────────────────────────────────────────────────
     async upsertSsoConfig(
       tenantId: string,
-      provider: SsoProvider,
-      domain: string,
-      clientId: string,
-      clientSecretEncrypted: string,
+      config: {
+        provider: SsoProvider;
+        protocol: SsoProtocol;
+        domain: string;
+        clientId: string;
+        clientSecretEncrypted: string;
+        discoveryUrl?: string | null;
+        redirectUri?: string | null;
+        scopes?: string | null;
+        forceSso?: boolean;
+        roleClaimName?: string | null;
+        adminGroup?: string | null;
+        memberGroup?: string | null;
+        idpMetadataXml?: string | null;
+        spEntityId?: string | null;
+      },
     ): Promise<SsoConfigRow> {
+      const now = new Date().toISOString();
       const existing = db.prepare('SELECT * FROM sso_configs WHERE tenant_id = ?').get(tenantId) as SsoConfigRow | undefined;
       if (existing) {
         db.prepare(
-          'UPDATE sso_configs SET provider = ?, domain = ?, client_id = ?, client_secret_encrypted = ? WHERE tenant_id = ?'
-        ).run(provider, domain, clientId, clientSecretEncrypted, tenantId);
-        return {
-          ...existing,
-          provider,
-          domain,
-          client_id: clientId,
-          client_secret_encrypted: clientSecretEncrypted,
-        };
+          `UPDATE sso_configs SET
+            provider = ?, protocol = ?, domain = ?, client_id = ?, client_secret_encrypted = ?,
+            discovery_url = ?, redirect_uri = ?, scopes = ?, force_sso = ?,
+            role_claim_name = ?, admin_group = ?, member_group = ?,
+            idp_metadata_xml = ?, sp_entity_id = ?, updated_at = ?
+           WHERE tenant_id = ?`
+        ).run(
+          config.provider, config.protocol, config.domain, config.clientId, config.clientSecretEncrypted,
+          config.discoveryUrl ?? null, config.redirectUri ?? null, config.scopes ?? null,
+          config.forceSso ? 1 : 0,
+          config.roleClaimName ?? null, config.adminGroup ?? null, config.memberGroup ?? null,
+          config.idpMetadataXml ?? null, config.spEntityId ?? null, now,
+          tenantId,
+        );
+      } else {
+        const id = crypto.randomUUID();
+        db.prepare(
+          `INSERT INTO sso_configs (
+            id, tenant_id, provider, protocol, domain, client_id, client_secret_encrypted,
+            discovery_url, redirect_uri, scopes, force_sso,
+            role_claim_name, admin_group, member_group,
+            idp_metadata_xml, sp_entity_id, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+          id, tenantId, config.provider, config.protocol, config.domain,
+          config.clientId, config.clientSecretEncrypted,
+          config.discoveryUrl ?? null, config.redirectUri ?? null, config.scopes ?? null,
+          config.forceSso ? 1 : 0,
+          config.roleClaimName ?? null, config.adminGroup ?? null, config.memberGroup ?? null,
+          config.idpMetadataXml ?? null, config.spEntityId ?? null, now, null,
+        );
       }
-      const id = require('crypto').randomUUID();
-      const created_at = new Date().toISOString();
-      db.prepare(
-        'INSERT INTO sso_configs (id, tenant_id, provider, domain, client_id, client_secret_encrypted, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(id, tenantId, provider, domain, clientId, clientSecretEncrypted, created_at);
-      return { id, tenant_id: tenantId, provider, domain, client_id: clientId, client_secret_encrypted: clientSecretEncrypted, created_at };
+      return db.prepare('SELECT * FROM sso_configs WHERE tenant_id = ?').get(tenantId) as SsoConfigRow;
     },
 
     async getSsoConfig(tenantId: string): Promise<SsoConfigRow | undefined> {
@@ -1356,6 +1525,110 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
 
     async deleteSsoConfig(tenantId: string): Promise<void> {
       db.prepare('DELETE FROM sso_configs WHERE tenant_id = ?').run(tenantId);
+    },
+
+    // ── SSO State ─────────────────────────────────────────────────────────────
+    async storeSsoState(state: string, data: string, expiresAt: string): Promise<void> {
+      db.prepare(
+        'INSERT OR REPLACE INTO sso_states (state, data, expires_at) VALUES (?, ?, ?)'
+      ).run(state, data, expiresAt);
+    },
+
+    async getSsoState(state: string): Promise<{ data: string; expires_at: string } | undefined> {
+      return db.prepare('SELECT data, expires_at FROM sso_states WHERE state = ?').get(state) as
+        { data: string; expires_at: string } | undefined;
+    },
+
+    async deleteSsoState(state: string): Promise<void> {
+      db.prepare('DELETE FROM sso_states WHERE state = ?').run(state);
+      // Clean up expired states while we're at it
+      db.prepare("DELETE FROM sso_states WHERE expires_at < datetime('now')").run();
+    },
+
+    // ── SSO Users ─────────────────────────────────────────────────────────────
+    async upsertSsoUser(
+      tenantId: string,
+      idpSub: string,
+      provider: SsoProvider,
+      email: string | null,
+      name: string | null,
+      role: string,
+    ): Promise<SsoUserRow> {
+      const now = new Date().toISOString();
+      const existing = db.prepare('SELECT * FROM sso_users WHERE tenant_id = ? AND idp_sub = ?').get(tenantId, idpSub);
+      if (existing) {
+        db.prepare(
+          `UPDATE sso_users SET email = ?, name = ?, role = ?, last_login_at = ? WHERE tenant_id = ? AND idp_sub = ?`
+        ).run(email, name, role, now, tenantId, idpSub);
+      } else {
+        db.prepare(
+          `INSERT INTO sso_users (id, tenant_id, idp_sub, provider, email, name, role, created_at, last_login_at)
+           VALUES (lower(hex(randomblob(16))), ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(tenantId, idpSub, provider, email, name, role, now, now);
+      }
+      return db.prepare('SELECT * FROM sso_users WHERE tenant_id = ? AND idp_sub = ?').get(tenantId, idpSub) as SsoUserRow;
+    },
+
+    async getSsoUser(tenantId: string, idpSub: string): Promise<SsoUserRow | undefined> {
+      return db.prepare('SELECT * FROM sso_users WHERE tenant_id = ? AND idp_sub = ?').get(tenantId, idpSub) as SsoUserRow | undefined;
+    },
+
+    // ── Git Webhook Config ────────────────────────────────────────────────────
+    async upsertGitWebhookConfig(
+      tenantId: string,
+      repoUrl: string,
+      webhookSecret: string,
+      branch: string,
+      policyDir: string,
+      githubToken: string | null,
+    ): Promise<GitWebhookConfigRow> {
+      const now = new Date().toISOString();
+      const existing = db.prepare('SELECT * FROM git_webhook_configs WHERE tenant_id = ?').get(tenantId);
+      if (existing) {
+        db.prepare(
+          `UPDATE git_webhook_configs SET
+             repo_url = ?, webhook_secret = ?, branch = ?, policy_dir = ?, github_token = ?, updated_at = ?
+           WHERE tenant_id = ?`
+        ).run(repoUrl, webhookSecret, branch, policyDir, githubToken, now, tenantId);
+      } else {
+        db.prepare(
+          `INSERT INTO git_webhook_configs (id, tenant_id, repo_url, webhook_secret, branch, policy_dir, github_token, created_at)
+           VALUES (lower(hex(randomblob(16))), ?, ?, ?, ?, ?, ?, ?)`
+        ).run(tenantId, repoUrl, webhookSecret, branch, policyDir, githubToken, now);
+      }
+      return db.prepare('SELECT * FROM git_webhook_configs WHERE tenant_id = ?').get(tenantId) as GitWebhookConfigRow;
+    },
+
+    async getGitWebhookConfig(tenantId: string): Promise<GitWebhookConfigRow | undefined> {
+      return db.prepare('SELECT * FROM git_webhook_configs WHERE tenant_id = ?').get(tenantId) as GitWebhookConfigRow | undefined;
+    },
+
+    async deleteGitWebhookConfig(tenantId: string): Promise<void> {
+      db.prepare('DELETE FROM git_webhook_configs WHERE tenant_id = ?').run(tenantId);
+    },
+
+    async insertGitSyncLog(
+      tenantId: string,
+      commitSha: string,
+      branch: string,
+      policiesUpdated: number,
+      policiesSkipped: number,
+      status: 'success' | 'error',
+      errorMessage: string | null,
+    ): Promise<GitSyncLogRow> {
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(
+        `INSERT INTO git_sync_logs (id, tenant_id, commit_sha, branch, policies_updated, policies_skipped, status, error_message, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(id, tenantId, commitSha, branch, policiesUpdated, policiesSkipped, status, errorMessage, now);
+      return db.prepare('SELECT * FROM git_sync_logs WHERE id = ?').get(id) as GitSyncLogRow;
+    },
+
+    async listGitSyncLogs(tenantId: string, limit = 50): Promise<GitSyncLogRow[]> {
+      return db.prepare(
+        'SELECT * FROM git_sync_logs WHERE tenant_id = ? ORDER BY created_at DESC LIMIT ?'
+      ).all(tenantId, limit) as GitSyncLogRow[];
     },
 
     // ── SIEM Configurations ────────────────────────────────────────────────────
@@ -1703,6 +1976,139 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       db.prepare(
         "UPDATE evaluation_jobs SET status = 'failed', error = ?, completed_at = datetime('now') WHERE id = ?"
       ).run(error, jobId);
+    },
+
+    // ── SCIM Tokens (Wave 9) ──────────────────────────────────────────────
+    async createScimToken(tenantId: string, tokenHash: string, label: string): Promise<ScimTokenRow> {
+      const id = crypto.randomUUID();
+      db.prepare(
+        'INSERT INTO scim_tokens (id, tenant_id, token_hash, label) VALUES (?, ?, ?, ?)'
+      ).run(id, tenantId, tokenHash, label);
+      return getSync<ScimTokenRow>('SELECT * FROM scim_tokens WHERE id = ?', [id])!;
+    },
+
+    async getScimTokenByHash(tokenHash: string): Promise<ScimTokenRow | undefined> {
+      return getSync<ScimTokenRow>('SELECT * FROM scim_tokens WHERE token_hash = ? AND active = 1', [tokenHash]);
+    },
+
+    async listScimTokens(tenantId: string): Promise<ScimTokenRow[]> {
+      return allSync<ScimTokenRow>('SELECT * FROM scim_tokens WHERE tenant_id = ? ORDER BY created_at DESC', [tenantId]);
+    },
+
+    async revokeScimToken(id: string, tenantId: string): Promise<void> {
+      db.prepare('UPDATE scim_tokens SET active = 0 WHERE id = ? AND tenant_id = ?').run(id, tenantId);
+    },
+
+    async touchScimToken(id: string): Promise<void> {
+      db.prepare("UPDATE scim_tokens SET last_used_at = datetime('now') WHERE id = ?").run(id);
+    },
+
+    // ── SCIM Users (Wave 9) ───────────────────────────────────────────────
+    async createScimUser(tenantId: string, user: Omit<ScimUserRow, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'tenant_id'>): Promise<ScimUserRow> {
+      const id = crypto.randomUUID();
+      db.prepare(`
+        INSERT INTO scim_users (id, tenant_id, external_id, user_name, display_name, given_name, family_name, email, active, role)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(id, tenantId, user.external_id ?? null, user.user_name, user.display_name ?? null,
+            user.given_name ?? null, user.family_name ?? null, user.email ?? null,
+            user.active ?? 1, user.role ?? 'member');
+      return getSync<ScimUserRow>('SELECT * FROM scim_users WHERE id = ?', [id])!;
+    },
+
+    async getScimUser(id: string, tenantId: string): Promise<ScimUserRow | undefined> {
+      return getSync<ScimUserRow>('SELECT * FROM scim_users WHERE id = ? AND tenant_id = ?', [id, tenantId]);
+    },
+
+    async getScimUserByUserName(tenantId: string, userName: string): Promise<ScimUserRow | undefined> {
+      return getSync<ScimUserRow>('SELECT * FROM scim_users WHERE tenant_id = ? AND user_name = ?', [tenantId, userName]);
+    },
+
+    async listScimUsers(tenantId: string, opts: { filter?: string; startIndex?: number; count?: number } = {}): Promise<{ users: ScimUserRow[]; total: number }> {
+      const { startIndex = 1, count = 100 } = opts;
+      const offset = Math.max(0, startIndex - 1);
+      let where = 'tenant_id = ? AND deleted_at IS NULL';
+      const params: unknown[] = [tenantId];
+
+      // Basic SCIM filter support: userName eq "value"
+      if (opts.filter) {
+        const m = opts.filter.match(/^userName\s+eq\s+"([^"]+)"$/i);
+        if (m) { where += ' AND user_name = ?'; params.push(m[1]); }
+      }
+
+      const total = (getSync<{ c: number }>(`SELECT COUNT(*) AS c FROM scim_users WHERE ${where}`, params)?.c) ?? 0;
+      const users = allSync<ScimUserRow>(
+        `SELECT * FROM scim_users WHERE ${where} ORDER BY created_at ASC LIMIT ? OFFSET ?`,
+        [...params, count, offset]
+      );
+      return { users, total };
+    },
+
+    async updateScimUser(id: string, tenantId: string, updates: Partial<ScimUserRow>): Promise<ScimUserRow | undefined> {
+      const fields: string[] = [];
+      const vals: unknown[] = [];
+      const allowed = ['external_id','user_name','display_name','given_name','family_name','email','active','role'] as const;
+      for (const k of allowed) {
+        if (k in updates) { fields.push(`${k} = ?`); vals.push((updates as Record<string,unknown>)[k]); }
+      }
+      if (fields.length === 0) return this.getScimUser(id, tenantId);
+      fields.push("updated_at = datetime('now')");
+      vals.push(id, tenantId);
+      db.prepare(`UPDATE scim_users SET ${fields.join(', ')} WHERE id = ? AND tenant_id = ?`).run(...vals);
+      return getSync<ScimUserRow>('SELECT * FROM scim_users WHERE id = ? AND tenant_id = ?', [id, tenantId]);
+    },
+
+    async deleteScimUser(id: string, tenantId: string): Promise<void> {
+      db.prepare("UPDATE scim_users SET deleted_at = datetime('now'), active = 0, updated_at = datetime('now') WHERE id = ? AND tenant_id = ?").run(id, tenantId);
+    },
+
+    // ── SCIM Groups (Wave 9) ──────────────────────────────────────────────
+    async createScimGroup(tenantId: string, displayName: string): Promise<ScimGroupRow> {
+      const id = crypto.randomUUID();
+      db.prepare('INSERT INTO scim_groups (id, tenant_id, display_name) VALUES (?, ?, ?)').run(id, tenantId, displayName);
+      return getSync<ScimGroupRow>('SELECT * FROM scim_groups WHERE id = ?', [id])!;
+    },
+
+    async getScimGroup(id: string, tenantId: string): Promise<ScimGroupRow | undefined> {
+      return getSync<ScimGroupRow>('SELECT * FROM scim_groups WHERE id = ? AND tenant_id = ?', [id, tenantId]);
+    },
+
+    async listScimGroups(tenantId: string, opts: { startIndex?: number; count?: number } = {}): Promise<{ groups: ScimGroupRow[]; total: number }> {
+      const { startIndex = 1, count = 100 } = opts;
+      const offset = Math.max(0, startIndex - 1);
+      const total = (getSync<{ c: number }>('SELECT COUNT(*) AS c FROM scim_groups WHERE tenant_id = ?', [tenantId])?.c) ?? 0;
+      const groups = allSync<ScimGroupRow>('SELECT * FROM scim_groups WHERE tenant_id = ? ORDER BY created_at ASC LIMIT ? OFFSET ?', [tenantId, count, offset]);
+      return { groups, total };
+    },
+
+    async updateScimGroup(id: string, tenantId: string, displayName: string): Promise<ScimGroupRow | undefined> {
+      db.prepare("UPDATE scim_groups SET display_name = ?, updated_at = datetime('now') WHERE id = ? AND tenant_id = ?").run(displayName, id, tenantId);
+      return getSync<ScimGroupRow>('SELECT * FROM scim_groups WHERE id = ? AND tenant_id = ?', [id, tenantId]);
+    },
+
+    async deleteScimGroup(id: string, tenantId: string): Promise<void> {
+      db.prepare('DELETE FROM scim_group_members WHERE group_id = ? AND tenant_id = ?').run(id, tenantId);
+      db.prepare('DELETE FROM scim_groups WHERE id = ? AND tenant_id = ?').run(id, tenantId);
+    },
+
+    async getScimGroupMembers(groupId: string, tenantId: string): Promise<ScimGroupMemberRow[]> {
+      return allSync<ScimGroupMemberRow>('SELECT * FROM scim_group_members WHERE group_id = ? AND tenant_id = ?', [groupId, tenantId]);
+    },
+
+    async addScimGroupMember(groupId: string, userId: string, tenantId: string): Promise<void> {
+      db.prepare('INSERT OR IGNORE INTO scim_group_members (group_id, user_id, tenant_id) VALUES (?, ?, ?)').run(groupId, userId, tenantId);
+    },
+
+    async removeScimGroupMember(groupId: string, userId: string, tenantId: string): Promise<void> {
+      db.prepare('DELETE FROM scim_group_members WHERE group_id = ? AND user_id = ? AND tenant_id = ?').run(groupId, userId, tenantId);
+    },
+
+    async replaceScimGroupMembers(groupId: string, tenantId: string, userIds: string[]): Promise<void> {
+      db.transaction(() => {
+        db.prepare('DELETE FROM scim_group_members WHERE group_id = ? AND tenant_id = ?').run(groupId, tenantId);
+        for (const userId of userIds) {
+          db.prepare('INSERT OR IGNORE INTO scim_group_members (group_id, user_id, tenant_id) VALUES (?, ?, ?)').run(groupId, userId, tenantId);
+        }
+      })();
     },
   };
 

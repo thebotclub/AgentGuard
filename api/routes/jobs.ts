@@ -13,8 +13,8 @@ import type { AuthMiddleware } from '../middleware/auth.js';
 const AsyncEvalSchema = z.object({
   agentId: z.string().optional(),
   toolName: z.string(),
-  toolInput: z.record(z.unknown()),
-  context: z.record(z.unknown()).optional(),
+  toolInput: z.record(z.string(), z.unknown()),
+  context: z.record(z.string(), z.unknown()).optional(),
 });
 
 export function createJobRoutes(db: IDatabase, auth: AuthMiddleware): Router {
@@ -51,7 +51,7 @@ export function createJobRoutes(db: IDatabase, auth: AuthMiddleware): Router {
     auth.requireTenantAuth,
     async (req: Request, res: Response) => {
       try {
-        const job = await db.getJob(req.params.jobId);
+        const job = await db.getJob(req.params.jobId as string);
         if (!job || job.tenant_id !== req.tenantId) {
           return res.status(404).json({ error: 'Job not found' });
         }

@@ -17,14 +17,19 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
+    "db:partition:migrate": "psql $DATABASE_URL -f prisma/partition-audit-events.sql",
+    "db:partition:maintain": "tsx scripts/partition-maintenance.ts",
+    "db:partition:maintain:dry": "tsx scripts/partition-maintenance.ts --dry-run",
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@agentguard/compliance": "*",
     "@agentguard/shared": "*",
     "@hono/node-server": "^1.13.7",
     "@hono/zod-validator": "^0.4.2",
     "@prisma/adapter-pg": "^6.1.0",
     "@prisma/client": "^6.1.0",
+    "bcryptjs": "^3.0.3",
     "hono": "^4.12.7",
     "ioredis": "^5.4.1",
     "jose": "^5.9.6",
@@ -34,12 +39,13 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/js-yaml": "^4.0.9",
     "@types/micromatch": "^4.0.10",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.11.10",
     "prisma": "^6.1.0",
-    "tsx": "^4.19.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.3",
     "vitest": "^2.1.0"
   }
