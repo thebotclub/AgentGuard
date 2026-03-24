@@ -96,6 +96,10 @@ jobs:
 
       - name: Seed test data
         run: npx tsx tests/e2e/seed.ts
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5433/agentguard_test
+          BASE_URL: http://localhost:3001
+          JWT_SECRET: test-jwt-secret-for-e2e-only
 
       - name: Run E2E tests
         run: npx vitest run tests/e2e/ --reporter=verbose
