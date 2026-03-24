@@ -1030,8 +1030,9 @@ function showPage(id, evt) {
   
   // Reload data when switching to certain pages
   if (id === 'overview' && storedApiKey) { loadDashboardStats(); loadDashboardFeed(); loadUsageStats(); }
-  if (id === 'audit' && storedApiKey) { loadAuditTrail(); }
+  if (id === 'audit') { loadAuditTrail(); }
   if (id === 'agents') { loadAgents(); }
+  if (id === 'policy') { loadPolicyPage(); }
   if (id === 'readiness') { loadReadiness(); }
   if (id === 'webhooks') { loadWebhooks(); }
   if (id === 'ratelimits') { loadRateLimits(); }
