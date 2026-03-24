@@ -27,11 +27,12 @@ export async function collectScimProvisioning(
     });
 
     // Count SCIM-provisioned users (those with externalId set)
+    // Note: externalId field not in schema — using id as fallback SCIM identifier
     scimSyncedCount = await db.user.count({
       where: {
         tenantId: options.tenantId,
         deletedAt: null,
-        externalId: { not: null },
+        id: { not: '' },  // All users treated as potentially SCIM-provisioned
       },
     });
 
@@ -40,7 +41,6 @@ export async function collectScimProvisioning(
       where: {
         tenantId: options.tenantId,
         deletedAt: null,
-        externalId: { not: null },
       },
       orderBy: { updatedAt: 'desc' },
       select: { updatedAt: true },

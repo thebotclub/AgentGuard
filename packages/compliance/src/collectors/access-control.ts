@@ -28,7 +28,6 @@ export async function collectAccessControl(
       role: true,
       tenantId: true,
       createdAt: true,
-      lastLoginAt: true,
       _count: {
         select: {
           // Count agents assigned to this user if applicable
