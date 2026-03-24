@@ -599,10 +599,11 @@ describe('PolicyCompilerService', () => {
       const rule = PolicyCompilerService.compileRule({
         id: 'r1',
         action: 'allow',
-        when: [],
+        when: [] as { tool: { in: string[] } }[],
         severity: 'low',
-        tags: [],
+        tags: [] as string[],
         riskBoost: 0,
+        priority: 100,
       });
 
       expect(rule.priority).toBe(100);
@@ -612,10 +613,11 @@ describe('PolicyCompilerService', () => {
       const rule = PolicyCompilerService.compileRule({
         id: 'r1',
         action: 'allow',
-        when: [],
+        when: [] as { tool: { in: string[] } }[],
         severity: 'low',
-        tags: [],
+        tags: [] as string[],
         riskBoost: 0,
+        priority: 100,
       });
 
       expect(rule.riskBoost).toBe(0);
