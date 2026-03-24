@@ -1,8 +1,14 @@
 // ── Config ──────────────────────────────────────────────
-// Primary: custom domain. Fallback: direct Azure URL.
-const API_PRIMARY = 'https://api.agentguard.tech';
-const API_FALLBACK = 'https://api.agentguard.tech';
-let API = API_FALLBACK; // Start with fallback; update after health check
+// Auto-detect API base URL:
+//   - If running on agentguard.tech / app.agentguard.tech → use production API
+//   - If running locally (localhost / 127.0.0.1 / non-production) → use same origin
+const _isProductionHost = ['agentguard.tech', 'app.agentguard.tech'].some(
+  h => window.location.hostname === h || window.location.hostname.endsWith('.' + h)
+);
+const API_BASE = _isProductionHost ? 'https://api.agentguard.tech' : window.location.origin;
+const API_PRIMARY = API_BASE;
+const API_FALLBACK = API_BASE;
+let API = API_BASE; // Updated after health check if needed
 
 let sessionId = null;
 let allEvents = [];
@@ -19,6 +25,17 @@ function saveApiKey(key) {
     document.getElementById('api-key-input').value = storedApiKey;
   }
   loadApiKey();
+  // Hide no-key banner once a key is entered
+  var demoBanner = document.getElementById('demo-banner');
+  if (demoBanner && storedApiKey) demoBanner.style.display = 'none';
+  // Trigger data reload
+  if (storedApiKey) {
+    loadDashboardStats();
+    loadDashboardFeed();
+    loadUsageStats();
+    loadAuditTrail();
+    loadApprovals();
+  }
 }
 
 function loadApiKey() {
@@ -896,12 +913,19 @@ async function init() {
     document.getElementById('cold-start-banner').classList.remove('visible');
   }
 
+  // Show/hide no-key banner
+  var demoBanner = document.getElementById('demo-banner');
+  if (demoBanner) {
+    demoBanner.style.display = (!storedApiKey) ? 'flex' : 'none';
+  }
+
   // Load real data if API key is available
   if (storedApiKey) {
     loadDashboardStats();
     loadDashboardFeed();
     loadUsageStats();
     loadAuditTrail();
+    loadApprovals();
   }
 
   // Create session
@@ -912,16 +936,8 @@ async function init() {
     renderPolicy(d.policy);
   } catch {}
 
-  // Load full policy
-  try {
-    const r = await fetch(`${API}/api/v1/playground/policy`);
-    const d = await r.json();
-    document.getElementById('policy-json').textContent = JSON.stringify(d.policy, null, 2);
-    renderPolicyRules(d.policy.rules);
-  } catch {
-    document.getElementById('policy-rules').innerHTML =
-      '<div style="padding:24px;text-align:center;color:var(--text-dim)">Could not load policy. <button class="btn btn-ghost" onclick="init()" style="margin-left:8px">Retry</button></div>';
-  }
+  // Load policy page: uses authenticated endpoint if key available
+  await loadPolicyPage();
 
   // Fetch live kill switch state
   try {
@@ -931,6 +947,37 @@ async function init() {
     updateKillSwitchUI();
     document.getElementById('kill-api-status').textContent = d.message || '';
   } catch {}
+}
+
+// ── Load Policy Page ─────────────────────────────────────
+async function loadPolicyPage() {
+  // If we have an API key, load the tenant custom policy
+  if (storedApiKey) {
+    try {
+      var r = await fetch(API + '/api/v1/policy', { headers: getApiHeaders(), signal: AbortSignal.timeout(10000) });
+      if (r.ok) {
+        var d = await r.json();
+        var policy = d.policy || {};
+        document.getElementById('policy-json').textContent = JSON.stringify(policy, null, 2);
+        if (policy.rules) renderPolicyRules(policy.rules);
+        var header = document.querySelector('#page-policy .card-header h2');
+        if (header) header.textContent = (policy.id || 'tenant-policy') + (d.isCustom ? ' (custom)' : ' (default)');
+        var sub = document.querySelector('#page-policy .card-header span');
+        if (sub) sub.textContent = (policy.rules ? policy.rules.length : 0) + ' rules · default: ' + (policy.default || 'allow');
+        return;
+      }
+    } catch {}
+  }
+  // Fallback: playground (public) policy
+  try {
+    const r = await fetch(`${API}/api/v1/playground/policy`);
+    const d = await r.json();
+    document.getElementById('policy-json').textContent = JSON.stringify(d.policy, null, 2);
+    renderPolicyRules(d.policy.rules);
+  } catch {
+    document.getElementById('policy-rules').innerHTML =
+      '<div style="padding:24px;text-align:center;color:var(--text-dim)">Could not load policy. <button class="btn btn-ghost" onclick="loadPolicyPage()" style="margin-left:8px">Retry</button></div>';
+  }
 }
 
 function renderPolicy(p) {
