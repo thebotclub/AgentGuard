@@ -352,7 +352,7 @@ async function main(): Promise<void> {
           'Get current subscription status (requires API key)',
       },
       docs: 'https://agentguard.tech',
-      dashboard: 'https://app.agentguard.tech',
+      dashboard: '/dashboard',
     });
   });
 
@@ -525,6 +525,38 @@ async function main(): Promise<void> {
         res.json(jsonSpec);
       } catch {
         res.status(500).json({ error: 'Could not load OpenAPI spec' });
+      }
+    });
+  }
+
+  // ── Dashboard SPA ──────────────────────────────────────────────────────
+  // Serve the built-in dashboard SPA at /dashboard
+  // No auth required to load the HTML — auth happens client-side via API key.
+  {
+    const { readFileSync } = await import('fs');
+    const { join } = await import('path');
+    const dashboardPath = join(__dirname, 'public', 'dashboard.html');
+
+    app.get('/dashboard', (_req: Request, res: Response) => {
+      try {
+        const html = readFileSync(dashboardPath, 'utf8');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.send(html);
+      } catch {
+        res.status(404).json({ error: 'Dashboard not found' });
+      }
+    });
+
+    // Also serve at /dashboard/ (trailing slash)
+    app.get('/dashboard/', (_req: Request, res: Response) => {
+      try {
+        const html = readFileSync(dashboardPath, 'utf8');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.send(html);
+      } catch {
+        res.status(404).json({ error: 'Dashboard not found' });
       }
     });
   }

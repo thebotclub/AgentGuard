@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgentGuard — Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { 900: '#0f172a', 800: '#1e293b', 700: '#1a2744' },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { background: #0f172a; color: #f1f5f9; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .pulse-dot { animation: pulseDot 2s infinite; }
+    @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    input, select { outline: none; }
+    input:focus, select:focus { border-color: #6366f1 !important; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    table { border-collapse: collapse; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script type="module">
+    import { h, render, Fragment } from 'https://unpkg.com/preact@10/dist/preact.module.js';
+    import { useState, useEffect, useCallback, useRef } from 'https://unpkg.com/preact@10/hooks/dist/hooks.module.js';
+    import htm from 'https://unpkg.com/htm@3/dist/htm.module.js';
+    const html = htm.bind(h);
+
+    // ─── API Client ──────────────────────────────────────────────────────────
+    const KEY_STORAGE = 'ag_api_key';
+
+    function getApiKey() { return localStorage.getItem(KEY_STORAGE) ?? ''; }
+    function saveApiKey(k) { localStorage.setItem(KEY_STORAGE, k); }
+    function clearApiKey() { localStorage.removeItem(KEY_STORAGE); }
+
+    async function apiFetch(path, opts = {}) {
+      const k = getApiKey();
+      const headers = { 'Content-Type': 'application/json', ...(opts.headers ?? {}) };
+      if (k) headers['x-api-key'] = k;
+      const res = await fetch(path, { ...opts, headers });
+      if (!res.ok) { const t = await res.text(); throw new Error(`${res.status}: ${t}`); }
+      return res.json();
+    }
+
+    async function downloadExport(format, from, to) {
+      const k = getApiKey();
+      const p = new URLSearchParams({ format });
+      if (from) p.set('from', new Date(from).toISOString());
+      if (to) p.set('to', new Date(to + 'T23:59:59').toISOString());
+      const headers = {};
+      if (k) headers['x-api-key'] = k;
+      const res = await fetch(`/api/v1/audit/export?${p}`, { headers });
+      if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `agentguard-audit-${new Date().toISOString().slice(0,10)}.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ─── Components ─────────────────────────────────────────────────────────
+
+    function Spinner() {
+      return html`<div class="flex items-center justify-center py-16">
+        <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>`;
+    }
+
+    function ErrorBanner({ msg, onClose }) {
+      return html`<div class="flex items-start gap-3 bg-red-950 border border-red-600 rounded-lg px-4 py-3 mb-4 text-red-300 text-sm fade-in">
+        <span class="mt-0.5">⚠️</span>
+        <span class="flex-1">${msg}</span>
+        ${onClose && html`<button onClick=${onClose} class="text-red-500 hover:text-red-300 text-lg leading-none">×</button>`}
+      </div>`;
+    }
+
+    function Toast({ msg }) {
+      return html`<div class="fixed bottom-6 right-6 z-50 bg-green-900 border border-green-500 rounded-xl px-5 py-3 text-green-300 text-sm font-medium shadow-lg fade-in">
+        ${msg}
+      </div>`;
+    }
+
+    function Badge({ value }) {
+      const v = (value ?? '').toLowerCase();
+      const cls = v === 'allow' || v === 'allowed'
+        ? 'bg-green-900/50 text-green-400 border-green-700'
+        : v === 'block' || v === 'blocked'
+        ? 'bg-red-900/50 text-red-400 border-red-700'
+        : v === 'warn'
+        ? 'bg-amber-900/50 text-amber-400 border-amber-700'
+        : 'bg-slate-800 text-slate-400 border-slate-600';
+      return html`<span class="inline-block px-2 py-0.5 rounded text-xs font-bold border uppercase ${cls}">${value}</span>`;
+    }
+
+    function NavBar({ page, onNav }) {
+      const links = [
+        { id: 'home', label: '🏠 Overview' },
+        { id: 'audit', label: '📋 Audit Log' },
+        { id: 'killswitch', label: '⛔ Kill Switch' },
+      ];
+      return html`<header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+        <h1 class="text-lg font-bold text-white flex items-center gap-2">
+          🛡 <span>AgentGuard</span>
+          <span class="text-slate-500 font-normal text-sm">Dashboard</span>
+        </h1>
+        <nav class="flex items-center gap-2">
+          ${links.map(l => html`<button
+            key=${l.id}
+            onClick=${() => onNav(l.id)}
+            class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${page === l.id
+              ? 'bg-slate-700 text-white'
+              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'}"
+          >${l.label}</button>`)}
+          <button
+            onClick=${() => { clearApiKey(); location.reload(); }}
+            class="ml-2 px-3 py-1.5 rounded-md text-xs text-slate-500 border border-slate-700 hover:border-slate-500 hover:text-slate-300 transition-colors"
+          >Sign out</button>
+        </nav>
+      </header>`;
+    }
+
+    // ─── API Key Modal ───────────────────────────────────────────────────────
+    function ApiKeyModal({ onDone }) {
+      const [key, setKey] = useState('');
+      const save = () => {
+        const k = key.trim();
+        if (!k) return;
+        saveApiKey(k);
+        onDone();
+      };
+      return html`<div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 max-w-md w-full fade-in">
+          <div class="text-3xl mb-3">🔑</div>
+          <h2 class="text-xl font-bold text-white mb-2">API Key Required</h2>
+          <p class="text-slate-400 text-sm mb-5">Enter your AgentGuard API key to access the dashboard. Stored locally in your browser.</p>
+          <input
+            type="password"
+            placeholder="ag_live_... or ag_agent_..."
+            value=${key}
+            onInput=${e => setKey(e.target.value)}
+            onKeyDown=${e => e.key === 'Enter' && save()}
+            class="w-full px-4 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm mb-3 focus:border-indigo-500"
+            autofocus
+          />
+          <button
+            onClick=${save}
+            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition-colors"
+          >Connect</button>
+        </div>
+      </div>`;
+    }
+
+    // ─── Home / Overview ─────────────────────────────────────────────────────
+    function HomePage({ onNav }) {
+      const [data, setData] = useState(null);
+      const [err, setErr] = useState(null);
+
+      useEffect(() => {
+        Promise.allSettled([
+          apiFetch('/api/v1/audit?limit=1&offset=0'),
+          apiFetch('/api/v1/agents'),
+          apiFetch('/api/v1/killswitch'),
+        ]).then(([audit, agents, ks]) => {
+          setData({
+            total: audit.status === 'fulfilled' ? audit.value.total : 0,
+            agents: agents.status === 'fulfilled' ? agents.value.agents : [],
+            ks: ks.status === 'fulfilled' ? ks.value : null,
+            agentsErr: agents.status === 'rejected' ? agents.reason?.message : null,
+          });
+        }).catch(e => setErr(e.message));
+      }, []);
+
+      const ksActive = data?.ks?.tenant?.active ?? data?.ks?.active ?? false;
+      const activeAgents = data?.agents?.filter(a => a.active).length ?? 0;
+
+      return html`<div class="max-w-5xl mx-auto px-6 py-8">
+        <div class="mb-7">
+          <h2 class="text-2xl font-bold text-white mb-1">Overview</h2>
+          <p class="text-slate-500 text-sm">Real-time security posture for your AI agent fleet.</p>
+        </div>
+
+        ${err && html`<${ErrorBanner} msg=${err} />`}
+        ${!data && !err && html`<${Spinner} />`}
+
+        ${data && html`<div class="fade-in">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-slate-800 border border-indigo-900/50 rounded-xl p-5">
+              <div class="text-3xl font-extrabold text-indigo-400 mb-1">${data.total.toLocaleString()}</div>
+              <div class="text-slate-500 text-sm">Audit Events</div>
+            </div>
+            <div class="bg-slate-800 border border-green-900/50 rounded-xl p-5">
+              <div class="text-3xl font-extrabold text-green-400 mb-1">${activeAgents}</div>
+              <div class="text-slate-500 text-sm">Active Agents</div>
+            </div>
+            <div class="bg-slate-800 border border-amber-900/50 rounded-xl p-5">
+              <div class="text-3xl font-extrabold text-amber-400 mb-1">${data.agents?.length ?? 0}</div>
+              <div class="text-slate-500 text-sm">Total Agents</div>
+            </div>
+            <div class="bg-slate-800 border ${ksActive ? 'border-red-600' : 'border-green-900/50'} rounded-xl p-5">
+              <div class="text-lg font-extrabold ${ksActive ? 'text-red-400' : 'text-green-400'} mb-1">
+                ${ksActive ? '🔴 ACTIVE' : '🟢 Normal'}
+              </div>
+              <div class="text-slate-500 text-sm">Kill Switch</div>
+            </div>
+          </div>
+
+          ${ksActive && html`<div class="bg-red-950 border-2 border-red-600 rounded-xl px-5 py-4 mb-6 text-red-300 font-semibold fade-in">
+            ⚠️ KILL SWITCH IS ACTIVE — All agent evaluations are currently BLOCKED.
+            <button onClick=${() => onNav('killswitch')} class="ml-3 text-red-400 underline hover:text-red-200">Manage →</button>
+          </div>`}
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <button onClick=${() => onNav('audit')}
+              class="bg-slate-800 border border-slate-700 hover:border-indigo-600 rounded-xl p-6 text-left transition-colors group">
+              <div class="text-2xl mb-3">📋</div>
+              <h3 class="text-lg font-bold text-white mb-2 group-hover:text-indigo-300">Audit Log Viewer</h3>
+              <p class="text-slate-500 text-sm leading-relaxed">Browse, filter, and export the tamper-evident audit trail. Filter by agent, action, decision, or date.</p>
+            </button>
+            <button onClick=${() => onNav('killswitch')}
+              class="bg-slate-800 border border-slate-700 hover:border-red-600 rounded-xl p-6 text-left transition-colors group">
+              <div class="text-2xl mb-3">⛔</div>
+              <h3 class="text-lg font-bold text-white mb-2 group-hover:text-red-300">Kill Switch Controls</h3>
+              <p class="text-slate-500 text-sm leading-relaxed">View all registered agents and their status. One-click kill to block agents or activate tenant-wide kill switch.</p>
+            </button>
+          </div>
+        </div>`}
+      </div>`;
+    }
+
+    // ─── Audit Log ────────────────────────────────────────────────────────────
+    function AuditPage() {
+      const PAGE = 50;
+      const [events, setEvents] = useState([]);
+      const [total, setTotal] = useState(0);
+      const [page, setPage] = useState(0);
+      const [loading, setLoading] = useState(false);
+      const [err, setErr] = useState(null);
+      const [filterAgent, setFilterAgent] = useState('');
+      const [filterAction, setFilterAction] = useState('');
+      const [filterResult, setFilterResult] = useState('');
+      const [filterFrom, setFilterFrom] = useState('');
+      const [filterTo, setFilterTo] = useState('');
+      const [exporting, setExporting] = useState(false);
+
+      const load = useCallback(async () => {
+        setLoading(true); setErr(null);
+        try {
+          const d = await apiFetch(`/api/v1/audit?limit=${PAGE}&offset=${page * PAGE}`);
+          setTotal(d.total ?? 0);
+          setEvents(d.events ?? []);
+        } catch(e) { setErr(e.message); }
+        finally { setLoading(false); }
+      }, [page]);
+
+      useEffect(() => { load(); }, [load]);
+
+      const filtered = events.filter(e => {
+        if (filterAgent && !(e.agent_id ?? '').toLowerCase().includes(filterAgent.toLowerCase())) return false;
+        if (filterAction && !(e.tool ?? '').toLowerCase().includes(filterAction.toLowerCase()) &&
+            !(e.action ?? '').toLowerCase().includes(filterAction.toLowerCase())) return false;
+        if (filterResult && (e.result ?? '').toLowerCase() !== filterResult.toLowerCase()) return false;
+        if (filterFrom && new Date(e.created_at) < new Date(filterFrom)) return false;
+        if (filterTo && new Date(e.created_at) > new Date(filterTo + 'T23:59:59')) return false;
+        return true;
+      });
+
+      const totalPages = Math.max(1, Math.ceil(total / PAGE));
+
+      const handleExport = async (fmt) => {
+        setExporting(true);
+        try { await downloadExport(fmt, filterFrom, filterTo); }
+        catch(e) { setErr(e.message); }
+        finally { setExporting(false); }
+      };
+
+      const inputCls = 'bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm w-full';
+      const labelCls = 'block text-xs text-slate-500 mb-1 font-medium uppercase tracking-wide';
+
+      return html`<div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <div>
+            <h2 class="text-xl font-bold text-white">Audit Log</h2>
+            <p class="text-slate-500 text-sm mt-0.5">Tamper-evident security event trail</p>
+          </div>
+          <div class="flex gap-2">
+            <button onClick=${() => handleExport('csv')} disabled=${exporting}
+              class="px-3 py-1.5 text-sm border border-slate-600 rounded-lg text-slate-400 hover:text-white hover:border-slate-400 transition-colors disabled:opacity-40">
+              ⬇ CSV
+            </button>
+            <button onClick=${() => handleExport('json')} disabled=${exporting}
+              class="px-3 py-1.5 text-sm border border-slate-600 rounded-lg text-slate-400 hover:text-white hover:border-slate-400 transition-colors disabled:opacity-40">
+              ⬇ JSON
+            </button>
+            <button onClick=${load}
+              class="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors">
+              ↻ Refresh
+            </button>
+          </div>
+        </div>
+
+        ${err && html`<${ErrorBanner} msg=${err} onClose=${() => setErr(null)} />`}
+
+        <!-- Filters -->
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 mb-5 grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div>
+            <label class=${labelCls}>Agent ID</label>
+            <input class=${inputCls} placeholder="Filter..." value=${filterAgent}
+              onInput=${e => setFilterAgent(e.target.value)} />
+          </div>
+          <div>
+            <label class=${labelCls}>Tool / Action</label>
+            <input class=${inputCls} placeholder="Filter..." value=${filterAction}
+              onInput=${e => setFilterAction(e.target.value)} />
+          </div>
+          <div>
+            <label class=${labelCls}>Decision</label>
+            <select class=${inputCls} value=${filterResult} onChange=${e => setFilterResult(e.target.value)}>
+              <option value="">All</option>
+              <option value="allow">Allow</option>
+              <option value="block">Block</option>
+              <option value="warn">Warn</option>
+            </select>
+          </div>
+          <div>
+            <label class=${labelCls}>From</label>
+            <input type="date" class=${inputCls} value=${filterFrom}
+              onInput=${e => setFilterFrom(e.target.value)} />
+          </div>
+          <div>
+            <label class=${labelCls}>To</label>
+            <input type="date" class=${inputCls} value=${filterTo}
+              onInput=${e => setFilterTo(e.target.value)} />
+          </div>
+        </div>
+
+        <div class="text-slate-500 text-xs mb-3">
+          ${loading ? 'Loading…' : `Showing ${filtered.length} of ${total.toLocaleString()} events — page ${page+1}/${totalPages}`}
+        </div>
+
+        <!-- Table -->
+        <div class="border border-slate-700 rounded-xl overflow-hidden overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wide">
+                <th class="px-4 py-3 text-left font-semibold">Timestamp</th>
+                <th class="px-4 py-3 text-left font-semibold">Agent ID</th>
+                <th class="px-4 py-3 text-left font-semibold">Tool / Action</th>
+                <th class="px-4 py-3 text-left font-semibold">Decision</th>
+                <th class="px-4 py-3 text-right font-semibold">Risk</th>
+                <th class="px-4 py-3 text-left font-semibold">Reason</th>
+                <th class="px-4 py-3 text-right font-semibold">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${loading && html`<tr><td colspan="7" class="text-center py-16 text-slate-500">
+                <div class="flex justify-center"><div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>
+              </td></tr>`}
+              ${!loading && filtered.length === 0 && html`<tr><td colspan="7" class="text-center py-16 text-slate-600">
+                No events found. Check your API key or adjust filters.
+              </td></tr>`}
+              ${!loading && filtered.map((e, i) => html`<tr key=${e.id}
+                class="${i % 2 === 0 ? 'bg-slate-900' : 'bg-slate-900/70'} hover:bg-slate-800/60 transition-colors">
+                <td class="px-4 py-2.5 text-slate-400 text-xs whitespace-nowrap font-mono">
+                  ${new Date(e.created_at).toLocaleString()}
+                </td>
+                <td class="px-4 py-2.5 font-mono text-xs text-slate-400 max-w-32 truncate" title=${e.agent_id ?? ''}>
+                  ${e.agent_id ?? html`<span class="text-slate-600">—</span>`}
+                </td>
+                <td class="px-4 py-2.5 font-medium max-w-48 truncate" title=${e.tool}>
+                  ${e.tool}
+                  ${e.action && html`<span class="text-slate-500 text-xs ml-1">(${e.action})</span>`}
+                </td>
+                <td class="px-4 py-2.5">
+                  <${Badge} value=${e.result} />
+                </td>
+                <td class="px-4 py-2.5 text-right">
+                  ${e.risk_score != null
+                    ? html`<span class="font-bold ${e.risk_score > 70 ? 'text-red-400' : e.risk_score > 40 ? 'text-amber-400' : 'text-green-400'}">
+                        ${e.risk_score}
+                      </span>`
+                    : html`<span class="text-slate-600">—</span>`}
+                </td>
+                <td class="px-4 py-2.5 text-slate-400 text-xs max-w-xs truncate" title=${e.reason ?? ''}>
+                  ${e.reason ?? html`<span class="text-slate-600">—</span>`}
+                </td>
+                <td class="px-4 py-2.5 text-right text-slate-500 text-xs">
+                  ${e.duration_ms != null ? `${e.duration_ms}ms` : '—'}
+                </td>
+              </tr>`)}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex items-center justify-center gap-4 mt-5">
+          <button
+            onClick=${() => setPage(p => Math.max(0, p-1))}
+            disabled=${page === 0}
+            class="px-4 py-1.5 text-sm border border-slate-700 rounded-lg text-slate-400 hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+            ← Prev
+          </button>
+          <span class="text-slate-500 text-sm">Page ${page+1} of ${totalPages}</span>
+          <button
+            onClick=${() => setPage(p => p+1)}
+            disabled=${page >= totalPages - 1}
+            class="px-4 py-1.5 text-sm border border-slate-700 rounded-lg text-slate-400 hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+            Next →
+          </button>
+        </div>
+      </div>`;
+    }
+
+    // ─── Kill Switch ──────────────────────────────────────────────────────────
+    function KillSwitchPage() {
+      const [agents, setAgents] = useState([]);
+      const [ks, setKs] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [err, setErr] = useState(null);
+      const [toast, setToast] = useState(null);
+      const [confirmAgent, setConfirmAgent] = useState(null);
+      const [confirmGlobal, setConfirmGlobal] = useState(false);
+
+      const showToast = msg => { setToast(msg); setTimeout(() => setToast(null), 4000); };
+
+      const load = useCallback(async () => {
+        setLoading(true); setErr(null);
+        try {
+          const [agR, ksR] = await Promise.all([
+            apiFetch('/api/v1/agents'),
+            apiFetch('/api/v1/killswitch'),
+          ]);
+          setAgents(agR.agents ?? []);
+          setKs(ksR);
+        } catch(e) { setErr(e.message); }
+        finally { setLoading(false); }
+      }, []);
+
+      useEffect(() => { load(); }, [load]);
+
+      const tenantKsActive = ks?.tenant?.active ?? ks?.active ?? false;
+      const globalKsActive = ks?.global?.active ?? false;
+      const activeCount = agents.filter(a => a.active).length;
+      const blockedCount = agents.filter(a => !a.active).length;
+
+      const killAgent = async (id) => {
+        if (confirmAgent !== id) { setConfirmAgent(id); return; }
+        setConfirmAgent(null);
+        try {
+          await apiFetch(`/api/v1/agents/${id}`, { method: 'DELETE' });
+          showToast('✅ Agent blocked successfully.');
+          await load();
+        } catch(e) { setErr(e.message); }
+      };
+
+      const toggleKillSwitch = async () => {
+        if (!tenantKsActive && !confirmGlobal) { setConfirmGlobal(true); return; }
+        setConfirmGlobal(false);
+        try {
+          const res = await apiFetch('/api/v1/killswitch', {
+            method: 'POST',
+            body: JSON.stringify({ active: !tenantKsActive }),
+          });
+          setKs(res);
+          showToast(tenantKsActive
+            ? '✅ Kill switch deactivated — normal operation resumed.'
+            : '🔴 Kill switch ACTIVATED — all evaluations blocked!');
+        } catch(e) { setErr(e.message); }
+      };
+
+      return html`<div class="max-w-5xl mx-auto px-4 py-6">
+        ${toast && html`<${Toast} msg=${toast} />`}
+        <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <div>
+            <h2 class="text-xl font-bold text-white">Kill Switch Controls</h2>
+            <p class="text-slate-500 text-sm mt-0.5">Manage agents and emergency stop controls</p>
+          </div>
+          <button onClick=${load}
+            class="px-3 py-1.5 text-sm border border-slate-600 rounded-lg text-slate-400 hover:text-white transition-colors">
+            ↻ Refresh
+          </button>
+        </div>
+
+        ${err && html`<${ErrorBanner} msg=${err} onClose=${() => setErr(null)} />`}
+
+        <!-- Stats row -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
+            <div class="text-3xl font-extrabold text-white mb-1">${agents.length}</div>
+            <div class="text-slate-500 text-sm">Total Agents</div>
+          </div>
+          <div class="bg-slate-800 border border-green-900/60 rounded-xl p-4 text-center">
+            <div class="text-3xl font-extrabold text-green-400 mb-1">${activeCount}</div>
+            <div class="text-slate-500 text-sm">Active</div>
+          </div>
+          <div class="bg-slate-800 border border-red-900/60 rounded-xl p-4 text-center">
+            <div class="text-3xl font-extrabold text-red-400 mb-1">${blockedCount}</div>
+            <div class="text-slate-500 text-sm">Blocked</div>
+          </div>
+          <div class="bg-slate-800 border ${tenantKsActive ? 'border-red-600' : 'border-slate-700'} rounded-xl p-4 text-center">
+            <div class="text-lg font-extrabold ${tenantKsActive ? 'text-red-400' : 'text-green-400'} mb-1">
+              ${tenantKsActive ? '🔴 KILL ON' : '🟢 Normal'}
+            </div>
+            <div class="text-slate-500 text-sm">Kill Switch</div>
+          </div>
+        </div>
+
+        <!-- Kill Switch Panel -->
+        <div class="bg-slate-800 border ${tenantKsActive ? 'border-red-600 bg-red-950/20' : 'border-slate-700'} rounded-2xl p-6 mb-6 transition-colors">
+          <div class="flex items-start justify-between flex-wrap gap-5">
+            <div class="flex-1">
+              <h3 class="text-lg font-bold text-white mb-2">⚡ Tenant Kill Switch</h3>
+              <p class="text-slate-400 text-sm mb-4">
+                Instantly block ALL agent evaluations for your tenant. Activating this will cause every
+                evaluate request to return BLOCK until deactivated.
+              </p>
+              <div class="flex flex-wrap gap-3">
+                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border
+                  ${tenantKsActive ? 'bg-red-900/30 text-red-400 border-red-700' : 'bg-green-900/30 text-green-400 border-green-700'}">
+                  <span class="w-2 h-2 rounded-full ${tenantKsActive ? 'bg-red-500 pulse-dot' : 'bg-green-500'}"></span>
+                  Tenant: ${tenantKsActive ? 'KILL ACTIVE' : 'Normal'}
+                </span>
+                ${ks?.global && html`<span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border
+                  ${globalKsActive ? 'bg-red-900/30 text-red-400 border-red-700' : 'bg-slate-800 text-slate-400 border-slate-600'}">
+                  <span class="w-2 h-2 rounded-full ${globalKsActive ? 'bg-red-500 pulse-dot' : 'bg-slate-500'}"></span>
+                  Global: ${globalKsActive ? 'KILL ACTIVE' : 'Normal'}
+                </span>`}
+                ${tenantKsActive && ks?.tenant?.activatedAt && html`
+                  <span class="text-slate-500 text-xs self-center">
+                    Activated: ${new Date(ks.tenant.activatedAt).toLocaleString()}
+                  </span>
+                `}
+              </div>
+            </div>
+            <div class="flex flex-col items-end gap-3">
+              ${confirmGlobal && !tenantKsActive && html`
+                <div class="bg-red-950 border border-red-700 rounded-xl p-4 text-red-300 text-sm max-w-xs mb-2 fade-in">
+                  ⚠️ This will BLOCK all agent evaluations immediately. Confirm?
+                  <div class="flex gap-2 mt-3">
+                    <button onClick=${toggleKillSwitch}
+                      class="px-4 py-1.5 bg-red-700 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-colors">
+                      Confirm KILL
+                    </button>
+                    <button onClick=${() => setConfirmGlobal(false)}
+                      class="px-3 py-1.5 text-sm border border-slate-600 text-slate-400 rounded-lg hover:border-slate-400 transition-colors">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              `}
+              ${!confirmGlobal && html`<button
+                onClick=${toggleKillSwitch}
+                class="px-6 py-3 rounded-xl font-bold text-lg transition-all
+                  ${tenantKsActive
+                    ? 'bg-green-700 hover:bg-green-600 text-white shadow-green-900/50 shadow-lg'
+                    : 'bg-red-700 hover:bg-red-600 text-white shadow-red-900/50 shadow-lg'}"
+              >
+                ${tenantKsActive ? '✅ Deactivate Kill Switch' : '⛔ Activate Kill Switch'}
+              </button>`}
+            </div>
+          </div>
+        </div>
+
+        <!-- Agent Table -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
+            <h3 class="font-bold text-white">Registered Agents</h3>
+            <span class="text-slate-500 text-sm">${agents.length} total</span>
+          </div>
+
+          ${loading && html`<${Spinner} />`}
+          ${!loading && agents.length === 0 && html`
+            <div class="text-center py-16 text-slate-600">No agents registered yet.</div>
+          `}
+          ${!loading && agents.length > 0 && html`
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-slate-900/60 text-slate-400 text-xs uppercase tracking-wide">
+                    <th class="px-5 py-3 text-left font-semibold">Status</th>
+                    <th class="px-5 py-3 text-left font-semibold">Name</th>
+                    <th class="px-5 py-3 text-left font-semibold">Agent ID</th>
+                    <th class="px-5 py-3 text-left font-semibold">Policy Scope</th>
+                    <th class="px-5 py-3 text-left font-semibold">Created</th>
+                    <th class="px-5 py-3 text-left font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${agents.map((ag, i) => html`<tr key=${ag.id}
+                    class="${i % 2 === 0 ? 'bg-slate-900/40' : ''} hover:bg-slate-700/30 transition-colors">
+                    <td class="px-5 py-3">
+                      <span class="inline-flex items-center gap-1.5 text-xs font-bold
+                        ${ag.active ? 'text-green-400' : 'text-red-400'}">
+                        <span class="w-2 h-2 rounded-full ${ag.active ? 'bg-green-500 pulse-dot' : 'bg-red-500'}"></span>
+                        ${ag.active ? 'ACTIVE' : 'BLOCKED'}
+                      </span>
+                    </td>
+                    <td class="px-5 py-3 font-semibold text-white">${ag.name}</td>
+                    <td class="px-5 py-3 font-mono text-xs text-slate-400" title=${ag.id}>
+                      ${ag.id.slice(0, 14)}…
+                    </td>
+                    <td class="px-5 py-3 text-xs text-slate-400">
+                      ${ag.policyScope?.length > 0
+                        ? ag.policyScope.join(', ')
+                        : html`<span class="text-slate-600">All policies</span>`}
+                    </td>
+                    <td class="px-5 py-3 text-xs text-slate-500">
+                      ${new Date(ag.createdAt).toLocaleDateString()}
+                    </td>
+                    <td class="px-5 py-3">
+                      ${!ag.active
+                        ? html`<span class="px-3 py-1 text-xs text-slate-600 border border-slate-700 rounded-lg">Blocked</span>`
+                        : confirmAgent === ag.id
+                        ? html`<div class="flex gap-2">
+                            <button onClick=${() => killAgent(ag.id)}
+                              class="px-3 py-1 text-xs bg-red-900 hover:bg-red-800 text-red-300 rounded-lg font-semibold transition-colors">
+                              Confirm Kill
+                            </button>
+                            <button onClick=${() => setConfirmAgent(null)}
+                              class="px-3 py-1 text-xs border border-slate-600 text-slate-400 rounded-lg hover:border-slate-400 transition-colors">
+                              Cancel
+                            </button>
+                          </div>`
+                        : html`<button onClick=${() => killAgent(ag.id)}
+                            class="px-3 py-1.5 text-xs bg-red-900/60 hover:bg-red-800 text-red-400 rounded-lg font-semibold transition-colors border border-red-900">
+                            ⛔ Kill Agent
+                          </button>`}
+                    </td>
+                  </tr>`)}
+                </tbody>
+              </table>
+            </div>
+          `}
+        </div>
+      </div>`;
+    }
+
+    // ─── App Shell ────────────────────────────────────────────────────────────
+    function App() {
+      const [page, setPage] = useState('home');
+      const [authed, setAuthed] = useState(!!getApiKey());
+
+      if (!authed) {
+        return html`<${ApiKeyModal} onDone=${() => setAuthed(true)} />`;
+      }
+
+      return html`<div>
+        <${NavBar} page=${page} onNav=${setPage} />
+        <div class="fade-in" key=${page}>
+          ${page === 'home'      && html`<${HomePage} onNav=${setPage} />`}
+          ${page === 'audit'     && html`<${AuditPage} />`}
+          ${page === 'killswitch' && html`<${KillSwitchPage} />`}
+        </div>
+      </div>`;
+    }
+
+    render(html`<${App} />`, document.getElementById('app'));
+  </script>
+</body>
+</html>
