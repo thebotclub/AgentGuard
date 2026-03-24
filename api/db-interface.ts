@@ -578,6 +578,7 @@ export interface IDatabase {
   ): Promise<ApprovalRow>;
   getApproval(id: string, tenantId: string): Promise<ApprovalRow | undefined>;
   listPendingApprovals(tenantId: string): Promise<ApprovalRow[]>;
+  listAllApprovals(tenantId: string, limit?: number): Promise<ApprovalRow[]>;
   resolveApproval(
     id: string,
     tenantId: string,

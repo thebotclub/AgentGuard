@@ -1358,6 +1358,30 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       }));
     },
 
+    async listAllApprovals(tenantId: string, limit = 100): Promise<ApprovalRow[]> {
+      const result = await pool.query(
+        'SELECT * FROM approvals WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2',
+        [tenantId, limit]
+      );
+      return result.rows.map((r: Record<string, unknown>) => ({
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        agent_id: (r['agent_id'] as string | null) ?? null,
+        tool: r['tool'] as string,
+        params_json: (r['params_json'] as string | null) ?? null,
+        status: r['status'] as 'pending' | 'approved' | 'denied',
+        created_at: r['created_at'] instanceof Date
+          ? (r['created_at'] as Date).toISOString()
+          : String(r['created_at']),
+        resolved_at: r['resolved_at']
+          ? (r['resolved_at'] instanceof Date
+            ? (r['resolved_at'] as Date).toISOString()
+            : String(r['resolved_at']))
+          : null,
+        resolved_by: (r['resolved_by'] as string | null) ?? null,
+      }));
+    },
+
     async resolveApproval(
       id: string,
       tenantId: string,

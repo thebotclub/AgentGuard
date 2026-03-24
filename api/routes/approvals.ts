@@ -21,15 +21,24 @@ export function createApprovalRoutes(
   const router = Router();
 
   // ── GET /api/v1/approvals ─────────────────────────────────────────────────
+  // ?status=pending|all|resolved  (default: all)
+  // ?limit=<n>                    (default: 100, max: 200)
   router.get(
     '/api/v1/approvals',
     auth.requireTenantAuth,
     async (req: Request, res: Response) => {
       const tenantId = req.tenantId!;
+      const statusFilter = (req.query['status'] as string) || 'all';
+      const limit = Math.min(200, parseInt((req.query['limit'] as string) || '100', 10));
       try {
-        const approvals = await db.listPendingApprovals(tenantId);
+        const approvals = await db.listAllApprovals(tenantId, limit);
+        const filtered = statusFilter === 'pending'
+          ? approvals.filter(a => a.status === 'pending')
+          : statusFilter === 'resolved'
+            ? approvals.filter(a => a.status !== 'pending')
+            : approvals;
         res.json({
-          approvals: approvals.map((a) => ({
+          approvals: filtered.map((a) => ({
             id: a.id,
             agentId: a.agent_id,
             tool: a.tool,

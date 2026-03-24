@@ -22,17 +22,10 @@
 <body>
 
 <!-- ── Demo Banner ─────────────────────────────────────────────────────────── -->
-<div id="demo-banner" role="banner" style="background:linear-gradient(90deg,#1a1a3e,#0f172a);border-bottom:1px solid rgba(99,102,241,0.4);padding:10px 20px;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;text-align:center;position:sticky;top:0;z-index:1000;">
+<div id="demo-banner" role="banner" style="display:none;background:linear-gradient(90deg,#1a1a3e,#0f172a);border-bottom:1px solid rgba(245,158,11,0.4);padding:10px 20px;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px;text-align:center;position:sticky;top:0;z-index:1000;">
   <span style="color:#e2e8f0;font-size:14px;font-weight:500;">
-    <span aria-hidden="true">📊</span>
-    <strong style="color:#818cf8;">Interactive Demo</strong> — This is a demonstration of AgentGuard's dashboard capabilities.
-    Metrics and events shown are simulated.
+    🔑 <strong style="color:#f59e0b;">No API Key</strong> — Enter your API key in the sidebar to connect to your live data.
   </span>
-  <a href="https://app.agentguard.tech" target="_blank" rel="noopener noreferrer"
-     style="display:inline-flex;align-items:center;gap:6px;background:#6366f1;color:#fff;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;transition:background 0.15s;"
-     onmouseover="this.style.background='#4f46e5'" onmouseout="this.style.background='#6366f1'">
-    Open Live Dashboard <span aria-hidden="true">→</span>
-  </a>
   <button onclick="document.getElementById('demo-banner').style.display='none'" aria-label="Dismiss banner"
      style="background:transparent;border:none;color:#64748b;cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:4px;"
      onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">✕</button>
@@ -56,6 +49,7 @@
   <button class="nav-item" onclick="showPage('agents', event)">🤖 Agents</button>
   <button class="nav-item" onclick="showPage('readiness', event)">🚀 Deployment</button>
   <button class="nav-item" onclick="showPage('policy', event)">📜 Policies</button>
+  <button class="nav-item" onclick="showPage('approvals', event)" id="mobile-approvals-nav">✅ Approvals <span id="mobile-approvals-badge" style="display:none;background:#f59e0b;color:white;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
   <button class="nav-item" onclick="showPage('webhooks', event)">🔔 Webhooks</button>
   <button class="nav-item" onclick="showPage('ratelimits', event)">⏱️ Rate Limits</button>
   <div class="nav-section">Monitoring</div>
@@ -86,6 +80,7 @@
     <button class="nav-item" onclick="showPage('agents', event)">🤖 Agents</button>
     <button class="nav-item" onclick="showPage('readiness', event)">🚀 Deployment</button>
     <button class="nav-item" onclick="showPage('policy', event)">📜 Policies</button>
+    <button class="nav-item" onclick="showPage('approvals', event)" id="desktop-approvals-nav">✅ Approvals <span id="desktop-approvals-badge" style="display:none;background:#f59e0b;color:white;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px">0</span></button>
     <button class="nav-item" onclick="showPage('webhooks', event)">🔔 Webhooks</button>
     <button class="nav-item" onclick="showPage('ratelimits', event)">⏱️ Rate Limits</button>
     <div class="nav-section">Monitoring</div>
@@ -381,6 +376,51 @@
             <thead><tr><th>#</th><th>Time</th><th>Tool</th><th>Decision</th><th>Rule</th><th>Risk</th><th>Latency</th><th>Hash</th></tr></thead>
             <tbody id="audit-tbody">
               <tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">Loading audit data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── APPROVALS / HITL QUEUE PAGE ──────────────────── -->
+    <div class="page" id="page-approvals" role="main">
+      <div class="main-header">
+        <h1>✅ Approvals — HITL Queue</h1>
+        <button class="btn btn-ghost" onclick="loadApprovals()">↺ Refresh</button>
+      </div>
+      <div id="approvals-no-key" style="display:none;margin-bottom:16px;padding:14px 18px;background:rgba(82,84,212,0.08);border:1px solid var(--border);border-radius:10px;font-size:0.85rem;color:var(--text-dim)">
+        🔑 Enter your API key above to manage the HITL approval queue.
+      </div>
+      <div class="card">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+          <h2>Pending Approvals</h2>
+          <span id="approvals-count-label" style="font-size:0.82rem;color:var(--text-dim)">0 pending</span>
+        </div>
+        <div class="card-body no-pad">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th><th>Agent</th><th>Tool</th><th>Parameters</th><th>Requested</th>
+                <th style="text-align:right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="approvals-tbody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <div class="card-header"><h2>Recent Decisions</h2></div>
+        <div class="card-body no-pad">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th><th>Agent</th><th>Tool</th><th>Decision</th><th>Resolved By</th><th>Resolved At</th>
+              </tr>
+            </thead>
+            <tbody id="approvals-resolved-tbody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Loading...</td></tr>
             </tbody>
           </table>
         </div>

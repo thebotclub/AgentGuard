@@ -328,6 +328,191 @@ async function deleteAgent(id) {
   } catch {}
 }
 
+// ── Approvals / HITL Queue ──────────────────────────────
+var _approvalsTimer = null;
+
+async function loadApprovals() {
+  var noKey = document.getElementById('approvals-no-key');
+  var tbody = document.getElementById('approvals-tbody');
+  var resolvedTbody = document.getElementById('approvals-resolved-tbody');
+  var countEl = document.getElementById('approvals-count-label');
+  if (!tbody) return;
+
+  if (_approvalsTimer) { clearTimeout(_approvalsTimer); _approvalsTimer = null; }
+
+  if (!storedApiKey) {
+    if (noKey) noKey.style.display = 'block';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key to manage approvals</td></tr>';
+    if (resolvedTbody) resolvedTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key to view resolved approvals</td></tr>';
+    return;
+  }
+  if (noKey) noKey.style.display = 'none';
+
+  try {
+    var r = await fetch(API + '/api/v1/approvals', { headers: getApiHeaders(), signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var data = await r.json();
+    var approvals = data.approvals || [];
+
+    var pending = approvals.filter(function(a) { return a.status === 'pending'; });
+    var resolved = approvals.filter(function(a) { return a.status !== 'pending'; });
+
+    updateApprovalsBadge(pending.length);
+    if (countEl) countEl.textContent = pending.length + ' pending';
+
+    if (pending.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:32px">✅ No pending approvals</td></tr>';
+    } else {
+      tbody.innerHTML = pending.map(function(a) {
+        var paramsStr = '';
+        try { paramsStr = a.params ? JSON.stringify(a.params).slice(0, 80) : '—'; } catch { paramsStr = '—'; }
+        var paramsTitle = '';
+        try { paramsTitle = JSON.stringify(a.params) || ''; } catch {}
+        return '<tr style="border-bottom:1px solid var(--border-dim)">' +
+          '<td style="padding:10px 16px;font-family:var(--mono);font-size:0.75rem;color:var(--text-dim)">' + esc(a.id.slice(0, 8)) + '…</td>' +
+          '<td style="padding:10px 16px;font-size:0.85rem">' + esc(a.agentId || '—') + '</td>' +
+          '<td style="padding:10px 16px;font-family:var(--mono);font-size:0.85rem;color:var(--accent-hi)">' + esc(a.tool || '') + '</td>' +
+          '<td style="padding:10px 16px;font-family:var(--mono);font-size:0.78rem;color:var(--text-dim);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(paramsTitle) + '">' + esc(paramsStr) + '</td>' +
+          '<td style="padding:10px 16px;font-size:0.82rem;color:var(--text-dim)">' + (a.createdAt || '').replace('T', ' ').slice(0, 19) + '</td>' +
+          '<td style="padding:10px 16px;text-align:right">' +
+            '<button class="btn btn-primary" style="font-size:0.78rem;padding:6px 14px;background:var(--green);border-color:var(--green);margin-right:6px" onclick="approveAction(\'' + esc(a.id) + '\')">✓ Approve</button>' +
+            '<button class="btn btn-danger" style="font-size:0.78rem;padding:6px 14px" onclick="denyAction(\'' + esc(a.id) + '\')">✕ Deny</button>' +
+          '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    if (resolved.length === 0) {
+      resolvedTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">No resolved approvals yet</td></tr>';
+    } else {
+      resolvedTbody.innerHTML = resolved.slice(0, 20).map(function(a) {
+        var isApproved = a.status === 'approved';
+        var badgeClass = isApproved ? 'badge-allow' : 'badge-block';
+        return '<tr style="border-bottom:1px solid var(--border-dim)">' +
+          '<td style="padding:10px 16px;font-family:var(--mono);font-size:0.75rem;color:var(--text-dim)">' + esc(a.id.slice(0, 8)) + '…</td>' +
+          '<td style="padding:10px 16px;font-size:0.85rem">' + esc(a.agentId || '—') + '</td>' +
+          '<td style="padding:10px 16px;font-family:var(--mono);font-size:0.85rem;color:var(--accent-hi)">' + esc(a.tool || '') + '</td>' +
+          '<td style="padding:10px 16px"><span class="badge ' + badgeClass + '">' + esc(a.status) + '</span></td>' +
+          '<td style="padding:10px 16px;font-size:0.82rem;color:var(--text-dim)">' + esc(a.resolvedBy || '—') + '</td>' +
+          '<td style="padding:10px 16px;font-size:0.82rem;color:var(--text-dim)">' + (a.resolvedAt || '').replace('T', ' ').slice(0, 19) + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+  } catch(e) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:24px">Failed to load approvals: ' + esc(e.message || 'Unknown error') + '</td></tr>';
+  }
+
+  // Auto-refresh every 15s while on this page
+  var approvalsPage = document.getElementById('page-approvals');
+  if (approvalsPage && approvalsPage.classList.contains('active')) {
+    _approvalsTimer = setTimeout(loadApprovals, 15000);
+  }
+}
+
+async function approveAction(id) {
+  if (!confirm('Approve this action?')) return;
+  try {
+    var r = await fetch(API + '/api/v1/approvals/' + encodeURIComponent(id) + '/approve', {
+      method: 'POST', headers: getApiHeaders(), signal: AbortSignal.timeout(10000)
+    });
+    var data = await r.json();
+    if (r.ok) { loadApprovals(); }
+    else { alert('Failed to approve: ' + (data.error || 'Unknown error')); }
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function denyAction(id) {
+  if (!confirm('Deny this action?')) return;
+  try {
+    var r = await fetch(API + '/api/v1/approvals/' + encodeURIComponent(id) + '/deny', {
+      method: 'POST', headers: getApiHeaders(), signal: AbortSignal.timeout(10000)
+    });
+    var data = await r.json();
+    if (r.ok) { loadApprovals(); }
+    else { alert('Failed to deny: ' + (data.error || 'Unknown error')); }
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+function updateApprovalsBadge(count) {
+  ['desktop-approvals-badge', 'mobile-approvals-badge'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (count > 0) { el.textContent = count; el.style.display = 'inline-block'; }
+    else { el.style.display = 'none'; }
+  });
+}
+
+// ── Live Feed Polling ─────────────────────────────────────
+var _liveFeedTimer = null;
+var _liveFeedLastTs = null;
+
+function startLiveFeedPolling() {
+  if (_liveFeedTimer) { clearInterval(_liveFeedTimer); _liveFeedTimer = null; }
+  pollLiveFeed();
+  _liveFeedTimer = setInterval(function() {
+    var livePage = document.getElementById('page-live');
+    if (livePage && livePage.classList.contains('active')) {
+      pollLiveFeed();
+    } else {
+      clearInterval(_liveFeedTimer);
+      _liveFeedTimer = null;
+    }
+  }, 5000);
+}
+
+async function pollLiveFeed() {
+  if (!storedApiKey) {
+    var feedEl = document.getElementById('live-feed');
+    if (feedEl) feedEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-dim)">🔑 Enter your API key to see live events</div>';
+    return;
+  }
+  try {
+    var url = API + '/api/v1/dashboard/feed?limit=30';
+    if (_liveFeedLastTs) url += '&since=' + encodeURIComponent(_liveFeedLastTs);
+    var r = await fetch(url, { headers: getApiHeaders(), signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return;
+    var data = await r.json();
+    var events = data.events || [];
+
+    var feedEl = document.getElementById('live-feed');
+    if (!feedEl) return;
+
+    if (events.length === 0) {
+      if (!feedEl.querySelector('.feed-item')) {
+        feedEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-dim)">Waiting for evaluations...</div>';
+      }
+      return;
+    }
+
+    var latest = events[0].createdAt || events[0].timestamp;
+    if (latest) _liveFeedLastTs = latest;
+
+    if (feedEl.querySelector('[style*="text-align:center"]')) feedEl.innerHTML = '';
+
+    var colors = { allow: 'var(--green)', block: 'var(--red)', monitor: 'var(--accent-hi)', require_approval: '#f59e0b', hitl_required: '#f59e0b' };
+    events.forEach(function(e) {
+      var result = e.result || e.decision || '';
+      var c = colors[result] || 'var(--text-dim)';
+      var time = (e.createdAt || e.timestamp || '').replace('T', ' ').slice(11, 19);
+      var div = document.createElement('div');
+      div.className = 'feed-item';
+      div.innerHTML =
+        '<div class="feed-dot" style="background:' + c + '"></div>' +
+        '<div class="feed-time">' + esc(time) + '</div>' +
+        '<div class="feed-content">' +
+          '<div class="feed-tool">' + esc(e.tool || '') + ' → <span style="color:' + c + ';font-weight:600">' + esc(result.toUpperCase()) + '</span></div>' +
+          '<div class="feed-rule">' + esc(e.ruleId || e.matchedRuleId || 'default') + ' · risk ' + (e.riskScore || 0) + ' · ' + (e.durationMs || 0) + 'ms</div>' +
+        '</div>';
+      feedEl.insertBefore(div, feedEl.firstChild);
+    });
+
+    var items = feedEl.querySelectorAll('.feed-item');
+    if (items.length > 100) {
+      for (var i = 100; i < items.length; i++) items[i].remove();
+    }
+  } catch {}
+}
+
 // ── Webhooks Management ─────────────────────────────────
 function showCreateWebhook() {
   var el = document.getElementById('create-webhook-form');
@@ -1012,7 +1197,7 @@ function showPage(id, evt) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   // Update title
-  const titles = { overview: 'Dashboard', live: 'Live Feed', evaluate: 'Evaluate', policy: 'Policies', audit: 'Audit Trail', killswitch: 'Kill Switch', sdk: 'SDK & API', agents: 'Agents', readiness: 'Deployment Readiness', webhooks: 'Webhooks', ratelimits: 'Rate Limits', costs: 'Costs', analytics: 'Analytics', compliance: 'Compliance', mcp: 'MCP Servers', license: 'License & Usage', alerts: 'Alerts', siem: 'SIEM Configuration' };
+  const titles = { overview: 'Dashboard', live: 'Live Feed', evaluate: 'Evaluate', policy: 'Policies', approvals: 'Approvals — HITL Queue', audit: 'Audit Trail', killswitch: 'Kill Switch', sdk: 'SDK & API', agents: 'Agents', readiness: 'Deployment Readiness', webhooks: 'Webhooks', ratelimits: 'Rate Limits', costs: 'Costs', analytics: 'Analytics', compliance: 'Compliance', mcp: 'MCP Servers', license: 'License & Usage', alerts: 'Alerts', siem: 'SIEM Configuration' };
   document.title = `AgentGuard — ${titles[id] || id}`;
   // Mark active nav item
   if (evt && evt.target) {
@@ -1041,8 +1226,10 @@ function showPage(id, evt) {
   if (id === 'compliance') { loadCompliance(); }
   if (id === 'mcp') { loadMcpServers(); }
   if (id === 'license') { loadLicenseData(); }
+  if (id === 'approvals') { loadApprovals(); }
   if (id === 'alerts') { loadAlerts(); loadAlertRules(); }
   if (id === 'siem') { loadSiemStatus(); }
+  if (id === 'live') { startLiveFeedPolling(); }
 }
 
 // ── Evaluate ────────────────────────────────────────────
@@ -1806,10 +1993,7 @@ async function loadAlerts() {
     }
   } catch {}
 
-  // Fallback: demo data if API unavailable
-  if (!Array.isArray(alerts) || alerts.length === 0) {
-    alerts = getDemoAlerts(filterStatus, filterSev);
-  }
+  // No fake demo data: show real API state only
 
   _alertsData = alerts;
   renderAlerts(alerts);

@@ -1170,6 +1170,13 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       );
     },
 
+    async listAllApprovals(tenantId: string, limit = 100): Promise<ApprovalRow[]> {
+      return allSync<ApprovalRow>(
+        'SELECT * FROM approvals WHERE tenant_id = ? ORDER BY created_at DESC LIMIT ?',
+        [tenantId, limit]
+      );
+    },
+
     async resolveApproval(
       id: string,
       tenantId: string,
