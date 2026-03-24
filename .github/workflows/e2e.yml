@@ -93,7 +93,7 @@ jobs:
           exit 1
 
       - name: Run E2E tests
-        run: npx vitest run tests/e2e/ --reporter=verbose
+        run: npx vitest run --config vitest.e2e.config.ts --reporter=verbose
 
       - name: Print server log on failure
         if: failure()
