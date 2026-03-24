@@ -13,7 +13,6 @@ export default defineConfig({
   test: {
     globals: false,
     environment: 'node',
-    // Include tests from SDK package, API routes, and packages/api services
     include: [
       'packages/sdk/src/**/*.test.ts',
       'packages/sdk/src/**/__tests__/**/*.test.ts',
@@ -35,8 +34,6 @@ export default defineConfig({
         '**/*.d.ts',
         '**/examples/**',
       ],
-      // Thresholds based on current coverage baseline
-      // (functions lower due to untested SDK modules: audit-logger, kill-switch, main-wrapper)
       thresholds: {
         lines: 60,
         functions: 45,
