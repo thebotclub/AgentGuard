@@ -26,11 +26,15 @@ import { logger } from '../lib/logger.js';
 
 const HEARTBEAT_INTERVAL_MS = 30_000;
 const MAX_CONNECTIONS_PER_TENANT = 100;
+const MAX_CONNECTIONS_GLOBAL = 10_000;
 
 // ── Connection tracker ─────────────────────────────────────────────────────
 
 /** Active SSE connections per tenant */
 const connectionsByTenant = new Map<string, Set<Response>>();
+
+/** Global counter of all active SSE connections across all tenants. */
+let globalConnectionCount = 0;
 
 function getConnectionCount(tenantId: string): number {
   return connectionsByTenant.get(tenantId)?.size ?? 0;
@@ -43,21 +47,22 @@ function registerConnection(tenantId: string, res: Response): void {
     connectionsByTenant.set(tenantId, conns);
   }
   conns.add(res);
+  globalConnectionCount++;
 }
 
 function unregisterConnection(tenantId: string, res: Response): void {
   const conns = connectionsByTenant.get(tenantId);
   if (conns) {
+    const existed = conns.has(res);
     conns.delete(res);
+    if (existed) globalConnectionCount = Math.max(0, globalConnectionCount - 1);
     if (conns.size === 0) connectionsByTenant.delete(tenantId);
   }
 }
 
 /** Total active SSE connections across all tenants (for health/metrics). */
 export function getTotalSseConnections(): number {
-  let total = 0;
-  for (const conns of connectionsByTenant.values()) total += conns.size;
-  return total;
+  return globalConnectionCount;
 }
 
 // ── SSE helpers ────────────────────────────────────────────────────────────
@@ -128,7 +133,15 @@ export function createEventsRoutes(db: IDatabase, auth: AuthMiddleware): Router 
 
     const tid = tenantId; // narrow type
 
-    // ── Check connection limit ─────────────────────────────────────────────
+    // ── Check global connection cap ────────────────────────────────────────
+    if (globalConnectionCount >= MAX_CONNECTIONS_GLOBAL) {
+      res.status(503).json({
+        error: `Server at capacity (max ${MAX_CONNECTIONS_GLOBAL} total SSE connections)`,
+      });
+      return;
+    }
+
+    // ── Check per-tenant connection limit ──────────────────────────────────
     if (getConnectionCount(tid) >= MAX_CONNECTIONS_PER_TENANT) {
       res.status(429).json({
         error: `Too many SSE connections for this tenant (max ${MAX_CONNECTIONS_PER_TENANT})`,
@@ -194,6 +207,7 @@ export function createEventsRoutes(db: IDatabase, auth: AuthMiddleware): Router 
       totalConnections: getTotalSseConnections(),
       byTenant,
       maxPerTenant: MAX_CONNECTIONS_PER_TENANT,
+      maxGlobal: MAX_CONNECTIONS_GLOBAL,
     });
   });
 
