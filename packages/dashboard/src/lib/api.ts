@@ -400,3 +400,47 @@ export async function getComplianceReport(params: { fromDate?: string; toDate?: 
   }
   return apiFetch<ComplianceReport>(`/compliance/report?${qs.toString()}`);
 }
+
+// ─── Kill Switch Extended API ─────────────────────────────────────────────────
+
+export interface HaltAllResponse {
+  success: boolean;
+  affectedAgents: number;
+  tier: string;
+  reason: string | null;
+}
+
+/** Halt ALL active agents for the tenant immediately. */
+export async function haltAllAgents(tier: 'SOFT' | 'HARD', reason: string): Promise<HaltAllResponse> {
+  return apiFetch<HaltAllResponse>('/killswitch/halt-all', {
+    method: 'POST',
+    body: JSON.stringify({ tier, reason }),
+  });
+}
+
+/** Get kill switch status for all agents (batch). */
+export async function listAgentsWithKillStatus(params: { status?: string; limit?: number } = {}): Promise<AgentListResponse> {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== '') qs.set(k, String(v));
+  }
+  return apiFetch<AgentListResponse>(`/agents?${qs.toString()}`);
+}
+
+/** Get the stored token from localStorage. */
+export function getStoredToken(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem('ag_token') ?? '';
+}
+
+/** Save JWT token to localStorage. */
+export function setStoredToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('ag_token', token);
+}
+
+/** Clear token from localStorage. */
+export function clearStoredToken(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('ag_token');
+}
