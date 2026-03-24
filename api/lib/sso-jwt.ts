@@ -33,32 +33,29 @@ const DEFAULT_TTL_SECONDS = 900; // 15 minutes
 
 /**
  * Resolve the JWT signing secret.
- * Falls back to a deterministic dev-only secret if JWT_SECRET is not set,
- * printing a warning to stderr so it's visible in logs.
  *
- * IMPORTANT: In production, always set JWT_SECRET to at least 32 random bytes
- * (e.g. `openssl rand -hex 32`).
+ * Throws a hard error if JWT_SECRET is not set or shorter than 32 characters.
+ * There is NO fallback — silently degrading auth security is never acceptable.
+ *
+ * Set JWT_SECRET to at least 32 random bytes, e.g.:
+ *   export JWT_SECRET=$(openssl rand -hex 32)
  */
 export function resolveSsoJwtSecret(): Uint8Array {
   const secret = process.env['JWT_SECRET'];
-  if (secret && secret.length >= 32) {
-    return new TextEncoder().encode(secret);
-  }
-
-  // Dev-only fallback — never use in production
-  const fallback = 'agentguard-dev-sso-secret-CHANGEME-in-production-!';
   if (!secret) {
-    console.warn(
-      '[sso-jwt] WARNING: JWT_SECRET env var is not set. ' +
-      'Using insecure dev fallback. Set JWT_SECRET (≥32 chars) in production.',
-    );
-  } else {
-    console.warn(
-      '[sso-jwt] WARNING: JWT_SECRET is too short (< 32 chars). ' +
-      'Using insecure dev fallback. Set a stronger JWT_SECRET in production.',
+    throw new Error(
+      '[sso-jwt] FATAL: JWT_SECRET environment variable is not set. ' +
+      'SSO authentication cannot proceed without a signing secret. ' +
+      'Set JWT_SECRET to at least 32 random characters (e.g. openssl rand -hex 32).',
     );
   }
-  return new TextEncoder().encode(fallback);
+  if (secret.length < 32) {
+    throw new Error(
+      `[sso-jwt] FATAL: JWT_SECRET is too short (${secret.length} chars, minimum 32). ` +
+      'Set a stronger JWT_SECRET (e.g. openssl rand -hex 32).',
+    );
+  }
+  return new TextEncoder().encode(secret);
 }
 
 // ── Token Claims ───────────────────────────────────────────────────────────

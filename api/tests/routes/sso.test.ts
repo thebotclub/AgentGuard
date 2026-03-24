@@ -127,6 +127,8 @@ describe('POST /api/v1/auth/sso/callback — JWT issuance (G-SSO-01)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // JWT_SECRET required: resolveSsoJwtSecret() now throws hard error if missing
+    process.env['JWT_SECRET'] = 'test-sso-jwt-secret-for-vitest-32chars!!';
     mockDb = createMockDb();
     app = buildApp(createSsoRoutes, mockDb);
   });
@@ -266,6 +268,8 @@ describe('GET /api/v1/auth/sso/callback — JWT issuance (G-SSO-01)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // JWT_SECRET required: resolveSsoJwtSecret() now throws hard error if missing
+    process.env['JWT_SECRET'] = 'test-sso-jwt-secret-for-vitest-32chars!!';
     mockDb = createMockDb();
     app = buildApp(createSsoRoutes, mockDb);
   });
