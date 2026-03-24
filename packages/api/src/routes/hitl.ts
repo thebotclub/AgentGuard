@@ -65,6 +65,30 @@ hitlRouter.post('/', async (c) => {
   return c.json(gateToResponse(gate), 201);
 });
 
+/**
+ * GET /v1/hitl/history — list resolved/historical gates.
+ * Supports status filter: APPROVED | REJECTED | TIMED_OUT | CANCELLED
+ * NOTE: Must be registered before /:gateId to avoid shadowing.
+ */
+hitlRouter.get('/history', async (c) => {
+  const ctx = getContext(c);
+  const service = new HITLService(prisma, ctx, redis);
+
+  const limit = Math.min(Number(c.req.query('limit') ?? '50'), 100);
+  const cursor = c.req.query('cursor');
+  const status = c.req.query('status'); // optional filter
+
+  const gates = await service.listHistoricalGates(limit, cursor, status ?? undefined);
+
+  return c.json({
+    data: gates.map(gateToResponse),
+    pagination: {
+      cursor: gates.length === limit ? (gates[gates.length - 1]?.id ?? null) : null,
+      hasMore: gates.length === limit,
+    },
+  });
+});
+
 /** GET /v1/hitl/:gateId — get gate details */
 hitlRouter.get('/:gateId', async (c) => {
   const ctx = getContext(c);
@@ -145,29 +169,6 @@ hitlRouter.get('/:gateId/poll', async (c) => {
     resolved: final.resolved,
     decidedAt: final.decidedAt,
     decisionNote: final.decisionNote,
-  });
-});
-
-/**
- * GET /v1/hitl/history — list resolved/historical gates.
- * Supports status filter: APPROVED | REJECTED | TIMED_OUT | CANCELLED
- */
-hitlRouter.get('/history', async (c) => {
-  const ctx = getContext(c);
-  const service = new HITLService(prisma, ctx, redis);
-
-  const limit = Math.min(Number(c.req.query('limit') ?? '50'), 100);
-  const cursor = c.req.query('cursor');
-  const status = c.req.query('status'); // optional filter
-
-  const gates = await service.listHistoricalGates(limit, cursor, status ?? undefined);
-
-  return c.json({
-    data: gates.map(gateToResponse),
-    pagination: {
-      cursor: gates.length === limit ? (gates[gates.length - 1]?.id ?? null) : null,
-      hasMore: gates.length === limit,
-    },
   });
 });
 

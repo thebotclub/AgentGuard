@@ -331,7 +331,7 @@ export default function KillSwitchPage() {
       </div>
 
       {isError && (
-        <ErrorBox message={(error as Error)?.message ?? 'Failed to load agents'} onDismiss={() => {}} />
+        <ErrorBox message={(error as Error)?.message ?? 'Failed to load agents'} />
       )}
 
       {/* Stats */}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getApiKey, setApiKey } from '@/lib/api';
+import { getStoredToken, setStoredToken } from '@/lib/api';
 
 interface ApiKeySetupProps {
   onReady: () => void;
@@ -12,7 +12,7 @@ export default function ApiKeySetup({ onReady }: ApiKeySetupProps) {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const existing = getApiKey();
+    const existing = getStoredToken();
     if (existing) {
       setKey(existing);
       onReady();
@@ -22,7 +22,7 @@ export default function ApiKeySetup({ onReady }: ApiKeySetupProps) {
   const handleSave = () => {
     const trimmed = key.trim();
     if (!trimmed) return;
-    setApiKey(trimmed);
+    setStoredToken(trimmed);
     setSaved(true);
     onReady();
   };
