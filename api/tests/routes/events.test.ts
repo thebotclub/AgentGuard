@@ -77,7 +77,7 @@ describe('GET /api/v1/events/stream', () => {
     const res = await request(app)
       .get('/api/v1/events/stream?token=ag_live_test')
       .timeout({ response: 500, deadline: 1000 })
-      .catch((err: NodeJS.ErrnoException) => {
+      .catch((err: NodeJS.ErrnoException & { timeout?: boolean }) => {
         // Timeout or aborted is expected — connection is long-lived
         if (err.code === 'ECONNABORTED' || err.timeout) return null;
         throw err;
