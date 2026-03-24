@@ -73,7 +73,7 @@ jobs:
       - name: Start API server
         run: |
           mkdir -p logs
-          ./node_modules/.bin/tsx packages/api/src/index.ts > logs/server.log 2>&1 &
+          PORT=3001 ./node_modules/.bin/tsx packages/api/src/index.ts > logs/server.log 2>&1 &
           echo $! > /tmp/api-server.pid
           echo "Server PID: $(cat /tmp/api-server.pid)"
 
