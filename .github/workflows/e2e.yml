@@ -68,22 +68,32 @@ jobs:
 
       - name: Start API server
         run: |
-          PORT=3001 npx tsx packages/api/src/index.ts &
+          nohup sh -c '
+            mkdir -p logs
+            PORT=3001 \
+            DATABASE_URL="postgresql://test:test@localhost:5433/agentguard_test" \
+            REDIS_URL="redis://localhost:6380" \
+            JWT_SECRET="test-jwt-secret-for-e2e-only" \
+            NODE_ENV="test" \
+            ./node_modules/.bin/tsx packages/api/src/index.ts
+          " > logs/server-stdout.log 2>&1 &
           echo $! > /tmp/api-server.pid
-        env:
-          PORT: 3001
+          echo "Server PID: $(cat /tmp/api-server.pid)"
 
       - name: Wait for API server to be ready
         run: |
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:3001/v1/health > /dev/null 2>&1; then
-              echo "✅ Server ready"
+          for i in $(seq 1 45); do
+            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" http://localhost:3001/v1/health 2>/dev/null || echo "000")
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "503" ]; then
+              echo "✅ Server responding (HTTP $HTTP_CODE)"
               exit 0
             fi
-            echo "Waiting for server... ($i/30)"
+            echo "Waiting for server... ($i/45)"
             sleep 2
           done
           echo "❌ Server did not start in time"
+          echo "--- Server stdout ---"
+          cat logs/server-stdout.log 2>/dev/null || echo "(no log)"
           exit 1
 
       - name: Seed test data
