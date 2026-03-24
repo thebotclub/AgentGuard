@@ -39,12 +39,12 @@ export async function collectPolicyLatency(
     sampleCount = latencies.length;
 
     if (sampleCount > 0) {
-      const values = latencies.map((e) => e.processingMs).sort((a, b) => a - b);
+      const values = latencies.map((e: any) => e.processingMs).sort((a: number, b: number) => a - b);
       p50Ms = values[Math.floor(sampleCount * 0.5)] ?? 0;
       p95Ms = values[Math.floor(sampleCount * 0.95)] ?? 0;
       p99Ms = values[Math.floor(sampleCount * 0.99)] ?? 0;
       maxMs = values[sampleCount - 1] ?? 0;
-      slaViolations = values.filter((v) => v > SLA_THRESHOLD_MS).length;
+      slaViolations = values.filter((v: number) => v > SLA_THRESHOLD_MS).length;
     }
   } catch {
     // processingMs column may not exist in all versions

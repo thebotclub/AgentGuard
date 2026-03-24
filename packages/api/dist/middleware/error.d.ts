@@ -82,7 +82,7 @@ export declare function errorHandler(err: unknown, c: Context): (Response & impo
                     fatal?: boolean | undefined | undefined;
                 } | {
                     code: "invalid_string";
-                    validation: "date" | "email" | "url" | "emoji" | "uuid" | "nanoid" | "regex" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "base64" | "jwt" | "base64url" | {
+                    validation: "base64" | "base64url" | "regex" | "url" | "date" | "email" | "emoji" | "uuid" | "nanoid" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "jwt" | {
                         includes: string;
                         position?: number | undefined | undefined;
                     } | {
@@ -188,7 +188,7 @@ export declare function errorHandler(err: unknown, c: Context): (Response & impo
                     fatal?: boolean | undefined | undefined;
                 } | {
                     code: "invalid_string";
-                    validation: "date" | "email" | "url" | "emoji" | "uuid" | "nanoid" | "regex" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "base64" | "jwt" | "base64url" | {
+                    validation: "base64" | "base64url" | "regex" | "url" | "date" | "email" | "emoji" | "uuid" | "nanoid" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "jwt" | {
                         includes: string;
                         position?: number | undefined | undefined;
                     } | {
@@ -328,7 +328,7 @@ export declare function errorHandler(err: unknown, c: Context): (Response & impo
                     fatal?: boolean | undefined | undefined;
                 } | {
                     code: "invalid_string";
-                    validation: "date" | "email" | "url" | "emoji" | "uuid" | "nanoid" | "regex" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "base64" | "jwt" | "base64url" | {
+                    validation: "base64" | "base64url" | "regex" | "url" | "date" | "email" | "emoji" | "uuid" | "nanoid" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "jwt" | {
                         includes: string;
                         position?: number | undefined | undefined;
                     } | {
@@ -434,7 +434,7 @@ export declare function errorHandler(err: unknown, c: Context): (Response & impo
                     fatal?: boolean | undefined | undefined;
                 } | {
                     code: "invalid_string";
-                    validation: "date" | "email" | "url" | "emoji" | "uuid" | "nanoid" | "regex" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "base64" | "jwt" | "base64url" | {
+                    validation: "base64" | "base64url" | "regex" | "url" | "date" | "email" | "emoji" | "uuid" | "nanoid" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "jwt" | {
                         includes: string;
                         position?: number | undefined | undefined;
                     } | {
@@ -561,7 +561,7 @@ export declare function errorHandler(err: unknown, c: Context): (Response & impo
                     fatal?: boolean | undefined | undefined;
                 } | {
                     code: "invalid_string";
-                    validation: "date" | "email" | "url" | "emoji" | "uuid" | "nanoid" | "regex" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "base64" | "jwt" | "base64url" | {
+                    validation: "base64" | "base64url" | "regex" | "url" | "date" | "email" | "emoji" | "uuid" | "nanoid" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "jwt" | {
                         includes: string;
                         position?: number | undefined | undefined;
                     } | {
@@ -667,7 +667,7 @@ export declare function errorHandler(err: unknown, c: Context): (Response & impo
                     fatal?: boolean | undefined | undefined;
                 } | {
                     code: "invalid_string";
-                    validation: "date" | "email" | "url" | "emoji" | "uuid" | "nanoid" | "regex" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "base64" | "jwt" | "base64url" | {
+                    validation: "base64" | "base64url" | "regex" | "url" | "date" | "email" | "emoji" | "uuid" | "nanoid" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "jwt" | {
                         includes: string;
                         position?: number | undefined | undefined;
                     } | {
@@ -746,7 +746,7 @@ export declare function errorHandler(err: unknown, c: Context): (Response & impo
             fatal?: boolean | undefined | undefined;
         } | {
             code: "invalid_string";
-            validation: "date" | "email" | "url" | "emoji" | "uuid" | "nanoid" | "regex" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "base64" | "jwt" | "base64url" | {
+            validation: "base64" | "base64url" | "regex" | "url" | "date" | "email" | "emoji" | "uuid" | "nanoid" | "cuid" | "cuid2" | "ulid" | "datetime" | "time" | "duration" | "ip" | "cidr" | "jwt" | {
                 includes: string;
                 position?: number | undefined | undefined;
             } | {

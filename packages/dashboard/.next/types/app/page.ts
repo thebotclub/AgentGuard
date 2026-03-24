@@ -1,4 +1,4 @@
-// File: /home/vector/.openclaw/workspace/agentguard-project/packages/dashboard/src/app/page.tsx
+// File: /home/node/.openclaw/workspace/projects-code/p2-agentguard/packages/dashboard/src/app/page.tsx
 import * as entry from '../../../src/app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

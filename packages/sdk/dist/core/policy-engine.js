@@ -15,7 +15,7 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { load as loadYaml } from 'js-yaml';
-import { PolicyDocumentSchema, PolicyBundleSchema, BASE_RISK_SCORES, GENESIS_HASH, } from './types.js';
+import { PolicyDocumentSchema, BASE_RISK_SCORES, } from './types.js';
 import { PolicyError } from './errors.js';
 // ─── Micromatch for glob matching ─────────────────────────────────────────────
 import micromatch from 'micromatch';
@@ -500,6 +500,7 @@ export function evalToolCondition(condition, toolName) {
     }
     // "regex"
     if (condition.regex !== undefined) {
+        // eslint-disable-next-line security/detect-non-literal-regexp -- pattern comes from admin-authored policy YAML/JSON, not user input
         if (!new RegExp(condition.regex).test(toolName))
             return false;
     }
@@ -579,6 +580,7 @@ export function evalValueConstraint(constraint, value) {
             return false;
     }
     if ('regex' in constraint && constraint.regex !== undefined) {
+        // eslint-disable-next-line security/detect-non-literal-regexp -- pattern comes from admin-authored policy YAML/JSON, not user input
         if (!new RegExp(constraint.regex).test(String(value)))
             return false;
     }
@@ -611,7 +613,7 @@ export function evalTimeWindow(tw) {
 }
 function isInTimeRange(now, days, startTime, endTime, tz) {
     try {
-        const localStr = now.toLocaleString('en-US', { timeZone: tz, weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false });
+        const _localStr = now.toLocaleString('en-US', { timeZone: tz, weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }); // combined locale string, kept for debugging time-window checks
         const dayName = now.toLocaleString('en-US', { timeZone: tz, weekday: 'long' }).toLowerCase();
         const timeStr = now.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
         const dayMatches = days.map((d) => d.toLowerCase()).includes(dayName);

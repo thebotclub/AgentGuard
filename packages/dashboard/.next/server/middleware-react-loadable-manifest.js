@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}";
+self.__REACT_LOADABLE_MANIFEST='{"app/agents/page.tsx -> ../../lib/api":{"id":2982,"files":[]}}';

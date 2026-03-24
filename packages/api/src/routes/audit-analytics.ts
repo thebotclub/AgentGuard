@@ -160,8 +160,8 @@ auditAnalyticsRouter.get('/heatmap', async (c) => {
   for (const e of events) {
     const dow = e.occurredAt.getUTCDay(); // 0=Sun
     const hour = e.occurredAt.getUTCHours();
-    grid[dow]![hour]++;
-    riskGrid[dow]![hour] += e.riskScore;
+    grid[dow]![hour]!++;
+    riskGrid[dow]![hour]! += e.riskScore;
   }
 
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

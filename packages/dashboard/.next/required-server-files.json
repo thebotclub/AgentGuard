@@ -99,7 +99,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "/home/vector/.openclaw/workspace",
+    "outputFileTracingRoot": "/home/node/.openclaw/workspace",
     "experimental": {
       "useSkewCookie": false,
       "cacheLife": {
@@ -158,7 +158,7 @@
       "middlewarePrefetch": "flexible",
       "optimisticClientCache": true,
       "manualClientBasePath": false,
-      "cpus": 7,
+      "cpus": 9,
       "memoryBasedWorkersCount": false,
       "imgOptConcurrency": null,
       "imgOptTimeoutInSeconds": 7,
@@ -292,11 +292,11 @@
       "@agentguard/shared"
     ],
     "turbopack": {
-      "root": "/home/vector/.openclaw/workspace"
+      "root": "/home/node/.openclaw/workspace"
     }
   },
-  "appDir": "/home/vector/.openclaw/workspace/agentguard-project/packages/dashboard",
-  "relativeAppDir": "agentguard-project/packages/dashboard",
+  "appDir": "/home/node/.openclaw/workspace/projects-code/p2-agentguard/packages/dashboard",
+  "relativeAppDir": "projects-code/p2-agentguard/packages/dashboard",
   "files": [
     ".next/routes-manifest.json",
     ".next/server/pages-manifest.json",

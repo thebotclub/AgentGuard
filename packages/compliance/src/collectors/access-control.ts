@@ -39,7 +39,7 @@ export async function collectAccessControl(
   });
 
   // Map users to evidence format
-  const userEvidence = users.map((u) => ({
+  const userEvidence = users.map((u: any) => ({
     userId: u.id,
     email: u.email,
     role: u.role,
@@ -49,16 +49,16 @@ export async function collectAccessControl(
     agentCount: 0,
   }));
 
-  const adminCount = users.filter((u) => u.role === 'admin' || u.role === 'owner').length;
+  const adminCount = users.filter((u: any) => u.role === 'admin' || u.role === 'owner').length;
   const staleAccounts = users.filter(
-    (u) =>
+    (u: any) =>
       u.lastLoginAt !== null &&
       u.lastLoginAt < staleThreshold,
   ).length;
 
   // Also check for users with no login ever and created >90 days ago
   const neverLoggedInStale = users.filter(
-    (u) =>
+    (u: any) =>
       u.lastLoginAt === null &&
       u.createdAt < staleThreshold,
   ).length;
