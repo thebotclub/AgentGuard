@@ -13,10 +13,12 @@ export default defineConfig({
   test: {
     globals: false,
     environment: 'node',
-    // Include tests from SDK package and API routes
+    // Include tests from SDK package, API routes, and packages/api services
     include: [
       'packages/sdk/src/**/*.test.ts',
       'packages/sdk/src/**/__tests__/**/*.test.ts',
+      'packages/api/src/**/__tests__/**/*.test.ts',
+      'packages/api/src/**/*.test.ts',
       'api/tests/**/*.test.ts',
     ],
     coverage: {
