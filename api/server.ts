@@ -62,6 +62,8 @@ import { createPricingRoutes } from './routes/pricing.js';
 import { createBillingRoutes } from './routes/billing.js';
 import { createAlertsRoutes } from './routes/alerts.js';
 import { createAnomalyDetector } from './lib/anomaly-detector.js';
+import { createEventsRoutes } from './routes/events.js';
+import { initPubSub, closePubSub } from './lib/redis-pubsub.js';
 import type { IDatabase } from './db-interface.js';
 
 // ── Load Templates ─────────────────────────────────────────────────────────
@@ -225,9 +227,16 @@ app.use(helmet({
 }));
 
 // Request timeout (30s default, prevents hung connections)
+// SSE connections are exempt — they're long-lived by design.
 app.use((req: Request, res: Response, next: NextFunction) => {
-  req.setTimeout(30_000);
-  res.setTimeout(30_000);
+  if (req.path === '/api/v1/events/stream') {
+    // No timeout for SSE connections
+    req.setTimeout(0);
+    res.setTimeout(0);
+  } else {
+    req.setTimeout(30_000);
+    res.setTimeout(30_000);
+  }
   next();
 });
 
@@ -380,6 +389,10 @@ async function main(): Promise<void> {
           'Create Stripe Customer Portal session to manage subscription (requires API key)',
         'GET  /api/v1/billing/status':
           'Get current subscription status (requires API key)',
+        'GET  /api/v1/events/stream':
+          'SSE real-time event stream: audit events, HITL notifications (requires API key via ?token=)',
+        'GET  /api/v1/events/status':
+          'SSE connection metrics (requires admin key)',
       },
       docs: 'https://agentguard.tech',
       dashboard: '/dashboard',
@@ -684,6 +697,11 @@ async function main(): Promise<void> {
   // ── Pricing Page Data ─────────────────────────────────────────────────
   app.use(createPricingRoutes());
 
+  // ── SSE Event Stream ──────────────────────────────────────────────────
+  // GET /api/v1/events/stream — real-time audit events, HITL notifications
+  // GET /api/v1/events/status — admin metrics (connection counts)
+  app.use(createEventsRoutes(db, auth));
+
   // ── API Documentation (Swagger UI) ────────────────────────────────────
   app.use(createDocsRoutes());
 
@@ -733,6 +751,12 @@ async function main(): Promise<void> {
 
   const ks = await getGlobalKillSwitch(db);
 
+  // ── Redis Pub/Sub (SSE fan-out) ────────────────────────────────────────
+  // Initialize eagerly so the first subscriber doesn't incur connection latency.
+  await initPubSub().catch((e: Error) =>
+    console.warn('[pubsub] init error (non-fatal):', e.message),
+  );
+
   // ── Anomaly Detection Loop ─────────────────────────────────────────────
   const detector = createAnomalyDetector(db);
   detector.start();
@@ -765,9 +789,9 @@ async function main(): Promise<void> {
   let shuttingDown = false;
 
   // ── SSE connection registry ─────────────────────────────────────────────
-  // Track active SSE (Server-Sent Events) connections so we can drain them
-  // gracefully during shutdown. Each SSE route should call sseRegistry.add(res)
-  // on connection open and sseRegistry.delete(res) on close.
+  // Shared registry used by /api/v1/events/stream (routes/events.ts) to track
+  // active SSE connections for graceful drain on shutdown.
+  // The events route reads this via app.sseRegistry and adds/removes each res.
   const sseRegistry = new Set<import('express').Response>();
   (app as unknown as { sseRegistry: Set<import('express').Response> }).sseRegistry = sseRegistry;
 
@@ -813,7 +837,7 @@ async function main(): Promise<void> {
         logger.error({ error: String(e) }, 'Error closing database');
       }
 
-      // 4. Close Redis connections (standalone + sentinel)
+      // 4. Close Redis connections (standalone + sentinel + pubsub)
       try {
         const { closeRedis } = await import('./lib/redis-rate-limiter.js');
         if (typeof closeRedis === 'function') {
@@ -831,6 +855,12 @@ async function main(): Promise<void> {
         }
       } catch {
         // Sentinel may not be configured
+      }
+      try {
+        await closePubSub();
+        logger.info('Redis Pub/Sub connections closed');
+      } catch {
+        // Pub/Sub may not be connected
       }
 
       // 5. Close webhook queue worker
