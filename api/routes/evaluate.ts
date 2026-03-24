@@ -26,6 +26,7 @@ import type { DetectionResult } from '../lib/detection/types.js';
 import { evaluateToolAgainstPolicy, type AgentPolicy } from '../lib/policy-inheritance.js';
 import { enrichDecision } from '../lib/decision-enricher.js';
 import { getOtelExporter } from '../lib/otel-exporter.js';
+import { publishEvent } from '../lib/redis-pubsub.js';
 
 // getLastHash is no longer called directly — storeAuditEvent is now atomic
 const NOOP_PREV_HASH = '';
@@ -556,6 +557,25 @@ export function createEvaluateRoutes(
         detectionResult?.category ?? null,
       );
 
+      // ── SSE: publish audit event for real-time dashboard streaming ────────
+      if (tenantId && tenantId !== 'demo') {
+        publishEvent({
+          type: 'audit_event',
+          tenantId,
+          data: {
+            tool,
+            result: decision.result,
+            riskScore: decision.riskScore,
+            reason: decision.reason ?? null,
+            ruleId: decision.matchedRuleId ?? null,
+            agentId: agentId ?? null,
+            sessionId: ctx.sessionId ?? null,
+            durationMs: ms,
+          },
+          ts: new Date().toISOString(),
+        }).catch(() => { /* non-critical */ });
+      }
+
       // Log PII detection event to audit trail (redacted content only)
       if (piiBlock && tenantId !== 'demo') {
         await storeAuditEvent(
@@ -638,6 +658,23 @@ export function createEvaluateRoutes(
               }).catch((e: unknown) => console.error('[evaluate] slack notification failed:', e));
             }
           } catch { /* slack module optional */ }
+
+          // ── SSE: notify HITL watchers ──────────────────────────────────────
+          if (approvalId) {
+            publishEvent({
+              type: 'hitl_gate_created',
+              tenantId,
+              data: {
+                approvalId,
+                tool,
+                agentId: agentId ?? null,
+                riskScore: decision.riskScore,
+                reason: decision.matchedRuleId || 'policy_requires_approval',
+                params: typeof params === 'object' && params !== null ? params : {},
+              },
+              ts: new Date().toISOString(),
+            }).catch(() => { /* non-critical */ });
+          }
         } catch (e) {
           console.error('[evaluate] failed to create approval record:', e);
         }

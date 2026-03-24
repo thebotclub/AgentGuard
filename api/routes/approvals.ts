@@ -13,6 +13,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
+import { publishEvent } from '../lib/redis-pubsub.js';
 
 export function createApprovalRoutes(
   db: IDatabase,
@@ -77,6 +78,14 @@ export function createApprovalRoutes(
       const resolvedBy = req.tenantId!; // record who resolved it (tenant)
       await db.resolveApproval(approvalId, tenantId, 'approved', resolvedBy);
 
+      // ── SSE: notify gate resolved ──────────────────────────────────────────
+      publishEvent({
+        type: 'hitl_gate_resolved',
+        tenantId,
+        data: { approvalId, status: 'approved', resolvedBy, tool: approval.tool },
+        ts: new Date().toISOString(),
+      }).catch(() => { /* non-critical */ });
+
       res.json({
         id: approvalId,
         status: 'approved',
@@ -106,6 +115,14 @@ export function createApprovalRoutes(
 
       const resolvedBy = req.tenantId!;
       await db.resolveApproval(approvalId, tenantId, 'denied', resolvedBy);
+
+      // ── SSE: notify gate resolved ──────────────────────────────────────────
+      publishEvent({
+        type: 'hitl_gate_resolved',
+        tenantId,
+        data: { approvalId, status: 'denied', resolvedBy, tool: approval.tool },
+        ts: new Date().toISOString(),
+      }).catch(() => { /* non-critical */ });
 
       res.json({
         id: approvalId,
