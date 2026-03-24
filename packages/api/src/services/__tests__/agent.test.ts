@@ -39,7 +39,7 @@ const MOCK_AGENT: Agent = {
   status: 'ACTIVE',
   policyId: null,
   policyVersion: null,
-  failBehavior: 'BLOCK',
+  failBehavior: 'CLOSED',
   riskTier: 'LOW',
   framework: null,
   frameworkVersion: null,
@@ -191,7 +191,7 @@ describe('AgentService', () => {
       await expect(
         analysisSvc.createAgent({
           name: 'Agent',
-          failBehavior: 'BLOCK',
+          failBehavior: 'CLOSED',
           riskTier: 'LOW',
           tags: [],
         }),
@@ -204,7 +204,7 @@ describe('AgentService', () => {
 
       const { agent, apiKey } = await svc.createAgent({
         name: 'New Agent',
-        failBehavior: 'BLOCK',
+        failBehavior: 'CLOSED',
         riskTier: 'LOW',
         tags: [],
       });
@@ -220,7 +220,7 @@ describe('AgentService', () => {
 
       await svc.createAgent({
         name: 'New Agent',
-        failBehavior: 'BLOCK',
+        failBehavior: 'CLOSED',
         riskTier: 'LOW',
         tags: [],
       });
@@ -242,7 +242,7 @@ describe('AgentService', () => {
 
       await svc.createAgent({
         name: 'Agent',
-        failBehavior: 'BLOCK',
+        failBehavior: 'CLOSED',
         riskTier: 'LOW',
         tags: [],
       });

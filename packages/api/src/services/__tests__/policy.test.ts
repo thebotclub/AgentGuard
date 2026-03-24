@@ -65,12 +65,6 @@ const MOCK_POLICY: Policy = {
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   deletedAt: null,
-  gitRepoUrl: null,
-  gitBranch: null,
-  gitPath: null,
-  gitSyncEnabled: false,
-  gitLastSync: null,
-  gitLastCommitSha: null,
 };
 
 const MOCK_BUNDLE: PolicyBundle = {
@@ -92,10 +86,11 @@ const MOCK_POLICY_VERSION: PolicyVersion = {
   version: '1.0.0',
   yamlContent: SIMPLE_YAML,
   compiledBundle: MOCK_BUNDLE as unknown as import('@prisma/client').Prisma.JsonValue,
-  notes: null,
-  createdAt: new Date('2024-01-01'),
+  bundleChecksum: 'abc123',
+  ruleCount: 0,
   createdByUserId: 'user-1',
-  activatedAt: new Date('2024-01-01'),
+  createdAt: new Date('2024-01-01'),
+  changelog: null,
 };
 
 function makeRedis() {
@@ -222,12 +217,12 @@ describe('PolicyService', () => {
         redis as unknown as import('../../lib/redis.js').Redis,
       );
       await expect(
-        analysisSvc.createPolicy({ name: 'P', yamlContent: SIMPLE_YAML }),
+        analysisSvc.createPolicy({ name: 'P', yamlContent: SIMPLE_YAML, activate: false }),
       ).rejects.toThrow(ForbiddenError);
     });
 
     it('creates policy record in DB', async () => {
-      await svc.createPolicy({ name: 'My Policy', yamlContent: SIMPLE_YAML });
+      await svc.createPolicy({ name: 'My Policy', yamlContent: SIMPLE_YAML, activate: false });
 
       expect(db.policy.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -237,7 +232,7 @@ describe('PolicyService', () => {
     });
 
     it('creates a PolicyVersion record', async () => {
-      await svc.createPolicy({ name: 'My Policy', yamlContent: SIMPLE_YAML });
+      await svc.createPolicy({ name: 'My Policy', yamlContent: SIMPLE_YAML, activate: false });
       expect(db.policyVersion.create).toHaveBeenCalled();
     });
 
@@ -245,6 +240,7 @@ describe('PolicyService', () => {
       const { warnings } = await svc.createPolicy({
         name: 'My Policy',
         yamlContent: SIMPLE_YAML,
+        activate: false,
       });
       expect(Array.isArray(warnings)).toBe(true);
     });
@@ -252,7 +248,7 @@ describe('PolicyService', () => {
     it('throws ValidationError for invalid YAML', async () => {
       const { ValidationError: VE } = await import('../../lib/errors.js');
       await expect(
-        svc.createPolicy({ name: 'Bad', yamlContent: ':::invalid yaml:::' }),
+        svc.createPolicy({ name: 'Bad', yamlContent: ':::invalid yaml:::', activate: false }),
       ).rejects.toThrow();
     });
 
@@ -376,6 +372,8 @@ describe('PolicyService', () => {
               action: 'allow',
               when: [{ tool: { in: ['file_read'] } }],
               severity: 'low',
+              tags: [],
+              riskBoost: 0,
             },
             {
               id: 'block-write',
@@ -384,6 +382,7 @@ describe('PolicyService', () => {
               when: [{ tool: { in: ['file_write'] } }],
               severity: 'high',
               riskBoost: 100,
+              tags: [],
             },
           ],
         },
@@ -465,6 +464,8 @@ describe('PolicyService', () => {
               when: [{ tool: { in: ['send_email'] } }],
               severity: 'medium',
               timeoutSec: 300,
+              tags: [],
+              riskBoost: 0,
             },
           ],
         },
@@ -496,6 +497,8 @@ describe('PolicyCompilerService', () => {
               action: 'allow',
               when: [{ tool: { in: ['file_read'] } }],
               severity: 'low',
+              tags: [],
+              riskBoost: 0,
             },
           ],
         },
@@ -523,6 +526,8 @@ describe('PolicyCompilerService', () => {
               action: 'block',
               when: [{ tool: { matches: ['*'] } }],
               severity: 'high',
+              tags: [],
+              riskBoost: 0,
             },
           ],
         },
@@ -569,6 +574,8 @@ describe('PolicyCompilerService', () => {
         action: 'allow',
         when: [{ tool: { in: ['file_read'] } }],
         severity: 'low',
+        tags: [],
+        riskBoost: 0,
       });
 
       expect(rule.toolCondition).toEqual({ in: ['file_read'] });
@@ -581,6 +588,8 @@ describe('PolicyCompilerService', () => {
         action: 'block',
         when: [{ params: { destination: { not_in: ['internal.api'] } } }],
         severity: 'high',
+        tags: [],
+        riskBoost: 0,
       });
 
       expect(rule.paramConditions).toHaveLength(1);
@@ -592,6 +601,8 @@ describe('PolicyCompilerService', () => {
         action: 'allow',
         when: [],
         severity: 'low',
+        tags: [],
+        riskBoost: 0,
       });
 
       expect(rule.priority).toBe(100);
@@ -603,6 +614,8 @@ describe('PolicyCompilerService', () => {
         action: 'allow',
         when: [],
         severity: 'low',
+        tags: [],
+        riskBoost: 0,
       });
 
       expect(rule.riskBoost).toBe(0);

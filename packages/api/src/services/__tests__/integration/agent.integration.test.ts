@@ -39,7 +39,7 @@ const CTX_OWNER: ServiceContext = { ...CTX_ADMIN, role: 'owner' };
 
 const MOCK_AGENT: Agent = {
   id: 'agent-001', tenantId: 'tenant-1', name: 'Test Agent', description: null,
-  status: 'ACTIVE', policyId: null, policyVersion: null, failBehavior: 'BLOCK',
+  status: 'ACTIVE', policyId: null, policyVersion: null, failBehavior: 'CLOSED',
   riskTier: 'LOW', framework: null, frameworkVersion: null, tags: [],
   metadata: { __apiKeyBcryptHash: '$2b$12$dummyhash' },
   apiKeyHash: 'sha256abc', apiKeyPrefix: 'ag_live_test', apiKeyExpiresAt: null, lastSeenAt: null,
@@ -68,7 +68,7 @@ describe('AgentService — Integration', () => {
     db.agent.update.mockResolvedValue(makeAgent());
 
     const { agent, apiKey } = await svc.createAgent({
-      name: 'New Agent', failBehavior: 'BLOCK', riskTier: 'LOW', tags: [],
+      name: 'New Agent', failBehavior: 'CLOSED', riskTier: 'LOW', tags: [],
     });
 
     expect(agent.id).toBe('agent-001');
@@ -82,7 +82,7 @@ describe('AgentService — Integration', () => {
     db.agent.create.mockResolvedValue(makeAgent());
     db.agent.update.mockResolvedValue(makeAgent());
 
-    await svc.createAgent({ name: 'A', failBehavior: 'BLOCK', riskTier: 'LOW', tags: [] });
+    await svc.createAgent({ name: 'A', failBehavior: 'CLOSED', riskTier: 'LOW', tags: [] });
 
     expect(db.agent.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -96,7 +96,7 @@ describe('AgentService — Integration', () => {
   it('createAgent → throws ForbiddenError for analyst', async () => {
     const analystSvc = new AgentService(db as never, CTX_ANALYST);
     await expect(
-      analystSvc.createAgent({ name: 'A', failBehavior: 'BLOCK', riskTier: 'LOW', tags: [] }),
+      analystSvc.createAgent({ name: 'A', failBehavior: 'CLOSED', riskTier: 'LOW', tags: [] }),
     ).rejects.toThrow(ForbiddenError);
   });
 

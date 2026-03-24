@@ -44,6 +44,7 @@ const PENDING_GATE: HITLGate = {
   timeoutAt: new Date(Date.now() + 60_000), // 1 min in the future
   onTimeout: 'block',
   notifiedViaSlack: false,
+  notifiedViaEmail: false,
   createdAt: new Date('2024-01-01'),
   decidedAt: null,
   decidedByUserId: null,

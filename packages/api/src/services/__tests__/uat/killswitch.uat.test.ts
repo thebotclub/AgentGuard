@@ -74,7 +74,7 @@ describe('UAT: Kill Switch Lifecycle', () => {
       {
         id: 'ks-policy', name: 'KS Policy', version: '1.0.0', default: 'allow',
         rules: [
-          { id: 'block-shell', priority: 10, action: 'block', when: [{ tool: { in: ['shell_exec'] } }], severity: 'critical', riskBoost: 500 },
+          { id: 'block-shell', priority: 10, action: 'block', when: [{ tool: { in: ['shell_exec'] } }], severity: 'critical', riskBoost: 500, tags: [] },
         ],
       },
       'policy-ks-001',

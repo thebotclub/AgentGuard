@@ -155,7 +155,7 @@ describe('UAT: New Tenant Onboarding', () => {
     const { agent, apiKey } = await agentSvc.createAgent({
       name: 'First Agent',
       policyId: 'policy-onboard-001',
-      failBehavior: 'BLOCK',
+      failBehavior: 'CLOSED',
       riskTier: 'LOW',
       tags: [],
     });
@@ -169,8 +169,8 @@ describe('UAT: New Tenant Onboarding', () => {
         id: 'starter-policy', name: 'Starter Policy', version: '0.0.1',
         default: 'block',
         rules: [
-          { id: 'allow-read', priority: 100, action: 'allow', when: [{ tool: { in: ['file_read'] } }], severity: 'low' },
-          { id: 'block-shell', priority: 10, action: 'block', when: [{ tool: { in: ['shell_exec'] } }], severity: 'critical', riskBoost: 500 },
+          { id: 'allow-read', priority: 100, action: 'allow', when: [{ tool: { in: ['file_read'] } }], severity: 'low', tags: [], riskBoost: 0 },
+          { id: 'block-shell', priority: 10, action: 'block', when: [{ tool: { in: ['shell_exec'] } }], severity: 'critical', riskBoost: 500, tags: [] },
         ],
       },
       'policy-onboard-001',

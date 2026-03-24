@@ -44,6 +44,7 @@ const MOCK_COMMAND: KillSwitchCommand = {
   reason: 'misbehaving',
   issuedByUserId: 'user-1',
   issuedAt: new Date('2024-01-01'),
+  acknowledgedAt: null,
   resumedAt: null,
 };
 

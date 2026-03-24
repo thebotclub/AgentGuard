@@ -97,11 +97,11 @@ describe('UAT: Multi-Tenant Isolation', () => {
 
     // Tenant A only gets their own agents
     expect(agentsA).toHaveLength(1);
-    expect((agentsA as unknown as Array<{id: string}>)[0].id).toBe('agent-A1');
+    expect((agentsA as unknown as Array<{id: string}>)[0]!.id).toBe('agent-A1');
 
     // Tenant B only gets their own agents
     expect(agentsB).toHaveLength(1);
-    expect((agentsB as unknown as Array<{id: string}>)[0].id).toBe('agent-B1');
+    expect((agentsB as unknown as Array<{id: string}>)[0]!.id).toBe('agent-B1');
   });
 
   it('AgentService — Tenant A cannot get Tenant B agent by ID', async () => {
@@ -151,9 +151,9 @@ describe('UAT: Multi-Tenant Isolation', () => {
     const policiesB = await svcB.listPolicies();
 
     expect(policiesA).toHaveLength(1);
-    expect((policiesA as unknown as Array<{id: string}>)[0].id).toBe('policy-A1');
+    expect((policiesA as unknown as Array<{id: string}>)[0]!.id).toBe('policy-A1');
     expect(policiesB).toHaveLength(1);
-    expect((policiesB as unknown as Array<{id: string}>)[0].id).toBe('policy-B1');
+    expect((policiesB as unknown as Array<{id: string}>)[0]!.id).toBe('policy-B1');
 
     // Verify scoping: tenant-A calls had tenant-A filter
     expect(db.policy.findMany).toHaveBeenNthCalledWith(
@@ -181,9 +181,9 @@ describe('UAT: Multi-Tenant Isolation', () => {
     const eventsB = await svcB.queryEvents({ limit: 50 });
 
     expect(eventsA).toHaveLength(1);
-    expect((eventsA as unknown as Array<{id: string}>)[0].id).toBe('evt-A1');
+    expect((eventsA as unknown as Array<{id: string}>)[0]!.id).toBe('evt-A1');
     expect(eventsB).toHaveLength(1);
-    expect((eventsB as unknown as Array<{id: string}>)[0].id).toBe('evt-B1');
+    expect((eventsB as unknown as Array<{id: string}>)[0]!.id).toBe('evt-B1');
 
     // Verify tenant scoping
     expect(db.auditEvent.findMany).toHaveBeenNthCalledWith(
