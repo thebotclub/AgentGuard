@@ -395,6 +395,26 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         console.log(`[db] migrated ${unhashedRows.length} existing API key(s) to sha256 lookup`);
       }
 
+      // ── Fix 1: Agent API key hashing columns ──────────────────────────────
+      const agentKeyCols2: Array<{ name: string; type: string }> = [
+        { name: 'api_key_hash', type: 'TEXT' },
+        { name: 'api_key_sha256', type: 'TEXT' },
+      ];
+      for (const col of agentKeyCols2) {
+        try { db.exec(`ALTER TABLE agents ADD COLUMN ${col.name} ${col.type}`); } catch { /* already exists */ }
+      }
+      const unhashedAgents = db.prepare(
+        'SELECT id, api_key FROM agents WHERE api_key_sha256 IS NULL AND api_key IS NOT NULL AND active = 1'
+      ).all() as Array<{ id: string; api_key: string }>;
+      for (const agentRow of unhashedAgents) {
+        const agentSha256 = sha256Hex(agentRow.api_key);
+        db.prepare('UPDATE agents SET api_key_sha256 = ? WHERE id = ?').run(agentSha256, agentRow.id);
+      }
+      if (unhashedAgents.length > 0) {
+        console.log(`[db] migrated ${unhashedAgents.length} existing agent key(s) to sha256 lookup`);
+      }
+      try { db.exec('CREATE INDEX IF NOT EXISTS idx_agents_key_sha256 ON agents(api_key_sha256)'); } catch { /* already exists */ }
+
       // Migration: MCP tables (also created by McpMiddleware but we ensure they exist here)
       db.exec(`
         CREATE TABLE IF NOT EXISTS mcp_configs (
@@ -1075,11 +1095,14 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       apiKey: string,
       policyScope: string,
     ): Promise<AgentRow> {
-      const row = db.prepare<[string, string, string, string]>(
-        `INSERT INTO agents (tenant_id, name, api_key, policy_scope)
-         VALUES (?, ?, ?, ?)
+      // Fix 1: hash agent API key before storage
+      const apiKeyHash = await hashApiKey(apiKey);
+      const apiKeySha256 = sha256Hex(apiKey);
+      const row = db.prepare<[string, string, string, string, string, string]>(
+        `INSERT INTO agents (tenant_id, name, api_key, api_key_hash, api_key_sha256, policy_scope)
+         VALUES (?, ?, ?, ?, ?, ?)
          RETURNING id, tenant_id, name, policy_scope, active, created_at`
-      ).get(tenantId, name, apiKey, policyScope) as Record<string, unknown>;
+      ).get(tenantId, name, apiKey, apiKeyHash, apiKeySha256, policyScope) as Record<string, unknown>;
       row['api_key'] = apiKey;
       return row as unknown as AgentRow;
     },
@@ -1092,6 +1115,17 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
     },
 
     async getAgentByKey(apiKey: string): Promise<AgentRow | undefined> {
+      // Fix 1: SHA-256 lookup first, then bcrypt verify
+      const sha256 = sha256Hex(apiKey);
+      let row = getSync<Record<string, unknown>>('SELECT * FROM agents WHERE api_key_sha256 = ? AND active = 1', [sha256]);
+      if (row) {
+        if (row['api_key_hash']) {
+          const valid = await verifyApiKey(apiKey, row['api_key_hash'] as string);
+          if (!valid) return undefined;
+        }
+        return row as unknown as AgentRow;
+      }
+      // Fallback: legacy plaintext lookup for agents that predate sha256 migration
       return getSync<AgentRow>('SELECT * FROM agents WHERE api_key = ? AND active = 1', [apiKey]);
     },
 

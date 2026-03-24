@@ -706,32 +706,77 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       // Create index on key_sha256 (after column exists)
       try { await pool.query('CREATE INDEX IF NOT EXISTS idx_apikeys_sha256 ON api_keys(key_sha256)'); } catch { /* already exists */ }
 
-      // ── Row-Level Security (RLS) ───────────────────────────────────────────
-      // Enable RLS on all tenant-scoped tables for defense-in-depth.
-      // The application already enforces tenant isolation via tenant_id in queries,
-      // but RLS provides an additional database-level security layer.
-      const rlsTables = [
-        'tenants',
-        'api_keys',
-        'audit_events',
-        'sessions',
-        'webhooks',
-        'agents',
-        'rate_limits',
-        'cost_events',
+      // ── Fix 1: Agent API key hashing columns ──────────────────────────────
+      // Add bcrypt hash + sha256 lookup columns to agents table (idempotent)
+      const agentKeyCols = [
+        'ALTER TABLE agents ADD COLUMN IF NOT EXISTS api_key_hash TEXT',
+        'ALTER TABLE agents ADD COLUMN IF NOT EXISTS api_key_sha256 TEXT',
       ];
-      for (const table of rlsTables) {
+      for (const sql of agentKeyCols) {
+        try { await pool.query(sql); } catch { /* already exists */ }
+      }
+      // Back-fill existing agent keys with sha256 (bcrypt deferred — needs original key at auth time)
+      const { rows: unhashedAgents } = await pool.query<{ id: string; api_key: string }>(
+        'SELECT id, api_key FROM agents WHERE api_key_sha256 IS NULL AND api_key IS NOT NULL AND active = 1'
+      );
+      for (const agentRow of unhashedAgents) {
+        const agentSha256 = sha256Hex(agentRow.api_key);
+        await pool.query('UPDATE agents SET api_key_sha256 = $1 WHERE id = $2', [agentSha256, agentRow.id]);
+      }
+      if (unhashedAgents.length > 0) {
+        console.log(`[pg] migrated ${unhashedAgents.length} existing agent key(s) to sha256 lookup`);
+      }
+      try { await pool.query('CREATE INDEX IF NOT EXISTS idx_agents_key_sha256 ON agents(api_key_sha256)'); } catch { /* already exists */ }
+
+      // ── Fix 3: Row-Level Security (RLS) with tenant isolation policies ────
+      // Enable RLS AND create idempotent tenant isolation policies on all tenant-scoped tables.
+      // Defense-in-depth: even if application code omits a WHERE tenant_id clause,
+      // the database refuses to return rows belonging to another tenant.
+      // Policies check app.current_tenant_id session variable (set by request middleware).
+      const rlsTablesWithColumn: Array<{ table: string; column: string }> = [
+        { table: 'api_keys', column: 'tenant_id' },
+        { table: 'audit_events', column: 'tenant_id' },
+        { table: 'webhooks', column: 'tenant_id' },
+        { table: 'agents', column: 'tenant_id' },
+        { table: 'rate_limits', column: 'tenant_id' },
+        { table: 'cost_events', column: 'tenant_id' },
+        { table: 'compliance_reports', column: 'tenant_id' },
+        { table: 'mcp_servers', column: 'tenant_id' },
+        { table: 'approvals', column: 'tenant_id' },
+        { table: 'tenant_policies', column: 'tenant_id' },
+        { table: 'sso_configs', column: 'tenant_id' },
+        { table: 'sso_users', column: 'tenant_id' },
+        { table: 'siem_configs', column: 'tenant_id' },
+        { table: 'git_webhook_configs', column: 'tenant_id' },
+        { table: 'anomaly_rules', column: 'tenant_id' },
+        { table: 'alerts', column: 'tenant_id' },
+        { table: 'scim_tokens', column: 'tenant_id' },
+        { table: 'scim_users', column: 'tenant_id' },
+        { table: 'scim_groups', column: 'tenant_id' },
+        { table: 'license_keys', column: 'tenant_id' },
+        { table: 'license_events', column: 'tenant_id' },
+        { table: 'team_members', column: 'tenant_id' },
+      ];
+      for (const { table, column } of rlsTablesWithColumn) {
         try {
           await pool.query(`ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY`);
-          console.log(`[pg] RLS enabled on ${table}`);
+          await pool.query(`
+            DO $$
+            BEGIN
+              CREATE POLICY tenant_isolation ON ${table}
+                USING (${column} = current_setting('app.current_tenant_id', true));
+            EXCEPTION WHEN duplicate_object THEN
+              NULL;
+            END $$;
+          `);
         } catch (e) {
-          // Ignore if already enabled or table doesn't exist (may be created later)
           const msg = e instanceof Error ? e.message : String(e);
-          if (!msg.includes('already enabled') && !msg.includes('does not exist')) {
+          if (!msg.includes('does not exist')) {
             console.log(`[pg] RLS setup for ${table}: ${msg}`);
           }
         }
       }
+      console.log(`[pg] RLS policies applied on ${rlsTablesWithColumn.length} tables`);
 
       // Migration: feedback and telemetry tables
       await pool.query(`
@@ -1147,13 +1192,18 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       apiKey: string,
       policyScope: string,
     ): Promise<AgentRow> {
+      // Fix 1: hash agent API key before storage
+      //   api_key_hash   — bcrypt hash for slow brute-force-resistant verification
+      //   api_key_sha256 — SHA-256 for fast O(1) lookup at auth time
+      const apiKeyHash = await bcrypt.hash(apiKey, BCRYPT_ROUNDS);
+      const apiKeySha256 = sha256Hex(apiKey);
       const result = await pool.query(
-        `INSERT INTO agents (tenant_id, name, api_key, policy_scope)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO agents (tenant_id, name, api_key, api_key_hash, api_key_sha256, policy_scope)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id, tenant_id, name, policy_scope, active, created_at`,
-        [tenantId, name, apiKey, policyScope]
+        [tenantId, name, apiKey, apiKeyHash, apiKeySha256, policyScope]
       );
-      // Include api_key in the returned row (not returned by SELECT for security, but needed here)
+      // Return plaintext key ONCE to caller — never shown again
       const row = result.rows[0] as Record<string, unknown>;
       row['api_key'] = apiKey;
       return normAgent(row);
@@ -1168,7 +1218,21 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
     },
 
     async getAgentByKey(apiKey: string): Promise<AgentRow | undefined> {
-      const row = await get<Record<string, unknown>>(
+      // Fix 1: SHA-256 lookup first (fast index scan), then bcrypt verify
+      const sha256 = sha256Hex(apiKey);
+      let row = await get<Record<string, unknown>>(
+        'SELECT * FROM agents WHERE api_key_sha256 = $1 AND active = 1',
+        [sha256]
+      );
+      if (row) {
+        if (row['api_key_hash']) {
+          const valid = await bcrypt.compare(apiKey, row['api_key_hash'] as string);
+          if (!valid) return undefined;
+        }
+        return normAgent(row);
+      }
+      // Fallback: legacy plaintext lookup for agents that predate sha256 migration
+      row = await get<Record<string, unknown>>(
         'SELECT * FROM agents WHERE api_key = $1 AND active = 1',
         [apiKey]
       );
