@@ -14,6 +14,15 @@
  */
 import pino from 'pino';
 
+/**
+ * Scrub sensitive tokens from URLs before they are logged.
+ * Replaces `?token=ag_live_...` (and similar) with `?token=ag_****`
+ * to prevent API keys from leaking into access logs.
+ */
+export function scrubTokenFromUrl(url: string): string {
+  return url.replace(/([?&]token=)[^&\s#]*/gi, '$1ag_****');
+}
+
 export const logger = pino({
   level: process.env['LOG_LEVEL'] || 'info',
   formatters: {
@@ -22,6 +31,16 @@ export const logger = pino({
     },
   },
   timestamp: pino.stdTimeFunctions.isoTime,
+  serializers: {
+    // Scrub token from any logged request URL fields
+    req(req) {
+      return {
+        ...req,
+        url: req.url ? scrubTokenFromUrl(req.url) : req.url,
+        originalUrl: req.originalUrl ? scrubTokenFromUrl(req.originalUrl) : req.originalUrl,
+      };
+    },
+  },
   // In development: pretty-print to console
   ...(process.env['NODE_ENV'] !== 'production' && {
     transport: { target: 'pino-pretty' },

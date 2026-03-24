@@ -29,7 +29,7 @@ import {
 } from './middleware/rate-limit.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { csrfMiddleware } from './middleware/csrf.js';
-import { logger } from './lib/logger.js';
+import { logger, scrubTokenFromUrl } from './lib/logger.js';
 import { loadTemplates, DEFAULT_POLICY, templateCache } from './lib/policy-engine-setup.js';
 import { getGlobalKillSwitch } from './routes/audit.js';
 import { createEvaluateRoutes } from './routes/evaluate.js';
@@ -72,6 +72,14 @@ loadTemplates();
 
 // ── Express App ────────────────────────────────────────────────────────────
 const app = express();
+
+// URL token scrubbing — runs first so no downstream middleware logs plaintext tokens.
+// Replaces `?token=ag_live_...` with `?token=ag_****` in req.url / req.originalUrl.
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  if (req.url) req.url = scrubTokenFromUrl(req.url);
+  if (req.originalUrl) req.originalUrl = scrubTokenFromUrl(req.originalUrl);
+  next();
+});
 
 // Request ID middleware — attaches/generates request ID and binds a child logger
 app.use((req: Request, res: Response, next: NextFunction) => {
