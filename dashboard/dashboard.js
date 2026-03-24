@@ -21,7 +21,7 @@ let storedApiKey = null;
 function saveApiKey(key) {
   storedApiKey = key.trim();
   if (storedApiKey) {
-    try { localStorage.setItem('ag_dashboard_api_key', storedApiKey); } catch {}
+    try { sessionStorage.setItem('ag_dashboard_api_key', storedApiKey); } catch {}
     document.getElementById('api-key-input').value = storedApiKey;
   }
   loadApiKey();
@@ -40,7 +40,7 @@ function saveApiKey(key) {
 
 function loadApiKey() {
   try {
-    var saved = localStorage.getItem('ag_dashboard_api_key');
+    var saved = sessionStorage.getItem('ag_dashboard_api_key');
     if (saved) {
       storedApiKey = saved;
       document.getElementById('api-key-input').value = saved;
@@ -58,7 +58,7 @@ function loadApiKey() {
         if (hashKey && hashKey.startsWith('ag_live_')) {
           storedApiKey = hashKey;
           document.getElementById('api-key-input').value = hashKey;
-          try { localStorage.setItem('ag_dashboard_api_key', hashKey); } catch {}
+          try { sessionStorage.setItem('ag_dashboard_api_key', hashKey); } catch {}
           // Clear hash from URL (don't leave key visible)
           history.replaceState(null, '', window.location.pathname + window.location.search);
         }
@@ -73,7 +73,7 @@ function loadApiKey() {
       if (urlKey && urlKey.startsWith('ag_live_')) {
         storedApiKey = urlKey;
         document.getElementById('api-key-input').value = urlKey;
-        try { localStorage.setItem('ag_dashboard_api_key', urlKey); } catch {}
+        try { sessionStorage.setItem('ag_dashboard_api_key', urlKey); } catch {}
         // Clear query param from URL
         history.replaceState(null, '', window.location.pathname);
       }
@@ -147,9 +147,9 @@ async function loadAuditTrail() {
             '<td style="font-family:var(--mono);font-size:0.82rem">' + esc(e.tool || '') + '</td>' +
             '<td><span class="badge ' + badgeClass + '">' + esc(res) + '</span></td>' +
             '<td style="font-family:var(--mono);font-size:0.82rem;color:var(--text-dim)">' + esc(e.ruleId || e.matchedRuleId || '—') + '</td>' +
-            '<td style="font-family:var(--mono);font-size:0.82rem;color:' + ((e.riskScore || 0) > 50 ? 'var(--red)' : 'var(--green)') + '">' + (e.riskScore || 0) + '</td>' +
-            '<td style="font-family:var(--mono);font-size:0.82rem;color:var(--accent-hi)">' + (e.durationMs || 0) + 'ms</td>' +
-            '<td style="font-family:var(--mono);font-size:0.75rem;color:var(--text-dim)">' + (e.hash || '—') + '</td>' +
+            '<td style="font-family:var(--mono);font-size:0.82rem;color:' + ((e.riskScore || 0) > 50 ? 'var(--red)' : 'var(--green)') + '">' + esc(e.riskScore || 0) + '</td>' +
+            '<td style="font-family:var(--mono);font-size:0.82rem;color:var(--accent-hi)">' + esc(e.durationMs || 0) + 'ms</td>' +
+            '<td style="font-family:var(--mono);font-size:0.75rem;color:var(--text-dim)">' + esc(e.hash || '—') + '</td>' +
             '</tr>';
         }).join('');
         return;
@@ -285,9 +285,9 @@ async function loadReadiness() {
       return '<tr style="border-bottom:1px solid var(--border-dim)">' +
         '<td style="padding:12px 16px;font-weight:600;color:var(--text-bright)">' + esc(a.name) + '</td>' +
         '<td style="padding:12px 16px"><span class="badge ' + badgeClass + '">' + esc(status) + '</span></td>' +
-        '<td style="padding:12px 16px;font-family:var(--mono);color:var(--accent-hi)">' + coverage + '</td>' +
-        '<td style="padding:12px 16px;font-size:0.82rem;color:var(--text-dim)">' + certDate + '</td>' +
-        '<td style="padding:12px 16px;font-size:0.82rem;color:var(--text-dim)">' + expDate + '</td>' +
+        '<td style="padding:12px 16px;font-family:var(--mono);color:var(--accent-hi)">' + esc(coverage) + '</td>' +
+        '<td style="padding:12px 16px;font-size:0.82rem;color:var(--text-dim)">' + esc(certDate) + '</td>' +
+        '<td style="padding:12px 16px;font-size:0.82rem;color:var(--text-dim)">' + esc(expDate) + '</td>' +
         '<td style="padding:12px 16px;text-align:right"><button class="btn btn-ghost" style="font-size:0.78rem" onclick="validateAgent(\'' + esc(a.id) + '\')">Validate</button></td>' +
         '</tr>';
     }).join('');
