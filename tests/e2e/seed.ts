@@ -1,29 +1,25 @@
 /**
- * E2E Test Seed Script
+ * E2E Test Seed Script — Prisma-only (no HTTP API calls)
  *
- * Creates deterministic test data for the E2E suite:
+ * Creates deterministic test data for the E2E suite directly in the database:
  *  - 2 tenants: tenant-alpha, tenant-beta
- *  - 1 admin JWT per tenant
- *  - 3 agents per tenant (via HTTP API so we get real API keys)
- *  - 3 policies per tenant: allow-all, block-all, require-approval
- *  - Some audit events via evaluate calls
+ *  - 1 admin user + JWT per tenant
+ *  - 3 policies per tenant (allow-all, block-all, require-approval)
+ *  - 3 agents per tenant with API keys
  *
  * Run before tests:
  *   DATABASE_URL=postgresql://test:test@localhost:5433/agentguard_test \
- *   DATABASE_DIRECT_URL=postgresql://test:test@localhost:5433/agentguard_test \
- *   REDIS_URL=redis://localhost:6380 \
  *   JWT_SECRET=test-jwt-secret-for-e2e-only \
- *   BASE_URL=http://localhost:3001 \
  *   npx tsx tests/e2e/seed.ts
  *
- * Exports SEED_DATA as JSON to stdout (or writes to tests/e2e/.seed-data.json).
+ * Writes seed data to tests/e2e/.seed-data.json for test files to import.
  */
 
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import { SignJWT } from 'jose';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,7 +32,6 @@ const DATABASE_URL =
   process.env['DATABASE_URL'] ??
   'postgresql://test:test@localhost:5433/agentguard_test';
 
-const BASE_URL = process.env['BASE_URL'] ?? 'http://localhost:3001';
 const JWT_SECRET_RAW = process.env['JWT_SECRET'] ?? 'test-jwt-secret-for-e2e-only';
 const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_RAW);
 
@@ -56,26 +51,15 @@ async function signJWT(tenantId: string, userId: string, role: string): Promise<
     .sign(JWT_SECRET);
 }
 
-async function apiRequest(
-  method: string,
-  path: string,
-  body: unknown,
-  jwt: string,
-): Promise<{ status: number; body: Record<string, unknown> }> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${jwt}`,
-    },
-    body: JSON.stringify(body),
-  });
-  const data = (await res.json()) as Record<string, unknown>;
-  return { status: res.status, body: data };
-}
-
 function sha256(data: string): string {
   return createHash('sha256').update(data).digest('hex');
+}
+
+function generateApiKey(): { raw: string; hash: string; prefix: string } {
+  const raw = `ag_live_${randomBytes(24).toString('hex')}`;
+  const hash = sha256(raw);
+  const prefix = raw.slice(0, 12) + '****';
+  return { raw, hash, prefix };
 }
 
 // ─── Policy YAML templates ────────────────────────────────────────────────────
@@ -110,216 +94,160 @@ rules:
     on_timeout: block
 `;
 
-// ─── Main seeding logic ───────────────────────────────────────────────────────
+// ─── Seed Data Types ──────────────────────────────────────────────────────────
 
 export interface SeedData {
-  tenantAlpha: {
-    id: string;
-    slug: string;
-    jwt: string;
-    agents: Array<{ id: string; apiKey: string; policyName: string }>;
-    policies: {
-      allowAll: string;
-      blockAll: string;
-      requireApproval: string;
-    };
-  };
-  tenantBeta: {
-    id: string;
-    slug: string;
-    jwt: string;
-    agents: Array<{ id: string; apiKey: string; policyName: string }>;
-    policies: {
-      allowAll: string;
-      blockAll: string;
-      requireApproval: string;
-    };
+  tenantAlpha: TenantSeedData;
+  tenantBeta: TenantSeedData;
+}
+
+interface TenantSeedData {
+  id: string;
+  slug: string;
+  jwt: string;
+  userId: string;
+  agents: Array<{ id: string; apiKey: string; policyName: string }>;
+  policies: {
+    allowAll: string;
+    blockAll: string;
+    requireApproval: string;
   };
 }
 
-async function seedTenant(
-  slug: string,
-  adminUserId: string,
-): Promise<{
-  tenantId: string;
-  slug: string;
-  jwt: string;
-  agents: Array<{ id: string; apiKey: string; policyName: string }>;
-  policies: { allowAll: string; blockAll: string; requireApproval: string };
-}> {
+// ─── Main seeding logic ───────────────────────────────────────────────────────
+
+async function seedTenant(slug: string): Promise<TenantSeedData> {
   console.log(`  → Creating tenant: ${slug}`);
 
-  // Create or upsert tenant directly via Prisma
-  const existing = await prisma.tenant.findUnique({ where: { slug } });
-  let tenant = existing;
-
-  if (!tenant) {
-    tenant = await prisma.tenant.create({
-      data: {
-        name: `${slug} (E2E)`,
-        slug,
-        plan: 'TEAM',
-      },
-    });
-  }
-
+  // Create or find tenant
+  const tenant = await prisma.tenant.upsert({
+    where: { slug },
+    create: { name: `${slug} (E2E)`, slug, plan: 'TEAM' },
+    update: {},
+  });
   const tenantId = tenant.id;
-  const jwt = await signJWT(tenantId, adminUserId, 'owner');
 
-  // Create 3 policies via HTTP
+  // Create admin user
+  console.log(`  → Creating admin user for ${slug}`);
+  const userId = `e2e-admin-${slug}`;
+  await prisma.user.upsert({
+    where: { tenantId_email: { tenantId, email: `admin@${slug}.test` } },
+    create: {
+      tenantId,
+      email: `admin@${slug}.test`,
+      name: `Admin (${slug})`,
+      role: 'OWNER',
+    },
+    update: {},
+  });
+
+  // Sign JWT for this tenant
+  const jwt = await signJWT(tenantId, userId, 'OWNER');
+
+  // Create policies directly via Prisma
   console.log(`  → Creating policies for ${slug}`);
 
-  const policyYamls = [
-    { name: 'Allow All E2E', yaml: ALLOW_ALL_YAML },
-    { name: 'Block All E2E', yaml: BLOCK_ALL_YAML },
-    { name: 'Require Approval E2E', yaml: REQUIRE_APPROVAL_YAML },
+  const policyConfigs = [
+    { key: 'allowAll', name: 'Allow All E2E', yaml: ALLOW_ALL_YAML, defaultAction: 'allow' },
+    { key: 'blockAll', name: 'Block All E2E', yaml: BLOCK_ALL_YAML, defaultAction: 'block' },
+    { key: 'requireApproval', name: 'Require Approval E2E', yaml: REQUIRE_APPROVAL_YAML, defaultAction: 'allow' },
   ];
 
   const policyIds: Record<string, string> = {};
-  for (const p of policyYamls) {
-    const res = await apiRequest(
-      'POST',
-      '/v1/policies',
-      { name: p.name, yamlContent: p.yaml, activate: true },
-      jwt,
-    );
-    if (res.status !== 201) {
-      throw new Error(`Failed to create policy "${p.name}" for ${slug}: ${JSON.stringify(res.body)}`);
-    }
-    const policyId = (res.body.policy as Record<string, unknown>)['id'] as string;
-    policyIds[p.name] = policyId;
+  for (const pc of policyConfigs) {
+    const policy = await prisma.policy.create({
+      data: {
+        tenantId,
+        name: pc.name,
+        defaultAction: pc.defaultAction,
+        activeVersion: '1.0.0',
+        versions: {
+          create: {
+            tenantId,
+            version: '1.0.0',
+            yamlContent: pc.yaml,
+            compiledBundle: { rules: [], default: pc.defaultAction },
+            bundleChecksum: sha256(pc.yaml),
+            ruleCount: 0,
+          },
+        },
+      },
+    });
+    policyIds[pc.key] = policy.id;
   }
 
-  const allowAllPolicyId = policyIds['Allow All E2E']!;
-  const blockAllPolicyId = policyIds['Block All E2E']!;
-  const requireApprovalPolicyId = policyIds['Require Approval E2E']!;
-
-  // Create 3 agents per tenant via HTTP
+  // Create agents with API keys directly via Prisma
   console.log(`  → Creating agents for ${slug}`);
 
   const agentConfigs = [
-    {
-      name: `${slug}-agent-allow`,
-      policyId: allowAllPolicyId,
-      policyName: 'allow-all',
-      failBehavior: 'OPEN' as const,
-    },
-    {
-      name: `${slug}-agent-block`,
-      policyId: blockAllPolicyId,
-      policyName: 'block-all',
-      failBehavior: 'CLOSED' as const,
-    },
-    {
-      name: `${slug}-agent-approval`,
-      policyId: requireApprovalPolicyId,
-      policyName: 'require-approval',
-      failBehavior: 'CLOSED' as const,
-    },
+    { name: `${slug}-agent-allow`, policyKey: 'allowAll', policyName: 'allow-all', failBehavior: 'OPEN' as const },
+    { name: `${slug}-agent-block`, policyKey: 'blockAll', policyName: 'block-all', failBehavior: 'CLOSED' as const },
+    { name: `${slug}-agent-approval`, policyKey: 'requireApproval', policyName: 'require-approval', failBehavior: 'CLOSED' as const },
   ];
 
-  const agents: Array<{ id: string; apiKey: string; policyName: string }> = [];
-  for (const cfg of agentConfigs) {
-    const res = await apiRequest(
-      'POST',
-      '/v1/agents',
-      {
-        name: cfg.name,
-        policyId: cfg.policyId,
-        failBehavior: cfg.failBehavior,
+  const agents: TenantSeedData['agents'] = [];
+  for (const ac of agentConfigs) {
+    const key = generateApiKey();
+    const agent = await prisma.agent.create({
+      data: {
+        tenantId,
+        name: ac.name,
+        policyId: policyIds[ac.policyKey],
+        failBehavior: ac.failBehavior,
         riskTier: 'MEDIUM',
         tags: ['e2e-test', slug],
+        apiKeyHash: key.hash,
+        apiKeyPrefix: key.prefix,
       },
-      jwt,
-    );
-    if (res.status !== 201) {
-      throw new Error(`Failed to create agent "${cfg.name}": ${JSON.stringify(res.body)}`);
-    }
-    const agentData = res.body.agent as Record<string, unknown>;
-    const apiKey = res.body.apiKey as string;
-    agents.push({
-      id: agentData['id'] as string,
-      apiKey,
-      policyName: cfg.policyName,
     });
+    agents.push({ id: agent.id, apiKey: key.raw, policyName: ac.policyName });
   }
-
-  // Generate a few audit events by calling evaluate
-  console.log(`  → Generating audit events for ${slug}`);
-
-  for (const agent of agents) {
-    for (let i = 0; i < 3; i++) {
-      try {
-        await apiRequest(
-          'POST',
-          '/v1/actions/evaluate',
-          {
-            agentId: agent.id,
-            sessionId: `seed-session-${slug}-${agent.id}`,
-            tool: 'read_file',
-            params: { path: `/tmp/test-${i}.txt` },
-          },
-          jwt,
-        );
-      } catch {
-        // Non-fatal: audit events are nice-to-have for seed
-      }
-    }
-  }
-
-  // Small delay to let async audit logging settle
-  await new Promise((r) => setTimeout(r, 500));
 
   return {
-    tenantId,
+    id: tenantId,
     slug,
     jwt,
+    userId,
     agents,
     policies: {
-      allowAll: allowAllPolicyId,
-      blockAll: blockAllPolicyId,
-      requireApproval: requireApprovalPolicyId,
+      allowAll: policyIds['allowAll']!,
+      blockAll: policyIds['blockAll']!,
+      requireApproval: policyIds['requireApproval']!,
     },
   };
 }
 
 async function main(): Promise<SeedData> {
-  console.log('🌱 Seeding E2E test data...\n');
+  console.log('🌱 Seeding E2E test data (Prisma-only, no HTTP)...\n');
 
-  // Check server is up
-  let serverOk = false;
-  for (let i = 0; i < 20; i++) {
-    try {
-      const res = await fetch(`${BASE_URL}/v1/health`);
-      if (res.ok) { serverOk = true; break; }
-    } catch {
-      // not ready
+  // Clean existing E2E data to make idempotent
+  console.log('  → Cleaning existing E2E data...');
+  const existingSlugs = ['tenant-alpha', 'tenant-beta'];
+  for (const slug of existingSlugs) {
+    const t = await prisma.tenant.findUnique({ where: { slug } });
+    if (t) {
+      // Delete in dependency order
+      await prisma.auditEvent.deleteMany({ where: { tenantId: t.id } });
+      await prisma.hITLGate.deleteMany({ where: { tenantId: t.id } });
+      await prisma.killSwitchCommand.deleteMany({ where: { tenantId: t.id } });
+      await prisma.agentSession.deleteMany({ where: { tenantId: t.id } });
+      await prisma.agent.deleteMany({ where: { tenantId: t.id } });
+      await prisma.policyVersion.deleteMany({ where: { tenantId: t.id } });
+      await prisma.policy.deleteMany({ where: { tenantId: t.id } });
+      await prisma.user.deleteMany({ where: { tenantId: t.id } });
+      await prisma.tenant.delete({ where: { slug } });
     }
-    await new Promise((r) => setTimeout(r, 1000));
-    console.log(`  Waiting for server... (attempt ${i + 1}/20)`);
   }
-  if (!serverOk) throw new Error('Server did not start in time');
 
+  // Seed both tenants
   const [alpha, beta] = await Promise.all([
-    seedTenant('tenant-alpha', `admin-alpha-${Date.now()}`),
-    seedTenant('tenant-beta', `admin-beta-${Date.now()}`),
+    seedTenant('tenant-alpha'),
+    seedTenant('tenant-beta'),
   ]);
 
   const seedData: SeedData = {
-    tenantAlpha: {
-      id: alpha.tenantId,
-      slug: alpha.slug,
-      jwt: alpha.jwt,
-      agents: alpha.agents,
-      policies: alpha.policies,
-    },
-    tenantBeta: {
-      id: beta.tenantId,
-      slug: beta.slug,
-      jwt: beta.jwt,
-      agents: beta.agents,
-      policies: beta.policies,
-    },
+    tenantAlpha: alpha,
+    tenantBeta: beta,
   };
 
   // Write seed data to file for test files to import

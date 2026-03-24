@@ -39,7 +39,7 @@ jobs:
       DATABASE_URL: postgresql://test:test@localhost:5433/agentguard_test
       DATABASE_DIRECT_URL: postgresql://test:test@localhost:5433/agentguard_test
       REDIS_URL: redis://localhost:6380
-      JWT_SECRET: test-jwt-secret-e2e
+      JWT_SECRET: test-jwt-secret-for-e2e-only
       NODE_ENV: test
       BASE_URL: http://localhost:3001
 
@@ -60,6 +60,10 @@ jobs:
       - name: Push database schema
         run: npx prisma db push --schema=packages/api/prisma/schema.prisma --skip-generate
 
+      # Seed BEFORE starting server — seed is Prisma-only (direct DB), no HTTP needed
+      - name: Seed test data
+        run: npx tsx tests/e2e/seed.ts
+
       - name: Build packages
         run: |
           npm run build --workspace=packages/shared 2>/dev/null || (cd packages/shared && npx tsc --build || true)
@@ -69,42 +73,31 @@ jobs:
       - name: Start API server
         run: |
           mkdir -p logs
-          PORT=3001 \
-          DATABASE_URL="postgresql://test:test@localhost:5433/agentguard_test" \
-          REDIS_URL="redis://localhost:6380" \
-          JWT_SECRET="test-jwt-secret-for-e2e-only" \
-          NODE_ENV="test" \
-          ./node_modules/.bin/tsx packages/api/src/index.ts > logs/server-stdout.log 2>&1 &
+          ./node_modules/.bin/tsx packages/api/src/index.ts > logs/server.log 2>&1 &
           echo $! > /tmp/api-server.pid
           echo "Server PID: $(cat /tmp/api-server.pid)"
 
       - name: Wait for API server to be ready
         run: |
           for i in $(seq 1 45); do
-            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" http://localhost:3001/v1/health 2>/dev/null || echo "000")
-            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "503" ]; then
-              echo "✅ Server responding (HTTP $HTTP_CODE)"
+            if curl -sf http://localhost:3001/v1/health > /dev/null 2>&1; then
+              echo "✅ Server ready"
               exit 0
             fi
             echo "Waiting for server... ($i/45)"
             sleep 2
           done
           echo "❌ Server did not start in time"
-          echo "--- Server stdout ---"
-          cat logs/server-stdout.log 2>/dev/null || echo "(no log)"
+          echo "--- Server log ---"
+          cat logs/server.log 2>/dev/null || echo "(no log)"
           exit 1
-
-      - name: Seed test data
-        run: npx tsx tests/e2e/seed.ts
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5433/agentguard_test
-          BASE_URL: http://localhost:3001
-          JWT_SECRET: test-jwt-secret-for-e2e-only
 
       - name: Run E2E tests
         run: npx vitest run tests/e2e/ --reporter=verbose
-        env:
-          PORT: 3001
+
+      - name: Print server log on failure
+        if: failure()
+        run: cat logs/server.log 2>/dev/null || echo "(no log)"
 
       - name: Stop API server
         if: always()
@@ -112,5 +105,4 @@ jobs:
           if [ -f /tmp/api-server.pid ]; then
             kill $(cat /tmp/api-server.pid) 2>/dev/null || true
           fi
-          # Kill any remaining tsx processes
           pkill -f "tsx packages/api/src/index.ts" 2>/dev/null || true
