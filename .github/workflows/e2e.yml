@@ -1,0 +1,104 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: agentguard_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5433/agentguard_test
+      DATABASE_DIRECT_URL: postgresql://test:test@localhost:5433/agentguard_test
+      REDIS_URL: redis://localhost:6380
+      JWT_SECRET: test-jwt-secret-e2e
+      NODE_ENV: test
+      BASE_URL: http://localhost:3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=packages/api/prisma/schema.prisma
+
+      - name: Push database schema
+        run: npx prisma db push --schema=packages/api/prisma/schema.prisma --skip-generate
+
+      - name: Build API
+        run: |
+          cd packages/shared && npx tsc --build 2>/dev/null || true
+          cd packages/api && npx tsc --build 2>/dev/null || true
+        continue-on-error: false
+
+      - name: Start API server
+        run: |
+          PORT=3001 npx tsx packages/api/src/index.ts &
+          echo $! > /tmp/api-server.pid
+        env:
+          PORT: 3001
+
+      - name: Wait for API server to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3001/v1/health > /dev/null 2>&1; then
+              echo "✅ Server ready"
+              exit 0
+            fi
+            echo "Waiting for server... ($i/30)"
+            sleep 2
+          done
+          echo "❌ Server did not start in time"
+          exit 1
+
+      - name: Seed test data
+        run: npx tsx tests/e2e/seed.ts
+
+      - name: Run E2E tests
+        run: npx vitest run tests/e2e/ --reporter=verbose
+        env:
+          PORT: 3001
+
+      - name: Stop API server
+        if: always()
+        run: |
+          if [ -f /tmp/api-server.pid ]; then
+            kill $(cat /tmp/api-server.pid) 2>/dev/null || true
+          fi
+          # Kill any remaining tsx processes
+          pkill -f "tsx packages/api/src/index.ts" 2>/dev/null || true
