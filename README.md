@@ -132,7 +132,7 @@ curl https://api.agentguard.tech/api/v1/audit/verify \
 ### 📊 Compliance Templates
 Pre-built policies for regulated industries:
 - **EU AI Act** — Articles 5, 9, 12, 14
-- **SOC 2** — CC1-9 mapped to agent controls
+- **SOC 2** — CC1-9 mapped to agent controls (helps generate SOC 2 *evidence*; AgentGuard's own SOC 2 Type II certification is in progress)
 - **APRA CPS 234** — Australian financial services
 - **OWASP Top 10 for Agentic AI** — with auto-generated evidence reports
 - **Financial Services Baseline** — AML, KYC, insider trading
