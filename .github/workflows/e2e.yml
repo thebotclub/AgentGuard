@@ -68,15 +68,13 @@ jobs:
 
       - name: Start API server
         run: |
-          nohup sh -c '
-            mkdir -p logs
-            PORT=3001 \
-            DATABASE_URL="postgresql://test:test@localhost:5433/agentguard_test" \
-            REDIS_URL="redis://localhost:6380" \
-            JWT_SECRET="test-jwt-secret-for-e2e-only" \
-            NODE_ENV="test" \
-            ./node_modules/.bin/tsx packages/api/src/index.ts
-          " > logs/server-stdout.log 2>&1 &
+          mkdir -p logs
+          PORT=3001 \
+          DATABASE_URL="postgresql://test:test@localhost:5433/agentguard_test" \
+          REDIS_URL="redis://localhost:6380" \
+          JWT_SECRET="test-jwt-secret-for-e2e-only" \
+          NODE_ENV="test" \
+          ./node_modules/.bin/tsx packages/api/src/index.ts > logs/server-stdout.log 2>&1 &
           echo $! > /tmp/api-server.pid
           echo "Server PID: $(cat /tmp/api-server.pid)"
 
