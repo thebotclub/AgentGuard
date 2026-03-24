@@ -16,3 +16,6 @@ coverage/
 *.key
 .npmrc
 *.tgz
+
+# E2E test seed data (contains ephemeral JWT tokens)
+tests/e2e/.seed-data.json

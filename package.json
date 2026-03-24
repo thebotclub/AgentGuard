@@ -2,7 +2,7 @@
   "name": "agentguard",
   "version": "0.9.2",
   "private": true,
-  "description": "AgentGuard — Runtime security platform for AI agents",
+  "description": "AgentGuard \u2014 Runtime security platform for AI agents",
   "workspaces": [
     "packages/*",
     "remotion"
@@ -23,7 +23,10 @@
     "docs:dev": "vitepress dev vitepress-docs",
     "docs:build": "vitepress build vitepress-docs",
     "docs:preview": "vitepress preview vitepress-docs",
-    "openapi:generate": "npx tsx api/scripts/generate-openapi.ts"
+    "openapi:generate": "npx tsx api/scripts/generate-openapi.ts",
+    "test:e2e:run": "npx vitest run --config vitest.e2e.config.ts",
+    "test:e2e:seed": "npx tsx tests/e2e/seed.ts",
+    "test:e2e:watch": "npx vitest --config vitest.e2e.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
