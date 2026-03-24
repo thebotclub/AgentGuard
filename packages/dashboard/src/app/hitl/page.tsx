@@ -362,7 +362,7 @@ export default function HitlPage() {
     const token = typeof window !== 'undefined'
       ? (localStorage.getItem('ag_token') ?? process.env['NEXT_PUBLIC_AGENTGUARD_JWT'] ?? '')
       : '';
-    const url = `${API_URL}/events?token=${encodeURIComponent(token)}`;
+    const url = `${API_URL}/events/stream?token=${encodeURIComponent(token)}`;
 
     let es: EventSource;
     try {
