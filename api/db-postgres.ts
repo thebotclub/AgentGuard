@@ -8,7 +8,8 @@
  * Schema: Auto-migrated on startup.
  */
 
-import type { Pool, PoolConfig } from 'pg';
+import type { Pool, PoolConfig, PoolClient } from 'pg';
+import { rlsContext } from './lib/rls-context.js';
 import type {
   IDatabase,
   TenantRow,
@@ -551,21 +552,78 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
     return { text, values: params };
   }
 
+  // ── RLS helper: run a query inside a transaction with SET LOCAL ────────────
+  //
+  // When an RLS context is active (i.e. a tenant is authenticated on this
+  // request), we wrap each query in an explicit transaction so that
+  // `SET LOCAL app.current_tenant_id` is scoped to that transaction only and
+  // never leaks to the next caller on the same pooled connection.
+  //
+  // Without SET LOCAL, the RLS policies on all 22 tenant-scoped tables would
+  // evaluate `current_setting('app.current_tenant_id', true)` as NULL and
+  // return no rows — making RLS security-theater.  With it, they enforce true
+  // tenant isolation at the database layer even if the application layer
+  // accidentally omits a WHERE clause.
+  //
+  // For non-authenticated calls (migrations, background jobs, demo evaluate)
+  // the fallback path uses a plain pool.query() — RLS policies see NULL and
+  // return nothing, which is the safe fail-closed default.
+  async function withRlsClient<T>(
+    fn: (client: PoolClient) => Promise<T>,
+  ): Promise<T> {
+    const tenantId = rlsContext.getTenantId();
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      if (tenantId) {
+        // SET LOCAL is transaction-scoped: automatically reset on COMMIT/ROLLBACK,
+        // so it can never leak to the next request that reuses this connection.
+        await client.query('SET LOCAL app.current_tenant_id = $1', [tenantId]);
+      }
+      const result = await fn(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (e) {
+      await client.query('ROLLBACK').catch(() => { /* best-effort */ });
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
+
   // ── Core query helpers ─────────────────────────────────────────────────────
 
   async function exec(sql: string, params: unknown[] = []): Promise<void> {
     const { text, values } = toPositional(sql, params);
-    await pool.query(text, values.length ? values : undefined);
+    if (rlsContext.getTenantId()) {
+      await withRlsClient((client) =>
+        client.query(text, values.length ? values : undefined).then(() => undefined),
+      );
+    } else {
+      await pool.query(text, values.length ? values : undefined);
+    }
   }
 
   async function get<T = unknown>(sql: string, params: unknown[] = []): Promise<T | undefined> {
     const { text, values } = toPositional(sql, params);
+    if (rlsContext.getTenantId()) {
+      return withRlsClient(async (client) => {
+        const result = await client.query(text, values.length ? values : undefined);
+        return result.rows[0] as T | undefined;
+      });
+    }
     const result = await pool.query(text, values.length ? values : undefined);
     return result.rows[0] as T | undefined;
   }
 
   async function all<T = unknown>(sql: string, params: unknown[] = []): Promise<T[]> {
     const { text, values } = toPositional(sql, params);
+    if (rlsContext.getTenantId()) {
+      return withRlsClient(async (client) => {
+        const result = await client.query(text, values.length ? values : undefined);
+        return result.rows as T[];
+      });
+    }
     const result = await pool.query(text, values.length ? values : undefined);
     return result.rows as T[];
   }

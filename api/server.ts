@@ -20,6 +20,7 @@ import {
 } from './validation-routes.js';
 import { createDb } from './db-factory.js';
 import { createAuthMiddleware } from './middleware/auth.js';
+
 import {
   rateLimitMiddleware,
   bruteForceMiddleware,
@@ -637,6 +638,9 @@ async function main(): Promise<void> {
   app.use(csrfMiddleware);
 
   // ── Mount Route Modules ────────────────────────────────────────────────
+  // RLS tenant context is activated by the auth middleware (auth.ts) itself:
+  // each auth strategy wraps its next() call inside rlsContext.run(tenantId)
+  // so that downstream DB queries can issue SET LOCAL app.current_tenant_id.
   app.use(createAuthRoutes(db, auth));
   app.use(createBatchEvaluateRoutes(db, auth));
   app.use(createEvaluateRoutes(db, auth));

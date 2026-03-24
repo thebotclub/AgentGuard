@@ -17,6 +17,7 @@ import {
   extractBearerToken,
   verifyJwt,
 } from './jwt-auth.js';
+import { nextWithRlsContext } from './rls-tenant-context.js';
 
 // ── Key verification helper ────────────────────────────────────────────────
 
@@ -85,6 +86,27 @@ export interface AuthMiddleware {
 export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
   const ADMIN_KEY = process.env['ADMIN_KEY'];
 
+  /**
+   * Call next() with or without an RLS context depending on whether the
+   * request has a real (non-demo) tenant ID.
+   *
+   * When tenantId is a real tenant:
+   *   The async call chain runs inside rlsContext.run(tenantId, ...) so
+   *   the PostgreSQL adapter can issue SET LOCAL app.current_tenant_id
+   *   before each query, activating the Row Level Security policies.
+   *
+   * When tenantId is 'demo', undefined, or absent:
+   *   next() is called without an RLS context. Postgres RLS sees NULL for
+   *   app.current_tenant_id and returns no rows (fail-closed).
+   */
+  function activateRls(tenantId: string | undefined, next: NextFunction): void {
+    if (tenantId && tenantId !== 'demo') {
+      nextWithRlsContext(tenantId, next);
+    } else {
+      next();
+    }
+  }
+
   async function optionalTenantAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
     // Strategy 1: JWT Bearer token (optional — no error if verification fails or unset)
     const bearerToken = extractBearerToken(req);
@@ -98,7 +120,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
           req.tenantId = result.tenantId;
           req.tenant = null;
           req.agent = null;
-          next();
+          activateRls(req.tenantId, next);
           return;
         }
       }
@@ -134,7 +156,8 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
       req.tenantId = 'demo';
       req.agent = null;
     }
-    next();
+    // Activate RLS for any real tenant identified via API key or agent key
+    activateRls(req.tenantId, next);
   }
 
   async function requireTenantAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -157,7 +180,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
       req.tenantId = result.tenantId;
       req.tenant = null; // JWT users don't have a DB tenant row (yet)
       req.agent = null;
-      next();
+      activateRls(req.tenantId, next);
       return;
     }
 
@@ -195,7 +218,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     req.tenant = tenant;
     req.tenantId = tenant.id;
     req.agent = null;
-    next();
+    activateRls(tenant.id, next);
   }
 
   /**
@@ -224,7 +247,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
       req.tenantId = result.tenantId;
       req.tenant = null;
       req.agent = null;
-      next();
+      activateRls(req.tenantId, next);
       return;
     }
 
@@ -237,7 +260,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
       req.tenantId = undefined; // evaluate route defaults to 'demo'
       req.tenant = null;
       req.agent = null;
-      next();
+      next(); // no RLS context for anonymous requests
       return;
     }
     if (apiKey.startsWith('ag_agent_')) {
@@ -259,7 +282,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
       req.agent = agentRow;
       req.tenant = tenant ?? null;
       req.tenantId = agentRow.tenant_id;
-      next();
+      activateRls(agentRow.tenant_id, next);
       return;
     }
     const tenant = await lookupTenant(db, apiKey);
@@ -279,7 +302,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
     req.tenant = tenant;
     req.tenantId = tenant.id;
     req.agent = null;
-    next();
+    activateRls(tenant.id, next);
   }
 
   function requireAdminAuth(req: Request, res: Response, next: NextFunction): void {
