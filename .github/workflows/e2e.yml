@@ -60,11 +60,11 @@ jobs:
       - name: Push database schema
         run: npx prisma db push --schema=packages/api/prisma/schema.prisma --skip-generate
 
-      - name: Build API
+      - name: Build packages
         run: |
-          cd packages/shared && npx tsc --build 2>/dev/null || true
-          cd packages/api && npx tsc --build 2>/dev/null || true
-        continue-on-error: false
+          npm run build --workspace=packages/shared 2>/dev/null || (cd packages/shared && npx tsc --build || true)
+          npm run build --workspace=packages/compliance 2>/dev/null || (cd packages/compliance && npx tsc --build || true)
+          npm run build --workspace=packages/api 2>/dev/null || (cd packages/api && npx tsc --build || true)
 
       - name: Start API server
         run: |
