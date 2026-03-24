@@ -13,6 +13,7 @@
  *  GET  /api/v1/mcp/sessions   — list active MCP sessions
  */
 import { Router, Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import type { IDatabase, TenantRow } from './db-interface.js';
 import { getMcpMiddleware } from './mcp-middleware.js';
 import type { McpRequest, McpToolCallParams } from './mcp-middleware.js';
@@ -36,7 +37,11 @@ interface AuthedRequest extends Request {
 // ── Auth helpers ───────────────────────────────────────────────────────────
 
 async function lookupTenantFromDb(db: IDatabase, apiKey: string): Promise<TenantRow | null> {
-  const keyRow = await db.getApiKey(apiKey) as ApiKeyRow | undefined;
+  // Primary: SHA-256 lookup (hashed keys)
+  const sha256 = crypto.createHash('sha256').update(apiKey).digest('hex');
+  let keyRow = await db.getApiKeyBySha256(sha256) as ApiKeyRow | undefined;
+  // Legacy fallback: plaintext lookup for keys created before hash-only storage
+  if (!keyRow) keyRow = await db.getApiKey(apiKey) as ApiKeyRow | undefined;
   if (!keyRow) return null;
   await db.touchApiKey(apiKey);
   const tenant = await db.getTenant(keyRow.tenant_id);
