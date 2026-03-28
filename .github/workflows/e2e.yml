@@ -7,8 +7,44 @@ on:
     branches: [main]
 
 jobs:
-  e2e:
+  # ─── Unit + Integration tests (no infra needed) ───────────────────────────
+  unit:
+    name: Unit & Integration Tests
     runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=packages/api/prisma/schema.prisma
+
+      - name: Run unit + integration tests
+        run: npx vitest run --reporter=verbose
+        env:
+          NODE_ENV: test
+
+      - name: Upload coverage report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+        continue-on-error: true
+
+  # ─── E2E tests (requires Postgres + Redis + live server) ─────────────────
+  e2e:
+    name: E2E Tests (Real DB + HTTP)
+    runs-on: ubuntu-latest
+    needs: unit  # Only run E2E if unit tests pass
 
     services:
       postgres:
@@ -21,9 +57,9 @@ jobs:
           - 5433:5432
         options: >-
           --health-cmd pg_isready
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
       redis:
         image: redis:7-alpine
@@ -31,9 +67,9 @@ jobs:
           - 6380:6379
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
     env:
       DATABASE_URL: postgresql://test:test@localhost:5433/agentguard_test
@@ -42,6 +78,8 @@ jobs:
       JWT_SECRET: test-jwt-secret-for-e2e-only
       NODE_ENV: test
       BASE_URL: http://localhost:3001
+      # Disable RLS for test environment (RLS requires superuser setup)
+      SKIP_RLS: "true"
 
     steps:
       - uses: actions/checkout@v4
@@ -60,15 +98,20 @@ jobs:
       - name: Push database schema
         run: npx prisma db push --schema=packages/api/prisma/schema.prisma --skip-generate
 
-      # Seed BEFORE starting server — seed is Prisma-only (direct DB), no HTTP needed
-      - name: Seed test data
+      # Seed BEFORE starting server — seed uses Prisma directly (no HTTP needed)
+      - name: Seed E2E test data
         run: npx tsx tests/e2e/seed.ts
 
-      - name: Build packages
+      - name: Build shared packages
         run: |
-          npm run build --workspace=packages/shared 2>/dev/null || (cd packages/shared && npx tsc --build || true)
-          npm run build --workspace=packages/compliance 2>/dev/null || (cd packages/compliance && npx tsc --build || true)
-          npm run build --workspace=packages/api 2>/dev/null || (cd packages/api && npx tsc --build || true)
+          set -e
+          echo "Building packages/shared..."
+          cd packages/shared && npx tsc --build && cd ../..
+          echo "Building packages/compliance (if exists)..."
+          if [ -f packages/compliance/tsconfig.json ]; then
+            cd packages/compliance && npx tsc --build && cd ../..
+          fi
+          echo "Done building packages."
 
       - name: Start API server
         run: |
@@ -77,32 +120,63 @@ jobs:
           echo $! > /tmp/api-server.pid
           echo "Server PID: $(cat /tmp/api-server.pid)"
 
-      - name: Wait for API server to be ready
+      - name: Wait for API server
         run: |
+          echo "Waiting for server to be ready at http://localhost:3001/v1/health ..."
           for i in $(seq 1 45); do
             if curl -sf http://localhost:3001/v1/health > /dev/null 2>&1; then
-              echo "✅ Server ready"
+              echo "✅ Server ready after ${i} attempts"
               exit 0
             fi
-            echo "Waiting for server... ($i/45)"
+            echo "  Attempt $i/45 — not ready yet, sleeping 2s..."
             sleep 2
           done
-          echo "❌ Server did not start in time"
-          echo "--- Server log ---"
+          echo "❌ Server did not start in time (90s timeout)"
+          echo ""
+          echo "=== Server log ==="
           cat logs/server.log 2>/dev/null || echo "(no log)"
           exit 1
 
       - name: Run E2E tests
         run: npx vitest run --config vitest.e2e.config.ts --reporter=verbose
 
+      - name: Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: |
+            logs/server.log
+            tests/e2e/.seed-data.json
+          retention-days: 3
+        continue-on-error: true
+
       - name: Print server log on failure
         if: failure()
-        run: cat logs/server.log 2>/dev/null || echo "(no log)"
+        run: |
+          echo "=== API Server Log ==="
+          cat logs/server.log 2>/dev/null || echo "(no log)"
 
       - name: Stop API server
         if: always()
         run: |
           if [ -f /tmp/api-server.pid ]; then
-            kill $(cat /tmp/api-server.pid) 2>/dev/null || true
+            kill "$(cat /tmp/api-server.pid)" 2>/dev/null || true
           fi
           pkill -f "tsx packages/api/src/index.ts" 2>/dev/null || true
+
+  # ─── Staging deploy gate ──────────────────────────────────────────────────
+  staging-gate:
+    name: Staging Readiness Gate
+    runs-on: ubuntu-latest
+    needs: [unit, e2e]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: All checks passed — ready to deploy to staging
+        run: |
+          echo "✅ Unit tests: passed"
+          echo "✅ E2E tests: passed"
+          echo "✅ Staging gate cleared for commit ${{ github.sha }}"
+          echo ""
+          echo "To deploy: trigger deploy-azure workflow manually or via release tag."
