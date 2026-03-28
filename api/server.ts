@@ -113,13 +113,16 @@ if (process.env['CORS_ORIGINS']) {
       .filter(Boolean),
   );
 }
+// Only allow localhost origins in non-production environments (dev/test only).
+const IS_PRODUCTION = process.env['NODE_ENV'] === 'production';
 app.use(
   cors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       const isAllowed =
         !origin ||
         ALLOWED_ORIGINS.includes(origin) ||
-        /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
+        // localhost is ONLY permitted in development/test environments, never in production
+        (!IS_PRODUCTION && /^https?:\/\/localhost(:\d+)?$/.test(origin)) ||
         /^https:\/\/agentguard-[^.]+\.australiaeast\.azurecontainerapps\.io$/.test(
           origin,
         );
@@ -778,7 +781,7 @@ async function main(): Promise<void> {
     console.log(
       `   ${DEFAULT_POLICY.rules.length} rules loaded | default: ${DEFAULT_POLICY.default}`,
     );
-    console.log(`   CORS: ${ALLOWED_ORIGINS.join(', ')}, localhost:*`);
+    console.log(`   CORS: ${ALLOWED_ORIGINS.join(', ')}${!IS_PRODUCTION ? ', localhost:* (dev only)' : ''}`);
     console.log(`   Rate limit: 10 req/min (unauthenticated) | 100 req/min (authenticated) per IP`);
     console.log(`   DB: ${db.type} | ${process.env['AG_DB_PATH'] || 'default path'}`);
     console.log(

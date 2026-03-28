@@ -39,10 +39,15 @@ export function createApp(): Hono {
   // ── Global middleware ────────────────────────────────────────────────────────
   app.use('*', logger());
   app.use('*', secureHeaders());
+  // In production, CORS_ORIGIN must be set explicitly — never fall back to '*'.
+  // In development/test the wildcard is acceptable.
+  const corsOrigin =
+    process.env['CORS_ORIGIN'] ??
+    (process.env['NODE_ENV'] === 'production' ? 'https://app.agentguard.tech' : '*');
   app.use(
     '*',
     cors({
-      origin: process.env['CORS_ORIGIN'] ?? '*',
+      origin: corsOrigin,
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization', 'X-Trace-Id', 'X-API-Key', 'Accept'],
       exposeHeaders: [
