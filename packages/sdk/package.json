@@ -48,11 +48,21 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@hono/node-server": "^1.19.0",
     "@types/js-yaml": "^4.0.9",
     "@types/micromatch": "^4.0.9",
     "@types/node": "^22.0.0",
+    "hono": "^4.12.0",
     "typescript": "^5.7.3",
     "vitest": "^2.1.0"
+  },
+  "peerDependencies": {
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "hono": { "optional": true },
+    "@hono/node-server": { "optional": true }
   },
   "publishConfig": {
     "access": "public"
