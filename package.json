@@ -64,7 +64,10 @@
     },
     "esbuild": "^0.25.0",
     "brace-expansion": "^2.0.3",
-    "picomatch": "^2.3.2",
+    "picomatch": ">=2.3.2",
+    "tinyglobby": {
+      "picomatch": "^4.0.4"
+    },
     "path-to-regexp": "^8.4.0"
   },
   "dependencies": {
