@@ -23,7 +23,7 @@
  *     "installs": {
  *       "agentguard": {
  *         "source": "npm",
- *         "spec": "@the-bot-club/agentguard-openclaw@^1.0.0"
+ *         "spec": "@the-bot-club/agentguard@^1.0.0"
  *       }
  *     }
  *   }
@@ -76,6 +76,8 @@ export interface OpenClawPluginConfig {
   baseUrl?: string;
   /** Block on policy eval errors (default: true / fail-closed) */
   strict?: boolean;
+  /** HTTP request timeout in milliseconds (default: 10000) */
+  timeoutMs?: number;
 }
 
 export interface OpenClawInterceptResult {
@@ -95,11 +97,13 @@ class OpenClawClient {
   private readonly baseUrl: string;
   private readonly apiKey: string;
   private readonly agentId: string;
+  private readonly timeoutMs: number;
 
-  constructor(options: { baseUrl: string; apiKey: string; agentId: string }) {
+  constructor(options: { baseUrl: string; apiKey: string; agentId: string; timeoutMs: number }) {
     this.baseUrl = options.baseUrl;
     this.apiKey = options.apiKey;
     this.agentId = options.agentId;
+    this.timeoutMs = options.timeoutMs;
   }
 
   async intercept(
@@ -109,35 +113,43 @@ class OpenClawClient {
     runId?: string,
     toolCallId?: string,
   ): Promise<OpenClawInterceptResult> {
-    const response = await fetch(`${this.baseUrl}/v1/openclaw/intercept`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-        'User-Agent': 'agentguard-openclaw-plugin/1.0',
-      },
-      body: JSON.stringify({
-        request: {
-          method: 'tool_call',
-          id: toolCallId ?? `openclaw-${Date.now()}`,
-          params: {
-            name: toolName,
-            arguments: params,
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/v1/openclaw/intercept`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+          'User-Agent': 'agentguard-openclaw-plugin/1.0',
+        },
+        body: JSON.stringify({
+          request: {
+            method: 'tool_call',
+            id: toolCallId ?? `openclaw-${Date.now()}`,
+            params: {
+              name: toolName,
+              arguments: params,
+            },
           },
-        },
-        identity: {
-          agentId: this.agentId,
-          sessionId,
-          runId,
-        },
-      }),
-    });
+          identity: {
+            agentId: this.agentId,
+            sessionId,
+            runId,
+          },
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`AgentGuard API returned HTTP ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`AgentGuard API returned HTTP ${response.status}`);
+      }
+
+      return response.json() as Promise<OpenClawInterceptResult>;
+    } finally {
+      clearTimeout(timer);
     }
-
-    return response.json() as Promise<OpenClawInterceptResult>;
   }
 }
 
@@ -170,7 +182,7 @@ class OpenClawClient {
  *     "installs": {
  *       "agentguard": {
  *         "source": "npm",
- *         "spec": "@the-bot-club/agentguard-openclaw@^1.0.0"
+ *         "spec": "@the-bot-club/agentguard@^1.0.0"
  *       }
  *     }
  *   }
@@ -180,12 +192,14 @@ class OpenClawClient {
 export function register(api: OpenClawPluginApi): void {
   const cfg = api.config as OpenClawPluginConfig;
 
-  const apiKey = cfg.apiKey ?? process.env['AGENTGUARD_API_KEY'] ?? '';
-  const agentId = cfg.agentId ?? process.env['AGENTGUARD_AGENT_ID'] ?? '';
-  const baseUrl = cfg.baseUrl ?? process.env['AGENTGUARD_API_URL'] ?? 'https://api.agentguard.tech';
+  const env = typeof process !== 'undefined' ? process.env : {} as Record<string, string | undefined>;
+  const apiKey = cfg.apiKey ?? env['AGENTGUARD_API_KEY'] ?? '';
+  const agentId = cfg.agentId ?? env['AGENTGUARD_AGENT_ID'] ?? '';
+  const baseUrl = cfg.baseUrl ?? env['AGENTGUARD_API_URL'] ?? 'https://api.agentguard.tech';
   const strict = cfg.strict !== false; // default fail-closed
+  const timeoutMs = cfg.timeoutMs ?? 10_000;
 
-  const client = new OpenClawClient({ baseUrl, apiKey, agentId });
+  const client = new OpenClawClient({ baseUrl, apiKey, agentId, timeoutMs });
 
   api.on(
     'before_tool_call',

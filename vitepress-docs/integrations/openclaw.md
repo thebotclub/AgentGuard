@@ -27,7 +27,7 @@ POST /v1/openclaw/intercept → AgentGuard Policy Engine
 Install the plugin package into your OpenClaw agent project:
 
 ```bash
-npm install @the-bot-club/agentguard-openclaw
+npm install @the-bot-club/agentguard
 ```
 
 Then register it in your `openclaw.json`:
@@ -48,7 +48,7 @@ Then register it in your `openclaw.json`:
     "installs": {
       "agentguard": {
         "source": "npm",
-        "spec": "@the-bot-club/agentguard-openclaw@^1.0.0"
+        "spec": "@the-bot-club/agentguard@^1.0.0"
       }
     }
   }
@@ -345,29 +345,3 @@ guard = openclaw_guard(
     base_url="https://agentguard.internal.your-company.com",
 )
 ```
-
-## Publishing as a Standalone Package
-
-The TypeScript plugin is designed to be published as `@the-bot-club/agentguard-openclaw`. The package structure:
-
-```
-@the-bot-club/agentguard-openclaw/
-├── dist/
-│   └── openclaw.js        # compiled plugin entry point
-├── openclaw.plugin.json   # OpenClaw plugin manifest
-└── package.json
-```
-
-The `package.json` should re-export the plugin:
-
-```json
-{
-  "name": "@the-bot-club/agentguard-openclaw",
-  "main": "./dist/openclaw.js",
-  "peerDependencies": {
-    "openclaw": ">=1.0.0"
-  }
-}
-```
-
-This keeps `openclaw` as a peer/optional dependency — the `agentguard` base package works without it.

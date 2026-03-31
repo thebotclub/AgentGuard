@@ -22,7 +22,7 @@ Usage::
     #     "installs": {
     #       "agentguard": {
     #         "source": "npm",
-    #         "spec": "@the-bot-club/agentguard-openclaw@^1.0.0"
+    #         "spec": "@the-bot-club/agentguard@^1.0.0"
     #       }
     #     }
     #   }
@@ -162,9 +162,9 @@ class OpenClawGuard:
         strict: bool = True,
         timeout_sec: float = 10.0,
     ) -> None:
-        self._api_key = api_key or os.environ.get("AGENTGUARD_API_KEY", "")
-        self._agent_id = agent_id or os.environ.get("AGENTGUARD_AGENT_ID", "")
-        self._base_url = base_url or os.environ.get("AGENTGUARD_API_URL", "https://api.agentguard.tech")
+        self._api_key = api_key
+        self._agent_id = agent_id
+        self._base_url = base_url
         self._session_id = session_id or f"openclaw_{int(time.time())}"
         self._strict = strict
         self._timeout_sec = timeout_sec
@@ -266,7 +266,7 @@ class OpenClawGuard:
         Async version of intercept_sync.
         Runs the synchronous HTTP call in a thread pool to avoid blocking.
         """
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             None,
             lambda: self.intercept_sync(tool_name, params, session_id, run_id, tool_call_id),
@@ -344,9 +344,9 @@ def openclaw_guard(
         print(decision.decision)  # 'allow', 'block', 'hitl', or 'monitor'
     """
     return OpenClawGuard(
-        api_key=api_key or os.environ.get("AGENTGUARD_API_KEY", ""),
-        agent_id=agent_id or os.environ.get("AGENTGUARD_AGENT_ID", ""),
-        base_url=base_url,
+        api_key=api_key or os.environ.get("AGENTGUARD_API_KEY") or "",
+        agent_id=agent_id or os.environ.get("AGENTGUARD_AGENT_ID") or "",
+        base_url=base_url or os.environ.get("AGENTGUARD_API_URL") or "https://api.agentguard.tech",
         session_id=session_id,
         strict=strict,
         timeout_sec=timeout_sec,

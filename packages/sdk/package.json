@@ -6,6 +6,7 @@
   "type": "module",
   "files": [
     "dist",
+    "openclaw.plugin.json",
     "README.md"
   ],
   "main": "./dist/index.js",
@@ -28,6 +29,10 @@
       "import": "./dist/sdk/index.js",
       "require": "./dist/sdk/index.js",
       "default": "./dist/sdk/index.js"
+    },
+    "./openclaw": {
+      "types": "./dist/integrations/openclaw.d.ts",
+      "import": "./dist/integrations/openclaw.js"
     }
   },
   "scripts": {

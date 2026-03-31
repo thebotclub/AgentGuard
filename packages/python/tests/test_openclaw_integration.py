@@ -235,7 +235,7 @@ class TestOpenClawGuardInterceptSync(unittest.TestCase):
 class TestOpenClawGuardInterceptAsync(unittest.TestCase):
 
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     @patch("urllib.request.urlopen")
     def test_async_allow(self, mock_urlopen):
@@ -272,7 +272,7 @@ class TestOpenClawGuardInterceptAsync(unittest.TestCase):
 class TestOpenClawGuardBeforeToolCall(unittest.TestCase):
 
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     @patch("urllib.request.urlopen")
     def test_allow_returns_none(self, mock_urlopen):
