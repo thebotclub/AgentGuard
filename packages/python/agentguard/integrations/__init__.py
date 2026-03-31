@@ -7,12 +7,14 @@ Provides one-liner guards for popular Python agent frameworks:
 - CrewAI:     ``AgentGuardCallback`` / ``crewai_guard()``
 - AutoGen:    ``AutoGenGuard`` / ``create_guarded_agent()`` / ``wrap()``
 - LangGraph:  ``AgentGuardNode`` / ``guarded_stream()`` / ``wrap_tool_node()``
+- OpenClaw:   ``OpenClawGuard`` / ``openclaw_guard()``
 
 Example::
 
     from agentguard.integrations import langchain_guard, openai_guard, crewai_guard
     from agentguard.integrations.crewai import AgentGuardCallback
     from agentguard.integrations.langgraph import AgentGuardNode, guarded_stream
+    from agentguard.integrations.openclaw import OpenClawGuard, openclaw_guard
 
 All integrations use optional/peer dependency imports — the base ``agentguard``
 package does not require any framework to be installed.
@@ -30,6 +32,7 @@ from .langgraph import (
 )
 from .a2a import A2AGuard
 from .mcp import McpGuard, McpDecision, wrap_server
+from .openclaw import OpenClawGuard, OpenClawDecision, openclaw_guard
 
 __all__ = [
     # LangChain
@@ -57,4 +60,8 @@ __all__ = [
     "McpGuard",
     "McpDecision",
     "wrap_server",
+    # OpenClaw
+    "OpenClawGuard",
+    "OpenClawDecision",
+    "openclaw_guard",
 ]

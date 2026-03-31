@@ -74,3 +74,9 @@ export type {
   RateLimitError,
   RegistrationError,
 } from '../auto-register.js';
+
+export { openclawPlugin, register as registerOpenClawPlugin } from '../integrations/openclaw.js';
+export type {
+  OpenClawPluginConfig,
+  OpenClawInterceptResult,
+} from '../integrations/openclaw.js';

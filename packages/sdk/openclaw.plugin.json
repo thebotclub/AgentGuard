@@ -1,0 +1,30 @@
+{
+  "id": "agentguard",
+  "name": "AgentGuard Security",
+  "version": "1.0.0",
+  "description": "Runtime policy enforcement for OpenClaw agents via AgentGuard. Intercepts every tool call and evaluates it against YAML-defined security policies before execution.",
+  "hooks": ["before_tool_call"],
+  "main": "./dist/integrations/openclaw.js",
+  "config": {
+    "apiKey": {
+      "type": "string",
+      "env": "AGENTGUARD_API_KEY",
+      "description": "AgentGuard API key (ag_...)"
+    },
+    "agentId": {
+      "type": "string",
+      "env": "AGENTGUARD_AGENT_ID",
+      "description": "Agent identifier for scoping policies"
+    },
+    "baseUrl": {
+      "type": "string",
+      "default": "https://api.agentguard.tech",
+      "description": "AgentGuard API base URL (override for self-hosted)"
+    },
+    "strict": {
+      "type": "boolean",
+      "default": true,
+      "description": "Fail-closed: block tool calls when AgentGuard API is unreachable"
+    }
+  }
+}
