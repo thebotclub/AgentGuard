@@ -528,7 +528,7 @@ class AgentGuard:
 
     # ── Webhooks ────────────────────────────────────────────────────────────────
 
-    def create_webhook(self, url: str, events: list, secret: str = None) -> dict:
+    def create_webhook(self, url: str, events: list, secret: Optional[str] = None) -> dict:
         """Create a new webhook subscription.
 
         Args:
@@ -565,7 +565,7 @@ class AgentGuard:
 
     # ── Agents ──────────────────────────────────────────────────────────────────
 
-    def create_agent(self, name: str, policy_scope: list = None) -> dict:
+    def create_agent(self, name: str, policy_scope: Optional[list] = None) -> dict:
         """Register a new agent with AgentGuard.
 
         Args:
@@ -575,7 +575,7 @@ class AgentGuard:
         Returns:
             dict with the created agent details including id
         """
-        body = {"name": name}
+        body: dict = {"name": name}
         if policy_scope is not None:
             body["policy_scope"] = policy_scope
         return self._request("POST", "/api/v1/agents", body)
@@ -633,7 +633,7 @@ class AgentGuard:
 
     # ── Rate Limits ─────────────────────────────────────────────────────────────
 
-    def set_rate_limit(self, window_seconds: int, max_requests: int, agent_id: str = None) -> dict:
+    def set_rate_limit(self, window_seconds: int, max_requests: int, agent_id: Optional[str] = None) -> dict:
         """Set a rate limit rule.
 
         Args:
@@ -644,7 +644,7 @@ class AgentGuard:
         Returns:
             dict with the created rate limit details including id
         """
-        body = {"windowSeconds": window_seconds, "maxRequests": max_requests}
+        body: dict = {"windowSeconds": window_seconds, "maxRequests": max_requests}
         if agent_id is not None:
             body["agentId"] = agent_id
         return self._request("POST", "/api/v1/rate-limits", body)
@@ -670,7 +670,7 @@ class AgentGuard:
 
     # ── Cost ────────────────────────────────────────────────────────────────────
 
-    def get_cost_summary(self, agent_id: str = None, from_date: str = None, to_date: str = None, group_by: str = None) -> dict:
+    def get_cost_summary(self, agent_id: Optional[str] = None, from_date: Optional[str] = None, to_date: Optional[str] = None, group_by: Optional[str] = None) -> dict:
         """Get a cost summary for your tenant.
 
         Args:
@@ -702,7 +702,7 @@ class AgentGuard:
         """
         return self._request("GET", "/api/v1/costs/agents")
 
-    def track_cost(self, tool: str, agent_id: str = None, estimated_cost_cents: int = None) -> dict:
+    def track_cost(self, tool: str, agent_id: Optional[str] = None, estimated_cost_cents: Optional[int] = None) -> dict:
         """Track a cost event for a tool call.
 
         Args:
@@ -730,7 +730,7 @@ class AgentGuard:
         """
         return self._request("GET", "/api/v1/dashboard/stats")
 
-    def get_dashboard_feed(self, since: str = None) -> dict:
+    def get_dashboard_feed(self, since: Optional[str] = None) -> dict:
         """Get the live activity feed for the dashboard.
 
         Args:
@@ -755,11 +755,11 @@ class AgentGuard:
     def evaluate_mcp(
         self,
         tool_name: str,
-        arguments: dict = None,
-        session_id: str = None,
-        agent_id: str = None,
-        action_mapping: dict = None,
-        mcp_message: dict = None,
+        arguments: Optional[dict] = None,
+        session_id: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        action_mapping: Optional[dict] = None,
+        mcp_message: Optional[dict] = None,
     ) -> dict:
         """Evaluate an MCP tool call against the AgentGuard policy engine.
 
@@ -814,7 +814,7 @@ class AgentGuard:
             body["mcpMessage"] = mcp_message
         return self._request("POST", "/api/v1/mcp/evaluate", body)
 
-    def get_mcp_config(self, config_id: str = None) -> dict:
+    def get_mcp_config(self, config_id: Optional[str] = None) -> dict:
         """Get MCP proxy configuration(s) for the tenant.
 
         Args:
@@ -844,14 +844,14 @@ class AgentGuard:
 
     def set_mcp_config(
         self,
-        name: str = None,
-        upstream_url: str = None,
+        name: Optional[str] = None,
+        upstream_url: Optional[str] = None,
         transport: str = "sse",
-        agent_id: str = None,
-        action_mapping: dict = None,
+        agent_id: Optional[str] = None,
+        action_mapping: Optional[dict] = None,
         default_action: str = "allow",
         enabled: bool = True,
-        config_id: str = None,
+        config_id: Optional[str] = None,
     ) -> dict:
         """Create or update an MCP proxy configuration.
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Extract inline styles from dashboard/index.html into CSS classes in dashboard.css."""
 
-import re, os
+import os
+import re
 
 os.chdir('/Users/hani/Documents/GitHub/AgentGuard')
 
@@ -573,9 +574,9 @@ STYLE_MAP = {
 # Checking: 'font-size:0.78rem;color:var(--text-dim)' appears twice (history-meta and auto-refresh-label).
 # I need to pick ONE class name for each unique style value.
 
-def process_tag(match):
+def process_tag(match: re.Match[str]) -> str:
     """Process a single HTML tag, replacing style with class where mapped."""
-    full_tag = match.group(0)
+    full_tag: str = match.group(0)
 
     # Extract the style attribute value
     style_m = re.search(r'style="([^"]*)"', full_tag)
@@ -631,11 +632,11 @@ print(f"Styles extracted: {extracted}")
 print(f"Styles remaining: {final_count}")
 
 with open('dashboard/index.html', 'w') as f:
-    f.write(html)
+    _ = f.write(html)
 
 # Append CSS to dashboard.css
 with open('dashboard/dashboard.css', 'a') as f:
-    f.write(CSS_ADDITION)
+    _ = f.write(CSS_ADDITION)
 
-print(f"\nCSS classes appended to dashboard/dashboard.css")
+print("\nCSS classes appended to dashboard/dashboard.css")
 print("Done!")
