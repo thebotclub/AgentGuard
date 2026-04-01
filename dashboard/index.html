@@ -22,13 +22,11 @@
 <body>
 
 <!-- ── Demo Banner ─────────────────────────────────────────────────────────── -->
-<div class="demo-banner" id="demo-banner" role="banner" style="display:none">
+<div class="demo-banner hidden" id="demo-banner" role="banner">
   <span class="demo-banner-text">
     🔑 <strong class="demo-banner-strong">No API Key</strong> — Enter your API key in the sidebar to connect to your live data.
   </span>
-  <button class="demo-banner-dismiss" onclick="document.getElementById('demo-banner').style.display='none'" aria-label="Dismiss banner"
-    
-     onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">✕</button>
+  <button class="demo-banner-dismiss" onclick="document.getElementById('demo-banner').classList.add('hidden')" aria-label="Dismiss banner">✕</button>
 </div>
 
 <!-- Mobile Header (visible on small screens) -->
@@ -49,7 +47,7 @@
   <button class="nav-item" onclick="showPage('agents', event)">🤖 Agents</button>
   <button class="nav-item" onclick="showPage('readiness', event)">🚀 Deployment</button>
   <button class="nav-item" onclick="showPage('policy', event)">📜 Policies</button>
-  <button class="nav-item" onclick="showPage('approvals', event)" id="mobile-approvals-nav">✅ Approvals <span class="nav-badge" id="mobile-approvals-badge" style="display:none">0</span></button>
+  <button class="nav-item" onclick="showPage('approvals', event)" id="mobile-approvals-nav">✅ Approvals <span class="nav-badge hidden" id="mobile-approvals-badge">0</span></button>
   <button class="nav-item" onclick="showPage('webhooks', event)">🔔 Webhooks</button>
   <button class="nav-item" onclick="showPage('ratelimits', event)">⏱️ Rate Limits</button>
   <div class="nav-section">Monitoring</div>
@@ -60,7 +58,7 @@
   <button class="nav-item" onclick="showPage('analytics', event)">📈 Analytics</button>
   <button class="nav-item" onclick="showPage('compliance', event)">🛡️ Compliance</button>
   <button class="nav-item" onclick="showPage('mcp', event)">🔌 MCP Servers</button>
-  <button class="nav-item" onclick="showPage('alerts', event)" id="mobile-alerts-nav">🔔 Alerts <span class="nav-badge-alert" id="mobile-alerts-badge" style="display:none">0</span></button>
+  <button class="nav-item" onclick="showPage('alerts', event)" id="mobile-alerts-nav">🔔 Alerts <span class="nav-badge-alert hidden" id="mobile-alerts-badge">0</span></button>
   <div class="nav-section">Integrate</div>
   <button class="nav-item" onclick="showPage('sdk', event)">🔧 SDK / API</button>
   <div class="nav-section">Account</div>
@@ -80,7 +78,7 @@
     <button class="nav-item" onclick="showPage('agents', event)">🤖 Agents</button>
     <button class="nav-item" onclick="showPage('readiness', event)">🚀 Deployment</button>
     <button class="nav-item" onclick="showPage('policy', event)">📜 Policies</button>
-    <button class="nav-item" onclick="showPage('approvals', event)" id="desktop-approvals-nav">✅ Approvals <span class="nav-badge" id="desktop-approvals-badge" style="display:none">0</span></button>
+    <button class="nav-item" onclick="showPage('approvals', event)" id="desktop-approvals-nav">✅ Approvals <span class="nav-badge hidden" id="desktop-approvals-badge">0</span></button>
     <button class="nav-item" onclick="showPage('webhooks', event)">🔔 Webhooks</button>
     <button class="nav-item" onclick="showPage('ratelimits', event)">⏱️ Rate Limits</button>
     <div class="nav-section">Monitoring</div>
@@ -91,7 +89,7 @@
     <button class="nav-item" onclick="showPage('analytics', event)">📈 Analytics</button>
     <button class="nav-item" onclick="showPage('compliance', event)">🛡️ Compliance</button>
     <button class="nav-item" onclick="showPage('mcp', event)">🔌 MCP Servers</button>
-    <button class="nav-item" onclick="showPage('alerts', event)" id="desktop-alerts-nav">🔔 Alerts <span class="nav-badge-alert" id="desktop-alerts-badge" style="display:none">0</span></button>
+    <button class="nav-item" onclick="showPage('alerts', event)" id="desktop-alerts-nav">🔔 Alerts <span class="nav-badge-alert hidden" id="desktop-alerts-badge">0</span></button>
     <div class="nav-section">Integrate</div>
     <button class="nav-item" onclick="showPage('sdk', event)">🔧 SDK / API</button>
     <div class="nav-section">Account</div>
@@ -132,7 +130,7 @@
       </div>
 
       <!-- ── QUICK START CARDS (shown after onboarding) ── -->
-      <div class="qs-cards-grid" id="quickstart-cards" style="display:none">
+      <div class="qs-cards-grid hidden" id="quickstart-cards">
         <div class="card card-no-mb-default">
           <div class="card-body card-body-p20">
             <div class="qs-card-emoji">📦</div>
@@ -214,7 +212,7 @@
       </div>
 
       <!-- ── CHARTS ROW ───────────────────────────────── -->
-      <div class="charts-row charts-grid" id="charts-row" style="display:none">
+      <div class="charts-row charts-grid hidden" id="charts-row">
         <!-- Bar chart: evaluations by hour -->
         <div class="card card-no-mb">
           <div class="card-header">
@@ -360,7 +358,7 @@
               <button class="btn btn-ghost btn-export-flex" onclick="toggleExportDropdown()" id="export-btn">
                 ⬇ Export <span class="dropdown-caret">▾</span>
               </button>
-              <div class="export-dropdown" id="export-dropdown" style="display:none">
+              <div class="export-dropdown hidden" id="export-dropdown">
                 <button class="dropdown-item" onclick="downloadAuditExport('csv')" onmouseover="this.style.background='var(--accent-dim)'" onmouseout="this.style.background='none'">📄 CSV</button>
                 <button class="dropdown-item-border" onclick="downloadAuditExport('json')" onmouseover="this.style.background='var(--accent-dim)'" onmouseout="this.style.background='none'">📋 JSON</button>
               </div>
@@ -369,7 +367,7 @@
           <span class="text-sm-dim">Hash-chained · Tamper-evident · <span id="audit-count">0</span> events</span>
         </div>
       </div>
-      <div class="verify-banner" id="verify-result" style="display:none"></div>
+      <div class="verify-banner hidden" id="verify-result"></div>
       <div class="card">
         <div class="card-body no-pad">
           <table>
@@ -388,7 +386,7 @@
         <h1>✅ Approvals — HITL Queue</h1>
         <button class="btn btn-ghost" onclick="loadApprovals()">↺ Refresh</button>
       </div>
-      <div class="approvals-no-key" id="approvals-no-key" style="display:none">
+      <div class="approvals-no-key hidden" id="approvals-no-key">
         🔑 Enter your API key above to manage the HITL approval queue.
       </div>
       <div class="card">
@@ -433,7 +431,7 @@
         <h1>🤖 Agent Management</h1>
         <button class="btn btn-primary" onclick="showCreateAgent()">+ Create Agent</button>
       </div>
-      <div id="create-agent-form" style="display:none" class="card card-mb20">
+      <div id="create-agent-form" class="card card-mb20 hidden">
         <div class="card-body">
           <div class="form-grid-3col">
             <div>
@@ -522,7 +520,7 @@
         <h1>🔔 Webhooks</h1>
         <button class="btn btn-primary" onclick="showCreateWebhook()">+ Add Webhook</button>
       </div>
-      <div id="create-webhook-form" style="display:none" class="card card-mb20">
+      <div id="create-webhook-form" class="card card-mb20 hidden">
         <div class="card-body">
           <div class="form-grid-3col-wide">
             <div>
@@ -531,7 +529,7 @@
             </div>
             <div>
               <label class="inline-label">Events</label>
-              <select class="inline-select" id="webhook-events" multiple>
+              <select class="inline-select" id="webhook-events" aria-label="Webhook events" multiple>
                 <option value="block" selected>block</option>
                 <option value="hitl">hitl</option>
                 <option value="killswitch">killswitch</option>
@@ -565,16 +563,16 @@
         <h1>⏱️ Rate Limits</h1>
         <button class="btn btn-primary" onclick="showCreateRateLimit()">+ Add Limit</button>
       </div>
-      <div id="create-ratelimit-form" style="display:none" class="card card-mb20">
+      <div id="create-ratelimit-form" class="card card-mb20 hidden">
         <div class="card-body">
           <div class="form-grid-4col">
             <div>
               <label class="inline-label">Window (seconds)</label>
-              <input class="inline-input" id="rl-window" type="number" value="60" min="1" max="86400">
+              <input class="inline-input" id="rl-window" type="number" value="60" min="1" max="86400" aria-label="Window in seconds">
             </div>
             <div>
               <label class="inline-label">Max Requests</label>
-              <input class="inline-input" id="rl-max" type="number" value="100" min="1">
+              <input class="inline-input" id="rl-max" type="number" value="100" min="1" aria-label="Max requests">
             </div>
             <div>
               <label class="inline-label">Agent (optional)</label>
@@ -606,12 +604,12 @@
       <div class="main-header">
         <h1>💰 Cost Attribution</h1>
         <div class="flex-row">
-          <select class="filter-select" id="cost-period" onchange="loadCosts()">
+          <select class="filter-select" id="cost-period" aria-label="Cost period" onchange="loadCosts()">
             <option value="24h">Last 24 hours</option>
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
           </select>
-          <select class="filter-select" id="cost-groupby" onchange="loadCosts()">
+          <select class="filter-select" id="cost-groupby" aria-label="Cost group by" onchange="loadCosts()">
             <option value="agent">By Agent</option>
             <option value="tool">By Tool</option>
             <option value="day">By Day</option>
@@ -750,7 +748,7 @@ const { result, riskScore } = await res.json();</pre>
       <div class="main-header">
         <h1>📈 Analytics</h1>
         <div class="flex-row">
-          <select class="filter-select" id="analytics-period" onchange="loadAnalytics()">
+          <select class="filter-select" id="analytics-period" aria-label="Analytics period" onchange="loadAnalytics()">
             <option value="24h">Last 24 hours</option>
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
@@ -827,7 +825,7 @@ const { result, riskScore } = await res.json();</pre>
       </div>
 
       <!-- No-key state -->
-      <div class="no-key-cta" id="an-no-key" style="display:none">
+      <div class="no-key-cta hidden" id="an-no-key">
         <div class="no-key-emoji">🔑</div>
         <div class="no-key-title">Connect your API key</div>
         <div>Enter your API key above to load analytics data.</div>
@@ -840,7 +838,7 @@ const { result, riskScore } = await res.json();</pre>
         <h1>🛡️ OWASP Compliance</h1>
         <div class="flex-row">
           <button class="btn btn-primary" onclick="generateComplianceReport()" id="comp-gen-btn">📄 Generate Report</button>
-          <a id="comp-pdf-link" href="#" target="_blank" class="btn btn-ghost" style="display:none">⬇ Download PDF</a>
+          <a id="comp-pdf-link" href="#" target="_blank" class="btn btn-ghost hidden">⬇ Download PDF</a>
         </div>
       </div>
 
@@ -864,7 +862,7 @@ const { result, riskScore } = await res.json();</pre>
           </div>
         </div>
         <div>
-          <div class="no-key-cta" id="comp-no-key" style="display:none">
+          <div class="no-key-cta hidden" id="comp-no-key">
             <div class="no-key-emoji">🔑</div>
             <div class="no-key-title">Connect your API key</div>
             <div>Enter your API key above to view compliance data.</div>
@@ -875,7 +873,7 @@ const { result, riskScore } = await res.json();</pre>
         </div>
       </div>
 
-      <div class="comp-result" id="comp-gen-result" style="display:none"></div>
+      <div class="comp-result hidden" id="comp-gen-result"></div>
     </div>
 
     <!-- ── MCP SERVERS PAGE ──────────────────────────────── -->
@@ -886,7 +884,7 @@ const { result, riskScore } = await res.json();</pre>
       </div>
 
       <!-- Add server form -->
-      <div id="mcp-add-form" style="display:none" class="card card-mb20">
+      <div id="mcp-add-form" class="card card-mb20 hidden">
         <div class="card-header"><h2>Register MCP Server</h2></div>
         <div class="card-body">
           <div class="grid-2col-form">
@@ -933,7 +931,7 @@ const { result, riskScore } = await res.json();</pre>
         </div>
       </div>
 
-      <div class="no-key-cta" id="mcp-no-key" style="display:none">
+      <div class="no-key-cta hidden" id="mcp-no-key">
         <div class="no-key-emoji">🔑</div>
         <div class="no-key-title">Connect your API key</div>
         <div>Enter your API key above to manage MCP servers.</div>
@@ -973,7 +971,7 @@ const { result, riskScore } = await res.json();</pre>
               <div class="lic-no-key-text">No license key active — running on Free tier</div>
               <div class="lic-hint">Have a key? Set <code class="inline-code">AGENTGUARD_LICENSE_KEY</code> in your environment and restart.</div>
             </div>
-            <div id="lic-key-section-pro" style="display:none">
+            <div id="lic-key-section-pro" class="hidden">
               <div class="lic-key-mb">
                 <div class="lic-key-header">Active Key</div>
                 <div class="siem-toggle-group">
@@ -1003,7 +1001,7 @@ const { result, riskScore } = await res.json();</pre>
               <span class="meter-value" id="lic-events-label">12,450 / 100,000</span>
             </div>
             <div class="progress-track">
-              <div class="progress-bar" id="lic-events-bar" style="width:49.8%;background:var(--green)"></div>
+              <div class="progress-bar" id="lic-events-bar"></div>
             </div>
             <div class="meter-sub" id="lic-events-sub">49.8% used · resets in 12 days</div>
           </div>
@@ -1015,7 +1013,7 @@ const { result, riskScore } = await res.json();</pre>
               <span class="meter-value" id="lic-agents-label">2 / 3</span>
             </div>
             <div class="progress-track-sm">
-              <div class="progress-bar" id="lic-agents-bar" style="width:66.7%;background:var(--amber)"></div>
+              <div class="progress-bar" id="lic-agents-bar"></div>
             </div>
           </div>
 
@@ -1026,7 +1024,7 @@ const { result, riskScore } = await res.json();</pre>
               <span class="meter-value" id="lic-hitl-label">1 / 3</span>
             </div>
             <div class="progress-track-sm">
-              <div class="progress-bar" id="lic-hitl-bar" style="width:33.3%;background:var(--green)"></div>
+              <div class="progress-bar" id="lic-hitl-bar"></div>
             </div>
           </div>
         </div>
@@ -1072,13 +1070,13 @@ const { result, riskScore } = await res.json();</pre>
       <div class="main-header">
         <h1>🔔 Alerts</h1>
         <div class="flex-row-center">
-          <select class="filter-select" id="alert-filter-severity" onchange="filterAlerts()">
+          <select class="filter-select" id="alert-filter-severity" aria-label="Alert severity filter" onchange="filterAlerts()">
             <option value="all">All Severities</option>
             <option value="critical">🔴 Critical</option>
             <option value="warning">🟡 Warning</option>
             <option value="info">ℹ️ Info</option>
           </select>
-          <select class="filter-select" id="alert-filter-status" onchange="filterAlerts()">
+          <select class="filter-select" id="alert-filter-status" aria-label="Alert status filter" onchange="filterAlerts()">
             <option value="active">Active</option>
             <option value="resolved">Resolved</option>
             <option value="all">All</option>
@@ -1107,7 +1105,7 @@ const { result, riskScore } = await res.json();</pre>
         </div>
 
         <!-- Create Rule Form -->
-        <div class="alert-rule-form" id="create-rule-form" style="display:none">
+        <div class="alert-rule-form hidden" id="create-rule-form">
           <div class="grid-auto-form">
             <div class="form-group card-no-mb">
               <label>Metric</label>
@@ -1115,7 +1113,7 @@ const { result, riskScore } = await res.json();</pre>
             </div>
             <div class="form-group card-no-mb">
               <label>Condition</label>
-              <select class="select-full" id="rule-condition">
+              <select class="select-full" id="rule-condition" aria-label="Alert condition">
                 <option value="gt">&gt; Greater than</option>
                 <option value="lt">&lt; Less than</option>
                 <option value="gte">≥ At least</option>
@@ -1133,7 +1131,7 @@ const { result, riskScore } = await res.json();</pre>
             </div>
             <div class="form-group card-no-mb">
               <label>Severity</label>
-              <select class="select-full" id="rule-severity">
+              <select class="select-full" id="rule-severity" aria-label="Alert severity">
                 <option value="critical">🔴 Critical</option>
                 <option value="warning">🟡 Warning</option>
                 <option value="info">ℹ️ Info</option>
@@ -1176,7 +1174,7 @@ const { result, riskScore } = await res.json();</pre>
           </div>
 
           <!-- Splunk Config -->
-          <div id="siem-splunk-config" style="display:none">
+          <div id="siem-splunk-config" class="hidden">
             <div class="siem-config-grid">
               <div class="form-group">
                 <label>HEC URL</label>
@@ -1190,7 +1188,7 @@ const { result, riskScore } = await res.json();</pre>
           </div>
 
           <!-- Sentinel Config -->
-          <div id="siem-sentinel-config" style="display:none">
+          <div id="siem-sentinel-config" class="hidden">
             <div class="siem-config-grid">
               <div class="form-group">
                 <label>Workspace ID</label>
@@ -1204,7 +1202,7 @@ const { result, riskScore } = await res.json();</pre>
           </div>
 
           <!-- Actions (shown when provider selected) -->
-          <div id="siem-actions" style="display:none">
+          <div id="siem-actions" class="hidden">
             <div class="siem-actions-row">
               <button class="btn btn-primary" onclick="saveSiemConfig()">💾 Save Configuration</button>
               <button class="btn btn-ghost" onclick="testSiemConnection()" id="siem-test-btn">🔌 Test Connection</button>
@@ -1217,7 +1215,7 @@ const { result, riskScore } = await res.json();</pre>
               </div>
             </div>
             <!-- Status Indicator -->
-            <div class="siem-status" id="siem-status-indicator" style="display:none"></div>
+            <div class="siem-status hidden" id="siem-status-indicator"></div>
           </div>
 
           <div class="siem-no-provider" id="siem-no-provider">Select a SIEM provider above to configure the integration.</div>
@@ -1239,8 +1237,7 @@ const { result, riskScore } = await res.json();</pre>
 <script src="dashboard.js"></script>
 
 <!-- ── ONBOARDING WIZARD OVERLAY ─────────────────────────────────────────── -->
-<div class="ob-overlay" id="onboarding-overlay" role="dialog" aria-modal="true" aria-label="AgentGuard Setup Wizard"
-  style="display:none">
+<div class="ob-overlay hidden" id="onboarding-overlay" role="dialog" aria-modal="true" aria-label="AgentGuard Setup Wizard">
   <div class="ob-dialog">
     <!-- Header -->
     <div class="ob-header">
@@ -1294,7 +1291,7 @@ const { result, riskScore } = await res.json();</pre>
       </div>
 
       <!-- Step 2: API Key -->
-      <div id="ob-step-2" style="display:none">
+      <div id="ob-step-2" class="hidden">
         <div class="ob-emoji">🔑</div>
         <h2 class="ob-heading-tight">Enter Your API Key</h2>
         <p class="ob-paragraph-sm">
@@ -1310,7 +1307,7 @@ const { result, riskScore } = await res.json();</pre>
             <button class="ob-eye-btn" onclick="var i=document.getElementById('ob-api-key');i.type=i.type==='password'?'text':'password'" 
               title="Toggle visibility">👁</button>
           </div>
-          <div class="ob-key-error" id="ob-key-error" style="display:none"></div>
+          <div class="ob-key-error hidden" id="ob-key-error"></div>
         </div>
         <div class="ob-info-box">
           💡 Your key is stored only in your browser's localStorage and is never sent to any third party.
@@ -1318,7 +1315,7 @@ const { result, riskScore } = await res.json();</pre>
       </div>
 
       <!-- Step 3: First Evaluate Call -->
-      <div id="ob-step-3" style="display:none">
+      <div id="ob-step-3" class="hidden">
         <div class="ob-emoji">⚡</div>
         <h2 class="ob-heading-tight">Your First Evaluate Call</h2>
         <p class="ob-paragraph-sm">
@@ -1342,7 +1339,7 @@ const { result, riskScore } = await res.json();</pre>
       </div>
 
       <!-- Step 4: Ready -->
-      <div id="ob-step-4" style="display:none">
+      <div id="ob-step-4" class="hidden">
         <div class="ob-emoji-lg">🎉</div>
         <h2 class="ob-heading-tight">You're All Set!</h2>
         <p class="ob-paragraph-sm">
@@ -1391,8 +1388,7 @@ const { result, riskScore } = await res.json();</pre>
       <button class="ob-skip-btn" id="ob-skip" onclick="closeOnboarding(true)"
        >Skip setup</button>
       <div class="flex-row-actions">
-        <button class="ob-prev-btn" id="ob-prev" onclick="onboardingPrev()"
-          style="display:none">← Back</button>
+        <button class="ob-prev-btn hidden" id="ob-prev" onclick="onboardingPrev()">← Back</button>
         <button class="ob-next-btn" id="ob-next" onclick="onboardingNext()"
          >Next →</button>
       </div>

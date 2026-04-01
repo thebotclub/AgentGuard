@@ -8,10 +8,10 @@ resource "azurerm_key_vault" "main" {
   location                   = var.location
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   sku_name                   = "standard"
-  soft_delete_retention_days = 90
-  purge_protection_enabled   = var.is_production
-  enable_rbac_authorization  = true
-  tags                       = var.tags
+  soft_delete_retention_days  = 90
+  purge_protection_enabled    = var.is_production
+  rbac_authorization_enabled  = true
+  tags                        = var.tags
 }
 
 # Grant the Container App identity access to read secrets

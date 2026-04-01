@@ -27,7 +27,7 @@ function saveApiKey(key) {
   loadApiKey();
   // Hide no-key banner once a key is entered
   var demoBanner = document.getElementById('demo-banner');
-  if (demoBanner && storedApiKey) demoBanner.style.display = 'none';
+  if (demoBanner && storedApiKey) demoBanner.classList.add('hidden');
   // Trigger data reload
   if (storedApiKey) {
     loadDashboardStats();
@@ -170,7 +170,7 @@ async function verifyIntegrity() {
   btn.textContent = 'Verifying...';
   
   var resultEl = document.getElementById('verify-result');
-  resultEl.style.display = 'none';
+  resultEl.classList.add('hidden');
   
   for (var i = 0; i < 2; i++) {
     var baseUrl = i === 0 ? API_PRIMARY : API_FALLBACK;
@@ -181,7 +181,7 @@ async function verifyIntegrity() {
       });
       if (r.ok) {
         var data = await r.json();
-        resultEl.style.display = 'block';
+        resultEl.classList.remove('hidden');
         if (data.valid) {
           resultEl.style.background = 'rgba(34,197,94,0.08)';
           resultEl.style.borderColor = 'rgba(34,197,94,0.25)';
@@ -198,7 +198,7 @@ async function verifyIntegrity() {
     } catch {}
   }
   
-  resultEl.style.display = 'block';
+  resultEl.classList.remove('hidden');
   resultEl.style.background = 'rgba(245,158,11,0.08)';
   resultEl.style.borderColor = 'rgba(245,158,11,0.25)';
   resultEl.innerHTML = '⚠ Could not verify integrity — API may be unavailable';
@@ -229,7 +229,7 @@ function closeMobileNav() {
 // ── Agents Management ───────────────────────────────────
 function showCreateAgent() {
   var el = document.getElementById('create-agent-form');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  el.classList.toggle('hidden');
 }
 
 async function loadAgents() {
@@ -341,12 +341,12 @@ async function loadApprovals() {
   if (_approvalsTimer) { clearTimeout(_approvalsTimer); _approvalsTimer = null; }
 
   if (!storedApiKey) {
-    if (noKey) noKey.style.display = 'block';
+    if (noKey) noKey.classList.remove('hidden');
     if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key to manage approvals</td></tr>';
     if (resolvedTbody) resolvedTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key to view resolved approvals</td></tr>';
     return;
   }
-  if (noKey) noKey.style.display = 'none';
+  if (noKey) noKey.classList.add('hidden');
 
   try {
     var r = await fetch(API + '/api/v1/approvals', { headers: getApiHeaders(), signal: AbortSignal.timeout(10000) });
@@ -437,8 +437,8 @@ function updateApprovalsBadge(count) {
   ['desktop-approvals-badge', 'mobile-approvals-badge'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
-    if (count > 0) { el.textContent = count; el.style.display = 'inline-block'; }
-    else { el.style.display = 'none'; }
+    if (count > 0) { el.textContent = count; el.classList.remove('hidden'); }
+    else { el.classList.add('hidden'); }
   });
 }
 
@@ -516,7 +516,7 @@ async function pollLiveFeed() {
 // ── Webhooks Management ─────────────────────────────────
 function showCreateWebhook() {
   var el = document.getElementById('create-webhook-form');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  el.classList.toggle('hidden');
 }
 
 async function loadWebhooks() {
@@ -563,7 +563,7 @@ async function deleteWebhook(id) {
 // ── Rate Limits Management ──────────────────────────────
 function showCreateRateLimit() {
   var el = document.getElementById('create-ratelimit-form');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  el.classList.toggle('hidden');
 }
 
 async function loadRateLimits() {
@@ -595,7 +595,7 @@ async function createRateLimit() {
     var body = { windowSeconds: win, maxRequests: max };
     if (agent) body.agentId = agent;
     var r = await fetch(API + '/api/v1/rate-limits', { method: 'POST', headers: getApiHeaders(), body: JSON.stringify(body) });
-    if (r.ok) { loadRateLimits(); document.getElementById('create-ratelimit-form').style.display = 'none'; }
+    if (r.ok) { loadRateLimits(); document.getElementById('create-ratelimit-form').classList.add('hidden'); }
   } catch {}
 }
 
@@ -666,7 +666,7 @@ function renderCharts(data) {
 
   // Show the charts row
   var row = document.getElementById('charts-row');
-  row.style.display = 'grid';
+  row.classList.remove('hidden');
 
   // ── Bar Chart ────────────────────────────────────────
   var svg = document.getElementById('chart-bar-svg');
@@ -918,7 +918,7 @@ function applyLicenseStatus(data) {
 
   // Hide upgrade CTA for paid tiers
   var ctaBtn = document.querySelector('#page-license .btn-primary');
-  if (ctaBtn && tier !== 'free') ctaBtn.style.display = 'none';
+  if (ctaBtn && tier !== 'free') ctaBtn.classList.add('hidden');
 
   // License key section
   var freeSec = document.getElementById('lic-key-section-free');
@@ -936,11 +936,11 @@ function applyLicenseStatus(data) {
         (data.expiresAt ? '<div style="margin-bottom:4px">Expires: <strong>' + new Date(data.expiresAt).toLocaleDateString() + '</strong></div>' : '') +
         (data.tenantId  ? '<div>Tenant: <code style="font-family:var(--mono);font-size:0.78rem">' + esc(data.tenantId) + '</code></div>' : '');
     }
-    if (freeSec) freeSec.style.display = 'none';
-    if (proSec)  proSec.style.display  = 'block';
+    if (freeSec) freeSec.classList.add('hidden');
+    if (proSec)  proSec.classList.remove('hidden');
   } else {
-    if (freeSec) freeSec.style.display = 'block';
-    if (proSec)  proSec.style.display  = 'none';
+    if (freeSec) freeSec.classList.remove('hidden');
+    if (proSec)  proSec.classList.add('hidden');
   }
 
   // Features
@@ -961,7 +961,7 @@ function applyUsageData(data) {
   var evtBar = document.getElementById('lic-events-bar');
   var evtLbl = document.getElementById('lic-events-label');
   var evtSub = document.getElementById('lic-events-sub');
-  if (evtBar) { evtBar.style.width = evtPct + '%'; evtBar.style.background = licUsageColor(evtPct); }
+  if (evtBar) { evtBar.style.setProperty('--bar-w', evtPct + '%'); evtBar.style.setProperty('--bar-bg', licUsageColor(evtPct)); }
   if (evtLbl) evtLbl.textContent = eventsUsed.toLocaleString() + ' / ' + eventsLimit.toLocaleString();
   if (evtSub) evtSub.textContent = evtPct + '% used · resets in ' + daysLeft + ' days';
 
@@ -969,14 +969,14 @@ function applyUsageData(data) {
   var agPct = Math.min(Math.round(agentsUsed / agentsLimit * 100), 100);
   var agBar = document.getElementById('lic-agents-bar');
   var agLbl = document.getElementById('lic-agents-label');
-  if (agBar) { agBar.style.width = agPct + '%'; agBar.style.background = licUsageColor(agPct); }
+  if (agBar) { agBar.style.setProperty('--bar-w', agPct + '%'); agBar.style.setProperty('--bar-bg', licUsageColor(agPct)); }
   if (agLbl) agLbl.textContent = agentsUsed + ' / ' + agentsLimit;
 
   // HITL bar
   var hitlPct = Math.min(Math.round(hitlUsed / hitlLimit * 100), 100);
   var hitlBar = document.getElementById('lic-hitl-bar');
   var hitlLbl = document.getElementById('lic-hitl-label');
-  if (hitlBar) { hitlBar.style.width = hitlPct + '%'; hitlBar.style.background = licUsageColor(hitlPct); }
+  if (hitlBar) { hitlBar.style.setProperty('--bar-w', hitlPct + '%'); hitlBar.style.setProperty('--bar-bg', licUsageColor(hitlPct)); }
   if (hitlLbl) hitlLbl.textContent = hitlUsed + ' / ' + hitlLimit;
 
   // Usage period
@@ -1156,7 +1156,7 @@ async function init() {
   // Show/hide no-key banner
   var demoBanner = document.getElementById('demo-banner');
   if (demoBanner) {
-    demoBanner.style.display = (!storedApiKey) ? 'flex' : 'none';
+    demoBanner.classList.toggle('hidden', !!storedApiKey);
   }
 
   // Load real data if API key is available
@@ -1592,12 +1592,12 @@ function updateKillSwitchUI() {
 async function loadAnalytics() {
   var noKey = document.getElementById('an-no-key');
   if (!storedApiKey) {
-    noKey.style.display = 'block';
+    noKey.classList.remove('hidden');
     document.getElementById('an-tools-tbody').innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key above</td></tr>';
     document.getElementById('an-agents-tbody').innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key above</td></tr>';
     return;
   }
-  noKey.style.display = 'none';
+  noKey.classList.add('hidden');
   var period = document.getElementById('analytics-period').value;
 
   try {
@@ -1724,14 +1724,14 @@ const OWASP_CONTROLS = [
 async function loadCompliance() {
   var noKey = document.getElementById('comp-no-key');
   if (!storedApiKey) {
-    noKey.style.display = 'block';
-    document.getElementById('comp-controls-grid').style.display = 'none';
+    noKey.classList.remove('hidden');
+    document.getElementById('comp-controls-grid').classList.add('hidden');
     document.getElementById('comp-score-text').textContent = '—';
     document.getElementById('comp-score-label').textContent = 'Connect your API key';
     return;
   }
-  noKey.style.display = 'none';
-  document.getElementById('comp-controls-grid').style.display = 'grid';
+  noKey.classList.add('hidden');
+  document.getElementById('comp-controls-grid').classList.remove('hidden');
 
   try {
     var r = await fetch(API + '/api/v1/compliance/owasp/latest', {
@@ -1788,7 +1788,7 @@ function renderComplianceData(data) {
   var pdfLink = document.getElementById('comp-pdf-link');
   if (data.reportUrl || data.report_url) {
     pdfLink.href = data.reportUrl || data.report_url;
-    pdfLink.style.display = 'inline-block';
+    pdfLink.classList.remove('hidden');
   }
 }
 
@@ -1818,7 +1818,7 @@ async function generateComplianceReport() {
   btn.disabled = true;
   btn.textContent = '⏳ Generating...';
   var resultEl = document.getElementById('comp-gen-result');
-  resultEl.style.display = 'none';
+  resultEl.classList.add('hidden');
 
   try {
     var r = await fetch(API + '/api/v1/compliance/owasp/generate', {
@@ -1827,25 +1827,25 @@ async function generateComplianceReport() {
     });
     var data = await r.json();
     if (r.ok) {
-      resultEl.style.display = 'block';
+      resultEl.classList.remove('hidden');
       resultEl.style.background = 'rgba(34,197,94,0.08)';
       resultEl.style.border = '1px solid rgba(34,197,94,0.25)';
       resultEl.textContent = '✅ Report generated successfully' + (data.reportId ? ' — ID: ' + data.reportId : '');
       if (data.reportUrl || data.report_url) {
         var pdfLink = document.getElementById('comp-pdf-link');
         pdfLink.href = data.reportUrl || data.report_url;
-        pdfLink.style.display = 'inline-block';
+        pdfLink.classList.remove('hidden');
       }
       // Reload latest compliance after generation
       loadCompliance();
     } else {
-      resultEl.style.display = 'block';
+      resultEl.classList.remove('hidden');
       resultEl.style.background = 'rgba(239,68,68,0.08)';
       resultEl.style.border = '1px solid rgba(239,68,68,0.25)';
       resultEl.textContent = '❌ ' + (data.error || 'Failed to generate report');
     }
   } catch(e) {
-    resultEl.style.display = 'block';
+    resultEl.classList.remove('hidden');
     resultEl.style.background = 'rgba(245,158,11,0.08)';
     resultEl.style.border = '1px solid rgba(245,158,11,0.25)';
     resultEl.textContent = '⚠️ API unavailable. Try again shortly.';
@@ -1857,11 +1857,11 @@ async function generateComplianceReport() {
 
 // ── MCP Servers ──────────────────────────────────────────
 function showMcpForm() {
-  document.getElementById('mcp-add-form').style.display = 'block';
+  document.getElementById('mcp-add-form').classList.remove('hidden');
   document.getElementById('mcp-name').focus();
 }
 function hideMcpForm() {
-  document.getElementById('mcp-add-form').style.display = 'none';
+  document.getElementById('mcp-add-form').classList.add('hidden');
   document.getElementById('mcp-add-result').innerHTML = '';
 }
 
@@ -1870,11 +1870,11 @@ async function loadMcpServers() {
   var tbody = document.getElementById('mcp-tbody');
 
   if (!storedApiKey) {
-    noKey.style.display = 'block';
+    noKey.classList.remove('hidden');
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px">Enter your API key above</td></tr>';
     return;
   }
-  noKey.style.display = 'none';
+  noKey.classList.add('hidden');
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:16px">Loading…</td></tr>';
 
   try {
@@ -1965,7 +1965,7 @@ async function deleteMcpServer(id) {
 // ── Audit Export ─────────────────────────────────────────
 function toggleExportDropdown() {
   var dd = document.getElementById('export-dropdown');
-  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+  dd.classList.toggle('hidden');
 }
 
 // Close dropdown when clicking outside
@@ -1973,12 +1973,12 @@ document.addEventListener('click', function(e) {
   var dd = document.getElementById('export-dropdown');
   var btn = document.getElementById('export-btn');
   if (dd && btn && !btn.contains(e.target) && !dd.contains(e.target)) {
-    dd.style.display = 'none';
+    dd.classList.add('hidden');
   }
 });
 
 function downloadAuditExport(format) {
-  document.getElementById('export-dropdown').style.display = 'none';
+  document.getElementById('export-dropdown').classList.add('hidden');
   if (!storedApiKey) { alert('Please enter your API key first'); return; }
   var from = document.getElementById('audit-from').value;
   var to = document.getElementById('audit-to').value;
@@ -2118,10 +2118,10 @@ function updateAlertsBadge(alerts) {
     var el = document.getElementById(id);
     if (!el) return;
     if (critical > 0) {
-      el.style.display = 'inline-block';
+      el.classList.remove('hidden');
       el.textContent = critical;
     } else {
-      el.style.display = 'none';
+      el.classList.add('hidden');
     }
   });
 }
@@ -2210,7 +2210,7 @@ function renderAlertRules(rules) {
 
 function toggleCreateRuleForm() {
   var el = document.getElementById('create-rule-form');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  el.classList.toggle('hidden');
 }
 
 async function createAlertRule() {
@@ -2272,10 +2272,10 @@ function formatTimeAgo(isoString) {
 // ── SIEM ──────────────────────────────────────────────────
 function selectSiemProvider(provider) {
   _siemProvider = provider;
-  document.getElementById('siem-splunk-config').style.display = provider === 'splunk' ? 'block' : 'none';
-  document.getElementById('siem-sentinel-config').style.display = provider === 'sentinel' ? 'block' : 'none';
-  document.getElementById('siem-actions').style.display = 'block';
-  document.getElementById('siem-no-provider').style.display = 'none';
+  document.getElementById('siem-splunk-config').classList.toggle('hidden', provider !== 'splunk');
+  document.getElementById('siem-sentinel-config').classList.toggle('hidden', provider !== 'sentinel');
+  document.getElementById('siem-actions').classList.remove('hidden');
+  document.getElementById('siem-no-provider').classList.add('hidden');
 
   // Highlight selected button
   ['splunk', 'sentinel'].forEach(function(p) {
@@ -2333,7 +2333,7 @@ async function saveSiemConfig() {
   }
 
   var indicator = document.getElementById('siem-status-indicator');
-  indicator.style.display = 'block';
+  indicator.classList.remove('hidden');
   indicator.style.background = 'rgba(99,102,241,0.08)';
   indicator.style.border = '1px solid var(--border)';
   indicator.textContent = '⏳ Saving...';
@@ -2366,7 +2366,7 @@ async function testSiemConnection() {
   btn.disabled = true;
   btn.textContent = '⏳ Testing...';
   var indicator = document.getElementById('siem-status-indicator');
-  indicator.style.display = 'block';
+  indicator.classList.remove('hidden');
 
   try {
     var r = await fetch(API + '/api/v1/siem/' + _siemProvider + '/test', {
@@ -2488,12 +2488,12 @@ function maybeShowOnboarding() {
 }
 
 function showOnboarding() {
-  document.getElementById('onboarding-overlay').style.display = 'flex';
+  document.getElementById('onboarding-overlay').classList.remove('hidden');
   setOnboardingStep(1);
 }
 
 function closeOnboarding(complete) {
-  document.getElementById('onboarding-overlay').style.display = 'none';
+  document.getElementById('onboarding-overlay').classList.add('hidden');
   if (complete) {
     markOnboardingComplete();
   }
@@ -2501,7 +2501,7 @@ function closeOnboarding(complete) {
 }
 
 function showQuickStart() {
-  document.getElementById('quickstart-cards').style.display = 'grid';
+  document.getElementById('quickstart-cards').classList.remove('hidden');
 }
 
 function setOnboardingStep(step) {
@@ -2509,10 +2509,10 @@ function setOnboardingStep(step) {
   // Hide all steps
   for (var i = 1; i <= totalSteps; i++) {
     var el = document.getElementById('ob-step-' + i);
-    if (el) el.style.display = 'none';
+    if (el) el.classList.add('hidden');
   }
   var current = document.getElementById('ob-step-' + onboardingStep);
-  if (current) current.style.display = 'block';
+  if (current) current.classList.remove('hidden');
   // Update progress dots
   for (var i = 1; i <= totalSteps; i++) {
     var dot = document.getElementById('ob-dot-' + i);
@@ -2525,11 +2525,11 @@ function setOnboardingStep(step) {
   var prevBtn = document.getElementById('ob-prev');
   var nextBtn = document.getElementById('ob-next');
   var skipBtn = document.getElementById('ob-skip');
-  if (prevBtn) prevBtn.style.display = onboardingStep > 1 ? 'inline-flex' : 'none';
+  if (prevBtn) prevBtn.classList.toggle('hidden', onboardingStep <= 1);
   if (nextBtn) {
     nextBtn.textContent = onboardingStep === totalSteps ? 'Go to Dashboard →' : 'Next →';
   }
-  if (skipBtn) skipBtn.style.display = onboardingStep < totalSteps ? 'inline-block' : 'none';
+  if (skipBtn) skipBtn.classList.toggle('hidden', onboardingStep >= totalSteps);
 
   // Step-specific logic
   if (onboardingStep === 3) updateEvalCurl();
@@ -2542,17 +2542,17 @@ function onboardingNext() {
     var key = keyInput ? keyInput.value.trim() : '';
     if (!key) {
       var err = document.getElementById('ob-key-error');
-      if (err) { err.textContent = 'Please enter your API key'; err.style.display = 'block'; }
+      if (err) { err.textContent = 'Please enter your API key'; err.classList.remove('hidden'); }
       return;
     }
     if (!key.startsWith('ag_live_') && !key.startsWith('ag_agent_')) {
       var err = document.getElementById('ob-key-error');
-      if (err) { err.textContent = 'API keys start with ag_live_... — check your signup email'; err.style.display = 'block'; }
+      if (err) { err.textContent = 'API keys start with ag_live_... — check your signup email'; err.classList.remove('hidden'); }
       return;
     }
     saveApiKey(key);
     var err = document.getElementById('ob-key-error');
-    if (err) err.style.display = 'none';
+    if (err) err.classList.add('hidden');
   }
   if (onboardingStep < totalSteps) {
     setOnboardingStep(onboardingStep + 1);
