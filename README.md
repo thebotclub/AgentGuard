@@ -10,7 +10,7 @@
     <a href="https://demo.agentguard.tech"><img src="https://img.shields.io/badge/demo-try_it-green" alt="Demo"></a>
     <img src="https://img.shields.io/badge/license-BSL_1.1-orange" alt="License">
     <img src="https://img.shields.io/badge/endpoints-60+-blue" alt="Endpoints">
-    <img src="https://img.shields.io/badge/tests-193_passing-brightgreen" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-773_passing-brightgreen" alt="Tests">
     <img src="https://img.shields.io/badge/coverage-67%25-yellow" alt="Coverage">
     <a href="https://github.com/thebotclub/AgentGuard/actions/workflows/test-coverage.yml"><img src="https://github.com/thebotclub/AgentGuard/actions/workflows/test-coverage.yml/badge.svg" alt="Tests"></a>
     <a href="https://github.com/thebotclub/AgentGuard/actions/workflows/e2e.yml"><img src="https://github.com/thebotclub/AgentGuard/actions/workflows/e2e.yml/badge.svg" alt="E2E Tests"></a>
@@ -208,7 +208,7 @@ Block unsafe agent deployments before they reach production:
 | Auth | bcrypt + SHA-256 key hashing |
 | Validation | Zod schemas on all endpoints |
 | Database | PostgreSQL with RLS |
-| Tests | 193 passing |
+| Tests | 773 passing (617 JS + 156 Python) |
 | SDKs | TypeScript, Python |
 | Self-hosted | Docker + docker-compose |
 
