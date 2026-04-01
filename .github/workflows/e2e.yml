@@ -26,6 +26,9 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate --schema=packages/api/prisma/schema.prisma
 
+      - name: Build workspace packages
+        run: npx turbo run build
+
       - name: Run unit + integration tests
         run: npx vitest run --reporter=verbose
         env:

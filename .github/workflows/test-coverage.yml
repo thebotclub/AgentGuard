@@ -31,6 +31,9 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate --schema=packages/api/prisma/schema.prisma
 
+      - name: Build workspace packages
+        run: npx turbo run build
+
       - name: Audit dependencies for HIGH/CRITICAL vulnerabilities
         # Blocks the CI pipeline if any HIGH or CRITICAL CVEs are found.
         # Use `npm audit fix` locally to resolve, or add to .nsprc if a
@@ -40,8 +43,8 @@ jobs:
 
       - name: TypeScript type check
         # Mandatory gate — catches type errors before they reach production.
-        # Uses tsconfig.json (strict mode). Fix errors locally with `npx tsc --noEmit`.
-        run: npx tsc --noEmit
+        # Uses turbo to typecheck each workspace package with its own tsconfig.
+        run: npx turbo run typecheck
 
       - name: OpenAPI spec sync check
         # Ensures the checked-in openapi.json matches the source openapi.yaml.

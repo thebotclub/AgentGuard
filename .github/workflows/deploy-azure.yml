@@ -45,8 +45,8 @@ jobs:
         run: npm audit --audit-level=high --omit=dev
       - name: TypeScript type check
         # Blocking gate — type errors must be resolved before deploy.
-        # Uses tsconfig.json (strict mode). Fix locally with `npx tsc --noEmit`.
-        run: npx tsc --noEmit
+        # Uses turbo to typecheck each workspace package with its own tsconfig.
+        run: npx turbo run typecheck
       - run: npm run test
 
   build-deploy:
