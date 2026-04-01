@@ -7,6 +7,7 @@
  */
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { logger } from '../lib/logger.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 
@@ -39,7 +40,7 @@ export function createJobRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           pollUrl: `/api/v1/evaluations/jobs/${jobId}`,
         });
       } catch (e) {
-        console.error('[jobs/submit]', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[jobs/submit]');
         res.status(500).json({ error: 'Failed to enqueue evaluation' });
       }
     },
@@ -74,7 +75,7 @@ export function createJobRoutes(db: IDatabase, auth: AuthMiddleware): Router {
 
         res.json(response);
       } catch (e) {
-        console.error('[jobs/status]', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[jobs/status]');
         res.status(500).json({ error: 'Failed to fetch job' });
       }
     },
@@ -102,7 +103,7 @@ export function createJobRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           pagination: { limit, offset, count: jobs.length },
         });
       } catch (e) {
-        console.error('[jobs/list]', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[jobs/list]');
         res.status(500).json({ error: 'Failed to list jobs' });
       }
     },

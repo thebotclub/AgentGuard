@@ -297,7 +297,6 @@ export function createDocsRoutes(): Router {
       const yaml = readFileSync(SPEC_PATH, 'utf8');
       res.setHeader('Content-Type', 'application/yaml');
       res.setHeader('Cache-Control', 'public, max-age=300');
-      res.setHeader('Access-Control-Allow-Origin', '*');
       res.send(yaml);
     } catch {
       res.status(500).json({ error: 'Could not load OpenAPI spec' });
@@ -327,7 +326,6 @@ export function createDocsRoutes(): Router {
           const json = readFileSync(SPEC_JSON_PATH, 'utf8');
           res.setHeader('Content-Type', 'application/json');
           res.setHeader('Cache-Control', 'public, max-age=60');
-          res.setHeader('Access-Control-Allow-Origin', '*');
           res.send(json);
           return;
         } catch {
@@ -342,7 +340,6 @@ export function createDocsRoutes(): Router {
           const parsed = load(yamlContent);
           res.setHeader('Content-Type', 'application/json');
           res.setHeader('Cache-Control', 'public, max-age=60');
-          res.setHeader('Access-Control-Allow-Origin', '*');
           res.json(parsed);
         }).catch(() => {
           res.status(500).json({ error: 'Could not generate OpenAPI JSON spec' });

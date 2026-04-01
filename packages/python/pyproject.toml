@@ -20,6 +20,9 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 
+[tool.setuptools.package-data]
+agentguard = ["py.typed"]
+
 [project.urls]
 Homepage = "https://agentguard.tech"
 Documentation = "https://agentguard.tech"

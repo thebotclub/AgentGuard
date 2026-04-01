@@ -247,6 +247,9 @@ See the [self-hosted guide](self-hosted/README.md) for configuration options.
 | 📡 API Reference | [api.agentguard.tech/api/docs](https://api.agentguard.tech/api/docs) |
 | 📦 npm | [@the-bot-club/agentguard](https://www.npmjs.com/package/@the-bot-club/agentguard) |
 | 🐍 PyPI | [agentguard-tech](https://pypi.org/project/agentguard-tech/) |
+| 📋 Feature Matrix | [docs/FEATURE_MATRIX.md](docs/FEATURE_MATRIX.md) |
+| 🗺️ Roadmap | [docs/ROADMAP.md](docs/ROADMAP.md) |
+| 📐 Architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
 ## License
 

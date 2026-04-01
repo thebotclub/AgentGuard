@@ -77,3 +77,18 @@ variable "api_key_salt" {
   sensitive   = true
   default     = "12"
 }
+
+# ── Alerting ────────────────────────────────────────────────────────────────
+
+variable "alert_email_addresses" {
+  type        = list(string)
+  description = "Email addresses for critical alert notifications"
+  default     = []
+}
+
+variable "alert_webhook_url" {
+  type        = string
+  description = "Slack/PagerDuty incoming webhook URL for critical alerts"
+  default     = ""
+  sensitive   = true
+}

@@ -16,7 +16,7 @@ import { EventEmitter } from 'events';
 
 export interface AgentGuardEvent {
   /** Event type — used as SSE `event:` field */
-  type: 'audit_event' | 'hitl_gate_created' | 'hitl_gate_resolved' | 'keepalive';
+  type: 'audit_event' | 'hitl_gate_created' | 'hitl_gate_resolved' | 'kill_switch' | 'webhook_failure' | 'keepalive';
   /** Tenant the event belongs to */
   tenantId: string;
   /** Event payload */

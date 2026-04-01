@@ -9,9 +9,11 @@
  * GET  /api/v1/compliance/reports/:reportId       — get any report by ID
  */
 import { Router, Request, Response } from 'express';
+import { logger } from '../lib/logger.js';
 
 import { ComplianceGenerateRequestSchema } from '../schemas.js';
 import { generateOWASPReport } from '../lib/compliance-checker.js';
+import { renderCompliancePDF } from '../lib/compliance-pdf.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 
@@ -152,7 +154,7 @@ export function createComplianceRoutes(
 
         res.status(201).json({ reportId, ...report });
       } catch (e) {
-        console.error('[compliance/generate]', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[compliance/generate]');
         res.status(500).json({ error: 'Failed to generate compliance report' });
       }
     },
@@ -187,7 +189,7 @@ export function createComplianceRoutes(
           ...report,
         });
       } catch (e) {
-        console.error('[compliance/generate] error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[compliance/generate] error');
         res.status(500).json({ error: 'Failed to generate compliance report' });
       }
     },
@@ -216,7 +218,7 @@ export function createComplianceRoutes(
           ...report,
         });
       } catch (e) {
-        console.error('[compliance/latest] error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[compliance/latest] error');
         res.status(500).json({ error: 'Failed to fetch compliance report' });
       }
     },
@@ -246,13 +248,45 @@ export function createComplianceRoutes(
         ...report,
       });
     } catch (e) {
-      console.error('[compliance/report] error:', e);
+      logger.error({ err: e instanceof Error ? e : String(e) }, '[compliance/report] error');
       res.status(500).json({ error: 'Failed to fetch compliance report' });
     }
   };
 
   router.get('/api/v1/compliance/reports/:reportId', auth.requireTenantAuth, getReportHandler);
   router.get('/api/v1/compliance/owasp/reports/:reportId', auth.requireTenantAuth, getReportHandler);
+
+  // ── GET /api/v1/compliance/reports/:reportId/pdf — PDF export ────────────
+  router.get(
+    '/api/v1/compliance/reports/:reportId/pdf',
+    auth.requireTenantAuth,
+    async (req: Request, res: Response) => {
+      const tenantId = req.tenantId!;
+      const { reportId } = req.params as { reportId: string };
+
+      if (!reportId) {
+        return res.status(400).json({ error: 'reportId is required' });
+      }
+
+      try {
+        const row = await db.getComplianceReport(tenantId, reportId);
+        if (!row) {
+          return res.status(404).json({ error: 'Compliance report not found' });
+        }
+
+        const report = JSON.parse(row.controls_json) as Record<string, unknown>;
+        const pdf = await renderCompliancePDF(report as Parameters<typeof renderCompliancePDF>[0]);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="agentguard-${row.report_type}-${reportId}.pdf"`);
+        res.setHeader('Content-Length', pdf.length);
+        res.end(pdf);
+      } catch (e) {
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[compliance/pdf] error');
+        res.status(500).json({ error: 'Failed to generate PDF report' });
+      }
+    },
+  );
 
   return router;
 }

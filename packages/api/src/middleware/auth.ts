@@ -28,16 +28,42 @@ if (process.env['NODE_ENV'] === 'production') {
   }
 }
 
-const JWT_SECRET = new TextEncoder().encode(
+/**
+ * Validated JWT secret — use this instead of reading process.env directly.
+ * The startup guard above ensures this is never the dev default in production.
+ */
+export const JWT_SECRET = new TextEncoder().encode(
   _jwtSecretRaw ?? 'dev-secret-change-in-production',
 );
 
-interface JwtClaims {
+/** JWT claims shape used across route-level auth helpers. */
+export interface JwtClaims {
   sub: string;
   tenantId: string;
   role: UserRole;
-  iat: number;
-  exp: number;
+  iat?: number;
+  exp?: number;
+}
+
+/**
+ * Standalone JWT authentication — returns ServiceContext or null.
+ * Used by routes that need JWT auth outside the main Hono middleware
+ * (e.g. SSE endpoints accepting ?token= query params).
+ */
+export async function authenticateJwt(token: string): Promise<ServiceContext | null> {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ['HS256'] });
+    const claims = payload as unknown as JwtClaims;
+    if (!claims.tenantId || !claims.sub || !claims.role) return null;
+    return {
+      tenantId: claims.tenantId,
+      userId: claims.sub,
+      role: claims.role as ServiceContext['role'],
+      traceId: crypto.randomUUID(),
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**

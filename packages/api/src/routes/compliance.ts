@@ -68,9 +68,9 @@ complianceRouter.get('/evidence/report', async (c) => {
       alerts,
       alertSummary: {
         total: alerts.length,
-        critical: alerts.filter((a) => a.severity === 'CRITICAL').length,
-        high: alerts.filter((a) => a.severity === 'HIGH').length,
-        medium: alerts.filter((a) => a.severity === 'MEDIUM').length,
+        critical: alerts.filter((a: { severity: string }) => a.severity === 'CRITICAL').length,
+        high: alerts.filter((a: { severity: string }) => a.severity === 'HIGH').length,
+        medium: alerts.filter((a: { severity: string }) => a.severity === 'MEDIUM').length,
       },
     },
     meta: { generatedAt: new Date().toISOString(), periodDays, frameworks },

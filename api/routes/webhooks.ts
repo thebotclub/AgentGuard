@@ -8,6 +8,7 @@
 import { Router, Request, Response } from 'express';
 import dns from 'node:dns/promises';
 import crypto from 'node:crypto';
+import { logger } from '../lib/logger.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { WEBHOOK_EVENT_NAMES } from '../schemas.js';
@@ -241,7 +242,7 @@ export function createWebhookRoutes(
           createdAt: row.created_at,
         });
       } catch (e) {
-        console.error('[webhooks] insert error:', e instanceof Error ? e.message : e);
+        logger.error({ err: e instanceof Error ? e.message : String(e) }, '[webhooks] insert error');
         res.status(500).json({ error: 'Failed to create webhook' });
       }
     },
@@ -285,6 +286,33 @@ export function createWebhookRoutes(
 
       await db.deleteWebhook(webhookId, tenantId);
       res.json({ id: webhookId, deleted: true });
+    },
+  );
+
+  // ── Failed webhooks (internal) ────────────────────────────────────────
+  router.get(
+    '/api/v1/internal/webhooks/failed',
+    auth.requireAdminAuth,
+    async (req: Request, res: Response) => {
+      const tenantId = typeof req.query['tenant_id'] === 'string' ? req.query['tenant_id'] : undefined;
+      const limit = Number(req.query['limit']) || 50;
+      const failures = await db.getFailedWebhooks(tenantId, Math.min(limit, 200));
+      res.json({ failures, total: failures.length });
+    },
+  );
+
+  router.post(
+    '/api/v1/internal/webhooks/:id/retry',
+    auth.requireAdminAuth,
+    async (req: Request, res: Response) => {
+      const id = req.params['id'] as string;
+      const row = await db.getFailedWebhookById(id);
+      if (!row) {
+        return res.status(404).json({ error: 'Failed webhook not found' });
+      }
+      // Reset to pending with immediate retry
+      await db.updateFailedWebhook(id, row.attempt_count, new Date().toISOString(), 'pending', null);
+      res.json({ id, status: 'pending', message: 'Queued for immediate retry' });
     },
   );
 

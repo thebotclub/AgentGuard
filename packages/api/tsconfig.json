@@ -22,11 +22,13 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@agentguard/shared": ["../shared/src/index.ts"]
+      "@agentguard/shared": ["../shared/src/index.ts"],
+      "@agentguard/compliance": ["../compliance/src/index.ts"]
     }
   },
   "references": [
-    { "path": "../shared" }
+    { "path": "../shared" },
+    { "path": "../compliance" }
   ],
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "prisma"]

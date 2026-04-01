@@ -6,6 +6,7 @@
  * DELETE /api/v1/agents/:id  — deactivate an agent
  */
 import { Router, Request, Response } from 'express';
+import { logger } from '../lib/logger.js';
 import crypto from 'crypto';
 import { CreateAgentRequest } from '../schemas.js';
 import type { IDatabase } from '../db-interface.js';
@@ -70,7 +71,7 @@ export function createAgentRoutes(
             error: 'An agent with this name already exists',
           });
         }
-        console.error('[agents] insert error:', msg);
+        logger.error({ err: msg }, '[agents] insert error');
         res.status(500).json({ error: 'Failed to create agent' });
       }
     },

@@ -6,6 +6,7 @@
  */
 import { Router, Request, Response } from 'express';
 import { FeedbackRequestSchema } from '../schemas.js';
+import { logger } from '../lib/logger.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 
@@ -52,7 +53,7 @@ export function createFeedbackRoutes(
           createdAt: row.created_at,
         });
       } catch (e) {
-        console.error('[feedback] insert error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[feedback] insert error');
         res.status(500).json({ error: 'Failed to submit feedback' });
       }
     },
@@ -77,7 +78,7 @@ export function createFeedbackRoutes(
           count: rows.length,
         });
       } catch (e) {
-        console.error('[feedback] list error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[feedback] list error');
         res.status(500).json({ error: 'Failed to list feedback' });
       }
     },

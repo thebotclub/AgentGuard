@@ -90,14 +90,32 @@ export const TimeWindowSchema = z.object({
 export type TimeWindow = z.infer<typeof TimeWindowSchema>;
 
 // When conditions — AND logic: all conditions in a rule's `when` array must match
-export const WhenConditionSchema = z.union([
+// Simple (leaf) conditions:
+const SimpleWhenConditionSchema = z.union([
   z.object({ tool: ToolConditionSchema }),
   z.object({ params: z.record(z.string(), ValueConstraintSchema) }),
   z.object({ context: z.record(z.string(), ValueConstraintSchema) }),
   z.object({ dataClass: z.record(z.string(), ValueConstraintSchema) }),
   z.object({ timeWindow: TimeWindowSchema }),
 ]);
-export type WhenCondition = z.infer<typeof WhenConditionSchema>;
+
+// Recursive composite conditions: AND / OR / NOT
+export const WhenConditionSchema: z.ZodType<WhenCondition> = z.union([
+  SimpleWhenConditionSchema,
+  z.object({ AND: z.lazy(() => z.array(WhenConditionSchema)) }),
+  z.object({ OR: z.lazy(() => z.array(WhenConditionSchema)) }),
+  z.object({ NOT: z.lazy(() => WhenConditionSchema) }),
+]);
+
+export type WhenCondition =
+  | { tool: z.infer<typeof ToolConditionSchema> }
+  | { params: Record<string, z.infer<typeof ValueConstraintSchema>> }
+  | { context: Record<string, z.infer<typeof ValueConstraintSchema>> }
+  | { dataClass: Record<string, z.infer<typeof ValueConstraintSchema>> }
+  | { timeWindow: z.infer<typeof TimeWindowSchema> }
+  | { AND: WhenCondition[] }
+  | { OR: WhenCondition[] }
+  | { NOT: WhenCondition };
 
 // ─── Policy Rule ──────────────────────────────────────────────────────────────
 
@@ -179,6 +197,7 @@ export const CompiledRuleSchema = z.object({
   contextConditions: z.array(z.record(z.string(), ValueConstraintSchema)).default([]),
   dataClassConditions: z.array(z.record(z.string(), ValueConstraintSchema)).default([]),
   timeConditions: z.array(TimeWindowSchema).default([]),
+  compositeConditions: z.array(z.any()).default([]),
   rateLimit: RateLimitSchema.optional(),
   approvers: z.array(z.string()).optional(),
   timeoutSec: z.number().optional(),

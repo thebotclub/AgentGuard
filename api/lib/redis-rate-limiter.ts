@@ -34,6 +34,11 @@ const BF_MAX_ATTEMPTS = 5;          // max failed auth attempts before lockout (
 const BF_WINDOW_MS = 15 * 60_000;  // 15 minute window
 const BF_BLOCK_MS = 30 * 60_000;   // 30 minute block
 
+// Signup/recovery hourly limits
+const SIGNUP_WINDOW_MS = 60 * 60_000;  // 1 hour
+const SIGNUP_LIMIT = process.env['NODE_ENV'] === 'test' ? 100 : 5;
+const RECOVERY_LIMIT = process.env['NODE_ENV'] === 'test' ? 100 : 2;
+
 // ── In-memory fallback ─────────────────────────────────────────────────────
 
 interface InMemBucket {
@@ -222,6 +227,42 @@ async function redisCheck(
   }
 }
 
+/**
+ * Sliding window rate limiter with a custom window duration.
+ * Used for signup/recovery endpoints where the window is 1 hour instead of 1 minute.
+ */
+async function redisCheckWindow(
+  redis: RedisLike,
+  key: string,
+  limit: number,
+  windowMs: number,
+): Promise<RateLimitResult> {
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  const member = `${now}:${Math.random().toString(36).slice(2)}`;
+  const redisKey = `rl:${key}`;
+
+  try {
+    await redis.zadd(redisKey, now, member);
+    await redis.zremrangebyscore(redisKey, '-inf', windowStart);
+    const count = await redis.zcard(redisKey);
+    await redis.expire(redisKey, Math.ceil((windowMs * 2) / 1000));
+
+    const remaining = Math.max(0, limit - count);
+    const allowed = count <= limit;
+    return {
+      allowed,
+      remaining,
+      limit,
+      retryAfter: !allowed ? Math.ceil(windowMs / 1000) : undefined,
+    };
+  } catch (err) {
+    console.warn('[redis-rl] operation failed, using in-memory:', err instanceof Error ? err.message : err);
+    redisAvailable = false;
+    return inMemCheck(key, limit);
+  }
+}
+
 // ── Redis brute-force tracker ──────────────────────────────────────────────
 
 async function redisBfRecord(redis: RedisLike, ip: string): Promise<void> {
@@ -331,6 +372,30 @@ export async function checkScimRateLimit(ip: string): Promise<RateLimitResult> {
     return redisCheck(redis, key, SCIM_LIMIT);
   }
   return inMemCheck(key, SCIM_LIMIT);
+}
+
+/**
+ * Check the signup rate limit for an IP (5/hour, shared via Redis).
+ */
+export async function checkSignupRateLimit(ip: string): Promise<RateLimitResult> {
+  const key = `signup:${ip}`;
+  const redis = await getRedis();
+  if (redis && redisAvailable) {
+    return redisCheckWindow(redis, key, SIGNUP_LIMIT, SIGNUP_WINDOW_MS);
+  }
+  return inMemCheck(key, SIGNUP_LIMIT);
+}
+
+/**
+ * Check the recovery rate limit for an IP (2/hour, shared via Redis).
+ */
+export async function checkRecoveryRateLimit(ip: string): Promise<RateLimitResult> {
+  const key = `recovery:${ip}`;
+  const redis = await getRedis();
+  if (redis && redisAvailable) {
+    return redisCheckWindow(redis, key, RECOVERY_LIMIT, SIGNUP_WINDOW_MS);
+  }
+  return inMemCheck(key, RECOVERY_LIMIT);
 }
 
 /**

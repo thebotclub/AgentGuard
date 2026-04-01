@@ -1059,6 +1059,61 @@ function copyLicenseKey() {
   }).catch(function() {});
 }
 
+// ── SSE Real-Time Updates ─────────────────────────────────
+var _sseSource = null;
+
+function connectSSE() {
+  if (_sseSource) { _sseSource.close(); _sseSource = null; }
+  if (!storedApiKey || typeof EventSource === 'undefined') return;
+
+  var url = API + '/api/v1/events/stream?token=' + encodeURIComponent(storedApiKey);
+  _sseSource = new EventSource(url);
+
+  _sseSource.addEventListener('audit_event', function(e) {
+    try {
+      var data = JSON.parse(e.data);
+      var feed = document.getElementById('recent-feed');
+      if (!feed) return;
+      var colors = { allow: 'var(--green)', block: 'var(--red)', monitor: 'var(--accent-hi)', hitl_required: 'var(--amber)' };
+      var result = data.result || data.decision || '';
+      var c = colors[result] || 'var(--text-dim)';
+      var time = (data.createdAt || data.timestamp || new Date().toISOString()).replace('T', ' ').slice(11, 19);
+      var div = document.createElement('div');
+      div.className = 'feed-item';
+      div.innerHTML = '<div class="feed-dot" style="background:' + c + '"></div>' +
+        '<div class="feed-time">' + esc(time) + '</div>' +
+        '<div class="feed-content"><div class="feed-tool">' + esc(data.tool || '') + ' \u2192 <span style="color:' + c + ';font-weight:600">' + esc(result.toUpperCase()) + '</span></div>' +
+        '<div class="feed-rule">' + esc(data.ruleId || data.matchedRuleId || 'default') + ' \u00b7 risk ' + (data.riskScore || 0) + ' \u00b7 ' + (data.durationMs || 0) + 'ms</div></div>';
+      feed.insertBefore(div, feed.firstChild);
+      // Cap feed at 30 items
+      while (feed.children.length > 30) feed.removeChild(feed.lastChild);
+    } catch (_) {}
+  });
+
+  _sseSource.addEventListener('kill_switch', function(e) {
+    try {
+      var data = JSON.parse(e.data);
+      killActive = !!data.active;
+      updateKillSwitchUI();
+    } catch (_) {}
+  });
+
+  _sseSource.addEventListener('webhook_failure', function(e) {
+    try {
+      var data = JSON.parse(e.data);
+      var status = document.getElementById('kill-api-status');
+      if (status) status.textContent = 'Webhook delivery failed: ' + (data.error || 'unknown') + ' — retrying';
+    } catch (_) {}
+  });
+
+  _sseSource.onerror = function() {
+    // SSE failed — graceful degradation; existing polling continues
+    if (_sseSource) { _sseSource.close(); _sseSource = null; }
+    // Retry SSE after 30 seconds
+    setTimeout(function() { if (storedApiKey) connectSSE(); }, 30000);
+  };
+}
+
 // ── Init ─────────────────────────────────────────────────
 async function init() {
   // Load stored API key
@@ -1111,6 +1166,7 @@ async function init() {
     loadUsageStats();
     loadAuditTrail();
     loadApprovals();
+    connectSSE();
   }
 
   // Create session

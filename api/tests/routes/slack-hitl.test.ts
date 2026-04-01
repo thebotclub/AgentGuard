@@ -526,10 +526,7 @@ describe('POST /api/v1/integrations/slack/callback', () => {
       resolved_by: 'slack:U12345',
     };
 
-    (mockDb.getApproval as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce(pendingApproval)
-      .mockResolvedValueOnce(resolvedApproval);
-    (mockDb.resolveApproval as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    (mockDb.resolveApprovalAtomic as ReturnType<typeof vi.fn>).mockResolvedValue(resolvedApproval);
 
     const body = buildCallbackPayload(APPROVAL_ID, 'hitl_approve');
     const now = Math.floor(Date.now() / 1000);
@@ -543,7 +540,7 @@ describe('POST /api/v1/integrations/slack/callback', () => {
       .send(body);
 
     expect(res.status).toBe(200);
-    expect(mockDb.resolveApproval).toHaveBeenCalledWith(
+    expect(mockDb.resolveApprovalAtomic).toHaveBeenCalledWith(
       APPROVAL_ID,
       'tenant-123',
       'approved',
@@ -577,7 +574,7 @@ describe('POST /api/v1/integrations/slack/callback', () => {
     (mockDb.getApproval as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce(pendingApproval)
       .mockResolvedValueOnce({ ...pendingApproval, status: 'denied' });
-    (mockDb.resolveApproval as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    (mockDb.resolveApprovalAtomic as ReturnType<typeof vi.fn>).mockResolvedValue({ ...pendingApproval, status: 'denied', resolved_by: 'slack:U12345' });
 
     const body = buildCallbackPayload(APPROVAL_ID, 'hitl_reject');
     const now = Math.floor(Date.now() / 1000);
@@ -591,7 +588,7 @@ describe('POST /api/v1/integrations/slack/callback', () => {
       .send(body);
 
     expect(res.status).toBe(200);
-    expect(mockDb.resolveApproval).toHaveBeenCalledWith(
+    expect(mockDb.resolveApprovalAtomic).toHaveBeenCalledWith(
       APPROVAL_ID,
       'tenant-123',
       'denied',

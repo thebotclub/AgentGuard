@@ -72,24 +72,55 @@ resource "azurerm_container_app" "api" {
       cpu    = var.is_production ? 1.0 : 0.5
       memory = var.is_production ? "2Gi" : "1Gi"
 
-      env { name = "NODE_ENV";   value = "production" }
-      env { name = "PORT";       value = "3000" }
-      env { name = "LOG_LEVEL";  value = var.is_production ? "info" : "debug" }
-      env { name = "SERVICE_NAME"; value = "agentguard-api" }
+      env {
+        name  = "NODE_ENV"
+        value = "production"
+      }
+      env {
+        name  = "PORT"
+        value = "3000"
+      }
+      env {
+        name  = "LOG_LEVEL"
+        value = var.is_production ? "info" : "debug"
+      }
+      env {
+        name  = "SERVICE_NAME"
+        value = "agentguard-api"
+      }
+      env {
+        name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+        value = azurerm_application_insights.main.connection_string
+      }
 
-      env { name = "DATABASE_URL";        secret_name = "database-url" }
-      env { name = "DATABASE_DIRECT_URL"; secret_name = "database-direct-url" }
-      env { name = "REDIS_URL";           secret_name = "redis-url" }
-      env { name = "JWT_SECRET";          secret_name = "jwt-secret" }
-      env { name = "API_KEY_SALT";        secret_name = "api-key-salt" }
+      env {
+        name        = "DATABASE_URL"
+        secret_name = "database-url"
+      }
+      env {
+        name        = "DATABASE_DIRECT_URL"
+        secret_name = "database-direct-url"
+      }
+      env {
+        name        = "REDIS_URL"
+        secret_name = "redis-url"
+      }
+      env {
+        name        = "JWT_SECRET"
+        secret_name = "jwt-secret"
+      }
+      env {
+        name        = "API_KEY_SALT"
+        secret_name = "api-key-salt"
+      }
 
       liveness_probe {
-        path             = "/v1/live"
-        port             = 3000
-        transport        = "HTTP"
-        initial_delay    = 30
-        interval_seconds = 30
-        timeout          = 5
+        path                    = "/v1/live"
+        port                    = 3000
+        transport               = "HTTP"
+        initial_delay           = 30
+        interval_seconds        = 30
+        timeout                 = 5
         failure_count_threshold = 3
       }
 
@@ -103,12 +134,12 @@ resource "azurerm_container_app" "api" {
       }
 
       startup_probe {
-        path             = "/v1/live"
-        port             = 3000
-        transport        = "HTTP"
-        initial_delay    = 5
-        interval_seconds = 5
-        timeout          = 3
+        path                    = "/v1/live"
+        port                    = 3000
+        transport               = "HTTP"
+        initial_delay           = 5
+        interval_seconds        = 5
+        timeout                 = 3
         failure_count_threshold = 10
       }
     }
@@ -172,20 +203,39 @@ resource "azurerm_container_app" "workers" {
       cpu    = var.is_production ? 1.0 : 0.5
       memory = var.is_production ? "2Gi" : "1Gi"
 
-      env { name = "NODE_ENV";      value = "production" }
-      env { name = "PORT";          value = "3001" }
-      env { name = "SERVICE_NAME";  value = "agentguard-workers" }
+      env {
+        name  = "NODE_ENV"
+        value = "production"
+      }
+      env {
+        name  = "PORT"
+        value = "3001"
+      }
+      env {
+        name  = "SERVICE_NAME"
+        value = "agentguard-workers"
+      }
+      env {
+        name  = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+        value = azurerm_application_insights.main.connection_string
+      }
 
-      env { name = "DATABASE_URL"; secret_name = "database-url" }
-      env { name = "REDIS_URL";    secret_name = "redis-url" }
+      env {
+        name        = "DATABASE_URL"
+        secret_name = "database-url"
+      }
+      env {
+        name        = "REDIS_URL"
+        secret_name = "redis-url"
+      }
 
       liveness_probe {
-        path             = "/health"
-        port             = 3001
-        transport        = "HTTP"
-        initial_delay    = 30
-        interval_seconds = 30
-        timeout          = 5
+        path                    = "/health"
+        port                    = 3001
+        transport               = "HTTP"
+        initial_delay           = 30
+        interval_seconds        = 30
+        timeout                 = 5
         failure_count_threshold = 3
       }
 
@@ -238,18 +288,30 @@ resource "azurerm_container_app" "dashboard" {
       cpu    = 0.5
       memory = "1Gi"
 
-      env { name = "NODE_ENV";                value = "production" }
-      env { name = "PORT";                    value = "3000" }
-      env { name = "NEXT_TELEMETRY_DISABLED"; value = "1" }
-      env { name = "JWT_SECRET"; secret_name = "jwt-secret" }
+      env {
+        name  = "NODE_ENV"
+        value = "production"
+      }
+      env {
+        name  = "PORT"
+        value = "3000"
+      }
+      env {
+        name  = "NEXT_TELEMETRY_DISABLED"
+        value = "1"
+      }
+      env {
+        name        = "JWT_SECRET"
+        secret_name = "jwt-secret"
+      }
 
       liveness_probe {
-        path             = "/api/health"
-        port             = 3000
-        transport        = "HTTP"
-        initial_delay    = 30
-        interval_seconds = 30
-        timeout          = 5
+        path                    = "/api/health"
+        port                    = 3000
+        transport               = "HTTP"
+        initial_delay           = 30
+        interval_seconds        = 30
+        timeout                 = 5
         failure_count_threshold = 3
       }
 

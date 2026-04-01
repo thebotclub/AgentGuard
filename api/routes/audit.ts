@@ -17,9 +17,11 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { z } from 'zod';
+import { logger } from '../lib/logger.js';
 import type { IDatabase, WebhookRow } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { GENESIS_HASH } from '../../packages/sdk/src/core/types.js';
+import { recordFailedWebhook } from '../lib/webhook-retry.js';
 
 // ── Shared Helpers ─────────────────────────────────────────────────────────
 
@@ -153,9 +155,15 @@ export function fireWebhooksAsync(
 
         const ok = await deliverWebhook(wh, eventType, payload);
         if (!ok) {
-          setTimeout(async () => {
-            await deliverWebhook(wh, eventType, payload);
-          }, 5000);
+          // Record failure for DB-backed retry instead of fire-and-forget
+          try {
+            await recordFailedWebhook(
+              db, wh.id, tenantId, eventType,
+              JSON.stringify(payload), 'Initial delivery failed',
+            );
+          } catch (err) {
+            logger.error({ err: err instanceof Error ? err.message : String(err) }, '[webhook] Failed to record webhook failure');
+          }
         }
       }),
     );
@@ -400,7 +408,7 @@ export function createAuditRoutes(
             : `Chain already intact — ${events.length} events verified`,
         });
       } catch (e) {
-        console.error('[audit/repair] error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[audit/repair] error');
         res.status(500).json({ error: 'Failed to repair audit chain' });
       }
     },

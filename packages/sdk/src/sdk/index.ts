@@ -80,3 +80,6 @@ export type {
   OpenClawPluginConfig,
   OpenClawInterceptResult,
 } from '../integrations/openclaw.js';
+
+export { langGraphGuard, LangGraphGuardNode, wrapToolNode } from '../integrations/langgraph.js';
+export type { LangGraphGuardOptions, EvalResult } from '../integrations/langgraph.js';

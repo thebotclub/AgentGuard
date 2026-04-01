@@ -67,12 +67,18 @@ export const TimeWindowSchema = z.object({
     outside: TimeWindowRangeSchema.optional(),
 });
 // ─── When Conditions ──────────────────────────────────────────────────────────
-export const WhenConditionSchema = z.union([
+const SimpleWhenConditionSchema = z.union([
     z.object({ tool: ToolConditionSchema }),
     z.object({ params: z.record(z.string(), ValueConstraintSchema) }),
     z.object({ context: z.record(z.string(), ValueConstraintSchema) }),
     z.object({ dataClass: z.record(z.string(), ValueConstraintSchema) }),
     z.object({ timeWindow: TimeWindowSchema }),
+]);
+export const WhenConditionSchema = z.union([
+    SimpleWhenConditionSchema,
+    z.object({ AND: z.lazy(() => z.array(WhenConditionSchema)) }),
+    z.object({ OR: z.lazy(() => z.array(WhenConditionSchema)) }),
+    z.object({ NOT: z.lazy(() => WhenConditionSchema) }),
 ]);
 // ─── Policy Rule ──────────────────────────────────────────────────────────────
 export const PolicyActionSchema = z.enum([
@@ -153,6 +159,7 @@ export const CompiledRuleSchema = z.object({
     severity: z.string(),
     riskBoost: z.number(),
     tags: z.array(z.string()),
+    compositeConditions: z.array(z.any()).default([]),
 });
 // ─── Policy Bundle (served to SDK) ───────────────────────────────────────────
 export const PolicyBundleSchema = z.object({

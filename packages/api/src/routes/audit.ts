@@ -8,43 +8,14 @@
  */
 import { Hono } from 'hono';
 import { stream } from 'hono/streaming';
-import { jwtVerify } from 'jose';
 import { QueryAuditEventsSchema } from '@agentguard/shared';
 import { AuditService } from '../services/audit.js';
-import { getContext } from '../middleware/auth.js';
+import { getContext, authenticateJwt } from '../middleware/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { redis } from '../lib/redis.js';
 import type { ServiceContext } from '@agentguard/shared';
 
 export const auditRouter = new Hono();
-
-// ─── JWT secret (same as events.ts) ──────────────────────────────────────────
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
-);
-
-interface JwtClaims {
-  sub: string;
-  tenantId: string;
-  role: string;
-}
-
-async function authenticateJwt(token: string): Promise<ServiceContext | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ['HS256'] });
-    const claims = payload as unknown as JwtClaims;
-    if (!claims.tenantId || !claims.sub || !claims.role) return null;
-    return {
-      tenantId: claims.tenantId,
-      userId: claims.sub,
-      role: claims.role as ServiceContext['role'],
-      traceId: crypto.randomUUID(),
-    };
-  } catch {
-    return null;
-  }
-}
 
 /** GET /v1/audit — query audit events */
 auditRouter.get('/', async (c) => {

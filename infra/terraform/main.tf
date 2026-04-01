@@ -73,6 +73,10 @@ module "azure" {
   database_password = var.database_password
 
   # Secrets
-  jwt_secret    = var.jwt_secret
-  api_key_salt  = var.api_key_salt
+  jwt_secret   = var.jwt_secret
+  api_key_salt = var.api_key_salt
+
+  # Alerting
+  alert_email_addresses = var.alert_email_addresses
+  alert_webhook_url     = var.alert_webhook_url
 }

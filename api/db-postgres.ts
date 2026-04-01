@@ -16,6 +16,7 @@ import type {
   ApiKeyRow,
   AuditEventRow,
   WebhookRow,
+  FailedWebhookRow,
   AgentRow,
   ApprovalRow,
   FeedbackRow,
@@ -508,6 +509,23 @@ const SCHEMA_SQL = `
   );
   CREATE INDEX IF NOT EXISTS idx_scim_group_members_group ON scim_group_members(group_id);
   CREATE INDEX IF NOT EXISTS idx_scim_group_members_user ON scim_group_members(user_id);
+
+  CREATE TABLE IF NOT EXISTS failed_webhooks (
+    id TEXT PRIMARY KEY,
+    webhook_id TEXT NOT NULL,
+    tenant_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    next_retry_at TIMESTAMPTZ NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    last_error TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_failed_webhooks_retry ON failed_webhooks(status, next_retry_at);
+  CREATE INDEX IF NOT EXISTS idx_failed_webhooks_tenant ON failed_webhooks(tenant_id);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -1245,6 +1263,57 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       return rows.map(normWebhook);
     },
 
+    // ── Failed Webhooks (retry queue) ────────────────────────────────────────
+    async insertFailedWebhook(
+      id: string, webhookId: string, tenantId: string,
+      eventType: string, payload: string, nextRetryAt: string, lastError: string | null,
+    ): Promise<void> {
+      await pool.query(
+        `INSERT INTO failed_webhooks (id, webhook_id, tenant_id, event_type, payload, attempt_count, next_retry_at, status, last_error)
+         VALUES ($1, $2, $3, $4, $5, 1, $6, 'pending', $7)`,
+        [id, webhookId, tenantId, eventType, payload, nextRetryAt, lastError],
+      );
+    },
+
+    async getRetryableWebhooks(limit: number): Promise<FailedWebhookRow[]> {
+      const rows = await all<FailedWebhookRow>(
+        `SELECT * FROM failed_webhooks WHERE status = 'pending' AND next_retry_at <= NOW()
+         ORDER BY next_retry_at LIMIT $1 FOR UPDATE SKIP LOCKED`,
+        [limit],
+      );
+      return rows;
+    },
+
+    async updateFailedWebhook(
+      id: string, attemptCount: number, nextRetryAt: string, status: string, lastError: string | null,
+    ): Promise<void> {
+      await pool.query(
+        `UPDATE failed_webhooks SET attempt_count = $1, next_retry_at = $2, status = $3, last_error = $4, updated_at = NOW() WHERE id = $5`,
+        [attemptCount, nextRetryAt, status, lastError, id],
+      );
+    },
+
+    async getFailedWebhooks(tenantId?: string, limit = 50): Promise<FailedWebhookRow[]> {
+      if (tenantId) {
+        return all<FailedWebhookRow>(
+          'SELECT * FROM failed_webhooks WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2',
+          [tenantId, limit],
+        );
+      }
+      return all<FailedWebhookRow>(
+        'SELECT * FROM failed_webhooks ORDER BY created_at DESC LIMIT $1',
+        [limit],
+      );
+    },
+
+    async getFailedWebhookById(id: string): Promise<FailedWebhookRow | undefined> {
+      const rows = await all<FailedWebhookRow>(
+        'SELECT * FROM failed_webhooks WHERE id = $1',
+        [id],
+      );
+      return rows[0];
+    },
+
     // ── Agents ────────────────────────────────────────────────────────────────
     async insertAgent(
       tenantId: string,
@@ -1454,6 +1523,34 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
          WHERE id = $3 AND tenant_id = $4`,
         [status, resolvedBy, id, tenantId]
       );
+    },
+
+    async resolveApprovalAtomic(
+      id: string,
+      tenantId: string,
+      status: 'approved' | 'denied',
+      resolvedBy: string,
+    ): Promise<ApprovalRow | null> {
+      const result = await pool.query(
+        `UPDATE approvals
+         SET status = $1, resolved_at = NOW(), resolved_by = $2
+         WHERE id = $3 AND tenant_id = $4 AND status = 'pending'
+         RETURNING *`,
+        [status, resolvedBy, id, tenantId]
+      );
+      const r = result.rows[0] as Record<string, unknown> | undefined;
+      if (!r) return null;
+      return {
+        id: r['id'] as string,
+        tenant_id: r['tenant_id'] as string,
+        agent_id: (r['agent_id'] as string | null) ?? null,
+        tool: r['tool'] as string,
+        params_json: (r['params_json'] as string | null) ?? null,
+        status: r['status'] as ApprovalRow['status'],
+        created_at: String(r['created_at']),
+        resolved_at: r['resolved_at'] ? String(r['resolved_at']) : null,
+        resolved_by: (r['resolved_by'] as string | null) ?? null,
+      };
     },
 
     // ── Policy ────────────────────────────────────────────────────────────────

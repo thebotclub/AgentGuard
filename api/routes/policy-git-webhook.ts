@@ -28,6 +28,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'node:crypto';
 import yaml from 'js-yaml';
 import { z } from 'zod';
+import { logger } from '../lib/logger.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { requireRole } from '../lib/rbac.js';
@@ -216,7 +217,7 @@ async function syncPoliciesFromGithub(
   );
 
   if (yamlFiles.length === 0) {
-    console.log(`[git-webhook] No YAML files found in ${owner}/${repo}:${branch}/${policyDir}`);
+    logger.info(`[git-webhook] No YAML files found in ${owner}/${repo}:${branch}/${policyDir}`);
     return result;
   }
 
@@ -262,14 +263,14 @@ async function syncPoliciesFromGithub(
 
       if (changed) {
         result.updated += rules.length;
-        console.log(`[git-webhook] Updated ${rules.length} rules from ${file.name} (hash: ${contentHash})`);
+        logger.info(`[git-webhook] Updated ${rules.length} rules from ${file.name} (hash: ${contentHash})`);
       } else {
         result.skipped += rules.length;
       }
     } catch (err) {
       const msg = `Failed to process ${file.name}: ${err instanceof Error ? err.message : err}`;
       result.errors.push(msg);
-      console.error(`[git-webhook] ${msg}`);
+      logger.error(`[git-webhook] ${msg}`);
     }
   }
 
@@ -286,13 +287,13 @@ async function syncPoliciesFromGithub(
         policyDoc,
         null,
       );
-      console.log(`[git-webhook] Saved policy version ${nextVersion} for tenant ${tenantId}`);
+      logger.info(`[git-webhook] Saved policy version ${nextVersion} for tenant ${tenantId}`);
     } catch (err) {
-      console.warn('[git-webhook] Failed to save policy version:', err);
+      logger.warn({ err: err instanceof Error ? err : String(err) }, '[git-webhook] Failed to save policy version');
     }
 
     await db.setCustomPolicy(tenantId, policyDoc);
-    console.log(`[git-webhook] Applied ${result.updated} rules from ${yamlFiles.length} files to tenant ${tenantId}`);
+    logger.info(`[git-webhook] Applied ${result.updated} rules from ${yamlFiles.length} files to tenant ${tenantId}`);
   }
 
   return result;
@@ -329,7 +330,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
           webhookEvents: ['push'],
         });
       } catch (err) {
-        console.error('[git-webhook] config GET error:', err);
+        logger.error({ err: err instanceof Error ? err : String(err) }, '[git-webhook] config GET error');
         return res.status(500).json({ error: 'Failed to retrieve git webhook config' });
       }
     },
@@ -354,7 +355,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
           tenantId, repoUrl, webhookSecret, branch, policyDir, githubToken ?? null,
         );
 
-        console.log(`[git-webhook] tenant ${tenantId}: configured git webhook for ${repoUrl}:${branch}`);
+        logger.info(`[git-webhook] tenant ${tenantId}: configured git webhook for ${repoUrl}:${branch}`);
 
         return res.json({
           id: config.id,
@@ -377,7 +378,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
           ],
         });
       } catch (err) {
-        console.error('[git-webhook] config PUT error:', err);
+        logger.error({ err: err instanceof Error ? err : String(err) }, '[git-webhook] config PUT error');
         return res.status(500).json({ error: 'Failed to configure git webhook' });
       }
     },
@@ -462,7 +463,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
           ...result,
         });
       } catch (err) {
-        console.error('[git-webhook] manual sync error:', err);
+        logger.error({ err: err instanceof Error ? err : String(err) }, '[git-webhook] manual sync error');
         return res.status(500).json({ error: `Sync failed: ${err instanceof Error ? err.message : 'Unknown error'}` });
       }
     },
@@ -508,7 +509,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
           0, '', null,
         );
 
-        console.log(`[git-webhook] tenant ${tenantId}: rolled back policy to version ${version}`);
+        logger.info(`[git-webhook] tenant ${tenantId}: rolled back policy to version ${version}`);
 
         return res.json({
           success: true,
@@ -517,7 +518,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
           message: `Policy rolled back to version ${version}`,
         });
       } catch (err) {
-        console.error('[git-webhook] rollback error:', err);
+        logger.error({ err: err instanceof Error ? err : String(err) }, '[git-webhook] rollback error');
         return res.status(500).json({ error: `Rollback failed: ${err instanceof Error ? err.message : 'Unknown error'}` });
       }
     },
@@ -583,7 +584,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
 
         // Verify HMAC signature
         if (!verifyGithubSignature(rawBody, signature, config.webhook_secret)) {
-          console.warn(`[git-webhook] Signature verification failed for tenant ${tenantId}, delivery ${deliveryId}`);
+          logger.warn(`[git-webhook] Signature verification failed for tenant ${tenantId}, delivery ${deliveryId}`);
           return res.status(401).json({ error: 'Invalid webhook signature' });
         }
 
@@ -611,7 +612,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
           repo = parts[1]!;
         }
 
-        console.log(`[git-webhook] Push to ${repoFullName}:${pushedBranch} (${commitSha.slice(0, 7)}) — syncing policies for tenant ${tenantId}`);
+        logger.info(`[git-webhook] Push to ${repoFullName}:${pushedBranch} (${commitSha.slice(0, 7)}) — syncing policies for tenant ${tenantId}`);
 
         // Respond immediately (GitHub has a 10s timeout)
         res.json({ accepted: true, deliveryId, commitSha: commitSha.slice(0, 7) });
@@ -634,7 +635,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
             syncResult.updated, syncResult.skipped,
             syncResult.errors.length > 0 ? 'error' : 'success',
             syncResult.errors.length > 0 ? syncResult.errors.join('; ') : null,
-          ).catch((e) => console.error('[git-webhook] failed to insert sync log:', e));
+          ).catch((e) => logger.error({ err: e instanceof Error ? e : String(e) }, '[git-webhook] failed to insert sync log'));
 
           // Audit trail
           await storeAuditEvent(
@@ -643,16 +644,16 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
             'git_sync_webhook', 0,
             `GitHub push sync (${commitSha.slice(0, 7)}): ${syncResult.updated} updated, ${syncResult.skipped} unchanged${syncResult.errors.length > 0 ? `, errors: ${syncResult.errors.join('; ')}` : ''}`,
             0, '', null,
-          ).catch((e) => console.error('[git-webhook] failed to store audit event:', e));
+          ).catch((e) => logger.error({ err: e instanceof Error ? e : String(e) }, '[git-webhook] failed to store audit event'));
 
           if (syncResult.errors.length > 0) {
-            console.error(`[git-webhook] Sync errors for tenant ${tenantId}:`, syncResult.errors);
+            logger.error({ err: syncResult.errors }, `[git-webhook] Sync errors for tenant ${tenantId}`);
           } else {
-            console.log(`[git-webhook] Sync complete for tenant ${tenantId}: ${syncResult.updated} updated, ${syncResult.skipped} unchanged`);
+            logger.info(`[git-webhook] Sync complete for tenant ${tenantId}: ${syncResult.updated} updated, ${syncResult.skipped} unchanged`);
           }
         });
       } catch (err) {
-        console.error('[git-webhook] processing error:', err);
+        logger.error({ err: err instanceof Error ? err : String(err) }, '[git-webhook] processing error');
         return res.status(500).json({ error: 'Webhook processing failed' });
       }
     },

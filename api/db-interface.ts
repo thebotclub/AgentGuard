@@ -68,6 +68,20 @@ export interface WebhookRow {
   created_at: string;
 }
 
+export interface FailedWebhookRow {
+  id: string;
+  webhook_id: string;
+  tenant_id: string;
+  event_type: string;
+  payload: string;
+  attempt_count: number;
+  next_retry_at: string;
+  status: 'pending' | 'dead_lettered';
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AgentRow {
   id: string;
   tenant_id: string;
@@ -556,6 +570,27 @@ export interface IDatabase {
   deleteWebhook(id: string, tenantId: string): Promise<void>;
   getActiveWebhooksForTenant(tenantId: string): Promise<WebhookRow[]>;
 
+  // ── Failed Webhooks (retry queue) ─────────────────────────────────────────
+  insertFailedWebhook(
+    id: string,
+    webhookId: string,
+    tenantId: string,
+    eventType: string,
+    payload: string,
+    nextRetryAt: string,
+    lastError: string | null,
+  ): Promise<void>;
+  getRetryableWebhooks(limit: number): Promise<FailedWebhookRow[]>;
+  updateFailedWebhook(
+    id: string,
+    attemptCount: number,
+    nextRetryAt: string,
+    status: string,
+    lastError: string | null,
+  ): Promise<void>;
+  getFailedWebhooks(tenantId?: string, limit?: number): Promise<FailedWebhookRow[]>;
+  getFailedWebhookById(id: string): Promise<FailedWebhookRow | undefined>;
+
   // ── Agents ────────────────────────────────────────────────────────────────
   insertAgent(
     tenantId: string,
@@ -585,7 +620,17 @@ export interface IDatabase {
     status: 'approved' | 'denied',
     resolvedBy: string,
   ): Promise<void>;
-
+  /**
+   * Atomically resolve an approval only if it is still pending.
+   * Returns the updated row if the status was changed, or null if
+   * the approval was already resolved (TOCTOU-safe).
+   */
+  resolveApprovalAtomic(
+    id: string,
+    tenantId: string,
+    status: 'approved' | 'denied',
+    resolvedBy: string,
+  ): Promise<ApprovalRow | null>;
   // ── Policy ────────────────────────────────────────────────────────────────
   getCustomPolicy(tenantId: string): Promise<string | null>;
   setCustomPolicy(tenantId: string, policyJson: string): Promise<void>;

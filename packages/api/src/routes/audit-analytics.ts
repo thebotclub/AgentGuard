@@ -9,38 +9,11 @@
  * These routes mount on the existing auditRouter at /v1/audit
  */
 import { Hono } from 'hono';
-import { jwtVerify } from 'jose';
-import { getContext } from '../middleware/auth.js';
+import { getContext, authenticateJwt } from '../middleware/auth.js';
 import { prisma } from '../lib/prisma.js';
 import type { ServiceContext } from '@agentguard/shared';
 
 export const auditAnalyticsRouter = new Hono();
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
-);
-
-interface JwtClaims {
-  sub: string;
-  tenantId: string;
-  role: string;
-}
-
-async function authenticateJwt(token: string): Promise<ServiceContext | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ['HS256'] });
-    const claims = payload as unknown as JwtClaims;
-    if (!claims.tenantId || !claims.sub || !claims.role) return null;
-    return {
-      tenantId: claims.tenantId,
-      userId: claims.sub,
-      role: claims.role as ServiceContext['role'],
-      traceId: crypto.randomUUID(),
-    };
-  } catch {
-    return null;
-  }
-}
 
 // ─── Risk Trend ───────────────────────────────────────────────────────────────
 

@@ -117,6 +117,14 @@ export function createMockDb(): IDatabase {
     listAllApprovals: vi.fn().mockResolvedValue([]),
     listPendingApprovals: vi.fn().mockResolvedValue([]),
     resolveApproval: vi.fn().mockResolvedValue(undefined),
+    resolveApprovalAtomic: vi.fn().mockResolvedValue(null),
+
+    // Failed Webhooks
+    insertFailedWebhook: vi.fn().mockResolvedValue(undefined),
+    getRetryableWebhooks: vi.fn().mockResolvedValue([]),
+    updateFailedWebhook: vi.fn().mockResolvedValue(undefined),
+    getFailedWebhooks: vi.fn().mockResolvedValue([]),
+    getFailedWebhookById: vi.fn().mockResolvedValue(undefined),
 
     // Feedback
     insertFeedback: vi.fn().mockResolvedValue(undefined),

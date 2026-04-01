@@ -12,6 +12,7 @@
  */
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import { logger } from '../lib/logger.js';
 import type { IDatabase, LicenseKeyRow, LicenseEventRow } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import {
@@ -202,7 +203,7 @@ export function createLicenseRoutes(
           warning: 'This key will not be shown again. Store it securely.',
         });
       } catch (e) {
-        console.error('[license/issue] error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[license/issue] error');
         return res.status(500).json({ error: 'Failed to issue license key' });
       }
     },
@@ -275,7 +276,7 @@ export function createLicenseRoutes(
           stripeSubscriptionId: licKey.stripe_subscription_id,
         });
       } catch (e) {
-        console.error('[license/status] error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[license/status] error');
         return res.status(500).json({ error: 'Failed to retrieve license status' });
       }
     },
@@ -348,7 +349,7 @@ export function createLicenseRoutes(
           issuedAt: licKey.issued_at,
         });
       } catch (e) {
-        console.error('[license/validate] error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[license/validate] error');
         return res.status(500).json({ error: 'Failed to validate license key' });
       }
     },
@@ -387,7 +388,7 @@ export function createLicenseRoutes(
           reason,
         });
       } catch (e) {
-        console.error('[license/revoke] error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[license/revoke] error');
         return res.status(500).json({ error: 'Failed to revoke license key' });
       }
     },
@@ -427,7 +428,7 @@ export function createLicenseRoutes(
           history,
         });
       } catch (e) {
-        console.error('[license/usage] error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[license/usage] error');
         return res.status(500).json({ error: 'Failed to retrieve license usage' });
       }
     },

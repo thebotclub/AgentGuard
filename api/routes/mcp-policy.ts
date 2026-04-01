@@ -8,6 +8,7 @@
  */
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import { logger } from '../lib/logger.js';
 import { PolicyEngine } from '../../packages/sdk/src/core/policy-engine.js';
 import type { ActionRequest, AgentContext } from '../../packages/sdk/src/core/types.js';
 import { DEFAULT_POLICY } from '../lib/policy-engine-setup.js';
@@ -152,7 +153,7 @@ export function createMcpPolicyRoutes(
           },
         });
       } catch (e) {
-        console.error('[mcp/servers] insert error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[mcp/servers] insert error');
         return res.status(500).json({ error: 'Failed to register MCP server' });
       }
     },
@@ -179,7 +180,7 @@ export function createMcpPolicyRoutes(
           count: servers.length,
         });
       } catch (e) {
-        console.error('[mcp/servers] list error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[mcp/servers] list error');
         return res.status(500).json({ error: 'Failed to list MCP servers' });
       }
     },
@@ -202,7 +203,7 @@ export function createMcpPolicyRoutes(
         await db.deleteMcpServer(serverId, tenantId);
         return res.status(200).json({ deleted: true });
       } catch (e) {
-        console.error('[mcp/servers] delete error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[mcp/servers] delete error');
         return res.status(500).json({ error: 'Failed to delete MCP server' });
       }
     },

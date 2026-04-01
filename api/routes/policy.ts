@@ -6,6 +6,7 @@
  * POST /api/v1/policy/coverage — check coverage of a list of tool names
  */
 import { Router, Request, Response } from 'express';
+import { logger } from '../lib/logger.js';
 
 import { PolicyEngine, PolicyCompiler } from '../../packages/sdk/src/core/policy-engine.js';
 import { PolicyRuleSchema, type PolicyDocument, type PolicyRule } from '../../packages/sdk/src/core/types.js';
@@ -58,7 +59,7 @@ export function createPolicyRoutes(
           policy,
         });
       } catch (e) {
-        console.error('[policy] get error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[policy] get error');
         res.status(500).json({ error: 'Failed to retrieve policy' });
       }
     },
@@ -135,7 +136,7 @@ export function createPolicyRoutes(
           policy: policyDoc,
         });
       } catch (e) {
-        console.error('[policy] put error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[policy] put error');
         res.status(500).json({ error: 'Failed to save policy' });
       }
     },
@@ -163,7 +164,7 @@ export function createPolicyRoutes(
         res.setHeader('Cache-Control', 'private, max-age=60');
         res.json(bundle);
       } catch (e) {
-        console.error('[policy] bundle error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[policy] bundle error');
         res.status(500).json({ error: 'Failed to compile policy bundle' });
       }
     },
@@ -223,7 +224,7 @@ export function createPolicyRoutes(
         const versions = await db.getPolicyVersions(policyId, tenantId);
         res.json({ tenantId, versions });
       } catch (e) {
-        console.error('[policy] versions error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[policy] versions error');
         res.status(500).json({ error: 'Failed to fetch policy versions' });
       }
     },
@@ -259,7 +260,7 @@ export function createPolicyRoutes(
           policy: JSON.parse(targetVersion.policy_data),
         });
       } catch (e) {
-        console.error('[policy] revert error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[policy] revert error');
         res.status(500).json({ error: 'Failed to revert policy' });
       }
     },

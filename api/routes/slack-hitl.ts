@@ -9,6 +9,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { z } from 'zod';
+import { logger } from '../lib/logger.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { encryptConfig, decryptConfig } from '../lib/integration-crypto.js';
@@ -146,7 +147,7 @@ export function createSlackHitlRoutes(db: IDatabase, auth: AuthMiddleware): Rout
           // signingSecret intentionally NEVER returned
         });
       } catch (e) {
-        console.error('[slack-hitl] insert integration error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[slack-hitl] insert integration error');
         res.status(500).json({ error: 'Failed to save Slack integration' });
       }
     },
@@ -179,7 +180,7 @@ export function createSlackHitlRoutes(db: IDatabase, auth: AuthMiddleware): Rout
           // signingSecretHash is internal — do not expose
         });
       } catch (e) {
-        console.error('[slack-hitl] get integration error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[slack-hitl] get integration error');
         res.status(500).json({ error: 'Failed to retrieve Slack integration' });
       }
     },
@@ -202,7 +203,7 @@ export function createSlackHitlRoutes(db: IDatabase, auth: AuthMiddleware): Rout
         await db.deleteIntegration(tenantId, 'slack');
         res.json({ type: 'slack', deleted: true });
       } catch (e) {
-        console.error('[slack-hitl] delete integration error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[slack-hitl] delete integration error');
         res.status(500).json({ error: 'Failed to delete Slack integration' });
       }
     },
@@ -284,12 +285,12 @@ export function createSlackHitlRoutes(db: IDatabase, auth: AuthMiddleware): Rout
           [approvalId],
         );
         if (!approvalRow) {
-          console.warn(`[slack-hitl] callback: approval ${approvalId} not found`);
+          logger.warn(`[slack-hitl] callback: approval ${approvalId} not found`);
           return res.status(200).json({ error: 'Approval not found' }); // 200 to avoid Slack retries
         }
         tenantId = approvalRow.tenant_id;
       } catch (e) {
-        console.error('[slack-hitl] callback DB lookup error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[slack-hitl] callback DB lookup error');
         return res.status(200).json({ error: 'Internal error' });
       }
 
@@ -298,7 +299,7 @@ export function createSlackHitlRoutes(db: IDatabase, auth: AuthMiddleware): Rout
       try {
         const integrationRow = await db.getIntegration(tenantId, 'slack');
         if (!integrationRow) {
-          console.warn(`[slack-hitl] callback: no Slack integration for tenant ${tenantId}`);
+          logger.warn(`[slack-hitl] callback: no Slack integration for tenant ${tenantId}`);
           return res.status(200).json({ error: 'Integration not configured' });
         }
         const config = decryptConfig(integrationRow.config_encrypted) as unknown as StoredSlackConfig;
@@ -306,7 +307,7 @@ export function createSlackHitlRoutes(db: IDatabase, auth: AuthMiddleware): Rout
         const secretObj = decryptConfig(config.signingSecretEncrypted) as { secret: string };
         signingSecret = secretObj.secret;
       } catch (e) {
-        console.error('[slack-hitl] callback: failed to load integration config:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[slack-hitl] callback: failed to load integration config');
         return res.status(200).json({ error: 'Integration config error' });
       }
 
@@ -314,7 +315,7 @@ export function createSlackHitlRoutes(db: IDatabase, auth: AuthMiddleware): Rout
       const bodyForSig = rawBody ?? (typeof req.body === 'string' ? req.body : `payload=${encodeURIComponent(payloadStr)}`);
       const sigError = verifySlackSignature(signingSecret, bodyForSig, timestamp, signature);
       if (sigError) {
-        console.warn(`[slack-hitl] signature verification failed: ${sigError}`);
+        logger.warn(`[slack-hitl] signature verification failed: ${sigError}`);
         return res.status(401).json({ error: 'Signature verification failed' });
       }
 
@@ -324,24 +325,21 @@ export function createSlackHitlRoutes(db: IDatabase, auth: AuthMiddleware): Rout
       const resolvedBy = `slack:${slackUser}`;
 
       try {
-        const approval = await db.getApproval(approvalId, tenantId);
-        if (!approval) {
-          return res.status(200).json({ response_action: 'clear', text: 'Approval not found.' });
-        }
-        if (approval.status !== 'pending') {
+        // Atomic resolve: only succeeds if approval is still pending.
+        // Eliminates TOCTOU race when two Slack users click simultaneously.
+        const updatedApproval = await db.resolveApprovalAtomic(approvalId, tenantId, newStatus, resolvedBy);
+
+        if (!updatedApproval) {
+          // Either not found or already resolved — fetch current state to show
+          const current = await db.getApproval(approvalId, tenantId);
+          if (!current) {
+            return res.status(200).json({ response_action: 'clear', text: 'Approval not found.' });
+          }
           // Already resolved — show current state
           return res.status(200).json({
-            ...buildResolvedSlackMessage(approval),
+            ...buildResolvedSlackMessage(current),
             response_action: 'update',
           });
-        }
-
-        await db.resolveApproval(approvalId, tenantId, newStatus, resolvedBy);
-
-        // Fetch updated approval for the response message
-        const updatedApproval = await db.getApproval(approvalId, tenantId);
-        if (!updatedApproval) {
-          return res.status(200).json({ text: `${newStatus === 'approved' ? '✅' : '❌'} ${newStatus}` });
         }
 
         // Respond with the updated message (removes buttons)
@@ -351,7 +349,7 @@ export function createSlackHitlRoutes(db: IDatabase, auth: AuthMiddleware): Rout
           response_action: 'update',
         });
       } catch (e) {
-        console.error('[slack-hitl] callback resolve error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[slack-hitl] callback resolve error');
         return res.status(200).json({ text: 'Error processing approval.' });
       }
     },

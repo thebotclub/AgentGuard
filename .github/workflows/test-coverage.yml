@@ -43,6 +43,13 @@ jobs:
         # Uses tsconfig.json (strict mode). Fix errors locally with `npx tsc --noEmit`.
         run: npx tsc --noEmit
 
+      - name: OpenAPI spec sync check
+        # Ensures the checked-in openapi.json matches the source openapi.yaml.
+        # Run `npm run openapi:generate` locally if this step fails.
+        run: |
+          npm run openapi:generate
+          git diff --exit-code api/openapi.json || (echo '::error::OpenAPI spec out of sync. Run npm run openapi:generate and commit.' && exit 1)
+
       - name: Run unit tests with coverage
         run: npm run test:coverage
 

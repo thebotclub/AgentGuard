@@ -7,6 +7,7 @@
  * PATCH  /api/v1/team/members/:userId/role — change role (owner only)
  */
 import { Router, Request, Response } from 'express';
+import { logger } from '../lib/logger.js';
 import { z } from 'zod';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
@@ -35,7 +36,7 @@ export function createTeamRoutes(db: IDatabase, auth: AuthMiddleware): Router {
         const members = await db.getTeamMembers(tenantId);
         res.json({ members });
       } catch (e) {
-        console.error('[team/list]', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[team/list]');
         res.status(500).json({ error: 'Failed to list team members' });
       }
     },
@@ -61,7 +62,7 @@ export function createTeamRoutes(db: IDatabase, auth: AuthMiddleware): Router {
         if (e instanceof Error && e.message.includes('already exists')) {
           return res.status(409).json({ error: 'Member already exists' });
         }
-        console.error('[team/invite]', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[team/invite]');
         res.status(500).json({ error: 'Failed to invite team member' });
       }
     },
@@ -79,7 +80,7 @@ export function createTeamRoutes(db: IDatabase, auth: AuthMiddleware): Router {
         await db.removeTeamMember(tenantId, userId);
         res.json({ success: true });
       } catch (e) {
-        console.error('[team/remove]', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[team/remove]');
         res.status(500).json({ error: 'Failed to remove team member' });
       }
     },
@@ -103,7 +104,7 @@ export function createTeamRoutes(db: IDatabase, auth: AuthMiddleware): Router {
         await db.updateTeamMemberRole(tenantId, userId, role);
         res.json({ success: true, role });
       } catch (e) {
-        console.error('[team/role]', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[team/role]');
         res.status(500).json({ error: 'Failed to update role' });
       }
     },

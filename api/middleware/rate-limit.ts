@@ -22,74 +22,40 @@ import {
   checkBruteForce,
   recordBruteForce,
   clearBruteForce,
+  checkSignupRateLimit,
+  checkRecoveryRateLimit,
   type RateLimitResult,
 } from '../lib/redis-rate-limiter.js';
 
 // Re-export so existing consumers of this module don't break
 export { recordBruteForce, clearBruteForce };
 
-// ── Signup rate limiting (kept in-memory — low volume, no need for Redis) ─
+// ── Signup rate limiting (Redis-backed, falls back to in-memory) ──────────
 
 export const SIGNUP_MAX = process.env['NODE_ENV'] === 'test' ? 100 : 5;
 export const SIGNUP_WINDOW_MS = 60 * 60 * 1000;
 
-interface SignupBucket {
-  count: number;
-  windowStart: number;
-}
-const signupRateLimitMap = new Map<string, SignupBucket>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, bucket] of signupRateLimitMap) {
-    if (now - bucket.windowStart > SIGNUP_WINDOW_MS * 2) signupRateLimitMap.delete(ip);
-  }
-}, SIGNUP_WINDOW_MS * 2).unref();
-
 /**
  * Check the signup rate limit for an IP. Returns true if allowed.
+ * Uses Redis for cross-replica enforcement when available.
  */
-export function signupRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const bucket = signupRateLimitMap.get(ip);
-  if (!bucket || now - bucket.windowStart > SIGNUP_WINDOW_MS) {
-    signupRateLimitMap.set(ip, { count: 1, windowStart: now });
-    return true;
-  }
-  bucket.count++;
-  return bucket.count <= SIGNUP_MAX;
+export async function signupRateLimit(ip: string): Promise<boolean> {
+  const result = await checkSignupRateLimit(ip);
+  return result.allowed;
 }
 
-// ── Recovery rate limiting (stricter: 2/hour per IP) ───────────────────────
+// ── Recovery rate limiting (Redis-backed, falls back to in-memory) ─────────
 
 export const RECOVERY_MAX = process.env['NODE_ENV'] === 'test' ? 100 : 2;
 export const RECOVERY_WINDOW_MS = 60 * 60 * 1000;
 
-interface RecoveryBucket {
-  count: number;
-  windowStart: number;
-}
-const recoveryRateLimitMap = new Map<string, RecoveryBucket>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, bucket] of recoveryRateLimitMap) {
-    if (now - bucket.windowStart > RECOVERY_WINDOW_MS * 2) recoveryRateLimitMap.delete(ip);
-  }
-}, RECOVERY_WINDOW_MS * 2).unref();
-
 /**
  * Check the recovery rate limit for an IP. Returns true if allowed.
+ * Uses Redis for cross-replica enforcement when available.
  */
-export function recoveryRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const bucket = recoveryRateLimitMap.get(ip);
-  if (!bucket || now - bucket.windowStart > RECOVERY_WINDOW_MS) {
-    recoveryRateLimitMap.set(ip, { count: 1, windowStart: now });
-    return true;
-  }
-  bucket.count++;
-  return bucket.count <= RECOVERY_MAX;
+export async function recoveryRateLimit(ip: string): Promise<boolean> {
+  const result = await checkRecoveryRateLimit(ip);
+  return result.allowed;
 }
 
 // ── Helper: extract client IP ──────────────────────────────────────────────

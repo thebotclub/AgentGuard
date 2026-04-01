@@ -34,7 +34,8 @@ import { loadTemplates, DEFAULT_POLICY, templateCache } from './lib/policy-engin
 import { getGlobalKillSwitch } from './routes/audit.js';
 import { createEvaluateRoutes } from './routes/evaluate.js';
 import { createBatchEvaluateRoutes } from './routes/evaluate-batch.js';
-import { createAuditRoutes } from './routes/audit.js';
+import { createAuditRoutes, deliverWebhook } from './routes/audit.js';
+import { startWebhookRetryCron, stopWebhookRetryCron } from './lib/webhook-retry.js';
 import { createAgentRoutes } from './routes/agents.js';
 import { createWebhookRoutes } from './routes/webhooks.js';
 import { createAuthRoutes } from './routes/auth.js';
@@ -87,10 +88,23 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   const requestId = Array.isArray(existing) ? existing[0] : existing || crypto.randomUUID();
   req.headers['x-request-id'] = requestId;
   res.setHeader('x-request-id', requestId as string);
+
+  // SDK correlation headers — accept from SDK or auto-generate when missing
+  const rawTrace = req.headers['x-trace-id'];
+  const traceId = (Array.isArray(rawTrace) ? rawTrace[0] : rawTrace) || crypto.randomUUID();
+  const rawSpan = req.headers['x-span-id'];
+  const spanId = (Array.isArray(rawSpan) ? rawSpan[0] : rawSpan) || crypto.randomUUID();
+  req.headers['x-trace-id'] = traceId;
+  req.headers['x-span-id'] = spanId;
+
   // Attach a child logger scoped to this request (available as req.log in routes)
-  (req as Request & { log: ReturnType<typeof logger.child> }).log = logger.child({ requestId });
+  (req as Request & { log: ReturnType<typeof logger.child> }).log = logger.child({ requestId, traceId, spanId });
   next();
 });
+
+// ── Structured request lifecycle logger ──────────────────────────────────
+import { requestLogger } from './middleware/request-logger.js';
+app.use(requestLogger);
 
 // ── Trust proxy — only trust Cloudflare and Azure Container Apps ──────────
 // This ensures X-Forwarded-For cannot be spoofed by end users.
@@ -776,6 +790,13 @@ async function main(): Promise<void> {
   const detector = createAnomalyDetector(db);
   detector.start();
 
+  // ── Webhook Retry Cron ─────────────────────────────────────────────────
+  startWebhookRetryCron(db, async (webhookId, tenantId, eventType, payload) => {
+    const wh = await db.getWebhookById(webhookId, tenantId);
+    if (!wh || !wh.active) return false;
+    return deliverWebhook(wh, eventType, JSON.parse(payload));
+  });
+
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🛡️  AgentGuard API v0.9.0 running on port ${PORT}`);
     console.log(
@@ -815,6 +836,9 @@ async function main(): Promise<void> {
     shuttingDown = true;
 
     logger.info(`Graceful shutdown initiated (${signal})`);
+
+    // Stop webhook retry cron
+    stopWebhookRetryCron();
 
     // 1a. Drain SSE connections — send a close event so clients reconnect gracefully
     if (sseRegistry.size > 0) {

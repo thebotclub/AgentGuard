@@ -5,6 +5,7 @@
  */
 import { Router, Request, Response } from 'express';
 import { TelemetryRequestSchema } from '../schemas.js';
+import { logger } from '../lib/logger.js';
 import type { IDatabase } from '../db-interface.js';
 
 // Simple in-memory rate limiter for telemetry endpoint (by IP)
@@ -58,7 +59,7 @@ export function createTelemetryRoutes(db: IDatabase): Router {
 
       // Fire-and-forget insert — don't let DB errors affect response
       db.insertTelemetryEvent(sdk_version, language, node_version ?? null, os_platform ?? null)
-        .catch((e: unknown) => console.error('[telemetry] insert error:', e));
+        .catch((e: unknown) => logger.error({ err: e instanceof Error ? e : String(e) }, '[telemetry] insert error'));
 
       res.status(202).json({ accepted: true });
     },

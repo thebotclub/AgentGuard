@@ -27,6 +27,7 @@ import {
   type ActionRequest,
   type PolicyDecision,
   type ToolCondition,
+  type WhenCondition,
   type ValueConstraint,
   type TimeWindow,
   type RateLimitBucket,
@@ -261,6 +262,11 @@ export class PolicyEngine {
     // Time window conditions
     for (const tw of rule.timeConditions) {
       if (!evalTimeWindow(tw)) return false;
+    }
+
+    // Composite conditions (AND/OR/NOT)
+    for (const composite of rule.compositeConditions ?? []) {
+      if (!evalCompositeCondition(composite as WhenCondition, request, ctx)) return false;
     }
 
     return true;
@@ -544,6 +550,7 @@ export class PolicyCompiler {
     const contextConditions: Array<Record<string, ValueConstraint>> = [];
     const dataClassConditions: Array<Record<string, ValueConstraint>> = [];
     const timeConditions: TimeWindow[] = [];
+    const compositeConditions: WhenCondition[] = [];
     let toolCondition: ToolCondition | undefined;
 
     for (const when of rule.when) {
@@ -557,6 +564,8 @@ export class PolicyCompiler {
         dataClassConditions.push(when.dataClass as Record<string, ValueConstraint>);
       } else if ('timeWindow' in when) {
         timeConditions.push(when.timeWindow);
+      } else if ('AND' in when || 'OR' in when || 'NOT' in when) {
+        compositeConditions.push(when as WhenCondition);
       }
     }
 
@@ -569,6 +578,7 @@ export class PolicyCompiler {
       contextConditions,
       dataClassConditions,
       timeConditions,
+      compositeConditions,
       rateLimit: rule.rateLimit,
       approvers: rule.approvers,
       timeoutSec: rule.timeoutSec,
@@ -724,6 +734,43 @@ function isInTimeRange(
     // Unknown timezone — conservative: assume not in window
     return false;
   }
+}
+
+// ─── Composite Condition Evaluator (AND/OR/NOT) ──────────────────────────────
+
+/** Recursively evaluate a composite WhenCondition (AND/OR/NOT + leaf types). */
+export function evalCompositeCondition(
+  condition: WhenCondition,
+  request: ActionRequest,
+  ctx: AgentContext,
+): boolean {
+  if ('AND' in condition) {
+    return condition.AND.every((c) => evalCompositeCondition(c, request, ctx));
+  }
+  if ('OR' in condition) {
+    return condition.OR.some((c) => evalCompositeCondition(c, request, ctx));
+  }
+  if ('NOT' in condition) {
+    return !evalCompositeCondition(condition.NOT, request, ctx);
+  }
+  // Leaf conditions
+  if ('tool' in condition) {
+    return evalToolCondition(condition.tool, request.tool);
+  }
+  if ('params' in condition) {
+    return evalParamConditions(condition.params as Record<string, ValueConstraint>, request.params);
+  }
+  if ('context' in condition) {
+    return evalParamConditions(condition.context as Record<string, ValueConstraint>, ctx.sessionContext ?? {});
+  }
+  if ('dataClass' in condition) {
+    const dataCtx: Record<string, unknown> = { inputLabels: request.inputDataLabels.join(',') };
+    return evalParamConditions(condition.dataClass as Record<string, ValueConstraint>, dataCtx);
+  }
+  if ('timeWindow' in condition) {
+    return evalTimeWindow(condition.timeWindow);
+  }
+  return true;
 }
 
 /** Extract domain from email address or URL. */

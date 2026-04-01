@@ -89,14 +89,30 @@ export type TimeWindow = z.infer<typeof TimeWindowSchema>;
 
 // ─── When Conditions ──────────────────────────────────────────────────────────
 
-export const WhenConditionSchema = z.union([
+const SimpleWhenConditionSchema = z.union([
   z.object({ tool: ToolConditionSchema }),
   z.object({ params: z.record(z.string(), ValueConstraintSchema) }),
   z.object({ context: z.record(z.string(), ValueConstraintSchema) }),
   z.object({ dataClass: z.record(z.string(), ValueConstraintSchema) }),
   z.object({ timeWindow: TimeWindowSchema }),
 ]);
-export type WhenCondition = z.infer<typeof WhenConditionSchema>;
+
+export type WhenCondition =
+  | { tool: z.infer<typeof ToolConditionSchema> }
+  | { params: Record<string, z.infer<typeof ValueConstraintSchema>> }
+  | { context: Record<string, z.infer<typeof ValueConstraintSchema>> }
+  | { dataClass: Record<string, z.infer<typeof ValueConstraintSchema>> }
+  | { timeWindow: z.infer<typeof TimeWindowSchema> }
+  | { AND: WhenCondition[] }
+  | { OR: WhenCondition[] }
+  | { NOT: WhenCondition };
+
+export const WhenConditionSchema: z.ZodType<WhenCondition> = z.union([
+  SimpleWhenConditionSchema,
+  z.object({ AND: z.lazy(() => z.array(WhenConditionSchema)) }),
+  z.object({ OR: z.lazy(() => z.array(WhenConditionSchema)) }),
+  z.object({ NOT: z.lazy(() => WhenConditionSchema) }),
+]);
 
 // ─── Policy Rule ──────────────────────────────────────────────────────────────
 
@@ -200,6 +216,7 @@ export const CompiledRuleSchema = z.object({
   severity: z.string(),
   riskBoost: z.number(),
   tags: z.array(z.string()),
+  compositeConditions: z.array(z.any()).default([]),
 });
 export type CompiledRule = z.infer<typeof CompiledRuleSchema>;
 

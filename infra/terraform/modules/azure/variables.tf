@@ -20,8 +20,31 @@ variable "dash_max_replicas" { type = number }
 # Database
 variable "database_sku" { type = string }
 variable "database_username" { type = string }
-variable "database_password" { type = string; sensitive = true }
+variable "database_password" {
+  type      = string
+  sensitive = true
+}
 
 # Secrets
-variable "jwt_secret" { type = string; sensitive = true }
-variable "api_key_salt" { type = string; sensitive = true }
+variable "jwt_secret" {
+  type      = string
+  sensitive = true
+}
+variable "api_key_salt" {
+  type      = string
+  sensitive = true
+}
+
+# Alerting
+variable "alert_email_addresses" {
+  type        = list(string)
+  description = "Email addresses for critical alert notifications"
+  default     = []
+}
+
+variable "alert_webhook_url" {
+  type        = string
+  description = "Slack/PagerDuty incoming webhook URL for critical alerts"
+  default     = ""
+  sensitive   = true
+}

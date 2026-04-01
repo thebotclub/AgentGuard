@@ -12,6 +12,7 @@
  */
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import { logger } from '../lib/logger.js';
 import { SignupRequest, KillswitchRequestSchema } from '../schemas.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
@@ -25,6 +26,8 @@ import {
   getLastHash,
   storeAuditEvent,
 } from './audit.js';
+import { setGlobalKillSwitchCache, setTenantKillSwitchCache } from '../lib/kill-switch-cache.js';
+import { publishEvent } from '../lib/redis-pubsub.js';
 
 function generateApiKey(): string {
   return 'ag_live_' + crypto.randomBytes(16).toString('hex');
@@ -65,7 +68,7 @@ export function createAuthRoutes(
     }
     const { name, email } = signupParsed.data;
 
-    if (!signupRateLimit(ip)) {
+    if (!await signupRateLimit(ip)) {
       return res
         .status(429)
         .json({
@@ -100,7 +103,7 @@ export function createAuthRoutes(
           const newKey = generateApiKey();
           await db.createApiKey(newKey, existing.id, 'recovered');
 
-          console.log(`[signup] recovered tenant: ${existing.id} (${normalizedEmail})`);
+          logger.info(`[signup] recovered tenant: ${existing.id} (${normalizedEmail})`);
 
           return res.status(200).json({
             tenantId: existing.id,
@@ -109,7 +112,7 @@ export function createAuthRoutes(
             message: 'Existing account found. New API key generated (previous key invalidated).',
           });
         } catch (e: unknown) {
-          console.error('[signup] recovery error:', e instanceof Error ? e.message : e);
+          logger.error({ err: e instanceof Error ? e.message : String(e) }, '[signup] recovery error');
           return res.status(500).json({ error: 'Failed to recover account' });
         }
       }
@@ -122,14 +125,11 @@ export function createAuthRoutes(
       await db.createTenant(tenantId, cleanName, normalizedEmail);
       await db.createApiKey(apiKey, tenantId, 'default');
     } catch (e: unknown) {
-      console.error(
-        '[signup] db error:',
-        e instanceof Error ? e.message : e,
-      );
+      logger.error({ err: e instanceof Error ? e.message : String(e) }, '[signup] db error');
       return res.status(500).json({ error: 'Failed to create account' });
     }
 
-    console.log(`[signup] new tenant: ${tenantId} (${normalizedEmail})`);
+    logger.info(`[signup] new tenant: ${tenantId} (${normalizedEmail})`);
 
     res.status(201).json({
       tenantId,
@@ -158,7 +158,7 @@ export function createAuthRoutes(
       req.socket.remoteAddress ||
       'unknown';
 
-    if (!recoveryRateLimit(ip)) {
+    if (!await recoveryRateLimit(ip)) {
       return res
         .status(429)
         .json({ error: 'Too many recovery attempts. Limit: 2 per hour per IP.' });
@@ -196,17 +196,17 @@ export function createAuthRoutes(
           'API key recovered via email — old keys invalidated', 0, '', null,
         );
       } catch (e) {
-        console.warn('[signup/recover] audit event failed (non-blocking):', e);
+        logger.warn({ err: e instanceof Error ? e : String(e) }, '[signup/recover] audit event failed (non-blocking)');
       }
 
-      console.log(`[signup/recover] tenant ${existing.id}: key recovered via email`);
+      logger.info(`[signup/recover] tenant ${existing.id}: key recovered via email`);
 
       res.json({
         apiKey: newKey,
         message: 'New key generated. Previous key invalidated.',
       });
     } catch (e: unknown) {
-      console.error('[signup/recover] error:', e instanceof Error ? e.message : e);
+      logger.error({ err: e instanceof Error ? e.message : String(e) }, '[signup/recover] error');
       res.status(500).json({ error: 'Failed to recover key' });
     }
   });
@@ -236,17 +236,17 @@ export function createAuthRoutes(
             'API key rotated — old key invalidated', 0, '', null,
           );
         } catch (e) {
-          console.warn('[keys/rotate] audit event failed (non-blocking):', e);
+          logger.warn({ err: e instanceof Error ? e : String(e) }, '[keys/rotate] audit event failed (non-blocking)');
         }
 
-        console.log(`[keys/rotate] tenant ${tenantId}: key rotated`);
+        logger.info(`[keys/rotate] tenant ${tenantId}: key rotated`);
 
         res.json({
           apiKey: newKey,
           message: 'New API key generated. Your previous key has been invalidated. Store this key securely — it will not be shown again.',
         });
       } catch (e: unknown) {
-        console.error('[keys/rotate] error:', e instanceof Error ? e.message : e);
+        logger.error({ err: e instanceof Error ? e.message : String(e) }, '[keys/rotate] error');
         res.status(500).json({ error: 'Failed to rotate key' });
       }
     },
@@ -307,10 +307,18 @@ export function createAuthRoutes(
 
       const at = newState ? new Date().toISOString() : null;
       await db.updateTenantKillSwitch(tenant.id, newState ? 1 : 0, at);
+      await setTenantKillSwitchCache(tenant.id, newState);
 
-      console.log(
+      logger.info(
         `[killswitch] tenant ${tenant.id}: ${tenant.kill_switch_active === 1} → ${newState}`,
       );
+
+      publishEvent({
+        type: 'kill_switch',
+        tenantId: tenant.id,
+        data: { scope: 'tenant', active: newState, activatedAt: at },
+        ts: new Date().toISOString(),
+      });
 
       res.json({
         tenantId: tenant.id,
@@ -341,7 +349,15 @@ export function createAuthRoutes(
       const ks = await getGlobalKillSwitch(db);
 
       await setGlobalKillSwitch(db, newState);
-      console.log(`[admin/killswitch] global: ${ks.active} → ${newState}`);
+      await setGlobalKillSwitchCache(newState);
+      logger.info(`[admin/killswitch] global: ${ks.active} → ${newState}`);
+
+      publishEvent({
+        type: 'kill_switch',
+        tenantId: '__global__',
+        data: { scope: 'global', active: newState, activatedAt: newState ? new Date().toISOString() : null },
+        ts: new Date().toISOString(),
+      });
 
       res.json({
         active: newState,

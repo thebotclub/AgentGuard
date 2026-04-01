@@ -16,6 +16,7 @@
  */
 import { Router, Request, Response } from 'express';
 import crypto from 'node:crypto';
+import { logger } from '../lib/logger.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { requireRole } from '../lib/rbac.js';
@@ -156,7 +157,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
         }
         return res.json(maskSsoConfig(row));
       } catch (err) {
-        console.error('[sso/config GET] error:', err instanceof Error ? err.message : err);
+        logger.error({ err: err instanceof Error ? err.message : String(err) }, '[sso/config GET] error');
         return res.status(500).json({ error: 'Failed to retrieve SSO config' });
       }
     },
@@ -227,10 +228,10 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           spEntityId,
         });
 
-        console.log(`[sso] tenant ${tenantId}: updated SSO config (provider: ${provider}, protocol: ${protocol})`);
+        logger.info(`[sso] tenant ${tenantId}: updated SSO config (provider: ${provider}, protocol: ${protocol})`);
         return res.json(maskSsoConfig(row));
       } catch (err) {
-        console.error('[sso/config PUT] error:', err instanceof Error ? err.message : err);
+        logger.error({ err: err instanceof Error ? err.message : String(err) }, '[sso/config PUT] error');
         return res.status(500).json({ error: 'Failed to update SSO config' });
       }
     },
@@ -370,7 +371,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           return res.redirect(302, redirectUrl);
         }
       } catch (err) {
-        console.error('[sso/authorize] error:', err instanceof Error ? err.message : err);
+        logger.error({ err: err instanceof Error ? err.message : String(err) }, '[sso/authorize] error');
         return res.status(500).json({ error: 'Failed to initiate SSO' });
       }
     },
@@ -509,7 +510,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           ssoUser.role,
         );
 
-        console.log(`[sso/callback] tenant ${tenantId}: SSO login for sub=${ssoUser.sub} email=${ssoUser.email} role=${ssoUser.role}`);
+        logger.info(`[sso/callback] tenant ${tenantId}: SSO login for sub=${ssoUser.sub} email=${ssoUser.email} role=${ssoUser.role}`);
 
         // Issue a signed JWT session token (G-SSO-01 fix)
         const sessionToken = await signSsoJwt({
@@ -551,7 +552,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
 
         return res.json(responsePayload);
       } catch (err) {
-        console.error('[sso/callback] error:', err instanceof Error ? err.message : err);
+        logger.error({ err: err instanceof Error ? err.message : String(err) }, '[sso/callback] error');
         return res.status(500).json({
           error: `SSO callback failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
         });
@@ -619,7 +620,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           user.email ?? null, user.name ?? null, role,
         );
 
-        console.log(`[sso/callback GET] tenant ${tenantId}: SSO login for ${user.email} role=${role}`);
+        logger.info(`[sso/callback GET] tenant ${tenantId}: SSO login for ${user.email} role=${role}`);
 
         // Issue a signed JWT session token (G-SSO-01 fix)
         const sessionToken = await signSsoJwt({
@@ -653,7 +654,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           },
         });
       } catch (err) {
-        console.error('[sso/callback GET] error:', err instanceof Error ? err.message : err);
+        logger.error({ err: err instanceof Error ? err.message : String(err) }, '[sso/callback GET] error');
         return res.status(500).json({ error: err instanceof Error ? err.message : 'SSO failed' });
       }
     },
@@ -687,7 +688,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           discoveryUrl,
         });
 
-        console.log(`[sso] tenant ${tenantId}: configured SSO provider ${provider}`);
+        logger.info(`[sso] tenant ${tenantId}: configured SSO provider ${provider}`);
 
         return res.status(200).json({
           id: row.id,
@@ -700,7 +701,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           message: `SSO provider '${provider}' configured successfully.`,
         });
       } catch (err) {
-        console.error('[sso/configure] error:', err instanceof Error ? err.message : err);
+        logger.error({ err: err instanceof Error ? err.message : String(err) }, '[sso/configure] error');
         return res.status(500).json({ error: 'Failed to configure SSO' });
       }
     },
@@ -721,7 +722,7 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
         }
         return res.json(maskSsoConfig(row));
       } catch (err) {
-        console.error('[sso/config GET] error:', err instanceof Error ? err.message : err);
+        logger.error({ err: err instanceof Error ? err.message : String(err) }, '[sso/config GET] error');
         return res.status(500).json({ error: 'Failed to retrieve SSO config' });
       }
     },
@@ -741,10 +742,10 @@ export function createSsoRoutes(db: IDatabase, auth: AuthMiddleware): Router {
           return res.status(404).json({ error: 'No SSO configuration found for this tenant' });
         }
         await db.deleteSsoConfig(tenantId);
-        console.log(`[sso] tenant ${tenantId}: deleted SSO config (provider: ${existing.provider})`);
+        logger.info(`[sso] tenant ${tenantId}: deleted SSO config (provider: ${existing.provider})`);
         return res.json({ message: 'SSO configuration removed successfully' });
       } catch (err) {
-        console.error('[sso/config DELETE] error:', err instanceof Error ? err.message : err);
+        logger.error({ err: err instanceof Error ? err.message : String(err) }, '[sso/config DELETE] error');
         return res.status(500).json({ error: 'Failed to delete SSO config' });
       }
     },

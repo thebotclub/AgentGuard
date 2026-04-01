@@ -11,6 +11,7 @@
  */
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import { logger } from '../lib/logger.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { publishEvent } from '../lib/redis-pubsub.js';
@@ -51,7 +52,7 @@ export function createApprovalRoutes(
           })),
         });
       } catch (e) {
-        console.error('[approvals] list error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[approvals] list error');
         res.status(500).json({ error: 'Failed to list approvals' });
       }
     },

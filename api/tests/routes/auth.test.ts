@@ -23,10 +23,16 @@ vi.mock('../../routes/audit.js', () => ({
   fireWebhooksAsync: vi.fn(),
 }));
 
+// Mock the kill-switch-cache module
+vi.mock('../../lib/kill-switch-cache.js', () => ({
+  setGlobalKillSwitchCache: vi.fn().mockResolvedValue(undefined),
+  setTenantKillSwitchCache: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock middleware rate limiters to avoid cross-test pollution
 vi.mock('../../middleware/rate-limit.js', () => ({
-  signupRateLimit: vi.fn().mockReturnValue(true),
-  recoveryRateLimit: vi.fn().mockReturnValue(true),
+  signupRateLimit: vi.fn().mockResolvedValue(true),
+  recoveryRateLimit: vi.fn().mockResolvedValue(true),
   rateLimitMiddleware: (_req: unknown, _res: unknown, next: () => void) => next(),
   bruteForceMiddleware: (_req: unknown, _res: unknown, next: () => void) => next(),
   authEndpointRateLimitMiddleware: (_req: unknown, _res: unknown, next: () => void) => next(),
@@ -44,7 +50,7 @@ describe('POST /api/v1/signup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Re-set default return values after clearing (clearAllMocks resets them)
-    vi.mocked(signupRateLimit).mockReturnValue(true);
+    vi.mocked(signupRateLimit).mockResolvedValue(true);
     mockDb = createMockDb();
     // By default: no existing email, fresh signup
     (mockDb.getTenantByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
@@ -120,7 +126,7 @@ describe('POST /api/v1/signup', () => {
   });
 
   it('returns 429 when rate limit is exceeded', async () => {
-    vi.mocked(signupRateLimit).mockReturnValue(false);
+    vi.mocked(signupRateLimit).mockResolvedValue(false);
 
     const res = await request(app)
       .post('/api/v1/signup')
@@ -158,7 +164,7 @@ describe('POST /api/v1/killswitch (tenant)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(signupRateLimit).mockReturnValue(true);
+    vi.mocked(signupRateLimit).mockResolvedValue(true);
     vi.mocked(mockGetGlobalKillSwitch).mockResolvedValue({ active: false, at: null });
     mockDb = createMockDb();
     app = buildApp(createAuthRoutes, mockDb);

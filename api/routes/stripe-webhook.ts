@@ -16,6 +16,7 @@
  */
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import { logger } from '../lib/logger.js';
 import type { IDatabase } from '../db-interface.js';
 
 // ── Stripe event types (minimal — avoid needing the stripe npm package) ─────
@@ -214,18 +215,18 @@ async function upsertLicenseFromSubscription(
         status: 'active',
       });
     } else {
-      console.warn(
+      logger.warn(
         '[stripe-webhook] db.upsertLicense not implemented — license update skipped. ' +
         `Tenant: ${params.tenantId}, tier: ${params.tier}`,
       );
     }
 
-    console.log(
+    logger.info(
       `[stripe-webhook] upserted license for tenant ${params.tenantId}: tier=${params.tier}`,
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[stripe-webhook] upsertLicense error:', msg);
+    logger.error({ err: msg }, '[stripe-webhook] upsertLicense error');
     throw err;
   }
 }
@@ -242,17 +243,17 @@ async function downgradeTenantToFree(
     if (typeof extDb.revokeLicenseBySubscription === 'function') {
       await extDb.revokeLicenseBySubscription(stripeSubscriptionId);
     } else {
-      console.warn(
+      logger.warn(
         '[stripe-webhook] db.revokeLicenseBySubscription not implemented — downgrade skipped. ' +
         `Subscription: ${stripeSubscriptionId}`,
       );
     }
-    console.log(
+    logger.info(
       `[stripe-webhook] downgraded to free: subscription ${stripeSubscriptionId}`,
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[stripe-webhook] downgradeTenantToFree error:', msg);
+    logger.error({ err: msg }, '[stripe-webhook] downgradeTenantToFree error');
     throw err;
   }
 }
@@ -269,17 +270,17 @@ async function handlePaymentFailure(
     if (invoice.subscription && typeof extDb.setLicenseGracePeriod === 'function') {
       await extDb.setLicenseGracePeriod(invoice.subscription, 7); // 7-day grace
     } else if (invoice.subscription) {
-      console.warn(
+      logger.warn(
         '[stripe-webhook] db.setLicenseGracePeriod not implemented — grace period skipped. ' +
         `Subscription: ${invoice.subscription}`,
       );
     }
-    console.warn(
+    logger.warn(
       `[stripe-webhook] payment failed for subscription ${invoice.subscription}, attempt ${invoice.attempt_count}`,
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[stripe-webhook] handlePaymentFailure error:', msg);
+    logger.error({ err: msg }, '[stripe-webhook] handlePaymentFailure error');
     throw err;
   }
 }
@@ -302,7 +303,7 @@ export function createStripeWebhookRoutes(db: IDatabase): Router {
 
       // If secret isn't configured, reject all webhooks
       if (!secret) {
-        console.error('[stripe-webhook] STRIPE_WEBHOOK_SECRET not configured');
+        logger.error('[stripe-webhook] STRIPE_WEBHOOK_SECRET not configured');
         res.status(500).json({ error: 'Webhook secret not configured' });
         return;
       }
@@ -328,7 +329,7 @@ export function createStripeWebhookRoutes(db: IDatabase): Router {
         event = verifyStripeSignature(rawBody, signatureHeader, secret);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Signature verification failed';
-        console.warn('[stripe-webhook] signature error:', msg);
+        logger.warn({ err: msg }, '[stripe-webhook] signature error');
         res.status(400).json({ error: msg });
         return;
       }
@@ -336,12 +337,12 @@ export function createStripeWebhookRoutes(db: IDatabase): Router {
       // Idempotency: DB-backed dedup — safe across restarts and multiple instances
       const alreadyProcessed = await db.isStripeEventProcessed(event.id);
       if (alreadyProcessed) {
-        console.log(`[stripe-webhook] duplicate event ${event.id} — skipping`);
+        logger.info(`[stripe-webhook] duplicate event ${event.id} — skipping`);
         res.status(200).json({ received: true, duplicate: true });
         return;
       }
 
-      console.log(`[stripe-webhook] processing event ${event.id} (${event.type})`);
+      logger.info(`[stripe-webhook] processing event ${event.id} (${event.type})`);
 
       try {
         switch (event.type) {
@@ -349,11 +350,11 @@ export function createStripeWebhookRoutes(db: IDatabase): Router {
             const session = event.data.object as StripeCheckoutSession;
             const tenantId = session.metadata['tenant_id'];
             if (!tenantId) {
-              console.warn('[stripe-webhook] checkout.session.completed missing tenant_id in metadata');
+              logger.warn('[stripe-webhook] checkout.session.completed missing tenant_id in metadata');
               break;
             }
             // Issue Pro license — subscription details come via subscription.updated
-            console.log(`[stripe-webhook] checkout completed for tenant ${tenantId}`);
+            logger.info(`[stripe-webhook] checkout completed for tenant ${tenantId}`);
             break;
           }
 
@@ -362,7 +363,7 @@ export function createStripeWebhookRoutes(db: IDatabase): Router {
             const sub = event.data.object as StripeSubscription;
             const tenantId = sub.metadata['tenant_id'];
             if (!tenantId) {
-              console.warn(`[stripe-webhook] ${event.type} missing tenant_id in metadata`);
+              logger.warn(`[stripe-webhook] ${event.type} missing tenant_id in metadata`);
               break;
             }
 
@@ -394,13 +395,13 @@ export function createStripeWebhookRoutes(db: IDatabase): Router {
 
           default:
             // Unhandled event type — log and acknowledge
-            console.log(`[stripe-webhook] unhandled event type: ${event.type}`);
+            logger.info(`[stripe-webhook] unhandled event type: ${event.type}`);
         }
 
         await db.markStripeEventProcessed(event.id, event.type);
         res.status(200).json({ received: true });
       } catch (err) {
-        console.error('[stripe-webhook] handler error:', err instanceof Error ? err.message : err);
+        logger.error({ err: err instanceof Error ? err.message : String(err) }, '[stripe-webhook] handler error');
         // Return 500 so Stripe retries
         res.status(500).json({ error: 'Internal error processing webhook' });
       }

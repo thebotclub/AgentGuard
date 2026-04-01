@@ -11,6 +11,7 @@
 
 import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
+import { logger } from '../lib/logger.js';
 import { z } from 'zod';
 import type { IDatabase, AnomalyRuleRow } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
@@ -64,7 +65,7 @@ export function createAlertsRoutes(db: IDatabase, auth: AuthMiddleware): Router 
       const rows = await db.getAlerts(tenantId, { severity, resolved });
       res.json({ alerts: rows.map(rowToAlert) });
     } catch (e) {
-      console.error('[alerts] getAlerts error:', e);
+      logger.error({ err: e instanceof Error ? e : String(e) }, '[alerts] getAlerts error');
       res.status(500).json({ error: 'Failed to fetch alerts' });
     }
   });
@@ -92,7 +93,7 @@ export function createAlertsRoutes(db: IDatabase, auth: AuthMiddleware): Router 
         await db.resolveAlert(alertId);
         res.json({ id: alertId, acknowledged: true });
       } catch (e) {
-        console.error('[alerts] acknowledge error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[alerts] acknowledge error');
         res.status(500).json({ error: 'Failed to acknowledge alert' });
       }
     },
@@ -108,7 +109,7 @@ export function createAlertsRoutes(db: IDatabase, auth: AuthMiddleware): Router 
         const rows = await db.getAnomalyRules(tenantId);
         res.json({ rules: rows.map(rowToPublicRule) });
       } catch (e) {
-        console.error('[alerts/rules] list error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[alerts/rules] list error');
         res.status(500).json({ error: 'Failed to fetch rules' });
       }
     },
@@ -145,7 +146,7 @@ export function createAlertsRoutes(db: IDatabase, auth: AuthMiddleware): Router 
         const inserted = await db.insertAnomalyRule(rule);
         res.status(201).json(rowToPublicRule(inserted));
       } catch (e) {
-        console.error('[alerts/rules] insert error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[alerts/rules] insert error');
         res.status(500).json({ error: 'Failed to create rule' });
       }
     },
@@ -184,7 +185,7 @@ export function createAlertsRoutes(db: IDatabase, auth: AuthMiddleware): Router 
         }
         res.json(rowToPublicRule(updated));
       } catch (e) {
-        console.error('[alerts/rules] update error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[alerts/rules] update error');
         res.status(500).json({ error: 'Failed to update rule' });
       }
     },
@@ -207,7 +208,7 @@ export function createAlertsRoutes(db: IDatabase, auth: AuthMiddleware): Router 
         await db.deleteAnomalyRule(ruleId, tenantId);
         res.json({ id: ruleId, deleted: true });
       } catch (e) {
-        console.error('[alerts/rules] delete error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[alerts/rules] delete error');
         res.status(500).json({ error: 'Failed to delete rule' });
       }
     },

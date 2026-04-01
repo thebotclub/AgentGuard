@@ -6,6 +6,7 @@
  */
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import { logger } from '../lib/logger.js';
 import { PolicyEngine } from '../../packages/sdk/src/core/policy-engine.js';
 import type {
   ActionRequest,
@@ -18,6 +19,7 @@ import type { AuthMiddleware } from '../middleware/auth.js';
 import { checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from '../lib/rate-limit-db.js';
 import { DEFAULT_POLICY } from '../lib/policy-engine-setup.js';
 import { getGlobalKillSwitch, storeAuditEvent, fireWebhooksAsync } from './audit.js';
+import { getGlobalKillSwitchCached, getTenantKillSwitchCached } from '../lib/kill-switch-cache.js';
 import { createPendingApproval } from './approvals.js';
 import { defaultDetector } from '../lib/pii/regex-detector.js';
 import { DetectionEngine } from '../lib/detection/engine.js';
@@ -183,7 +185,9 @@ export function createEvaluateRoutes(
     '/api/v1/evaluate',
     auth.requireEvaluateAuth,
     async (req: Request, res: Response) => {
-      const ks = await getGlobalKillSwitch(db);
+      // Check Redis cache first; fall back to DB on cache miss
+      const cached = await getGlobalKillSwitchCached();
+      const ks = cached.cached ? { active: cached.active, at: null } : await getGlobalKillSwitch(db);
       const tenantId = req.tenantId ?? 'demo';
       const agentId = req.agent?.id ?? null;
 
@@ -252,8 +256,12 @@ export function createEvaluateRoutes(
         });
       }
 
-      // Check tenant-level kill switch
-      if (req.tenant && req.tenant.kill_switch_active === 1) {
+      // Check tenant-level kill switch (Redis cache takes priority over req.tenant from auth middleware)
+      const tenantKsCached = req.tenant ? await getTenantKillSwitchCached(tenantId) : null;
+      const tenantKsActive = tenantKsCached?.cached
+        ? tenantKsCached.active
+        : (req.tenant?.kill_switch_active === 1);
+      if (req.tenant && tenantKsActive) {
         await storeAuditEvent(
           db,
           tenantId,
@@ -655,7 +663,7 @@ export function createEvaluateRoutes(
                 agentName: agentId || 'unknown',
                 riskReason: decision.matchedRuleId || 'policy_requires_approval',
                 autoRejectMinutes: slackConfig.autoRejectMinutes || 30,
-              }).catch((e: unknown) => console.error('[evaluate] slack notification failed:', e));
+              }).catch((e: unknown) => logger.error({ err: e instanceof Error ? e : String(e) }, '[evaluate] slack notification failed'));
             }
           } catch { /* slack module optional */ }
 
@@ -676,7 +684,7 @@ export function createEvaluateRoutes(
             }).catch(() => { /* non-critical */ });
           }
         } catch (e) {
-          console.error('[evaluate] failed to create approval record:', e);
+          logger.error({ err: e instanceof Error ? e : String(e) }, '[evaluate] failed to create approval record');
         }
       }
 

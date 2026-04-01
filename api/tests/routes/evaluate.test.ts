@@ -35,6 +35,11 @@ vi.mock('../../lib/rate-limit-db.js', () => ({
   incrementRateCounter: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../../lib/kill-switch-cache.js', () => ({
+  getGlobalKillSwitchCached: vi.fn().mockResolvedValue({ active: false, cached: false }),
+  getTenantKillSwitchCached: vi.fn().mockResolvedValue({ active: false, cached: false }),
+}));
+
 vi.mock('../../lib/otel-exporter.js', () => ({
   getOtelExporter: vi.fn().mockReturnValue({
     recordPolicyDecision: vi.fn(),

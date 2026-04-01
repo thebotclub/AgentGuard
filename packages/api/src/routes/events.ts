@@ -28,9 +28,9 @@
  */
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { jwtVerify } from 'jose';
 import Redis from 'ioredis';
 import type { ServiceContext } from '@agentguard/shared';
+import { authenticateJwt } from '../middleware/auth.js';
 
 export const eventsRouter = new Hono();
 
@@ -352,34 +352,6 @@ eventsRouter.get('/stats', (c) => {
     tenants: stats,
   });
 });
-
-// ─── Auth helpers ─────────────────────────────────────────────────────────────
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
-);
-
-interface JwtClaims {
-  sub: string;
-  tenantId: string;
-  role: string;
-}
-
-async function authenticateJwt(token: string): Promise<ServiceContext | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ['HS256'] });
-    const claims = payload as unknown as JwtClaims;
-    if (!claims.tenantId || !claims.sub || !claims.role) return null;
-    return {
-      tenantId: claims.tenantId,
-      userId: claims.sub,
-      role: claims.role as ServiceContext['role'],
-      traceId: crypto.randomUUID(),
-    };
-  } catch {
-    return null;
-  }
-}
 
 function extractBearerToken(authHeader: string | undefined): string | null {
   if (!authHeader?.startsWith('Bearer ')) return null;

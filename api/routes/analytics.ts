@@ -4,6 +4,7 @@
  * GET /api/v1/analytics/usage — usage analytics dashboard (requires tenant auth)
  */
 import { Router, Request, Response } from 'express';
+import { logger } from '../lib/logger.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 
@@ -31,7 +32,7 @@ export function createAnalyticsRoutes(
         const analytics = await db.getUsageAnalytics(tenantId, days);
         res.json(analytics);
       } catch (e) {
-        console.error('[analytics/usage] error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[analytics/usage] error');
         // Return empty analytics on error rather than 500
         res.json({
           calls: { last24h: 0, last7d: 0, last30d: 0 },
@@ -54,7 +55,7 @@ export function createAnalyticsRoutes(
         const stats = await db.getPlatformAnalytics();
         res.json(stats);
       } catch (e) {
-        console.error('[analytics/platform] error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[analytics/platform] error');
         res.status(500).json({ error: 'Failed to fetch platform analytics' });
       }
     },

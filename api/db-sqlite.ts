@@ -17,6 +17,7 @@ import type {
   ApiKeyRow,
   AuditEventRow,
   WebhookRow,
+  FailedWebhookRow,
   AgentRow,
   ApprovalRow,
   FeedbackRow,
@@ -277,6 +278,23 @@ const SCHEMA_SQL = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_stripe_events_processed_at ON stripe_processed_events(processed_at);
+
+  CREATE TABLE IF NOT EXISTS failed_webhooks (
+    id TEXT PRIMARY KEY,
+    webhook_id TEXT NOT NULL,
+    tenant_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    next_retry_at TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    last_error TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_failed_webhooks_retry ON failed_webhooks(status, next_retry_at);
+  CREATE INDEX IF NOT EXISTS idx_failed_webhooks_tenant ON failed_webhooks(tenant_id);
 `;
 
 const SEED_SETTINGS_SQL = `
@@ -1090,6 +1108,49 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       );
     },
 
+    // ── Failed Webhooks (retry queue) ────────────────────────────────────────
+    async insertFailedWebhook(
+      id: string, webhookId: string, tenantId: string,
+      eventType: string, payload: string, nextRetryAt: string, lastError: string | null,
+    ): Promise<void> {
+      db.prepare(
+        `INSERT INTO failed_webhooks (id, webhook_id, tenant_id, event_type, payload, attempt_count, next_retry_at, status, last_error)
+         VALUES (?, ?, ?, ?, ?, 1, ?, 'pending', ?)`,
+      ).run(id, webhookId, tenantId, eventType, payload, nextRetryAt, lastError);
+    },
+
+    async getRetryableWebhooks(limit: number): Promise<FailedWebhookRow[]> {
+      return allSync<FailedWebhookRow>(
+        `SELECT * FROM failed_webhooks WHERE status = 'pending' AND next_retry_at <= datetime('now') ORDER BY next_retry_at LIMIT ?`,
+        [limit],
+      );
+    },
+
+    async updateFailedWebhook(
+      id: string, attemptCount: number, nextRetryAt: string, status: string, lastError: string | null,
+    ): Promise<void> {
+      db.prepare(
+        `UPDATE failed_webhooks SET attempt_count = ?, next_retry_at = ?, status = ?, last_error = ?, updated_at = datetime('now') WHERE id = ?`,
+      ).run(attemptCount, nextRetryAt, status, lastError, id);
+    },
+
+    async getFailedWebhooks(tenantId?: string, limit = 50): Promise<FailedWebhookRow[]> {
+      if (tenantId) {
+        return allSync<FailedWebhookRow>(
+          'SELECT * FROM failed_webhooks WHERE tenant_id = ? ORDER BY created_at DESC LIMIT ?',
+          [tenantId, limit],
+        );
+      }
+      return allSync<FailedWebhookRow>(
+        'SELECT * FROM failed_webhooks ORDER BY created_at DESC LIMIT ?',
+        [limit],
+      );
+    },
+
+    async getFailedWebhookById(id: string): Promise<FailedWebhookRow | undefined> {
+      return getSync<FailedWebhookRow>('SELECT * FROM failed_webhooks WHERE id = ?', [id]);
+    },
+
     // ── Agents ────────────────────────────────────────────────────────────────
     async insertAgent(
       tenantId: string,
@@ -1189,6 +1250,29 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         `UPDATE approvals SET status = ?, resolved_at = datetime('now'), resolved_by = ?
          WHERE id = ? AND tenant_id = ?`
       ).run(status, resolvedBy, id, tenantId);
+    },
+
+    async resolveApprovalAtomic(
+      id: string,
+      tenantId: string,
+      status: 'approved' | 'denied',
+      resolvedBy: string,
+    ): Promise<ApprovalRow | null> {
+      // SQLite: use a transaction to atomically check-and-update
+      const txn = db.transaction(() => {
+        const row = db.prepare(
+          `SELECT * FROM approvals WHERE id = ? AND tenant_id = ? AND status = 'pending'`
+        ).get(id, tenantId) as ApprovalRow | undefined;
+        if (!row) return null;
+        db.prepare(
+          `UPDATE approvals SET status = ?, resolved_at = datetime('now'), resolved_by = ?
+           WHERE id = ? AND tenant_id = ? AND status = 'pending'`
+        ).run(status, resolvedBy, id, tenantId);
+        return db.prepare(
+          `SELECT * FROM approvals WHERE id = ? AND tenant_id = ?`
+        ).get(id, tenantId) as ApprovalRow;
+      });
+      return txn() ?? null;
     },
 
     // ── Policy ────────────────────────────────────────────────────────────────

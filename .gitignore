@@ -17,5 +17,16 @@ coverage/
 .npmrc
 *.tgz
 
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Terraform
+.terraform/
+
+# TypeScript build info
+*.tsbuildinfo
+
 # E2E test seed data (contains ephemeral JWT tokens)
 tests/e2e/.seed-data.json

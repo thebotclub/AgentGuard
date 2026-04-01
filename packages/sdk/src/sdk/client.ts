@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- HTTP client returns dynamic API response shapes; typed per-method in JSDoc */
+import { randomUUID } from 'crypto';
 import os from 'os';
 import { LocalPolicyEngine } from './local-policy-engine.js';
 import type { PolicyBundle } from '../core/types.js';
@@ -27,6 +28,7 @@ export class AgentGuard {
   private baseUrl: string;
   private telemetryEnabled: boolean;
   private telemetrySent: boolean;
+  private readonly traceId: string;
 
   // ── Local eval state ────────────────────────────────────────────────────
   private readonly localEval: boolean;
@@ -60,6 +62,7 @@ export class AgentGuard {
     this.localEval = options.localEval === true;
     this.policySyncIntervalMs = options.policySyncIntervalMs ?? 60_000;
     this.localEngine = new LocalPolicyEngine();
+    this.traceId = randomUUID();
 
     if (this.localEval) {
       // Start background periodic sync (non-blocking)
@@ -67,6 +70,25 @@ export class AgentGuard {
       // Start telemetry batch flush
       this._startAuditFlush();
     }
+  }
+
+  // ── Request Header Helpers ───────────────────────────────────────────────
+
+  /** Build standard headers with correlation IDs. A new spanId is generated per call. */
+  private _headers(): Record<string, string> {
+    return {
+      'X-API-Key': this.apiKey,
+      'X-Trace-ID': this.traceId,
+      'X-Span-ID': randomUUID(),
+    };
+  }
+
+  /** Build standard JSON headers with correlation IDs. */
+  private _jsonHeaders(): Record<string, string> {
+    return {
+      'Content-Type': 'application/json',
+      ...this._headers(),
+    };
   }
 
   // ── Telemetry (SDK usage ping) ──────────────────────────────────────────
@@ -87,7 +109,7 @@ export class AgentGuard {
       };
       fetch(`${this.baseUrl}/api/v1/telemetry`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Trace-ID': this.traceId },
         body: JSON.stringify(payload),
       }).catch(() => {/* silently ignore */});
     } catch {
@@ -108,7 +130,7 @@ export class AgentGuard {
   async syncPolicies(): Promise<void> {
     try {
       const res = await fetch(`${this.baseUrl}/api/v1/policy/bundle`, {
-        headers: { 'X-API-Key': this.apiKey },
+        headers: this._headers(),
       });
       if (!res.ok) {
         // Non-fatal: keep the previous bundle
@@ -178,10 +200,7 @@ export class AgentGuard {
     try {
       fetch(`${this.baseUrl}/api/v1/audit`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': this.apiKey,
-        },
+        headers: this._jsonHeaders(),
         body: JSON.stringify({ events }),
       }).catch(() => {/* fire-and-forget */});
     } catch {
@@ -248,10 +267,7 @@ export class AgentGuard {
   }> {
     const res = await fetch(`${this.baseUrl}/api/v1/evaluate/batch`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify(request),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
@@ -309,10 +325,7 @@ export class AgentGuard {
     // ── HTTP fallback (also used when localEval=true but policy not yet synced) ─
     const res = await fetch(`${this.baseUrl}/api/v1/evaluate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify(action),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
@@ -327,7 +340,7 @@ export class AgentGuard {
 
   async getUsage(): Promise<unknown> {
     const res = await fetch(`${this.baseUrl}/api/v1/usage`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -338,7 +351,7 @@ export class AgentGuard {
     if (options?.limit) params.set('limit', String(options.limit));
     if (options?.offset) params.set('offset', String(options.offset));
     const res = await fetch(`${this.baseUrl}/api/v1/audit?${params}`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -347,10 +360,7 @@ export class AgentGuard {
   async killSwitch(active: boolean): Promise<unknown> {
     const res = await fetch(`${this.baseUrl}/api/v1/killswitch`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify({ active }),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
@@ -362,10 +372,7 @@ export class AgentGuard {
   async createWebhook(config: { url: string; events: string[]; secret?: string }): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/webhooks`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify(config),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
@@ -374,7 +381,7 @@ export class AgentGuard {
 
   async listWebhooks(): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/webhooks`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -383,7 +390,7 @@ export class AgentGuard {
   async deleteWebhook(id: string): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/webhooks/${id}`, {
       method: 'DELETE',
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -396,10 +403,7 @@ export class AgentGuard {
     if (config.policyScope !== undefined) payload.policy_scope = config.policyScope;
     const res = await fetch(`${this.baseUrl}/api/v1/agents`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
@@ -408,7 +412,7 @@ export class AgentGuard {
 
   async listAgents(): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/agents`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -417,7 +421,7 @@ export class AgentGuard {
   async deleteAgent(id: string): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/agents/${id}`, {
       method: 'DELETE',
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -427,7 +431,7 @@ export class AgentGuard {
 
   async listTemplates(): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/templates`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -435,7 +439,7 @@ export class AgentGuard {
 
   async getTemplate(name: string): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/templates/${name}`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -444,10 +448,7 @@ export class AgentGuard {
   async applyTemplate(name: string): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/templates/${name}/apply`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -458,10 +459,7 @@ export class AgentGuard {
   async setRateLimit(config: { agentId?: string; windowSeconds: number; maxRequests: number }): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/rate-limits`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify(config),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
@@ -470,7 +468,7 @@ export class AgentGuard {
 
   async listRateLimits(): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/rate-limits`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -479,7 +477,7 @@ export class AgentGuard {
   async deleteRateLimit(id: string): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/rate-limits/${id}`, {
       method: 'DELETE',
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -494,7 +492,7 @@ export class AgentGuard {
     if (options?.to) params.set('to', options.to);
     if (options?.groupBy) params.set('groupBy', options.groupBy);
     const res = await fetch(`${this.baseUrl}/api/v1/costs/summary?${params}`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -502,7 +500,7 @@ export class AgentGuard {
 
   async getAgentCosts(): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/costs/agents`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -511,10 +509,7 @@ export class AgentGuard {
   async trackCost(data: { tool: string; agentId?: string; estimatedCostCents?: number }): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/costs/track`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
@@ -525,7 +520,7 @@ export class AgentGuard {
 
   async getDashboardStats(): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/dashboard/stats`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -535,7 +530,7 @@ export class AgentGuard {
     const params = new URLSearchParams();
     if (options?.since) params.set('since', options.since);
     const res = await fetch(`${this.baseUrl}/api/v1/dashboard/feed?${params}`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -543,7 +538,7 @@ export class AgentGuard {
 
   async getAgentActivity(): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/dashboard/agents`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status}`);
     return res.json();
@@ -610,10 +605,7 @@ export class AgentGuard {
 
     const res = await fetch(`${this.baseUrl}/api/v1/mcp/evaluate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
@@ -651,7 +643,7 @@ export class AgentGuard {
       ? `${this.baseUrl}/api/v1/mcp/config?id=${encodeURIComponent(configId)}`
       : `${this.baseUrl}/api/v1/mcp/config`;
     const res = await fetch(url, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
     return res.json();
@@ -690,10 +682,7 @@ export class AgentGuard {
   }): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/mcp/config`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify(config),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
@@ -711,7 +700,7 @@ export class AgentGuard {
    */
   async listMcpSessions(): Promise<any> {
     const res = await fetch(`${this.baseUrl}/api/v1/mcp/sessions`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
     return res.json();
@@ -753,10 +742,7 @@ export class AgentGuard {
   }> {
     const res = await fetch(`${this.baseUrl}/api/v1/agents/${encodeURIComponent(agentId)}/validate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify({ declaredTools }),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
@@ -799,7 +785,7 @@ export class AgentGuard {
     expiresAt: string | null;
   }> {
     const res = await fetch(`${this.baseUrl}/api/v1/agents/${encodeURIComponent(agentId)}/readiness`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
     return res.json() as Promise<{
@@ -843,10 +829,7 @@ export class AgentGuard {
   }> {
     const res = await fetch(`${this.baseUrl}/api/v1/agents/${encodeURIComponent(agentId)}/certify`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
     return res.json() as Promise<{
@@ -900,10 +883,7 @@ export class AgentGuard {
   }> {
     const res = await fetch(`${this.baseUrl}/api/v1/mcp/admit`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify({ serverUrl, tools }),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
@@ -939,7 +919,7 @@ export class AgentGuard {
     message: string;
   }> {
     const res = await fetch(`${this.baseUrl}/api/v1/audit/verify`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
     return res.json() as Promise<{
@@ -977,10 +957,7 @@ export class AgentGuard {
   }> {
     const res = await fetch(`${this.baseUrl}/api/v1/policy/coverage`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify({ tools }),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
@@ -1022,10 +999,7 @@ export class AgentGuard {
   }> {
     const res = await fetch(`${this.baseUrl}/api/v1/mcp/evaluate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify(params),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
@@ -1052,7 +1026,7 @@ export class AgentGuard {
   async getMcpConfigForAgent(agentId: string): Promise<unknown> {
     const res = await fetch(
       `${this.baseUrl}/api/v1/mcp/config/${encodeURIComponent(agentId)}`,
-      { headers: { 'X-API-Key': this.apiKey } },
+      { headers: this._headers() },
     );
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
     return res.json();
@@ -1086,10 +1060,7 @@ export class AgentGuard {
       `${this.baseUrl}/api/v1/mcp/config/${encodeURIComponent(agentId)}`,
       {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': this.apiKey,
-        },
+        headers: this._jsonHeaders(),
         body: JSON.stringify({ agentId, ...config }),
       },
     );
@@ -1117,7 +1088,7 @@ export class AgentGuard {
     }>;
   }> {
     const res = await fetch(`${this.baseUrl}/api/v1/approvals`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
     return res.json() as Promise<{
@@ -1139,7 +1110,7 @@ export class AgentGuard {
   async approveRequest(id: string): Promise<{ id: string; status: 'approved'; resolvedAt: string }> {
     const res = await fetch(`${this.baseUrl}/api/v1/approvals/${encodeURIComponent(id)}/approve`, {
       method: 'POST',
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
     return res.json() as Promise<{ id: string; status: 'approved'; resolvedAt: string }>;
@@ -1152,7 +1123,7 @@ export class AgentGuard {
   async denyRequest(id: string): Promise<{ id: string; status: 'denied'; resolvedAt: string }> {
     const res = await fetch(`${this.baseUrl}/api/v1/approvals/${encodeURIComponent(id)}/deny`, {
       method: 'POST',
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
     return res.json() as Promise<{ id: string; status: 'denied'; resolvedAt: string }>;
@@ -1165,7 +1136,7 @@ export class AgentGuard {
    */
   async getPolicy(): Promise<unknown> {
     const res = await fetch(`${this.baseUrl}/api/v1/policy`, {
-      headers: { 'X-API-Key': this.apiKey },
+      headers: this._headers(),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);
     return res.json();
@@ -1185,10 +1156,7 @@ export class AgentGuard {
   async setPolicy(rules: unknown[]): Promise<unknown> {
     const res = await fetch(`${this.baseUrl}/api/v1/policy`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
+      headers: this._jsonHeaders(),
       body: JSON.stringify(rules),
     });
     if (!res.ok) throw new Error(`AgentGuard API error: ${res.status} ${await res.text()}`);

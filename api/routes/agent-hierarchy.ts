@@ -13,6 +13,7 @@
  */
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import { logger } from '../lib/logger.js';
 import { SpawnChildAgentRequest } from '../schemas.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
@@ -137,7 +138,7 @@ export function createAgentHierarchyRoutes(
         if (msg.includes('UNIQUE') || msg.includes('duplicate key')) {
           return res.status(409).json({ error: 'An agent with this name already exists' });
         }
-        console.error('[agent-hierarchy] spawn error:', msg);
+        logger.error({ err: msg }, '[agent-hierarchy] spawn error');
         return res.status(500).json({ error: 'Failed to spawn child agent' });
       }
     },
@@ -185,7 +186,7 @@ export function createAgentHierarchyRoutes(
         }),
       });
       } catch (e) {
-        console.error('[agent-hierarchy] list children error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[agent-hierarchy] list children error');
         return res.status(500).json({ error: 'Failed to list child agents' });
       }
     },
@@ -224,7 +225,7 @@ export function createAgentHierarchyRoutes(
         revoked: true,
       });
       } catch (e) {
-        console.error('[agent-hierarchy] delete child error:', e);
+        logger.error({ err: e instanceof Error ? e : String(e) }, '[agent-hierarchy] delete child error');
         return res.status(500).json({ error: 'Failed to revoke child agent' });
       }
     },

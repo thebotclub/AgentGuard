@@ -6,6 +6,7 @@ import re
 import sys
 import threading
 import time
+import uuid
 from fnmatch import fnmatch
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.request import Request, urlopen
@@ -157,6 +158,31 @@ class _LocalPolicyEngine:
         for param_map in rule.get("paramConditions", []):
             if not self._matches_params(param_map, params):
                 return False
+        # Composite conditions (AND/OR/NOT)
+        for composite in rule.get("compositeConditions", []):
+            if not self._eval_composite(composite, tool, params):
+                return False
+        return True
+
+    def _eval_composite(self, cond: Dict, tool: str, params: Dict) -> bool:
+        """Recursively evaluate AND/OR/NOT composite conditions."""
+        if "AND" in cond:
+            return all(self._eval_composite(c, tool, params) for c in cond["AND"])
+        if "OR" in cond:
+            return any(self._eval_composite(c, tool, params) for c in cond["OR"])
+        if "NOT" in cond:
+            return not self._eval_composite(cond["NOT"], tool, params)
+        # Leaf conditions
+        if "tool" in cond:
+            return self._matches_tool(cond["tool"], tool)
+        if "params" in cond:
+            return self._matches_params(cond["params"], params)
+        if "context" in cond:
+            return True  # context conditions not available in local engine
+        if "dataClass" in cond:
+            return True  # data class conditions not available in local engine
+        if "timeWindow" in cond:
+            return True  # time window conditions not available in local engine
         return True
 
     def _matches_tool(self, condition: Dict, tool: str) -> bool:
@@ -258,6 +284,7 @@ class AgentGuard:
     ):
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
+        self._trace_id = str(uuid.uuid4())
         # Disable telemetry if env var set or constructor option is False
         self._telemetry_enabled = (
             telemetry and os.environ.get("AGENTGUARD_NO_TELEMETRY") != "1"
@@ -331,6 +358,8 @@ class AgentGuard:
                 headers={
                     "X-API-Key": self.api_key,
                     "User-Agent": f"agentguard-python/{__version__}",
+                    "X-Trace-ID": self._trace_id,
+                    "X-Span-ID": str(uuid.uuid4()),
                 },
                 method="GET",
             )
@@ -374,6 +403,8 @@ class AgentGuard:
                     "X-API-Key": self.api_key,
                     "Content-Type": "application/json",
                     "User-Agent": f"agentguard-python/{__version__}",
+                    "X-Trace-ID": self._trace_id,
+                    "X-Span-ID": str(uuid.uuid4()),
                 },
                 method="POST",
             )
@@ -419,6 +450,8 @@ class AgentGuard:
             "X-API-Key": self.api_key,
             "Content-Type": "application/json",
             "User-Agent": f"agentguard-python/{__version__}",
+            "X-Trace-ID": self._trace_id,
+            "X-Span-ID": str(uuid.uuid4()),
         }
         data = json.dumps(body).encode() if body else None
         req = Request(url, data=data, headers=headers, method=method)
