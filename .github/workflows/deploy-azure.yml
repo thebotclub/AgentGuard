@@ -35,6 +35,10 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --ignore-scripts
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=packages/api/prisma/schema.prisma
+      - name: Build monorepo packages
+        run: npx turbo run build
       - name: Security audit
         # Blocking gate — HIGH or CRITICAL CVEs must be resolved before deploy.
         # Change audit-level to 'critical' if you want to allow high-severity through.

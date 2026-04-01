@@ -722,6 +722,385 @@
             "type": "integer"
           }
         }
+      },
+      "AlertObject": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "ruleId": {
+            "type": "string",
+            "nullable": true
+          },
+          "ruleName": {
+            "type": "string",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AnomalyRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "block_rate",
+              "evaluate_volume",
+              "unique_tools",
+              "error_rate",
+              "latency_p99"
+            ]
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "gt",
+              "lt",
+              "spike",
+              "drop"
+            ]
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "windowMinutes": {
+            "type": "integer"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "GitConfig": {
+        "type": "object",
+        "properties": {
+          "repoUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "policyPath": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "lastSyncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastCommitSha": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "RateLimitRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "agentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "maxRequests": {
+            "type": "integer"
+          },
+          "windowSeconds": {
+            "type": "integer"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "block",
+              "throttle",
+              "log"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SSOConfig": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "saml",
+              "oidc"
+            ]
+          },
+          "entityId": {
+            "type": "string",
+            "nullable": true
+          },
+          "ssoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientId": {
+            "type": "string",
+            "nullable": true
+          },
+          "discoveryUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "acsUrl": {
+            "type": "string",
+            "description": "ACS callback URL to configure in your IdP"
+          },
+          "entityServiceUrl": {
+            "type": "string",
+            "description": "Entity/audience URL to configure in your IdP"
+          }
+        }
+      },
+      "TeamMember": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member",
+              "viewer"
+            ]
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SCIMListResponse": {
+        "type": "object",
+        "properties": {
+          "schemas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "totalResults": {
+            "type": "integer"
+          },
+          "startIndex": {
+            "type": "integer"
+          },
+          "itemsPerPage": {
+            "type": "integer"
+          },
+          "Resources": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "SCIMUser": {
+        "type": "object",
+        "properties": {
+          "schemas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "urn:ietf:params:scim:schemas:core:2.0:User"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string",
+            "format": "email",
+            "example": "alice@acme.com"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "emails": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "primary": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "display": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "resourceType": {
+                "type": "string"
+              },
+              "created": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "lastModified": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "SCIMGroup": {
+        "type": "object",
+        "properties": {
+          "schemas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "urn:ietf:params:scim:schemas:core:2.0:Group"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Engineering"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "description": "User SCIM ID"
+                },
+                "display": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "resourceType": {
+                "type": "string"
+              },
+              "created": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "lastModified": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -10813,487 +11192,6 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
-              }
-            }
-          }
-        }
-      },
-      "AlertObject": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tenantId": {
-            "type": "string"
-          },
-          "severity": {
-            "type": "string",
-            "enum": [
-              "info",
-              "warning",
-              "critical"
-            ]
-          },
-          "message": {
-            "type": "string"
-          },
-          "metric": {
-            "type": "string"
-          },
-          "value": {
-            "type": "number"
-          },
-          "threshold": {
-            "type": "number"
-          },
-          "ruleId": {
-            "type": "string",
-            "nullable": true
-          },
-          "ruleName": {
-            "type": "string",
-            "nullable": true
-          },
-          "resolvedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "AnomalyRule": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "metric": {
-            "type": "string",
-            "enum": [
-              "block_rate",
-              "evaluate_volume",
-              "unique_tools",
-              "error_rate",
-              "latency_p99"
-            ]
-          },
-          "condition": {
-            "type": "string",
-            "enum": [
-              "gt",
-              "lt",
-              "spike",
-              "drop"
-            ]
-          },
-          "threshold": {
-            "type": "number"
-          },
-          "windowMinutes": {
-            "type": "integer"
-          },
-          "severity": {
-            "type": "string",
-            "enum": [
-              "info",
-              "warning",
-              "critical"
-            ]
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "ComplianceReport": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tenantId": {
-            "type": "string"
-          },
-          "reportType": {
-            "type": "string",
-            "enum": [
-              "owasp-agentic-top10"
-            ]
-          },
-          "generatedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "score": {
-            "type": "number",
-            "description": "Overall compliance score (0-100)"
-          },
-          "findings": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "category": {
-                  "type": "string"
-                },
-                "status": {
-                  "type": "string",
-                  "enum": [
-                    "pass",
-                    "fail",
-                    "warn",
-                    "na"
-                  ]
-                },
-                "description": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      },
-      "GitConfig": {
-        "type": "object",
-        "properties": {
-          "repoUrl": {
-            "type": "string",
-            "format": "uri"
-          },
-          "branch": {
-            "type": "string"
-          },
-          "policyPath": {
-            "type": "string"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "lastSyncedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "lastCommitSha": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "RateLimitRule": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "endpoint": {
-            "type": "string"
-          },
-          "agentId": {
-            "type": "string",
-            "nullable": true
-          },
-          "maxRequests": {
-            "type": "integer"
-          },
-          "windowSeconds": {
-            "type": "integer"
-          },
-          "action": {
-            "type": "string",
-            "enum": [
-              "block",
-              "throttle",
-              "log"
-            ]
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "SSOConfig": {
-        "type": "object",
-        "properties": {
-          "provider": {
-            "type": "string"
-          },
-          "protocol": {
-            "type": "string",
-            "enum": [
-              "saml",
-              "oidc"
-            ]
-          },
-          "entityId": {
-            "type": "string",
-            "nullable": true
-          },
-          "ssoUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "clientId": {
-            "type": "string",
-            "nullable": true
-          },
-          "discoveryUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "acsUrl": {
-            "type": "string",
-            "description": "ACS callback URL to configure in your IdP"
-          },
-          "entityServiceUrl": {
-            "type": "string",
-            "description": "Entity/audience URL to configure in your IdP"
-          }
-        }
-      },
-      "TeamMember": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "owner",
-              "admin",
-              "member",
-              "viewer"
-            ]
-          },
-          "joinedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "PolicyDocument": {
-        "type": "object",
-        "description": "AgentGuard policy document with rules",
-        "properties": {
-          "version": {
-            "type": "string"
-          },
-          "defaultAction": {
-            "type": "string",
-            "enum": [
-              "allow",
-              "block",
-              "monitor",
-              "require_approval"
-            ]
-          },
-          "rules": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "tool": {
-                  "type": "string"
-                },
-                "action": {
-                  "type": "string",
-                  "enum": [
-                    "allow",
-                    "block",
-                    "monitor",
-                    "require_approval"
-                  ]
-                },
-                "riskScore": {
-                  "type": "integer"
-                },
-                "conditions": {
-                  "type": "array",
-                  "items": {
-                    "type": "object"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "SCIMListResponse": {
-        "type": "object",
-        "properties": {
-          "schemas": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "totalResults": {
-            "type": "integer"
-          },
-          "startIndex": {
-            "type": "integer"
-          },
-          "itemsPerPage": {
-            "type": "integer"
-          },
-          "Resources": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          }
-        }
-      },
-      "SCIMUser": {
-        "type": "object",
-        "properties": {
-          "schemas": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "example": [
-              "urn:ietf:params:scim:schemas:core:2.0:User"
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "userName": {
-            "type": "string",
-            "format": "email",
-            "example": "alice@acme.com"
-          },
-          "displayName": {
-            "type": "string"
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "emails": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "value": {
-                  "type": "string"
-                },
-                "primary": {
-                  "type": "boolean"
-                }
-              }
-            }
-          },
-          "groups": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "value": {
-                  "type": "string"
-                },
-                "display": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "meta": {
-            "type": "object",
-            "properties": {
-              "resourceType": {
-                "type": "string"
-              },
-              "created": {
-                "type": "string",
-                "format": "date-time"
-              },
-              "lastModified": {
-                "type": "string",
-                "format": "date-time"
-              }
-            }
-          }
-        }
-      },
-      "SCIMGroup": {
-        "type": "object",
-        "properties": {
-          "schemas": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "example": [
-              "urn:ietf:params:scim:schemas:core:2.0:Group"
-            ]
-          },
-          "id": {
-            "type": "string"
-          },
-          "displayName": {
-            "type": "string",
-            "example": "Engineering"
-          },
-          "members": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "value": {
-                  "type": "string",
-                  "description": "User SCIM ID"
-                },
-                "display": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "meta": {
-            "type": "object",
-            "properties": {
-              "resourceType": {
-                "type": "string"
-              },
-              "created": {
-                "type": "string",
-                "format": "date-time"
-              },
-              "lastModified": {
-                "type": "string",
-                "format": "date-time"
               }
             }
           }

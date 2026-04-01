@@ -103,15 +103,7 @@ jobs:
         run: npx tsx tests/e2e/seed.ts
 
       - name: Build shared packages
-        run: |
-          set -e
-          echo "Building packages/shared..."
-          cd packages/shared && npx tsc --build && cd ../..
-          echo "Building packages/compliance (if exists)..."
-          if [ -f packages/compliance/tsconfig.json ]; then
-            cd packages/compliance && npx tsc --build && cd ../..
-          fi
-          echo "Done building packages."
+        run: npx turbo run build
 
       - name: Start API server
         run: |
