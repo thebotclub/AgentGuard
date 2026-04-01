@@ -13,7 +13,6 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "composite": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "verbatimModuleSyntax": true,
@@ -22,12 +21,9 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@agentguard/shared": ["../shared/src/index.ts"]
+      "@agentguard/shared": ["../shared/dist/index.d.ts"]
     }
   },
-  "references": [
-    { "path": "../shared" }
-  ],
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
