@@ -88,6 +88,19 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
   .legal-hero{padding:48px 0 32px}
 }
 </style>
+<style>
+.logo-img {
+  height: 44px;
+  width: 44px;
+  vertical-align: middle;
+  margin-right: 8px;
+  filter: drop-shadow(0 0 10px var(--accent-glow, rgba(0, 216, 255, 0.5)));
+  transition: filter 0.3s ease;
+}
+.logo-img:hover {
+  filter: drop-shadow(0 0 15px var(--accent));
+}
+</style>
 </head>
 <body>
 
@@ -95,7 +108,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
 <nav aria-label="Main navigation">
   <div class="nav-inner">
     <a href="/" class="logo">
-      <img src="/agentguard-logo.png?v=3" alt="AgentGuard" style="height:44px;width:44px;vertical-align:middle;margin-right:8px">
+      <img src="/agentguard-logo.png?v=4" alt="AgentGuard" class="logo-img">
       AgentGuard
     </a>
     <div class="nav-links">

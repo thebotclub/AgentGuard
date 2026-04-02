@@ -18,6 +18,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="dashboard.css">
+<style>
+.logo-img {
+  height: 44px;
+  width: 44px;
+  vertical-align: middle;
+  margin-right: 8px;
+  filter: drop-shadow(0 0 10px var(--accent-glow, rgba(0, 216, 255, 0.5)));
+  transition: filter 0.3s ease;
+}
+.logo-img:hover {
+  filter: drop-shadow(0 0 15px var(--accent));
+}
+</style>
 </head>
 <body>
 
@@ -31,7 +44,7 @@
 
 <!-- Mobile Header (visible on small screens) -->
 <div class="mobile-header">
-  <div class="mobile-logo"><img class="logo-icon" src="/agentguard-logo.png?v=3" alt=""> AgentGuard</div>
+  <div class="mobile-logo"><img class="logo-img" src="/agentguard-logo.png?v=4" alt=""> AgentGuard</div>
   <button class="hamburger" onclick="openMobileNav()" aria-label="Open navigation menu">☰</button>
 </div>
 
@@ -39,7 +52,7 @@
 <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
 <div class="mobile-nav-drawer" id="mobile-nav-drawer" role="navigation" aria-label="Mobile navigation">
   <button class="mobile-nav-close" onclick="closeMobileNav()" aria-label="Close navigation">✕</button>
-  <div class="sidebar-logo"><img class="logo-icon" src="/agentguard-logo.png?v=3" alt=""> AgentGuard</div>
+  <div class="sidebar-logo"><img class="logo-img" src="/agentguard-logo.png?v=4" alt=""> AgentGuard</div>
   <button class="nav-item" onclick="showPage('overview', event)">📊 Overview</button>
   <button class="nav-item" onclick="showPage('live', event)">⚡ Live Feed</button>
   <button class="nav-item" onclick="showPage('evaluate', event)">🔍 Evaluate</button>
@@ -70,7 +83,7 @@
 <div class="app">
   <!-- Desktop Sidebar -->
   <nav class="sidebar" aria-label="Main navigation">
-    <div class="sidebar-logo"><img class="logo-icon" src="/agentguard-logo.png?v=3" alt=""> AgentGuard</div>
+    <div class="sidebar-logo"><img class="logo-img" src="/agentguard-logo.png?v=4" alt=""> AgentGuard</div>
     <button class="nav-item active" onclick="showPage('overview', event)">📊 Overview</button>
     <button class="nav-item" onclick="showPage('live', event)">⚡ Live Feed</button>
     <button class="nav-item" onclick="showPage('evaluate', event)">🔍 Evaluate</button>

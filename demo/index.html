@@ -1036,6 +1036,19 @@ body { overflow-x: hidden; max-width: 100vw; }
   }
 }
 </style>
+<style>
+.logo-img {
+  height: 44px;
+  width: 44px;
+  vertical-align: middle;
+  margin-right: 8px;
+  filter: drop-shadow(0 0 10px var(--accent-glow, rgba(0, 216, 255, 0.5)));
+  transition: filter 0.3s ease;
+}
+.logo-img:hover {
+  filter: drop-shadow(0 0 15px var(--accent));
+}
+</style>
 </head>
 <body>
 
@@ -1048,7 +1061,7 @@ body { overflow-x: hidden; max-width: 100vw; }
 
 <!-- Corner Logo -->
 <div id="corner-logo">
-  <img src="/agentguard-logo.png?v=3" alt="" style="height:40px;width:40px;vertical-align:middle">
+  <img src="/agentguard-logo.png?v=4" alt="" class="logo-img">
   <span class="logo-text">AgentGuard</span>
 </div>
 
