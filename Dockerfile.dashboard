@@ -40,6 +40,12 @@ RUN cd packages/dashboard && \
 
 WORKDIR /app/packages/dashboard
 
+# Guarantee target directories exist so Docker COPY commands in stage 3 don't crash
+RUN mkdir -p /app/packages/dashboard/node_modules \
+             /app/packages/dashboard/.next/standalone \
+             /app/packages/dashboard/.next/static \
+             /app/packages/dashboard/public
+
 # Build Next.js application
 RUN npm run build
 
@@ -55,14 +61,14 @@ RUN addgroup --system --gid 1001 nodejs \
 
 # Try standalone output first (smaller image), fall back to full .next
 COPY --from=builder --chown=nextjs:nodejs /app/packages/dashboard/package.json ./
-COPY --from=builder --chown=nextjs:nodejs /app/packages/dashboard/node_modules ./node_modules 2>/dev/null || true
+COPY --from=builder --chown=nextjs:nodejs /app/packages/dashboard/node_modules ./node_modules
 
 # Copy standalone build if it exists (preferred)
 RUN mkdir -p .next
-COPY --from=builder --chown=nextjs:nodejs /app/packages/dashboard/.next/standalone ./ 2>/dev/null || true
-COPY --from=builder --chown=nextjs:nodejs /app/packages/dashboard/.next/static ./.next/static 2>/dev/null || true
-COPY --from=builder --chown=nextjs:nodejs /app/packages/dashboard/.next ./.next 2>/dev/null || true
-COPY --from=builder --chown=nextjs:nodejs /app/packages/dashboard/public ./public 2>/dev/null || true
+COPY --from=builder --chown=nextjs:nodejs /app/packages/dashboard/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/packages/dashboard/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/packages/dashboard/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/packages/dashboard/public ./public
 
 USER nextjs
 
