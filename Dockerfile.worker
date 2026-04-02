@@ -12,7 +12,7 @@ COPY package.json package-lock.json* ./
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/shared/package.json ./packages/shared/
 
-RUN npm ci --prefer-offline
+RUN npm install --prefer-offline
 
 # ── Stage 2: Builder ──────────────────────────────────────────────────────
 FROM deps AS builder
@@ -58,7 +58,7 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY package.json package-lock.json* ./
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/shared/package.json ./packages/shared/
-RUN npm ci --omit=dev --prefer-offline && npm cache clean --force
+RUN npm install --omit=dev --prefer-offline && npm cache clean --force
 
 # Copy compiled output
 COPY --from=builder --chown=agentguard:nodejs /app/dist ./dist

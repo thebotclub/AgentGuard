@@ -13,7 +13,7 @@ COPY package.json package-lock.json* ./
 COPY packages/dashboard/package.json ./packages/dashboard/
 COPY packages/shared/package.json ./packages/shared/
 
-RUN npm ci --prefer-offline
+RUN npm install --prefer-offline
 
 # ── Stage 2: Builder ──────────────────────────────────────────────────────
 FROM deps AS builder
