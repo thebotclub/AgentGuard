@@ -10,12 +10,12 @@
 */
 :root {
   /* Backgrounds */
-  --bg-page:       #0a0a0f;
-  --bg-card:       #111827;
-  --bg-card-alt:   #1a1a2e;
-  --bg-input:      #1e293b;
-  --bg-hover:      rgba(99, 102, 241, 0.08);
-  --bg-nav:        #0c0c1a;
+  --bg-page:       #05050f;
+  --bg-card:       #0a0a1a;
+  --bg-card-alt:   #0d0d1f;
+  --bg-input:      #111128;
+  --bg-hover:      rgba(0, 216, 255, 0.08); /* neon cyan */
+  --bg-nav:        #00000a;
   --bg-overlay:    rgba(0, 0, 0, 0.7);
 
   /* Text */
@@ -26,15 +26,15 @@
   --text-inverse:  #0f172a;
 
   /* Borders */
-  --border:        rgba(99, 102, 241, 0.2);
+  --border:        rgba(178, 0, 255, 0.2); /* neon purple */
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-input:  rgba(148, 163, 184, 0.2);
 
-  /* Accent — indigo family */
-  --accent:        #6366f1;
-  --accent-bright: #818cf8;
-  --accent-dim:    rgba(99, 102, 241, 0.12);
-  --accent-sky:    #38bdf8;
+  /* Accent — neon cyan and purple */
+  --accent:        #00d8ff;
+  --accent-bright: #b200ff;
+  --accent-dim:    rgba(0, 216, 255, 0.12);
+  --accent-sky:    #00d8ff;
 
   /* Status */
   --status-green:  #22c55e;

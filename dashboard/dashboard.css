@@ -3,9 +3,9 @@
 /* ── UTILITY ───────────────────────────────────────── */
 .hidden { display:none !important; }
 :root {
-  --bg:#0a0a1a; --bg-card:#111128; --bg-card2:#13132e; --bg-sidebar:#0c0c20;
-  /* Darkened accent from #6366f1 to #5254d4 for WCAG AA contrast on white text */
-  --accent:#5254d4; --accent-dim:rgba(82,84,212,0.12); --accent-hi:#818cf8;
+  --bg:#05050f; --bg-card:#0a0a1a; --bg-card2:#0d0d1f; --bg-sidebar:#00000a;
+  /* Glowing cyan accent and neon purple high/secondary */
+  --accent:#00d8ff; --accent-dim:rgba(0,216,255,0.12); --accent-hi:#b200ff;
   --green:#22c55e; --red:#ef4444; --amber:#f59e0b; --blue:#3b82f6;
   --text:#e2e8f0; --text-dim:#94a3b8; --text-bright:#f8fafc;
   --border:rgba(99,102,241,0.18); --border-dim:rgba(255,255,255,0.06);

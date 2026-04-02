@@ -14,7 +14,7 @@ export default defineConfig({
   ],
 
   themeConfig: {
-    logo: '/agentguard-logo.svg',
+    logo: '/agentguard-logo.png',
     siteTitle: 'AgentGuard',
 
     nav: [
