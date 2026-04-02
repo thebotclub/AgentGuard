@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgentGuard — AI Agent Deployment Enforcement | CI/CD Gate & Runtime Policy Engine</title>
 <meta name="description" content="AgentGuard enforces security policies at deploy-time and runtime. Like container scanning, but for AI agents. GitHub Action CI/CD gate, sub-millisecond local enforcement • ~200ms cloud API, tamper-evident compliance trail. EU AI Act, SOC 2, APRA CPS 234.">
-<meta name="keywords" content="AI agent deployment enforcement, AI agent security, CI/CD gate AI agents, agentic AI governance, runtime policy engine, EU AI Act compliance, OWASP agentic AI, AI audit trail, agent firewall, LLM security, MCP security, LangChain security, CrewAI security">
+<meta name="keywords" content="AI agent deployment enforcement, AI agent security, CI/CD gate AI agents, agentic AI governance, runtime policy engine, EU AI Act compliance, OWASP agentic AI, AI audit trail, agent firewall, LLM security, MCP security, LangChain security, CrewAI security, OpenClaw security">
 <meta name="author" content="Hani Kashi — Founder, AgentGuard">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://agentguard.tech">
@@ -410,10 +410,10 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
 </style>
 <style>
 .logo-img {
-  height: 44px;
-  width: 44px;
+  height: 32px;
+  width: 32px;
   vertical-align: middle;
-  margin-right: 8px;
+  
   filter: drop-shadow(0 0 10px var(--accent-glow, rgba(0, 216, 255, 0.5)));
   transition: filter 0.3s ease;
 }
@@ -429,7 +429,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
 <!-- NAV -->
 <nav aria-label="Main navigation">
   <div class="nav-inner">
-    <div class="logo"><img src="/agentguard-logo.png?v=4" alt="AgentGuard logo" width="44" height="44" class="logo-img">AgentGuard</div>
+    <div class="logo"><img src="/agentguard-logo.png?v=4" alt="AgentGuard logo" width="32" height="32" class="logo-img">AgentGuard</div>
     <div class="nav-links">
       <a href="#how-it-works" class="nav-link">How It Works</a>
       <a href="#why-enforcement" class="nav-link">Why Enforcement</a>
@@ -480,6 +480,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
           <span style="font-size:.75rem;color:var(--text-dim);margin-right:4px">Works with:</span>
           <span class="fw-badge active">🦜 LangChain</span>
           <span class="fw-badge active">🚢 CrewAI</span>
+          <span class="fw-badge active">🐾 OpenClaw</span>
           <span class="fw-badge active">🤖 AutoGen</span>
           <span class="fw-badge active">⬡ OpenAI</span>
           <span class="fw-badge">Any MCP agent</span>
@@ -594,7 +595,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
           <div class="testimonial-avatar" aria-hidden="true">⚙️</div>
           <div>
             <div class="testimonial-name">Principal Engineer, AI Platform</div>
-            <div class="testimonial-role">Scale-up · LangChain + CrewAI stack</div>
+            <div class="testimonial-role">Scale-up · LangChain + CrewAI + OpenClaw stack</div>
           </div>
         </div>
       </div>
@@ -797,7 +798,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
       <div class="step-card">
         <div class="step-number">1</div>
         <h3>Install the SDK</h3>
-        <p>Add AgentGuard to your project. Works with LangChain, CrewAI, AutoGen, or any MCP-compatible agent.</p>
+        <p>Add AgentGuard to your project. Works with LangChain, CrewAI, AutoGen, OpenClaw, or any MCP-compatible agent.</p>
         <div class="code-block"><span class="cm"># TypeScript / Node</span><br><span style="color:var(--text-dim)">$</span> <span class="fn">npm</span> install <span class="str">@the-bot-club/agentguard</span><br><br><span class="cm"># Python</span><br><span style="color:var(--text-dim)">$</span> <span class="fn">pip</span> install <span class="str">agentguard-tech</span></div>
       </div>
 
