@@ -101,6 +101,7 @@
     background: rgba(10,10,26,0.8);
     color: var(--text2); cursor: pointer;
     transition: all 0.2s; font-size: 16px;
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
   }
   .ctrl-btn:hover { border-color: var(--accent); color: var(--text); box-shadow: 0 0 16px var(--glow); }
@@ -181,6 +182,7 @@
     border-radius: 16px;
     padding: 28px 36px;
     text-align: center;
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     flex: 1; min-width: 200px; max-width: 360px;
   }
@@ -222,6 +224,7 @@
     background: rgba(108,99,255,0.08);
     font-weight: 600; font-size: 1rem;
     letter-spacing: 0.02em;
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
   }
   .pillar span { margin-right: 8px; }
@@ -233,6 +236,7 @@
     border-radius: 16px; overflow: hidden;
     border: 1px solid var(--border);
     display: flex; flex-direction: column;
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
   }
   .terminal-box { background: #0a0e1a; }
@@ -578,6 +582,7 @@
     color: var(--text2); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     z-index: 100; font-size: 14px; transition: all 0.2s;
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
   }
   #fs-btn:hover { border-color: var(--accent); color: var(--text); }
@@ -1455,7 +1460,7 @@ decision = guard.<span class="py-fn">evaluate</span>(
       <div class="tagline2 fade-child" style="transition-delay:0.3s">Runtime Security for AI Agents</div>
       <div class="contact-links fade-child" style="transition-delay:1.3s">
         <a href="mailto:hello@agentguard.tech" class="contact-link primary">📧 hello@agentguard.tech</a>
-        <a href="https://agentguard.tech" class="contact-link secondary" target="_blank">🌐 agentguard.tech</a>
+        <a href="https://agentguard.tech" class="contact-link secondary" target="_blank" rel="noopener">🌐 agentguard.tech</a>
       </div>
     </div>
   </div>

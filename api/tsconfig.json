@@ -11,7 +11,8 @@
     "rootDir": "..",
     "resolveJsonModule": true,
     "declaration": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["**/*.ts", "../packages/sdk/src/core/**/*.ts"],
   "exclude": ["**/*.test.ts", "**/*.spec.ts", "../packages/**/tests/**", "../packages/**/__tests__/**"]
