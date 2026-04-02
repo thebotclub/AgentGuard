@@ -24,11 +24,11 @@ The Free Agent Tier provides runtime security protection for individual AI agent
 
 | Metric | Free Tier Limit |
 |--------|-----------------|
-| **Monthly Requests** | 1,000 requests/month |
-| **Active Agents** | 3 concurrent agents |
-| **API Calls/Day** | 100/day (rolling) |
+| **Monthly Requests** | 100,000 requests/month |
+| **Active Agents** | 5 concurrent agents |
+| **API Calls/Day** | 3,334/day (rolling) |
 | **Rate Limit** | 10 requests/minute/agent |
-| **Data Retention** | 7 days |
+| **Data Retention** | 30 days |
 | **Policy Rules** | 5 custom rules |
 
 ### 1.3 What's Included (Free)
@@ -145,7 +145,7 @@ Response: 201 Created
 
 | Scenario | Behavior |
 |----------|----------|
-| **Monthly request limit (1,000)** | Return 429 after 1,000; expose upgrade prompt in response header `X-AgentGuard-Upgrade: recommended` |
+| **Monthly request limit (100,000)** | Return 429 after 100,000; expose upgrade prompt in response header `X-AgentGuard-Upgrade: recommended` |
 | **Concurrent agent limit (3)** | Reject new agent registration with 403; include upgrade link |
 | **Rate limit (10/min)** | Return 429; include `Retry-After` header |
 
@@ -281,25 +281,25 @@ The Agent Self-Service tier is a **free-to-paid funnel** — not a standalone re
 
 ### 4.2 Pricing Tiers
 
-| Feature | Free | Pro ($49/mo) | Enterprise (Custom) |
-|---------|------|--------------|---------------------|
-| **Monthly Requests** | 1,000 | 50,000 | Unlimited |
-| **Active Agents** | 3 | 25 | Unlimited |
+| Feature | Free | Pro ($149/mo) | Enterprise ($499/mo) |
+|---------|------|---------------|----------------------|
+| **Monthly Requests** | 100,000 | 500,000 | Unlimited |
+| **Active Agents** | 5 | 100 | Unlimited |
 | **Custom Policies** | 5 | Unlimited | Unlimited |
-| **Data Retention** | 7 days | 90 days | Unlimited |
+| **Data Retention** | 30 days | 1 year | Unlimited |
 | **Rate Limit** | 10/min | 100/min | Unlimited |
 | **Dashboard** | ❌ | ✅ | ✅ |
 | **Analytics** | Basic | Advanced | Custom |
 | **Support** | Community | Email | Dedicated |
 | **SSO** | ❌ | ❌ | ✅ |
 | **SLA** | ❌ | 99.5% | 99.99% |
-| **Price** | **Free** | **$49/agent/month** | **Custom** |
+| **Price** | **Free** | **$149/month** | **$499/month** |
 
 ### 4.3 How Free Tier Drives Revenue
 
 **1. Usage-Based Upsell**
-- Agent exceeds 1,000 requests → prompt to upgrade
-- Agent registers >3 concurrent agents → prompt to upgrade
+- Agent exceeds 100,000 requests → prompt to upgrade
+- Agent registers >5 concurrent agents → prompt to upgrade
 - Dashboard want → upgrade required
 
 **2. Developer Experience Driven**
@@ -319,13 +319,13 @@ The Agent Self-Service tier is a **free-to-paid funnel** — not a standalone re
 ┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
 │ Agent       │     │ Usage        │     │ Upgrade         │
 │ Protected   │────▶│ Grows        │────▶│ Prompt          │
-│ (Free)      │     │ (1K → 10K)   │     │ ($49/mo)        │
+│ (Free)      │     │ (100K → 500K)│     │ ($149/mo)       │
 └─────────────┘     └──────────────┘     └─────────────────┘
                                                 │
                     ┌─────────────────┐          │
                     │ Usage          │◀─────────┘
                     │ Explodes       │
-                    │ (50K+)         │
+                    │ (500K+)        │
                     └─────────────────┘
                            │
                            ▼
