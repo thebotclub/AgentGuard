@@ -4,7 +4,7 @@ import os from 'os';
 import { LocalPolicyEngine } from './local-policy-engine.js';
 import { LocalPolicyEvaluator } from '../core/local-evaluator.js';
 import type { PolicyBundle } from '../core/types.js';
-import type { TrustedPublicKey } from '../core/bundle-types.js';
+import type { SignedPolicyBundle, TrustedPublicKey } from '../core/bundle-types.js';
 
 const SDK_VERSION = '0.9.0';
 
@@ -168,7 +168,7 @@ export class AgentGuard {
           headers: this._headers(),
         });
         if (!res.ok) return; // non-fatal
-        const signed = await res.json();
+        const signed: SignedPolicyBundle = await res.json();
         // loadSignedBundle returns false if verification fails — keep old bundle
         this.localEvaluator.loadSignedBundle(signed);
         return;
