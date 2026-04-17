@@ -12,12 +12,6 @@ export const metadata: Metadata = {
   description: 'Monitor, control, and audit your AI agents in real-time.',
 };
 
-// Force dynamic rendering to skip static prerendering of /404.
-// React 19 + Next.js 15 has a known issue where prerendering the
-// default 404 page with client component boundaries triggers React error #31.
-// All dashboard pages are 'use client' anyway, so static generation has no benefit.
-export const dynamic = 'force-dynamic';
-
 interface RootLayoutProps {
   children: ReactNode;
 }
