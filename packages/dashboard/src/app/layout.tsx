@@ -3,9 +3,18 @@
  */
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import Providers from './providers';
-import Nav from './nav';
+import dynamic from 'next/dynamic';
 import './globals.css';
+
+/**
+ * Client components (Providers, Nav) are loaded with ssr: false to avoid
+ * React error #31 during static prerender of /404 and other pages.
+ * The dashboard is a client-side SPA — all pages use 'use client' — so
+ * server-side rendering of these wrappers is unnecessary and fragile with
+ * React 19 + Next.js 15 static generation.
+ */
+const Providers = dynamic(() => import('./providers'), { ssr: false });
+const Nav = dynamic(() => import('./nav'), { ssr: false });
 
 export const metadata: Metadata = {
   title: 'AgentGuard — Runtime Security for AI Agents',
