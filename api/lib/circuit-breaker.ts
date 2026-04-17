@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 /**
  * AgentGuard — Circuit Breaker
  *
@@ -131,11 +132,11 @@ export class CircuitBreaker {
     this.state = next;
     if (next === 'CLOSED') this.failures = 0;
     if (next === 'OPEN') {
-      console.warn(`[circuit-breaker:${this.name}] OPEN after ${this.failures} failures`);
+      logger.warn(`[circuit-breaker:${this.name}] OPEN after ${this.failures} failures`);
     } else if (next === 'HALF_OPEN') {
-      console.info(`[circuit-breaker:${this.name}] HALF_OPEN — probing recovery`);
+      logger.info(`[circuit-breaker:${this.name}] HALF_OPEN — probing recovery`);
     } else if (next === 'CLOSED') {
-      console.info(`[circuit-breaker:${this.name}] CLOSED — service recovered`);
+      logger.info(`[circuit-breaker:${this.name}] CLOSED — service recovered`);
     }
     this.opts.onStateChange?.(this.name, prev, next);
   }

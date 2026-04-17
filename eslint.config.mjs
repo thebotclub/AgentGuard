@@ -16,7 +16,7 @@ export default [
       '**/dist/**',
       '**/build/**',
       '**/*.js',        // ignore compiled output
-      'remotion/**',    // isolated workspace, different TS config
+      'remotion/**',    // moved to separate repo — kept in .gitignore
       'packages/python/**',
       'infra/**',
       'helm/**',

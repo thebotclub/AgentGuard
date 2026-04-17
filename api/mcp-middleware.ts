@@ -14,6 +14,7 @@ import type { IDatabase } from './db-interface.js';
 import { PolicyEngine } from '../packages/sdk/src/core/policy-engine.js';
 import type { PolicyDocument, ActionRequest, AgentContext } from '../packages/sdk/src/core/types.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
+import { logger } from './lib/logger.js';
 
 // ── MCP JSON-RPC Types ────────────────────────────────────────────────────
 
@@ -253,7 +254,7 @@ export class McpMiddleware {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, session.tenantId, session.agentId, session.configId, session.transport,
        session.upstreamUrl, JSON.stringify(session.actionMapping), now, now]
-    ).catch(err => console.error('[mcp] failed to persist session:', err));
+    ).catch(err => logger.error('[mcp] failed to persist session:', err));
 
     return session;
   }
@@ -321,7 +322,7 @@ export class McpMiddleware {
        SET last_activity_at = ?, tool_call_count = ?, blocked_count = ?
        WHERE id = ?`,
       [session.lastActivityAt, session.toolCallCount, session.blockedCount, session.id]
-    ).catch(err => console.error('[mcp] failed to update session:', err));
+    ).catch(err => logger.error('[mcp] failed to update session:', err));
   }
 
   // ── Config CRUD ─────────────────────────────────────────────────────────

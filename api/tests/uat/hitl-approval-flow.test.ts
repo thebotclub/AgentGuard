@@ -15,7 +15,7 @@ import { describe, it, expect, beforeAll, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import type { IDatabase } from '../../db-interface.js';
-import { createEvaluateRoutes } from '../../routes/evaluate.js';
+import { createEvaluateRoutes } from '../../routes/evaluate/index.js';
 import { createApprovalRoutes } from '../../routes/approvals.js';
 import { createMockDb } from '../helpers/mock-db.js';
 import { createMockAuthMiddleware } from '../helpers/create-app.js';

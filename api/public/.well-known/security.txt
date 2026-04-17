@@ -1,0 +1,5 @@
+Contact: mailto:security@thebot.club
+Preferred-Languages: en
+Canonical: https://agentguard.dev/.well-known/security.txt
+Acknowledgements: https://agentguard.dev/security/acknowledgements
+Policy: https://agentguard.dev/security/disclosure-policy

@@ -4,9 +4,6 @@
   "description": "AgentGuard Control Plane API — Hono REST API",
   "type": "module",
   "main": "./dist/index.js",
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",

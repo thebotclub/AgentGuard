@@ -21,6 +21,7 @@
  *   otel.recordPolicyDecision({ agentId, toolName, decision, ... });
  */
 import { createHash, randomBytes } from 'node:crypto';
+import { logger } from './logger.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -181,7 +182,7 @@ class OtlpHttpExporter {
 class ConsoleExporter {
   async export(spans: OtlpSpan[]): Promise<void> {
     for (const span of spans) {
-      console.log('[otel]', JSON.stringify({
+      logger.info('[otel]', JSON.stringify({
         name: span.name,
         traceId: span.traceId,
         spanId: span.spanId,
@@ -238,7 +239,7 @@ class OtelBatchProcessor {
       await this.exporter.export(batch);
     } catch (err) {
       // Re-queue failed spans (once, to avoid infinite retry loops)
-      console.warn('[otel] export failed, dropping batch:', err instanceof Error ? err.message : err);
+      logger.warn('[otel] export failed, dropping batch:', err instanceof Error ? err.message : err);
     } finally {
       this.flushing = false;
     }
@@ -270,14 +271,14 @@ class AgentGuardOtelExporter {
 
     if (tracesExporter === 'console') {
       this.processor = new OtelBatchProcessor(new ConsoleExporter());
-      console.log('[otel] Console span exporter active');
+      logger.info('[otel] Console span exporter active');
       return;
     }
 
     // OTLP/HTTP (default)
     const endpoint = process.env['OTEL_EXPORTER_OTLP_ENDPOINT'];
     if (!endpoint) {
-      console.warn('[otel] OTEL_EXPORTER_OTLP_ENDPOINT not set — spans not exported. Set to enable OTel.');
+      logger.warn('[otel] OTEL_EXPORTER_OTLP_ENDPOINT not set — spans not exported. Set to enable OTel.');
       this.enabled = false;
       this.processor = null;
       return;
@@ -298,7 +299,7 @@ class AgentGuardOtelExporter {
 
     const exporter = new OtlpHttpExporter(endpoint, headers, serviceName);
     this.processor = new OtelBatchProcessor(exporter);
-    console.log(`[otel] OTLP/HTTP exporter active → ${endpoint} (service: ${serviceName})`);
+    logger.info(`[otel] OTLP/HTTP exporter active → ${endpoint} (service: ${serviceName})`);
   }
 
   /**

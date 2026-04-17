@@ -8,19 +8,16 @@
  */
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import { PolicyEngine } from '../../packages/sdk/src/core/policy-engine.js';
-import type { ActionRequest, AgentContext } from '../../packages/sdk/src/core/types.js';
-import { BatchEvaluateRequestSchema } from '../schemas.js';
-import type { IDatabase } from '../db-interface.js';
-import type { AuthMiddleware } from '../middleware/auth.js';
-import { getGlobalKillSwitch, storeAuditEvent, fireWebhooksAsync } from './audit.js';
-import { checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from '../lib/rate-limit-db.js';
-import { DEFAULT_POLICY } from '../lib/policy-engine-setup.js';
-import { createPendingApproval } from './approvals.js';
-import { enrichDecision } from '../lib/decision-enricher.js';
-
-// Constant for audit event chain (no longer used for hashing — kept for API compat)
-const NOOP_PREV_HASH = '';
+import { PolicyEngine } from '../../../packages/sdk/src/core/policy-engine.js';
+import type { ActionRequest, AgentContext } from '../../../packages/sdk/src/core/types.js';
+import { BatchEvaluateRequestSchema } from '../../schemas.js';
+import type { IDatabase } from '../../db-interface.js';
+import type { AuthMiddleware } from '../../middleware/auth.js';
+import { getGlobalKillSwitch, storeAuditEvent, fireWebhooksAsync } from '../audit.js';
+import { checkRateLimit as checkPhase2RateLimit, incrementRateCounter } from '../../lib/rate-limit-db.js';
+import { createPendingApproval } from '../approvals.js';
+import { enrichDecision } from '../../lib/decision-enricher.js';
+import { NOOP_PREV_HASH, loadEffectivePolicy } from './helpers.js';
 
 export function createBatchEvaluateRoutes(db: IDatabase, auth: AuthMiddleware): Router {
   const router = Router();
@@ -128,22 +125,7 @@ export function createBatchEvaluateRoutes(db: IDatabase, auth: AuthMiddleware): 
       }
 
       // ── 4. Load effective policy once (shared across all calls) ──────────
-      let effectivePolicy = DEFAULT_POLICY;
-      if (tenantId !== 'demo') {
-        try {
-          const customPolicyRaw = await db.getCustomPolicy(tenantId);
-          if (customPolicyRaw) {
-            const p = JSON.parse(customPolicyRaw) as unknown;
-            if (Array.isArray(p)) {
-              effectivePolicy = { ...DEFAULT_POLICY, rules: p as typeof DEFAULT_POLICY['rules'] };
-            } else if (p && typeof p === 'object') {
-              effectivePolicy = p as typeof DEFAULT_POLICY;
-            }
-          }
-        } catch {
-          // Fall back to default policy
-        }
-      }
+      const effectivePolicy = await loadEffectivePolicy(db, tenantId);
 
       // ── 5. Evaluate all calls in parallel ────────────────────────────────
       const resolvedSessionId = sessionId ?? batchId; // use batchId as session if none provided

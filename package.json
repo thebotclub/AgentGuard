@@ -4,13 +4,12 @@
   "private": true,
   "description": "AgentGuard — Runtime security platform for AI agents",
   "workspaces": [
-    "packages/*",
-    "remotion"
+    "packages/*"
   ],
   "scripts": {
     "dev": "npx tsx api/server.ts",
     "pretest": "cd packages/api && npx prisma generate --no-hints",
-    "test": "vitest run",
+    "test": "./node_modules/.bin/vitest run",
     "test:e2e": "npx tsx --test tests/e2e.test.ts",
     "test:all": "npx tsx --test tests/*.test.ts",
     "test:unit": "vitest run",
@@ -50,6 +49,7 @@
     "tsx": "^4.21.0",
     "turbo": "^2.3.3",
     "typescript": "^5.7.3",
+    "vite": "^5.4.21",
     "vitepress": "^1.6.4",
     "vitest": "^2.1.9"
   },

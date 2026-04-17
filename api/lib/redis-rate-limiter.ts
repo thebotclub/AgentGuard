@@ -8,6 +8,7 @@
  * Brute-force:  bf:{ip}
  */
 import { recordFailedAttempt, isBlocked, clearAttempts } from './brute-force.js';
+import { logger } from './logger.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -163,25 +164,25 @@ async function getRedis(): Promise<RedisLike | null> {
 
     client.on('error', (err: Error) => {
       if (redisAvailable) {
-        console.warn('[redis-rl] connection error, falling back to in-memory:', err.message);
+        logger.warn('[redis-rl] connection error, falling back to in-memory:', err.message);
         redisAvailable = false;
       }
     });
 
     client.on('ready', () => {
       if (!redisAvailable) {
-        console.info('[redis-rl] reconnected');
+        logger.info('[redis-rl] reconnected');
         redisAvailable = true;
       }
     });
 
     redisClient = client as unknown as RedisLike;
     redisAvailable = true;
-    console.info('[redis-rl] connected:', redisUrl.replace(/:[^:@]*@/, ':***@'));
+    logger.info('[redis-rl] connected:', redisUrl.replace(/:[^:@]*@/, ':***@'));
     return redisClient;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn('[redis-rl] unavailable, using in-memory fallback:', msg);
+    logger.warn('[redis-rl] unavailable, using in-memory fallback:', msg);
     return null;
   }
 }
@@ -221,7 +222,7 @@ async function redisCheck(
     };
   } catch (err) {
     // Redis error during operation — fall back to in-memory
-    console.warn('[redis-rl] operation failed, using in-memory:', err instanceof Error ? err.message : err);
+    logger.warn('[redis-rl] operation failed, using in-memory:', err instanceof Error ? err.message : err);
     redisAvailable = false;
     return inMemCheck(key, limit);
   }
@@ -257,7 +258,7 @@ async function redisCheckWindow(
       retryAfter: !allowed ? Math.ceil(windowMs / 1000) : undefined,
     };
   } catch (err) {
-    console.warn('[redis-rl] operation failed, using in-memory:', err instanceof Error ? err.message : err);
+    logger.warn('[redis-rl] operation failed, using in-memory:', err instanceof Error ? err.message : err);
     redisAvailable = false;
     return inMemCheck(key, limit);
   }
@@ -293,7 +294,7 @@ async function redisBfRecord(redis: RedisLike, ip: string): Promise<void> {
       await redis.set(blockKey, '1', 'EX', Math.ceil(BF_BLOCK_MS / 1000));
     }
   } catch (err) {
-    console.warn('[redis-rl] bf record failed:', err instanceof Error ? err.message : err);
+    logger.warn('[redis-rl] bf record failed:', err instanceof Error ? err.message : err);
     // Fall back to in-memory
     recordFailedAttempt(ip);
   }
@@ -309,7 +310,7 @@ async function redisBfCheck(redis: RedisLike, ip: string): Promise<BruteForceRes
     }
     return { blocked: false };
   } catch (err) {
-    console.warn('[redis-rl] bf check failed:', err instanceof Error ? err.message : err);
+    logger.warn('[redis-rl] bf check failed:', err instanceof Error ? err.message : err);
     // Fall back to in-memory
     return { blocked: isBlocked(ip) };
   }

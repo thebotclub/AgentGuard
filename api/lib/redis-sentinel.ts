@@ -19,6 +19,7 @@
  * redis-rate-limiter.ts so health probes can call either.
  */
 import type { Redis as RedisType } from 'ioredis';
+import { logger } from './logger.js';
 
 let sentinelClient: RedisType | null = null;
 let sentinelAvailable = false;
@@ -57,7 +58,7 @@ export async function getSentinelClient(): Promise<RedisType | null> {
 
   const sentinels = parseSentinels(sentinelsRaw);
   if (sentinels.length === 0) {
-    console.warn('[redis-sentinel] REDIS_SENTINELS is set but empty — skipping sentinel');
+    logger.warn('[redis-sentinel] REDIS_SENTINELS is set but empty — skipping sentinel');
     return null;
   }
 
@@ -94,32 +95,32 @@ export async function getSentinelClient(): Promise<RedisType | null> {
 
     client.on('error', (err: Error) => {
       if (sentinelAvailable) {
-        console.warn('[redis-sentinel] error, attempting failover:', err.message);
+        logger.warn('[redis-sentinel] error, attempting failover:', err.message);
         sentinelAvailable = false;
       }
     });
 
     client.on('ready', () => {
       if (!sentinelAvailable) {
-        console.info('[redis-sentinel] connected/reconnected');
+        logger.info('[redis-sentinel] connected/reconnected');
         sentinelAvailable = true;
       }
     });
 
     client.on('+switch-master', (masterName: string, oldHost: string, oldPort: string, newHost: string, newPort: string) => {
-      console.info(`[redis-sentinel] master switched: ${masterName} ${oldHost}:${oldPort} -> ${newHost}:${newPort}`);
+      logger.info(`[redis-sentinel] master switched: ${masterName} ${oldHost}:${oldPort} -> ${newHost}:${newPort}`);
     });
 
     sentinelClient = client as RedisType;
     sentinelAvailable = true;
 
     const sentinelList = sentinels.map((s) => `${s.host}:${s.port}`).join(', ');
-    console.info(`[redis-sentinel] connected via ${sentinels.length} sentinel(s) [${sentinelList}] master="${name}"`);
+    logger.info(`[redis-sentinel] connected via ${sentinels.length} sentinel(s) [${sentinelList}] master="${name}"`);
 
     return sentinelClient;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn('[redis-sentinel] failed to connect:', msg);
+    logger.warn('[redis-sentinel] failed to connect:', msg);
     sentinelAvailable = false;
     return null;
   }
@@ -149,7 +150,7 @@ export async function closeSentinel(): Promise<void> {
     await sentinelClient.quit();
     sentinelAvailable = false;
     sentinelClient = null;
-    console.info('[redis-sentinel] connection closed');
+    logger.info('[redis-sentinel] connection closed');
   } catch {
     // Non-critical — process is exiting
   }

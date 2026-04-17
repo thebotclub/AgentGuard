@@ -35,3 +35,19 @@ export {
 export type { PolicyErrorCode, PolicyErrorDetails } from './errors.js';
 
 export * from './types.js';
+
+export {
+  LocalPolicyEvaluator,
+  canonicalize,
+} from './local-evaluator.js';
+export type { LocalEvaluatorOptions } from './local-evaluator.js';
+
+export {
+  BUNDLE_FORMAT_VERSION,
+  BundleVerificationError,
+} from './bundle-types.js';
+export type {
+  SignedPolicyBundle,
+  BundleVerificationResult,
+  TrustedPublicKey,
+} from './bundle-types.js';

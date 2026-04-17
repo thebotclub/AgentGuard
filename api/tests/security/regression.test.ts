@@ -76,7 +76,7 @@ vi.mock('../../lib/decision-enricher.js', () => ({
 }));
 
 import { storeAuditEvent } from '../../routes/audit.js';
-import { createEvaluateRoutes } from '../../routes/evaluate.js';
+import { createEvaluateRoutes } from '../../routes/evaluate/index.js';
 import { createAgentRoutes } from '../../routes/agents.js';
 
 // ── Test setup ─────────────────────────────────────────────────────────────

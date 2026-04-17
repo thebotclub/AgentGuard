@@ -9,6 +9,7 @@
  * In production, always set INTEGRATION_ENCRYPTION_KEY.
  */
 import crypto from 'crypto';
+import { logger } from './logger.js';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12; // 96-bit IV for GCM
@@ -33,7 +34,7 @@ function getEncryptionKey(): Buffer {
     );
   }
   // Dev fallback: derive from a fixed seed (NOT for production)
-  console.warn('[integration-crypto] WARNING: Using dev fallback encryption key. Set INTEGRATION_ENCRYPTION_KEY in production.');
+  logger.warn('[integration-crypto] WARNING: Using dev fallback encryption key. Set INTEGRATION_ENCRYPTION_KEY in production.');
   return crypto
     .createHash('sha256')
     .update('agentguard-dev-integration-key-fallback')

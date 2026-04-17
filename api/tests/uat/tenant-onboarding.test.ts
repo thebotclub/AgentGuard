@@ -16,7 +16,7 @@ import express from 'express';
 import type { IDatabase, AgentRow, TenantRow } from '../../db-interface.js';
 import { createAgentRoutes } from '../../routes/agents.js';
 import { createPolicyRoutes } from '../../routes/policy.js';
-import { createEvaluateRoutes } from '../../routes/evaluate.js';
+import { createEvaluateRoutes } from '../../routes/evaluate/index.js';
 import { createAuditRoutes } from '../../routes/audit.js';
 import { createMockAuthMiddleware } from '../helpers/create-app.js';
 import { createMockDb, MOCK_TENANT } from '../helpers/mock-db.js';

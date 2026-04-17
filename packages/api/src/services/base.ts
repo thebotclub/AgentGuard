@@ -25,7 +25,7 @@ export abstract class BaseService {
     return this.db.$transaction(fn, {
       maxWait: 5_000,
       timeout: 10_000,
-      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+      isolationLevel: 'ReadCommitted' as const,
     });
   }
 

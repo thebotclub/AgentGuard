@@ -1,74 +1,34 @@
 /**
- * AgentGuard — Audit Routes & Helpers
+ * AgentGuard — Audit Routes
  *
  * GET /api/v1/audit        — paginated persistent audit trail (offset-based)
  * GET /api/v1/audit/events — cursor-based paginated audit events
  * GET /api/v1/audit/verify — verify hash chain integrity
  * GET /api/v1/audit/export — export audit events as CSV or JSON
+ * POST /api/v1/audit/repair — recalculates hash chain
  *
- * Also exports shared audit helpers used by other route modules:
- *  - getGlobalKillSwitch / setGlobalKillSwitch
- *  - getLastHash
- *  - storeAuditEvent
- *  - fireWebhooksAsync
- *  - makeHash
- *  - hmacSignature
+ * Re-exports shared helpers from AuditService for backward compatibility
+ * with other modules that import from this file.
  */
 import { Router, Request, Response } from 'express';
-import crypto from 'crypto';
 import { z } from 'zod';
 import { logger } from '../lib/logger.js';
-import type { IDatabase, WebhookRow } from '../db-interface.js';
+import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
-import { GENESIS_HASH } from '../../packages/sdk/src/core/types.js';
-import { recordFailedWebhook } from '../lib/webhook-retry.js';
+import { AuditService } from '../services/audit.service.js';
 
-// ── Shared Helpers ─────────────────────────────────────────────────────────
+// ── Re-export helpers for backward compatibility ──────────────────────────
+// Other modules (evaluate/helpers, etc.) import these from this file.
+// They now delegate to AuditService static methods.
+export const makeHash = AuditService.makeHash;
+export const hmacSignature = AuditService.hmacSignature;
+export const deliverWebhook = AuditService.deliverWebhook;
 
-export function makeHash(data: string, prev: string): string {
-  return crypto
-    .createHash('sha256')
-    .update(prev + '|' + data)
-    .digest('hex');
-}
-
-export function hmacSignature(body: string, secret: string): string {
-  return (
-    'sha256=' +
-    crypto.createHmac('sha256', secret).update(body).digest('hex')
-  );
-}
-
-export async function getGlobalKillSwitch(
-  db: IDatabase,
-): Promise<{ active: boolean; at: string | null }> {
-  const val = await db.getSetting('global_kill_switch');
-  const at = await db.getSetting('global_kill_switch_at');
-  return {
-    active: val === '1',
-    at: at || null,
-  };
-}
-
-export async function setGlobalKillSwitch(
-  db: IDatabase,
-  active: boolean,
-): Promise<void> {
-  await db.setSetting('global_kill_switch', active ? '1' : '0');
-  await db.setSetting(
-    'global_kill_switch_at',
-    active ? new Date().toISOString() : '',
-  );
-}
-
-export async function getLastHash(
-  db: IDatabase,
-  tenantId: string,
-): Promise<string> {
-  const hash = await db.getLastAuditHash(tenantId);
-  return hash ?? GENESIS_HASH;
-}
-
+/**
+ * Backward-compatible wrapper: store an audit event.
+ * Existing callers pass (db, tenantId, sessionId, tool, result, ruleId, riskScore,
+ * reason, durationMs, _prevHash, agentId?, detectionScore?, detectionProvider?, detectionCategory?).
+ */
 export async function storeAuditEvent(
   db: IDatabase,
   tenantId: string,
@@ -79,60 +39,37 @@ export async function storeAuditEvent(
   riskScore: number,
   reason: string | null,
   durationMs: number,
-  // prevHash is now ignored — the adapter reads it atomically inside a lock
   _prevHash: string,
   agentId?: string | null,
   detectionScore?: number | null,
   detectionProvider?: string | null,
   detectionCategory?: string | null,
 ): Promise<string> {
-  const createdAt = new Date().toISOString();
-  const effectiveTenantId = tenantId === 'demo' ? null : tenantId;
-  // insertAuditEventSafe atomically reads the last hash and inserts in one
-  // serialized operation, preventing hash-chain corruption under concurrency.
-  return db.insertAuditEventSafe(
-    effectiveTenantId,
-    sessionId,
-    tool,
-    null,
-    result,
-    ruleId ?? null,
-    riskScore,
-    reason ?? null,
-    durationMs,
-    createdAt,
-    agentId ?? null,
-    detectionScore ?? null,
-    detectionProvider ?? null,
-    detectionCategory ?? null,
-  );
+  const svc = new AuditService(db);
+  return svc.storeAuditEvent({
+    tenantId, sessionId, tool, result, ruleId, riskScore,
+    reason, durationMs, agentId, detectionScore, detectionProvider, detectionCategory,
+  });
 }
 
-export async function deliverWebhook(
-  webhook: WebhookRow,
-  eventType: string,
-  payload: object,
-): Promise<boolean> {
-  const body = JSON.stringify(payload);
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'X-AgentGuard-Event': eventType,
-    'X-AgentGuard-Delivery': crypto.randomUUID(),
-  };
-  if (webhook.secret) {
-    headers['X-AgentGuard-Signature'] = hmacSignature(body, webhook.secret);
-  }
-  try {
-    const res = await fetch(webhook.url, {
-      method: 'POST',
-      headers,
-      body,
-      signal: AbortSignal.timeout(5000),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+export async function getGlobalKillSwitch(
+  db: IDatabase,
+): Promise<{ active: boolean; at: string | null }> {
+  return new AuditService(db).getGlobalKillSwitch();
+}
+
+export async function setGlobalKillSwitch(
+  db: IDatabase,
+  active: boolean,
+): Promise<void> {
+  return new AuditService(db).setGlobalKillSwitch(active);
+}
+
+export async function getLastHash(
+  db: IDatabase,
+  tenantId: string,
+): Promise<string> {
+  return new AuditService(db).getLastHash(tenantId);
 }
 
 export function fireWebhooksAsync(
@@ -141,41 +78,11 @@ export function fireWebhooksAsync(
   eventType: string,
   payload: object,
 ): void {
-  setTimeout(async () => {
-    const webhooks = await db.getActiveWebhooksForTenant(tenantId);
-    await Promise.all(
-      webhooks.map(async (wh) => {
-        let eventList: string[] = [];
-        try {
-          eventList = JSON.parse(wh.events) as string[];
-        } catch {
-          eventList = [];
-        }
-        if (!eventList.includes(eventType) && !eventList.includes('*')) return;
-
-        const ok = await deliverWebhook(wh, eventType, payload);
-        if (!ok) {
-          // Record failure for DB-backed retry instead of fire-and-forget
-          try {
-            await recordFailedWebhook(
-              db, wh.id, tenantId, eventType,
-              JSON.stringify(payload), 'Initial delivery failed',
-            );
-          } catch (err) {
-            logger.error({ err: err instanceof Error ? err.message : String(err) }, '[webhook] Failed to record webhook failure');
-          }
-        }
-      }),
-    );
-  }, 0);
+  new AuditService(db).fireWebhooksAsync(tenantId, eventType, payload);
 }
 
 // ── CSV Helper ─────────────────────────────────────────────────────────────
 
-/**
- * Escape a value for RFC 4180 CSV: wrap in quotes if it contains
- * commas, double-quotes, or newlines; escape internal quotes by doubling them.
- */
 function csvEscape(value: string): string {
   if (/[",\r\n]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`;
@@ -190,6 +97,7 @@ export function createAuditRoutes(
   auth: AuthMiddleware,
 ): Router {
   const router = Router();
+  const auditService = new AuditService(db);
 
   // ── GET /api/v1/audit ─────────────────────────────────────────────────────
   router.get(
@@ -203,18 +111,14 @@ export function createAuditRoutes(
       );
       const offset = parseInt(String(req.query['offset'] ?? '0'), 10);
 
-      const total = await db.countAuditEvents(tenantId);
-      const events = await db.getAuditEvents(tenantId, limit, offset);
+      const total = await auditService.countEvents(tenantId);
+      const events = await auditService.getEvents(tenantId, limit, offset);
 
       res.json({ tenantId, total, limit, offset, events });
     },
   );
 
   // ── GET /api/v1/audit/events ────────────────────────────────────────────────
-  // Cursor-based paginated audit events.
-  // Query params:
-  //   limit  — 1–200, default 50
-  //   before — ISO 8601 timestamp cursor (optional)
   const AuditEventsQuerySchema = z.object({
     limit: z
       .string()
@@ -236,7 +140,7 @@ export function createAuditRoutes(
 
       const { limit, before } = parsed.data;
       const tenantId = req.tenantId!;
-      const events = await db.getAuditEventsCursor(tenantId, limit, before);
+      const events = await auditService.getEventsCursor(tenantId, limit, before);
       const nextCursor =
         events.length === limit ? events[events.length - 1]!.created_at : null;
 
@@ -250,53 +154,12 @@ export function createAuditRoutes(
     auth.requireTenantAuth,
     async (req: Request, res: Response) => {
       const tenantId = req.tenantId!;
-      const events = await db.getAllAuditEvents(tenantId);
-
-      if (events.length === 0) {
-        return res.json({ valid: true, eventCount: 0, message: 'No events to verify' });
-      }
-
-      let valid = true;
-      const errors: string[] = [];
-      let prevHash = GENESIS_HASH;
-
-      for (const event of events) {
-        if (event.previous_hash !== prevHash) {
-          valid = false;
-          errors.push(
-            `Event ${event.id}: previous_hash mismatch (expected ${prevHash.substring(0, 8)}..., got ${(event.previous_hash ?? '').substring(0, 8)}...)`,
-          );
-        }
-
-        const eventData = `${event.tool}|${event.result}|${event.created_at}`;
-        const expectedHash = makeHash(eventData, prevHash);
-        if (event.hash !== expectedHash) {
-          valid = false;
-          errors.push(
-            `Event ${event.id}: hash mismatch — data may have been tampered`,
-          );
-        }
-
-        prevHash = event.hash ?? prevHash;
-      }
-
-      res.json({
-        valid,
-        eventCount: events.length,
-        errors: errors.length > 0 ? errors : undefined,
-        message: valid
-          ? `Hash chain verified: ${events.length} events intact`
-          : `Hash chain INVALID: ${errors.length} problem(s) detected`,
-      });
+      const result = await auditService.verifyHashChain(tenantId);
+      res.json(result);
     },
   );
 
   // ── GET /api/v1/audit/export ──────────────────────────────────────────────
-  // Export audit trail as CSV or JSON.
-  // Query params:
-  //   format  — "csv" (default) | "json"
-  //   from    — ISO timestamp filter (inclusive)
-  //   to      — ISO timestamp filter (inclusive)
   router.get(
     '/api/v1/audit/export',
     auth.requireTenantAuth,
@@ -306,7 +169,6 @@ export function createAuditRoutes(
       const fromStr = req.query['from'] ? String(req.query['from']) : null;
       const toStr = req.query['to'] ? String(req.query['to']) : null;
 
-      // Validate date params
       const fromDate = fromStr ? new Date(fromStr) : null;
       const toDate = toStr ? new Date(toStr) : null;
       if (fromDate && isNaN(fromDate.getTime())) {
@@ -318,10 +180,8 @@ export function createAuditRoutes(
         return;
       }
 
-      // Fetch all events for tenant (no pagination — export is full dataset)
-      const allEvents = await db.getAllAuditEvents(tenantId);
+      const allEvents = await auditService.getAllEvents(tenantId);
 
-      // Apply date filters
       const events = allEvents.filter((e) => {
         const ts = new Date(e.created_at);
         if (fromDate && ts < fromDate) return false;
@@ -347,16 +207,13 @@ export function createAuditRoutes(
         return;
       }
 
-      // Default: CSV export (streamed)
       const filename = `agentguard-audit-${tenantId}-${new Date().toISOString().slice(0, 10)}.csv`;
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Cache-Control', 'no-store');
 
-      // CSV header
       res.write('timestamp,agent_id,tool,action,result,hash\r\n');
 
-      // Stream rows
       for (const e of events) {
         const row = [
           csvEscape(e.created_at),
@@ -374,39 +231,14 @@ export function createAuditRoutes(
   );
 
   // ── POST /api/v1/audit/repair ─────────────────────────────────────────────
-  // Admin-only: recalculates the hash chain for the authenticated tenant.
   router.post(
     '/api/v1/audit/repair',
     auth.requireTenantAuth,
     async (req: Request, res: Response) => {
       const tenantId = req.tenantId!;
       try {
-        const events = await db.getAllAuditEvents(tenantId);
-        if (events.length === 0) {
-          return res.json({ repaired: 0, total: 0, message: 'No audit events found' });
-        }
-
-        let prevHash = GENESIS_HASH;
-        let repaired = 0;
-
-        for (const event of events) {
-          const eventData = `${event.tool}|${event.result}|${event.created_at}`;
-          const expectedHash = makeHash(eventData, prevHash);
-
-          if (event.previous_hash !== prevHash || event.hash !== expectedHash) {
-            await db.updateAuditEventHashes(event.id, prevHash, expectedHash);
-            repaired++;
-          }
-          prevHash = expectedHash;
-        }
-
-        res.json({
-          repaired,
-          total: events.length,
-          message: repaired > 0
-            ? `Repaired ${repaired} of ${events.length} events`
-            : `Chain already intact — ${events.length} events verified`,
-        });
+        const result = await auditService.repairHashChain(tenantId);
+        res.json(result);
       } catch (e) {
         logger.error({ err: e instanceof Error ? e : String(e) }, '[audit/repair] error');
         res.status(500).json({ error: 'Failed to repair audit chain' });

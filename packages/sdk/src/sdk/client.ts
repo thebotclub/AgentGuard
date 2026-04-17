@@ -2,7 +2,9 @@
 import { randomUUID } from 'crypto';
 import os from 'os';
 import { LocalPolicyEngine } from './local-policy-engine.js';
+import { LocalPolicyEvaluator } from '../core/local-evaluator.js';
 import type { PolicyBundle } from '../core/types.js';
+import type { TrustedPublicKey } from '../core/bundle-types.js';
 
 const SDK_VERSION = '0.9.0';
 
@@ -34,6 +36,7 @@ export class AgentGuard {
   private readonly localEval: boolean;
   private readonly policySyncIntervalMs: number;
   private readonly localEngine: LocalPolicyEngine;
+  private readonly localEvaluator: LocalPolicyEvaluator | null;
   private syncTimer: ReturnType<typeof setInterval> | null = null;
   private syncInFlight = false;
 
@@ -51,6 +54,21 @@ export class AgentGuard {
     localEval?: boolean;
     /** How often to refresh the policy bundle in ms. Default: 60 000 (60s). */
     policySyncIntervalMs?: number;
+    /**
+     * Enable in-process evaluation with Ed25519 bundle verification.
+     * When set, the SDK uses LocalPolicyEvaluator instead of the simpler
+     * LocalPolicyEngine. Bundles are verified against trustedKeys before use.
+     */
+    useLocalEvaluation?: {
+      /** Trusted Ed25519 public keys for bundle verification. */
+      trustedKeys: TrustedPublicKey[];
+      /** Cache TTL in ms. Default: 60 000. */
+      cacheTtlMs?: number;
+      /** Allow expired bundles in offline mode. Default: true. */
+      allowExpired?: boolean;
+      /** Warning callback for stale/expired bundle usage. */
+      onWarning?: (message: string) => void;
+    };
   }) {
     this.apiKey = options.apiKey;
     this.baseUrl = options.baseUrl || 'https://api.agentguard.tech';
@@ -59,9 +77,24 @@ export class AgentGuard {
       process.env['AGENTGUARD_NO_TELEMETRY'] !== '1';
     this.telemetrySent = false;
 
-    this.localEval = options.localEval === true;
+    // Determine local eval mode: explicit localEval flag OR useLocalEvaluation config
+    const useLocalEvalConfig = options.useLocalEvaluation;
+    this.localEval = options.localEval === true || useLocalEvalConfig !== undefined;
     this.policySyncIntervalMs = options.policySyncIntervalMs ?? 60_000;
+
+    // Backwards-compatible: simple LocalPolicyEngine when localEval=true without config
     this.localEngine = new LocalPolicyEngine();
+
+    // Enhanced: LocalPolicyEvaluator when useLocalEvaluation is configured
+    this.localEvaluator = useLocalEvalConfig
+      ? new LocalPolicyEvaluator({
+          cacheTtlMs: useLocalEvalConfig.cacheTtlMs ?? this.policySyncIntervalMs,
+          trustedKeys: useLocalEvalConfig.trustedKeys,
+          allowExpired: useLocalEvalConfig.allowExpired,
+          onWarning: useLocalEvalConfig.onWarning,
+        })
+      : null;
+
     this.traceId = randomUUID();
 
     if (this.localEval) {
@@ -129,6 +162,19 @@ export class AgentGuard {
    */
   async syncPolicies(): Promise<void> {
     try {
+      // When using LocalPolicyEvaluator, fetch signed bundle from bundles endpoint
+      if (this.localEvaluator) {
+        const res = await fetch(`${this.baseUrl}/api/v1/bundles/latest`, {
+          headers: this._headers(),
+        });
+        if (!res.ok) return; // non-fatal
+        const signed = await res.json();
+        // loadSignedBundle returns false if verification fails — keep old bundle
+        this.localEvaluator.loadSignedBundle(signed);
+        return;
+      }
+
+      // Simple LocalPolicyEngine path (backwards-compatible)
       const res = await fetch(`${this.baseUrl}/api/v1/policy/bundle`, {
         headers: this._headers(),
       });
@@ -169,6 +215,9 @@ export class AgentGuard {
     if (this.auditFlushTimer) {
       clearInterval(this.auditFlushTimer);
       this.auditFlushTimer = null;
+    }
+    if (this.localEvaluator) {
+      this.localEvaluator.destroy();
     }
     // Best-effort final flush
     this._flushAudit().catch(() => {});
@@ -308,7 +357,35 @@ export class AgentGuard {
   }> {
     this.sendTelemetry();
 
-    // ── Local eval path ────────────────────────────────────────────────
+    // ── Local eval path: LocalPolicyEvaluator (signed bundles) ─────────
+    if (this.localEvaluator && this.localEvaluator.isReady()) {
+      const actionReq = {
+        id: randomUUID(),
+        agentId: 'local-sdk',
+        tool: action.tool,
+        params: action.params ?? {},
+        inputDataLabels: [],
+        timestamp: new Date().toISOString(),
+      };
+      const evalResult = this.localEvaluator.evaluate(actionReq);
+
+      // Queue for batched audit
+      this._queueAuditEvent({
+        tool: action.tool,
+        result: evalResult.result,
+        timestamp: new Date().toISOString(),
+      });
+
+      return {
+        result: evalResult.result,
+        matchedRuleId: evalResult.matchedRuleId ?? undefined,
+        riskScore: evalResult.riskScore,
+        reason: evalResult.reason,
+        durationMs: evalResult.durationMs,
+      };
+    }
+
+    // ── Local eval path: LocalPolicyEngine (simple, unsigned) ──────────
     if (this.localEval && this.localEngine.isReady()) {
       const evalResult = this.localEngine.evaluate(action.tool, action.params);
 

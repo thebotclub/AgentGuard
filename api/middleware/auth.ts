@@ -18,6 +18,7 @@ import {
   verifyJwt,
 } from './jwt-auth.js';
 import { nextWithRlsContext } from './rls-tenant-context.js';
+import { logger } from '../lib/logger.js';
 
 // ── Key verification helper ────────────────────────────────────────────────
 
@@ -57,6 +58,10 @@ async function lookupTenant(db: IDatabase, apiKey: string): Promise<TenantRow | 
       if (!valid) return null;
     }
     // key_hash is null → legacy row with sha256 only (migration period), accept it
+      logger.warn('[auth] Legacy plaintext key authentication used — key should be migrated to hashed format', {
+        tenantId: keyRow.tenant_id,
+        migration: 'key_hash_missing',
+      });
   } else {
     // Fallback: legacy plaintext lookup for keys that predate the migration
     keyRow = await db.getApiKey(apiKey);
@@ -67,6 +72,10 @@ async function lookupTenant(db: IDatabase, apiKey: string): Promise<TenantRow | 
       await bcrypt.compare(apiKey, DUMMY_BCRYPT_HASH);
       return null;
     }
+    logger.warn('[auth] Legacy plaintext key authentication used — key should be migrated to hashed format', {
+      tenantId: keyRow.tenant_id,
+      migration: 'plaintext_fallback',
+    });
   }
 
   await db.touchApiKey(apiKey);

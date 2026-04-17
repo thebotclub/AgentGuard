@@ -48,6 +48,7 @@ import type {
   ScimGroupMemberRow,
 } from './db-interface.js';
 import { GENESIS_HASH } from '../packages/sdk/src/core/types.js';
+import { logger } from './lib/logger.js';
 
 // ── Key hashing helpers ────────────────────────────────────────────────────
 
@@ -311,10 +312,10 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
     // Ensure parent directory exists
     const dir = path.dirname(path.resolve(dbPath));
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    console.log(`[db] opening SQLite at ${dbPath}`);
+    logger.info(`[db] opening SQLite at ${dbPath}`);
     db = new Database(dbPath);
   } else {
-    console.log('[db] opening SQLite in-memory');
+    logger.info('[db] opening SQLite in-memory');
     db = new Database(':memory:');
   }
 
@@ -410,7 +411,7 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         ).run(sha256, prefix, row.key);
       }
       if (unhashedRows.length > 0) {
-        console.log(`[db] migrated ${unhashedRows.length} existing API key(s) to sha256 lookup`);
+        logger.info(`[db] migrated ${unhashedRows.length} existing API key(s) to sha256 lookup`);
       }
 
       // ── Fix 1: Agent API key hashing columns ──────────────────────────────
@@ -429,7 +430,7 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         db.prepare('UPDATE agents SET api_key_sha256 = ? WHERE id = ?').run(agentSha256, agentRow.id);
       }
       if (unhashedAgents.length > 0) {
-        console.log(`[db] migrated ${unhashedAgents.length} existing agent key(s) to sha256 lookup`);
+        logger.info(`[db] migrated ${unhashedAgents.length} existing agent key(s) to sha256 lookup`);
       }
       try { db.exec('CREATE INDEX IF NOT EXISTS idx_agents_key_sha256 ON agents(api_key_sha256)'); } catch { /* already exists */ }
 
@@ -823,7 +824,7 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
         CREATE INDEX IF NOT EXISTS idx_scim_group_members_user ON scim_group_members(user_id);
       `);
 
-      console.log('[db] SQLite schema ready');
+      logger.info('[db] SQLite schema ready');
     },
 
     async close(): Promise<void> {

@@ -7,6 +7,7 @@
 
 import type { IDatabase } from '../db-interface.js';
 import owaspControlsData from './owasp-controls.json';
+import { logger } from './logger.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -455,7 +456,7 @@ export async function generateOWASPReport(
       try {
         result = await checkFn(db, tenantId, agentId ?? null);
       } catch (err) {
-        console.error(`[compliance] check ${control.id} (${control.check}) failed:`, err);
+        logger.error(`[compliance] check ${control.id} (${control.check}) failed:`, err);
         result = {
           status: 'not_covered',
           score: 0,

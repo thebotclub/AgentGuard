@@ -5,6 +5,7 @@
  * Uses native fetch() — no Slack SDK dependency.
  */
 import type { ApprovalRow } from '../db-interface.js';
+import { logger } from './logger.js';
 
 const DASHBOARD_URL = process.env['DASHBOARD_URL'] ?? 'https://app.agentguard.tech';
 
@@ -154,14 +155,14 @@ export async function sendSlackApprovalRequest(
 
     if (!response.ok) {
       const body = await response.text().catch(() => '');
-      console.error(`[slack-hitl] Webhook POST failed: ${response.status} ${body}`);
+      logger.error(`[slack-hitl] Webhook POST failed: ${response.status} ${body}`);
       return { ok: false, status: response.status, error: `Slack returned ${response.status}: ${body}` };
     }
 
     return { ok: true, status: response.status };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[slack-hitl] fetch error: ${msg}`);
+    logger.error(`[slack-hitl] fetch error: ${msg}`);
     return { ok: false, error: msg };
   }
 }
