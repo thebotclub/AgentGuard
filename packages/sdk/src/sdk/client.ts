@@ -168,7 +168,7 @@ export class AgentGuard {
           headers: this._headers(),
         });
         if (!res.ok) return; // non-fatal
-        const signed: SignedPolicyBundle = await res.json();
+        const signed = await res.json() as SignedPolicyBundle;
         // loadSignedBundle returns false if verification fails — keep old bundle
         this.localEvaluator.loadSignedBundle(signed);
         return;
@@ -378,7 +378,7 @@ export class AgentGuard {
 
       return {
         result: evalResult.result,
-        matchedRuleId: evalResult.matchedRuleId ?? undefined,
+        matchedRuleId: evalResult.matchedRuleId as string | undefined,
         riskScore: evalResult.riskScore,
         reason: evalResult.reason,
         durationMs: evalResult.durationMs,
