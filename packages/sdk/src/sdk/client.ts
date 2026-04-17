@@ -378,7 +378,7 @@ export class AgentGuard {
 
       return {
         result: evalResult.result,
-        matchedRuleId: evalResult.matchedRuleId as string | undefined,
+        matchedRuleId: evalResult.matchedRuleId != null ? evalResult.matchedRuleId : undefined,
         riskScore: evalResult.riskScore,
         reason: evalResult.reason,
         durationMs: evalResult.durationMs,
