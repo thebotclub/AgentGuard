@@ -380,7 +380,7 @@ export class AgentGuard {
         result: evalResult.result,
         matchedRuleId: evalResult.matchedRuleId != null ? String(evalResult.matchedRuleId) : undefined,
         riskScore: evalResult.riskScore,
-        reason: evalResult.reason,
+        reason: evalResult.reason ?? '',
         durationMs: evalResult.durationMs,
       };
     }
