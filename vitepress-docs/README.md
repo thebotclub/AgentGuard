@@ -1,38 +1,42 @@
 # VitePress Docs — Incomplete Migration
 
-This directory contains the VitePress-powered documentation website.
-It was created as part of a docs migration (see commit `feat(M3-34): migrate
-docs to VitePress`) but the migration is **incomplete**.
+This directory contains a partial VitePress documentation site.
+It is **not canonical** — all content is derived from [`docs/`](../docs/).
 
 ## Current Status
 
-The canonical documentation content lives in the top-level [`docs/`](../docs/)
-directory (58K+ lines, 123 files). This VitePress site contains only a subset
-of that content (~3.6K lines, 18 files).
+The canonical documentation content lives in the top-level [`docs/`](../docs/) directory.
 
-### Missing Pages
+### Unique Content Migrated Out
 
-The sidebar configuration (`.vitepress/config.mts`) references **20 pages that
-do not exist** as files:
+The following unique content has been moved to canonical locations:
 
-- `guide/configuration.md`, `guide/policy-engine.md`, `guide/kill-switch.md`
-- `guide/audit-trail.md`, `guide/pii-detection.md`
-- `guide/sdk-typescript.md`, `guide/sdk-python.md`, `guide/mcp-servers.md`
-- `api/authentication.md`, `api/evaluate.md`, `api/agents.md`
-- `api/audit.md`, `api/policy.md`, `api/approvals.md`, `api/analytics.md`
-- `architecture/policy-engine.md`, `architecture/deployment.md`
-- `security/compliance.md`, `security/pentest.md`
-- `changelog.md`
+| Original | Moved To |
+|----------|----------|
+| `api/overview.md` | [`docs/api-reference/API_OVERVIEW.md`](../docs/api-reference/API_OVERVIEW.md) |
+| `api/swagger.md` | [`docs/api-reference/SWAGGER.md`](../docs/api-reference/SWAGGER.md) |
+| `api/spec-download.md` | [`docs/api-reference/SPEC_DOWNLOAD.md`](../docs/api-reference/SPEC_DOWNLOAD.md) |
+| `getting-started/troubleshooting.md` | [`docs/getting-started/TROUBLESHOOTING.md`](../docs/getting-started/TROUBLESHOOTING.md) |
 
-## Build Scripts
+### Remaining Pages
 
-The root `package.json` provides these scripts:
+These pages overlap with content in `docs/` and are kept for reference until the VitePress migration is complete:
 
-```
-npm run docs:dev      # VitePress dev server
-npm run docs:build    # Build static site
-npm run docs:preview  # Preview built site
-```
+- `guide/introduction.md` → overlaps with `docs/FEATURE_MATRIX.md`
+- `guide/getting-started.md` → overlaps with `docs/SELF_HOSTED.md`
+- `getting-started/quickstart.md` → overlaps with `README.md`
+- `getting-started/architecture.md` → overlaps with `docs/ARCHITECTURE.md`
+- `architecture/overview.md` → same as `docs/ARCHITECTURE.md`
+
+### Missing Pages (20 sidebar references without files)
+
+`guide/configuration.md`, `guide/policy-engine.md`, `guide/kill-switch.md`,
+`guide/audit-trail.md`, `guide/pii-detection.md`, `guide/sdk-typescript.md`,
+`guide/sdk-python.md`, `guide/mcp-servers.md`, `api/authentication.md`,
+`api/evaluate.md`, `api/agents.md`, `api/audit.md`, `api/policy.md`,
+`api/approvals.md`, `api/analytics.md`, `architecture/policy-engine.md`,
+`architecture/deployment.md`, `security/compliance.md`, `security/pentest.md`,
+`changelog.md`
 
 ## Path Forward
 

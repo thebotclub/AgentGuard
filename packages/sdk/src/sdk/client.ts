@@ -6,7 +6,7 @@ import { LocalPolicyEvaluator } from '../core/local-evaluator.js';
 import type { PolicyBundle } from '../core/types.js';
 import type { SignedPolicyBundle, TrustedPublicKey } from '../core/bundle-types.js';
 
-const SDK_VERSION = '0.9.0';
+const SDK_VERSION = '0.10.0';
 
 // ─── Telemetry batch event ─────────────────────────────────────────────────
 

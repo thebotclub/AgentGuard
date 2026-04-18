@@ -84,7 +84,7 @@ Here's the exact path an evaluation takes through the system:
 2. SDK serializes the call to JSON and sends:
    POST /api/v1/evaluate
    x-api-key: ag_...
-   { "tool": "database_query", "action": "execute", "input": { "query": "..." } }
+   { "tool": "database_query", "params": { "query": "..." } }
          │
          ▼
 3. API auth middleware

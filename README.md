@@ -49,8 +49,7 @@ const guard = new AgentGuard({ apiKey: process.env.AG_API_KEY });
 // Evaluate a tool call before executing it
 const decision = await guard.evaluate({
   tool: 'database_query',
-  action: 'execute',
-  input: { query: 'DROP TABLE users' }
+  params: { query: 'DROP TABLE users' }
 });
 
 // → { result: 'block', reason: 'Destructive SQL operation', riskScore: 95 }
@@ -64,7 +63,7 @@ pip install agentguard-tech
 from agentguard import AgentGuard
 
 guard = AgentGuard(api_key="ag_live_...")
-decision = guard.evaluate(tool="shell_exec", action="run", input={"cmd": "rm -rf /"})
+decision = guard.evaluate(tool="shell_exec", params={"cmd": "rm -rf /"})
 # → blocked
 ```
 
@@ -118,9 +117,9 @@ Evaluate up to 50 tool calls in one request. Each runs in parallel with isolated
 curl -X POST https://api.agentguard.tech/api/v1/evaluate/batch \
   -H "x-api-key: $AG_API_KEY" \
   -d '{"calls":[
-    {"tool":"database_query","action":"read","input":{"table":"users"}},
-    {"tool":"shell_exec","action":"run","input":{"cmd":"ls"}},
-    {"tool":"http_post","action":"send","input":{"url":"https://evil.com/exfil"}}
+    {"tool":"database_query","params":{"table":"users"}},
+    {"tool":"shell_exec","params":{"cmd":"ls"}},
+    {"tool":"http_post","params":{"url":"https://evil.com/exfil"}}
   ]}'
 ```
 
