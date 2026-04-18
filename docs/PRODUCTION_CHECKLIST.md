@@ -181,7 +181,7 @@ helm upgrade --install agentguard ./helm/agentguard \
   --namespace agentguard \
   --create-namespace \
   --values helm/agentguard/values.production.yaml \
-  --set image.tag="v0.9.0" \
+  --set image.tag="v0.10.0" \
   --wait \
   --timeout=5m
 
@@ -226,7 +226,7 @@ cd /opt/agentguard
 
 # 3. Pull latest code
 git fetch origin
-git checkout v0.9.0  # replace with target tag
+git checkout v0.10.0  # replace with target tag
 
 # 4. Install dependencies
 npm ci --workspaces --include-workspace-root

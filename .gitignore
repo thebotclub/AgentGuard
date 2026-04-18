@@ -31,3 +31,8 @@ __pycache__/
 
 # E2E test seed data (contains ephemeral JWT tokens)
 tests/e2e/.seed-data.json
+.DS_Store
+
+# Remotion — moved to separate repo (marketing video tooling, not runtime dependency)
+# See: Task 2.5 in PROJECT.md
+remotion/

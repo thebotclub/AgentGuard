@@ -12,6 +12,7 @@ import path from 'path';
 import yaml from 'js-yaml';
 import type { PolicyDocument } from '../../packages/sdk/src/core/types.js';
 import type { PolicyTemplate } from '../types.js';
+import { logger } from './logger.js';
 
 // ── Template Directory ─────────────────────────────────────────────────────
 
@@ -34,15 +35,15 @@ export function loadTemplates(): void {
         const parsed = yaml.load(raw) as PolicyTemplate;
         if (parsed?.id) templateCache.set(parsed.id, parsed);
       } catch (e) {
-        console.error(
+        logger.error(
           `[templates] failed to load ${file}:`,
           e instanceof Error ? e.message : e,
         );
       }
     }
-    console.log(`[templates] loaded ${templateCache.size} policy templates`);
+    logger.info(`[templates] loaded ${templateCache.size} policy templates`);
   } catch (e) {
-    console.error(
+    logger.error(
       '[templates] failed to load templates dir:',
       e instanceof Error ? e.message : e,
     );

@@ -11,6 +11,7 @@
  * (single-instance dev / test environments).
  */
 import { EventEmitter } from 'events';
+import { logger } from './logger.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -60,7 +61,7 @@ async function ensureInitialized(): Promise<void> {
 
   const redisUrl = process.env['REDIS_URL'];
   if (!redisUrl) {
-    console.info('[redis-pubsub] REDIS_URL not set — using in-process fallback');
+    logger.info('[redis-pubsub] REDIS_URL not set — using in-process fallback');
     return;
   }
 
@@ -101,18 +102,18 @@ async function ensureInitialized(): Promise<void> {
     });
 
     subscriberClient!.on('error', (err: unknown) => {
-      console.warn('[redis-pubsub] subscriber error:', (err as Error).message ?? err);
+      logger.warn('[redis-pubsub] subscriber error:', (err as Error).message ?? err);
       redisAvailable = false;
     });
     publisherClient!.on?.('error', (err: unknown) => {
-      console.warn('[redis-pubsub] publisher error:', (err as Error).message ?? err);
+      logger.warn('[redis-pubsub] publisher error:', (err as Error).message ?? err);
       redisAvailable = false;
     });
 
     redisAvailable = true;
-    console.info('[redis-pubsub] connected:', redisUrl.replace(/:[^:@]*@/, ':***@'));
+    logger.info('[redis-pubsub] connected:', redisUrl.replace(/:[^:@]*@/, ':***@'));
   } catch (err) {
-    console.warn('[redis-pubsub] init failed, using in-process fallback:', (err as Error).message ?? err);
+    logger.warn('[redis-pubsub] init failed, using in-process fallback:', (err as Error).message ?? err);
     redisAvailable = false;
   }
 }
@@ -135,7 +136,7 @@ export async function publishEvent(event: AgentGuardEvent): Promise<void> {
       await publisherClient.publish(channel, message);
       return;
     } catch (err) {
-      console.warn('[redis-pubsub] publish failed, falling back:', (err as Error).message ?? err);
+      logger.warn('[redis-pubsub] publish failed, falling back:', (err as Error).message ?? err);
       redisAvailable = false;
     }
   }
@@ -164,7 +165,7 @@ export async function subscribeTenant(tenantId: string, listener: Listener): Pro
     if (count === 1) {
       // First subscriber for this channel — issue SUBSCRIBE
       subscriberClient.subscribe(channel).catch((err: unknown) => {
-        console.warn('[redis-pubsub] subscribe failed:', (err as Error).message ?? err);
+        logger.warn('[redis-pubsub] subscribe failed:', (err as Error).message ?? err);
       });
     }
   }

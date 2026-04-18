@@ -77,7 +77,7 @@ export default function Nav() {
           className="ag-nav-links"
         >
           {NAV_LINKS.map((link) => {
-            const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+            const active = pathname != null && (pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href)));
             return (
               <li key={link.href}>
                 <Link
@@ -120,7 +120,7 @@ export default function Nav() {
       >
         <ul role="list" className="ag-mobile-links">
           {NAV_LINKS.map((link) => {
-            const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+            const active = pathname != null && (pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href)));
             return (
               <li key={link.href}>
                 <Link

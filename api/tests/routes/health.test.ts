@@ -29,10 +29,14 @@ describe('GET /api/v1/health/detailed', () => {
     const res = await request(app).get('/api/v1/health/detailed');
 
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe('ok');
+    // Redis is typically not configured in CI → overall status is 'degraded'
+    expect(['ok', 'degraded']).toContain(res.body.status);
     expect(res.body.components.database.status).toBe('ok');
     expect(typeof res.body.components.database.latencyMs).toBe('number');
     expect(res.body.components.database.latencyMs).toBeGreaterThanOrEqual(0);
+    // Redis component present (degraded when not configured, not a failure)
+    expect(res.body.components.redis).toBeDefined();
+    expect(['ok', 'degraded']).toContain(res.body.components.redis.status);
   });
 
   it('returns 503 with status "degraded" when database query fails', async () => {
@@ -43,6 +47,8 @@ describe('GET /api/v1/health/detailed', () => {
     expect(res.status).toBe(503);
     expect(res.body.status).toBe('degraded');
     expect(res.body.components.database.status).toBe('error');
+    // Redis component still present
+    expect(res.body.components.redis).toBeDefined();
   });
 
   it('includes version, uptime, and timestamp in response', async () => {

@@ -179,7 +179,7 @@ export const PolicyDocumentSchema = z.object({
   description: z.string().max(2000).optional(),
   version: z.string().regex(/^\d+\.\d+\.\d+$/, 'Version must be semver e.g. 1.0.0'),
   tenantId: z.string().optional(), // Set by Control Plane; may not be in user-authored YAML
-  default: z.enum(['allow', 'block', 'monitor']).default('monitor'),
+  default: z.enum(['allow', 'block', 'monitor']).default('block'),
   targets: TargetsSchema.optional(),
   budgets: BudgetsSchema.optional(),
   rules: z.array(PolicyRuleSchema).min(0).max(500),

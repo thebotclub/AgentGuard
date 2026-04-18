@@ -56,8 +56,7 @@ const guard = new AgentGuard({ apiKey: process.env.AGENTGUARD_API_KEY });
 
 const decision = await guard.evaluate({
   tool: 'database_query',
-  action: 'execute',
-  input: { query: 'DROP TABLE users' }
+  params: { query: 'DROP TABLE users' }
 });
 
 // → { result: 'block', reason: 'Destructive SQL operation', riskScore: 95 }

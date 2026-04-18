@@ -17,6 +17,7 @@ import crypto from 'crypto';
 import type { IDatabase, TenantRow } from './db-interface.js';
 import { getMcpMiddleware } from './mcp-middleware.js';
 import type { McpRequest, McpToolCallParams } from './mcp-middleware.js';
+import { logger } from './lib/logger.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -339,7 +340,7 @@ export function createMcpRoutes(db: IDatabase): Router {
           res.status(409).json({ error: 'An MCP config with this name already exists for your tenant' });
           return;
         }
-        console.error('[mcp/config] create error:', msg);
+        logger.error('[mcp/config] create error:', msg);
         res.status(500).json({ error: 'Failed to create MCP config' });
       }
     }

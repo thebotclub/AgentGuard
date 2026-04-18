@@ -482,7 +482,7 @@ curl http://localhost:3000/health | python3 -m json.tool
 
 ```bash
 # Roll back to a specific git tag
-git checkout v0.9.0
+git checkout v0.10.0
 docker compose build
 docker compose up -d
 ```
@@ -726,4 +726,4 @@ DATABASE_URL=postgresql://agentguard:password@postgres:5432/agentguard?sslmode=r
 
 ---
 
-*Last updated: March 2026 — AgentGuard v0.9.0*
+*Last updated: March 2026 — AgentGuard v0.10.0*

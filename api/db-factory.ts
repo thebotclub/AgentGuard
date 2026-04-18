@@ -13,6 +13,7 @@
  */
 
 import type { IDatabase } from './db-interface.js';
+import { logger } from './lib/logger.js';
 
 export interface DbWithRaw {
   db: IDatabase;
@@ -32,7 +33,7 @@ export async function createDb(): Promise<DbWithRaw> {
   const databaseUrl = process.env['DATABASE_URL'];
 
   if (dbType === 'postgres' && databaseUrl) {
-    console.log('[db] Using PostgreSQL adapter');
+    logger.info('[db] Using PostgreSQL adapter');
     const { createPostgresAdapter } = await import('./db-postgres.js');
     const db = await createPostgresAdapter(databaseUrl);
     await db.initialize();
@@ -41,7 +42,7 @@ export async function createDb(): Promise<DbWithRaw> {
 
   // Default: SQLite
   if (dbType === 'postgres') {
-    console.warn('[db] ⚠️  DB_TYPE=postgres but DATABASE_URL is not set — falling back to SQLite');
+    logger.warn('[db] ⚠️  DB_TYPE=postgres but DATABASE_URL is not set — falling back to SQLite');
   }
 
   const dbPath = process.env['AG_DB_PATH'] ?? undefined;

@@ -12,6 +12,7 @@
  * No TTL — explicit SET/DEL on toggle. Self-heals on Redis miss via DB fallback.
  */
 import { getRedisClient } from './redis-rate-limiter.js';
+import { logger } from './logger.js';
 
 // ── Global kill switch ────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ export async function setGlobalKillSwitchCache(active: boolean): Promise<void> {
       }
     }
   } catch (err) {
-    console.warn('[kill-switch-cache] Redis write failed (DB is source of truth):', err instanceof Error ? err.message : err);
+    logger.warn('[kill-switch-cache] Redis write failed (DB is source of truth):', err instanceof Error ? err.message : err);
   }
 }
 
@@ -79,6 +80,6 @@ export async function setTenantKillSwitchCache(tenantId: string, active: boolean
       }
     }
   } catch (err) {
-    console.warn('[kill-switch-cache] Redis write failed (DB is source of truth):', err instanceof Error ? err.message : err);
+    logger.warn('[kill-switch-cache] Redis write failed (DB is source of truth):', err instanceof Error ? err.message : err);
   }
 }
