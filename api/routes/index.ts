@@ -79,7 +79,7 @@ export function registerRoutes(app: Express, db: IDatabase, auth: Auth): void {
     const ks = await getGlobalKillSwitch(db);
     res.json({
       name: 'AgentGuard Policy Engine API',
-      version: '0.9.0',
+      version: '0.10.0',
       status: 'online',
       killSwitch: { active: ks.active, activatedAt: ks.at },
       endpoints: {
@@ -148,7 +148,7 @@ export function registerRoutes(app: Express, db: IDatabase, auth: Auth): void {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.status(dbOk ? 200 : 503).json({
       status: dbOk ? 'ok' : 'degraded',
-      version: '0.9.0',
+      version: '0.10.0',
     });
   });
 
@@ -172,7 +172,7 @@ export function registerRoutes(app: Express, db: IDatabase, auth: Auth): void {
     res.status(dbOk ? 200 : 503).json({
       status: dbOk ? 'ok' : 'degraded',
       engine: 'agentguard',
-      version: '0.9.0',
+      version: '0.10.0',
       uptime: Math.floor(process.uptime()),
       killSwitch: ks.active,
       db: dbOk ? db.type : 'error',

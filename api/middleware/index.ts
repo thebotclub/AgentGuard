@@ -94,7 +94,7 @@ export function setupMiddleware(app: express.Express): void {
 
     res.on('finish', () => {
       const duration = performance.now() - start;
-      const route = req.route?.path || req.path;
+      const route = req.route?.path || '<unmatched>';
       const method = req.method;
       const status = res.statusCode;
 
