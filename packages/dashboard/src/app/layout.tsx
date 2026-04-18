@@ -2,7 +2,6 @@
  * Root layout — AgentGuard Dashboard
  */
 import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
 import Providers from './providers';
 import Nav from './nav';
 import './globals.css';
@@ -12,11 +11,7 @@ export const metadata: Metadata = {
   description: 'Monitor, control, and audit your AI agents in real-time.',
 };
 
-interface RootLayoutProps {
-  children: ReactNode;
-}
-
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body style={{ margin: 0, fontFamily: 'system-ui, -apple-system, sans-serif', background: 'var(--bg-page)', color: 'var(--text-primary)' }}>

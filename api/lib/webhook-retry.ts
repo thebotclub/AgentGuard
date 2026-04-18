@@ -12,6 +12,7 @@ import type { IDatabase } from '../db-interface.js';
 import type { FailedWebhookRow } from '../db-interface.js';
 import { getCircuitBreaker, CircuitBreakerOpenError } from './circuit-breaker.js';
 import { publishEvent } from './redis-pubsub.js';
+import { logger } from './logger.js';
 
 const MAX_ATTEMPTS = 5;
 // Exponential backoff schedule in ms: 30s, 1m, 2m, 5m, 10m
@@ -80,7 +81,7 @@ export async function processRetryBatch(
       // Max attempts reached — dead letter
       await db.updateFailedWebhook(row.id, row.attempt_count, row.next_retry_at, 'dead_lettered', 'Max retry attempts exceeded');
       deadLettered++;
-      console.warn(`[webhook-retry] Dead lettered webhook ${row.id} after ${row.attempt_count} attempts`);
+      logger.warn(`[webhook-retry] Dead lettered webhook ${row.id} after ${row.attempt_count} attempts`);
     } else {
       // Schedule next retry with exponential backoff
       const nextAttempt = row.attempt_count; // 0-indexed for BACKOFF_MS
@@ -106,10 +107,10 @@ export function startWebhookRetryCron(
     try {
       const result = await processRetryBatch(db, deliverFn);
       if (result.retried > 0) {
-        console.info(`[webhook-retry] Processed ${result.retried} retries: ${result.succeeded} succeeded, ${result.deadLettered} dead-lettered`);
+        logger.info(`[webhook-retry] Processed ${result.retried} retries: ${result.succeeded} succeeded, ${result.deadLettered} dead-lettered`);
       }
     } catch (err) {
-      console.error('[webhook-retry] Cron error:', err instanceof Error ? err.message : err);
+      logger.error('[webhook-retry] Cron error:', err instanceof Error ? err.message : err);
     }
   }, 30_000);
   retryInterval.unref(); // Don't block process exit

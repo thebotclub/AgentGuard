@@ -13,6 +13,7 @@ import type { Request, Response, NextFunction } from 'express';
 import type { IDatabase } from '../db-interface.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- imported for Redis quota path (wired in quota enforcer below)
 import { checkRateLimit } from './redis-rate-limiter.js';
+import { logger } from './logger.js';
 
 // ── Tier definitions ──────────────────────────────────────────────────────
 
@@ -307,7 +308,7 @@ export function createTenantQuotaMiddleware(
       next();
     } catch (err) {
       // Quota check failure should not block the request — degrade gracefully
-      console.error('[tenant-quota] check failed, allowing request:', err instanceof Error ? err.message : err);
+      logger.error('[tenant-quota] check failed, allowing request:', err instanceof Error ? err.message : err);
       next();
     }
   };

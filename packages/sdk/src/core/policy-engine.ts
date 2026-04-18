@@ -538,10 +538,45 @@ export class PolicyCompiler {
       defaultAction: doc.default,
       budgets: doc.budgets,
       rules: compiledRules,
-      toolIndex,
+      toolIndex: PolicyCompiler.buildToolIndex(compiledRules),
       checksum,
       ruleCount: compiledRules.length,
     };
+  }
+
+  /**
+   * Build a tool index from compiled rules.
+   * Extracted for reuse by LocalPolicyEvaluator.
+   */
+  static buildToolIndex(rules: CompiledRule[]): Record<string, number[]> {
+    const toolIndex: Record<string, number[]> = {};
+    for (let i = 0; i < rules.length; i++) {
+      const rule = rules[i];
+      if (!rule) continue;
+      const tc = rule.toolCondition;
+      if (!tc) {
+        if (!toolIndex['__no_tool__']) toolIndex['__no_tool__'] = [];
+        toolIndex['__no_tool__'].push(i);
+        continue;
+      }
+      for (const name of tc.in ?? []) {
+        if (!toolIndex[name]) toolIndex[name] = [];
+        toolIndex[name].push(i);
+      }
+      if (tc.matches && tc.matches.length > 0) {
+        if (!toolIndex['*']) toolIndex['*'] = [];
+        toolIndex['*'].push(i);
+      }
+      if (tc.regex) {
+        if (!toolIndex['*']) toolIndex['*'] = [];
+        toolIndex['*'].push(i);
+      }
+      if (tc.not_in && !tc.in && !tc.matches && !tc.regex) {
+        if (!toolIndex['*']) toolIndex['*'] = [];
+        toolIndex['*'].push(i);
+      }
+    }
+    return toolIndex;
   }
 
   /** Compile a single PolicyRule into a CompiledRule. */

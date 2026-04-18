@@ -15,7 +15,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import crypto from 'node:crypto';
-import { createPolicyGitWebhookRoutes } from '../../routes/policy-git-webhook.js';
+import { createPolicyGitWebhookRoutes } from '../../routes/policy-git-webhook/index.js';
 import { createMockDb } from '../helpers/mock-db.js';
 import { buildApp } from '../helpers/create-app.js';
 import type { IDatabase, GitWebhookConfigRow } from '../../db-interface.js';

@@ -49,6 +49,7 @@ import type {
 import { randomUUID } from 'crypto';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { logger } from './lib/logger.js';
 
 // ── Key hashing helpers ────────────────────────────────────────────────────
 
@@ -559,7 +560,7 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
 
   // Log pool errors to avoid unhandled rejection crashes
   pool.on('error', (err: Error) => {
-    console.error('[pg] pool error:', err.message);
+    logger.error('[pg] pool error:', err.message);
   });
 
   // ── Helper: convert positional ? params to $1, $2 ... ─────────────────────
@@ -738,7 +739,7 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
     async initialize(): Promise<void> {
-      console.log('[pg] running schema migration...');
+      logger.info('[pg] running schema migration...');
       await pool.query(SCHEMA_SQL);
       await pool.query(SEED_SETTINGS_SQL);
 
@@ -776,7 +777,7 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         );
       }
       if (unhashedRows.length > 0) {
-        console.log(`[pg] migrated ${unhashedRows.length} existing API key(s) to sha256 lookup`);
+        logger.info(`[pg] migrated ${unhashedRows.length} existing API key(s) to sha256 lookup`);
       }
 
       // Create index on key_sha256 (after column exists)
@@ -800,7 +801,7 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         await pool.query('UPDATE agents SET api_key_sha256 = $1 WHERE id = $2', [agentSha256, agentRow.id]);
       }
       if (unhashedAgents.length > 0) {
-        console.log(`[pg] migrated ${unhashedAgents.length} existing agent key(s) to sha256 lookup`);
+        logger.info(`[pg] migrated ${unhashedAgents.length} existing agent key(s) to sha256 lookup`);
       }
       try { await pool.query('CREATE INDEX IF NOT EXISTS idx_agents_key_sha256 ON agents(api_key_sha256)'); } catch { /* already exists */ }
 
@@ -848,11 +849,11 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           if (!msg.includes('does not exist')) {
-            console.log(`[pg] RLS setup for ${table}: ${msg}`);
+            logger.info(`[pg] RLS setup for ${table}: ${msg}`);
           }
         }
       }
-      console.log(`[pg] RLS policies applied on ${rlsTablesWithColumn.length} tables`);
+      logger.info(`[pg] RLS policies applied on ${rlsTablesWithColumn.length} tables`);
 
       // Migration: feedback and telemetry tables
       await pool.query(`
@@ -919,7 +920,7 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
         CREATE INDEX IF NOT EXISTS idx_agent_hierarchy_child ON agent_hierarchy(child_agent_id);
       `);
 
-      console.log('[pg] schema ready');
+      logger.info('[pg] schema ready');
     },
 
     async close(): Promise<void> {
