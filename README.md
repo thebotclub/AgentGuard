@@ -46,13 +46,33 @@ import { AgentGuard } from '@the-bot-club/agentguard';
 
 const guard = new AgentGuard({ apiKey: process.env.AG_API_KEY });
 
-// Evaluate a tool call before executing it
-const decision = await guard.evaluate({
+// By default, dangerous operations are BLOCKED.
+// This is the secure-by-default behavior — unknown tools are denied.
+const result1 = await guard.evaluate({
+  tool: 'shell_exec',
+  params: { cmd: 'rm -rf /' }
+});
+// → { result: 'block', reason: 'No matching rule — default action is block (fail-closed)', riskScore: 85 }
+
+const result2 = await guard.evaluate({
   tool: 'database_query',
   params: { query: 'DROP TABLE users' }
 });
-
 // → { result: 'block', reason: 'Destructive SQL operation', riskScore: 95 }
+
+// Safe, approved tools are ALLOWED.
+const result3 = await guard.evaluate({
+  tool: 'file_read',
+  params: { path: '/app/data/config.json' }
+});
+// → { result: 'allow', reason: 'Matched allow-read rule', riskScore: 5 }
+
+// Sensitive reads are MONITORED (allowed but logged for review).
+const result4 = await guard.evaluate({
+  tool: 'file_read',
+  params: { path: '/home/user/.ssh/id_rsa' }
+});
+// → { result: 'monitor', reason: 'Matched monitor-sensitive-reads rule', riskScore: 60 }
 ```
 
 ```python
@@ -63,9 +83,18 @@ pip install agentguard-tech
 from agentguard import AgentGuard
 
 guard = AgentGuard(api_key="ag_live_...")
-decision = guard.evaluate(tool="shell_exec", params={"cmd": "rm -rf /"})
-# → blocked
+
+# Dangerous = blocked
+result = guard.evaluate(tool="shell_exec", params={"cmd": "rm -rf /"})
+assert result.result == "block"  # ✅ blocked before execution
+
+# Safe = allowed
+result = guard.evaluate(tool="file_read", params={"path": "/app/data/config.json"})
+assert result.result == "allow"  # ✅ passes through
 ```
+
+> 📖 See [docs/examples/default-policy.yaml](docs/examples/default-policy.yaml) for a complete secure-by-default policy you can deploy today.
+> See [docs/guides/testing-policies.md](docs/guides/testing-policies.md) for how to unit test your policies.
 
 ## Why AgentGuard?
 

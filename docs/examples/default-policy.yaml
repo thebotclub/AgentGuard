@@ -1,0 +1,134 @@
+# AgentGuard — Secure-by-Default Policy Example
+#
+# This policy BLOCKS all tool calls by default and explicitly allows
+# only pre-approved actions. Use this as your starting point for any
+# production deployment.
+#
+# Philosophy: Every tool call is guilty until proven innocent.
+# ────────────────────────────────────────────────────────────────────────────
+
+id: secure-default
+name: Secure by Default
+description: >-
+  Fail-closed policy that blocks dangerous operations, restricts network
+  access, monitors sensitive reads, and only allows approved tools.
+version: 1.0.0
+
+# ── Default action when no rule matches ──────────────────────────────────────
+# "block" ensures that unknown or misconfigured tools are denied.
+# Never change this to "allow" in production.
+default: block
+
+# ── Rate budgets (optional) ─────────────────────────────────────────────────
+budgets:
+  maxActionsPerMinute: 60
+  maxActionsPerSession: 5000
+
+# ── Policy rules (ordered by priority — lower number = evaluated first) ──────
+rules:
+
+  # ── 1. BLOCK: Destructive shell commands ──────────────────────────────────
+  # Catches rm -rf, chmod 777, format, and other filesystem destruction.
+  - id: block-destructive-shell
+    priority: 10
+    action: block
+    severity: critical
+    when:
+      - tool: { matches: ['shell_exec', 'exec_*', 'run_command', 'bash'] }
+        params:
+          cmd: { matches: ['*rm -rf*', '*chmod 777*', '*mkfs*', '*dd if=*', '*:(){ :|:& };:*'] }
+    tags: [destructive, shell]
+
+  # ── 2. BLOCK: Dangerous SQL operations ────────────────────────────────────
+  - id: block-destructive-sql
+    priority: 10
+    action: block
+    severity: critical
+    when:
+      - tool: { matches: ['database_query', 'sql_exec', 'db_query'] }
+        params:
+          query: { matches: ['*DROP TABLE*', '*TRUNCATE*', '*DELETE FROM*', '*ALTER TABLE * DROP*', '*GRANT ALL*'] }
+    tags: [destructive, sql]
+
+  # ── 3. BLOCK: External network access ────────────────────────────────────
+  # Prevent the agent from exfiltrating data or calling unapproved APIs.
+  # Approved endpoints are explicitly allowed by rule 7 below.
+  - id: block-external-network
+    priority: 20
+    action: block
+    severity: high
+    when:
+      - tool: { matches: ['http_request', 'fetch', 'http_get', 'http_post', 'curl', 'requests'] }
+        params:
+          url: { notMatches: ['*internal.yourcompany.com*', '*localhost*', '*127.0.0.1*', '*.internal*'] }
+    tags: [network, exfiltration]
+
+  # ── 4. BLOCK: File writes to sensitive paths ─────────────────────────────
+  - id: block-sensitive-writes
+    priority: 15
+    action: block
+    severity: critical
+    when:
+      - tool: { matches: ['file_write', 'write_file', 'save_file', 'fs_write'] }
+        params:
+          path: { matches: ['/etc/*', '/usr/*', '/boot/*', '/System/*', '~/.ssh/*', '~/.aws/*', '~/.gnupg/*'] }
+    tags: [filesystem, sensitive]
+
+  # ── 5. MONITOR: File reads from sensitive locations ──────────────────────
+  # Don't block reads (the agent may need config files), but log them for review.
+  - id: monitor-sensitive-reads
+    priority: 30
+    action: monitor
+    severity: high
+    when:
+      - tool: { matches: ['file_read', 'read_file', 'cat', 'fs_read'] }
+        params:
+          path: { matches: ['/etc/*', '~/.ssh/*', '~/.aws/*', '~/.env*'] }
+    tags: [filesystem, audit]
+
+  # ── 6. MONITOR: Email and messaging ──────────────────────────────────────
+  # Log all outbound communications for audit. Require approval for external recipients.
+  - id: monitor-communications
+    priority: 25
+    action: require_approval
+    severity: medium
+    when:
+      - tool: { matches: ['send_email', 'send_sms', 'slack_send', 'teams_send'] }
+        params:
+          to:
+            notIn: ['*@yourcompany.com', '#internal-*']
+    approvers: ['security-team']
+    tags: [communication, approval]
+
+  # ── 7. ALLOW: Approved internal API calls ────────────────────────────────
+  - id: allow-internal-apis
+    priority: 50
+    action: allow
+    severity: low
+    when:
+      - tool: { matches: ['http_request', 'fetch', 'http_get', 'http_post'] }
+        params:
+          url: { matches: ['*api.internal.yourcompany.com/*', '*localhost:*/api/*'] }
+    tags: [network, approved]
+
+  # ── 8. ALLOW: Read-only data access ──────────────────────────────────────
+  - id: allow-read-only
+    priority: 50
+    action: allow
+    severity: low
+    when:
+      - tool: { in: ['file_read', 'list_files', 'get_config', 'database_query'] }
+        params:
+          query: { matches: ['SELECT*'] }
+          path: { matches: ['/app/data/*', '/var/data/*'] }
+    tags: [read-only, approved]
+
+  # ── 9. ALLOW: Approved tools (safe by design) ────────────────────────────
+  # Tools that are inherently safe and don't touch external resources.
+  - id: allow-safe-tools
+    priority: 50
+    action: allow
+    severity: low
+    when:
+      - tool: { in: ['calculator', 'get_weather', 'search_documents', 'date_time', 'format_output'] }
+    tags: [safe, approved]
