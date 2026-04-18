@@ -1,0 +1,31 @@
+# CODEOWNERS — AgentGuard
+# Each PR is auto-assigned to the teams listed for the files it modifies.
+
+# SDK
+/packages/sdk/          @thebotclub/sdk
+/packages/cli/          @thebotclub/sdk
+
+# API
+/api/                   @thebotclub/api
+/packages/api/          @thebotclub/api
+
+# Dashboard
+/packages/dashboard/    @thebotclub/dashboard
+
+# Compliance & docs
+/packages/compliance/   @thebotclub/docs
+/docs/                  @thebotclub/docs
+
+# Shared utilities
+/packages/shared/       @thebotclub/core
+
+# Configuration & CI
+/.github/               @thebotclub/core
+/turbo.json             @thebotclub/core
+/package.json           @thebotclub/core
+
+# Tests
+/tests/                 @thebotclub/api
+
+# Everything else
+*                       @thebotclub/core
