@@ -5,11 +5,13 @@ on:
     branches: [main, master, develop]
     paths:
       - 'vitepress-docs/**'
+      - 'docs-site/**'
       - '.github/workflows/docs.yml'
   pull_request:
     branches: [main, master, develop]
     paths:
       - 'vitepress-docs/**'
+      - 'docs-site/**'
       - '.github/workflows/docs.yml'
 
 permissions:
@@ -41,4 +43,11 @@ jobs:
         with:
           name: vitepress-dist
           path: vitepress-docs/.vitepress/dist
+          retention-days: 7
+
+      - name: Upload deployed docs artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: docs-site
+          path: docs-site
           retention-days: 7

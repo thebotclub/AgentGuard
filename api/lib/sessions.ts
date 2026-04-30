@@ -35,7 +35,13 @@ export async function getOrCreateSession(
   tenantId = 'demo',
 ): Promise<[string, SessionState]> {
   if (sessionId && sessions.has(sessionId)) {
-    return [sessionId, sessions.get(sessionId)!];
+    const existing = sessions.get(sessionId)!;
+    if (existing.tenantId === tenantId) {
+      return [sessionId, existing];
+    }
+    // Never attach a request to a session owned by another tenant/demo scope.
+    // Create a fresh random session instead of reusing the caller-supplied id.
+    sessionId = undefined;
   }
 
   if (sessions.size >= MAX_SESSIONS) {

@@ -55,7 +55,7 @@ AgentGuard is a **runtime security platform for AI agents**. It intercepts every
 │  ┌─────────────────────┐       ┌──────────────────────────────┐    │
 │  │   API Container     │       │   Dashboard / Landing        │    │
 │  │   (Express 5.x)     │       │   (Static HTML + Vanilla JS) │    │
-│  │   Node.js 22 LTS    │       │   app.agentguard.tech        │    │
+│  │   Node.js 22 LTS    │       │   agentguard.tech/dashboard        │    │
 │  │   Port 3000         │       └──────────────────────────────┘    │
 │  │                     │                                            │
 │  │  ┌───────────────┐  │                                            │
@@ -115,7 +115,7 @@ AgentGuard is a **runtime security platform for AI agents**. It intercepts every
 | **DNS / CDN** | Cloudflare | Flexible SSL; proxy mode |
 | **Cache** | None | *(Planned — Redis for hot-path rate limits and policy cache)* |
 | **Queue** | None | *(Planned — background workers for webhook delivery)* |
-| **Dashboard** | Static HTML + Vanilla JS | `app.agentguard.tech` — no Next.js framework |
+| **Dashboard** | Static HTML + Vanilla JS | `agentguard.tech/dashboard` — no Next.js framework |
 | **Policy DSL** | YAML | Loaded at startup from `api/templates/` |
 | **SDK (TypeScript)** | HTTP client | `packages/sdk/` |
 | **SDK (Python)** | HTTP client | `packages/python/` |
@@ -342,7 +342,7 @@ All five subdomains are proxied through Cloudflare:
 | Subdomain | Target | Notes |
 |-----------|--------|-------|
 | `api.agentguard.tech` | Azure Container App | Flexible SSL; API traffic |
-| `app.agentguard.tech` | Azure Container App or CDN | Dashboard |
+| `agentguard.tech/dashboard` | Azure Container App or CDN | Dashboard |
 | `demo.agentguard.tech` | Azure Container App | Public demo playground |
 | `docs.agentguard.tech` | Hosted docs | 34 endpoints documented |
 | `about.agentguard.tech` | Landing page | Marketing site |

@@ -66,7 +66,7 @@ AgentGuard is a runtime security layer that sits between your AI agents and thei
                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                       DASHBOARD                                     │
-│                  app.agentguard.tech                               │
+│                  agentguard.tech/dashboard                               │
 │                                                                     │
 │  • View audit trail     • Manage agents     • Edit policies        │
 │  • Approve HITL queue   • Kill switch       • Usage analytics      │

@@ -183,6 +183,14 @@ jobs:
               else
                 echo "⚠️ Unauth evaluate returned $UNAUTH (expected 401)"
               fi
+              PLAYGROUND=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 -X POST "$API_URL/api/v1/playground/evaluate" \
+                -H "Content-Type: application/json" \
+                -d '{"tool":"sudo","params":{"command":"test"}}')
+              if [ "$PLAYGROUND" = "200" ]; then
+                echo "✅ Public playground verified"
+              else
+                echo "⚠️ Public playground returned $PLAYGROUND (expected 200)"
+              fi
               exit 0
             fi
             echo "Attempt $i — waiting ${i}0s..."

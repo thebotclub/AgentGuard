@@ -167,7 +167,13 @@ For AI agents: GET https://api.agentguard.tech/api/v1/setup
 For humans: https://agentguard.tech/docs
 
 ## Try Without Signup
+POST https://api.agentguard.tech/api/v1/playground/evaluate
+Content-Type: application/json
+{"tool": "read_file", "params": {"path": "/etc/passwd"}}
+
+Production evaluation requires a key:
 POST https://api.agentguard.tech/api/v1/evaluate
+X-API-Key: ag_live_<your key>
 Content-Type: application/json
 {"tool": "read_file", "params": {"path": "/etc/passwd"}}
 
@@ -335,12 +341,12 @@ async function main(): Promise<void> {
         'GET  /api/v1/setup': 'Agent-readable setup guide — any AI agent can read this and self-onboard',
         'POST /api/v1/signup': 'Create tenant account and get API key',
         'POST /api/v1/evaluate':
-          'Evaluate an agent action against the policy engine',
+          'Evaluate an agent action against the policy engine (requires API key)',
         'POST /api/v1/evaluate/batch':
           'Evaluate multiple tool calls in one request (max 50)',
-        'POST /api/v1/playground/session': 'Create a playground session',
+        'POST /api/v1/playground/session': 'Create a public playground session',
         'POST /api/v1/playground/evaluate':
-          'Evaluate with session tracking + audit trail',
+          'Evaluate with public playground session tracking + audit trail',
         'GET  /api/v1/playground/audit/:sessionId':
           'Get audit trail for a playground session',
         'GET  /api/v1/playground/policy': 'Get the active policy document',
@@ -559,7 +565,7 @@ async function main(): Promise<void> {
         api: 'https://api.agentguard.tech',
         docs: 'https://agentguard.tech/docs',
         github: 'https://github.com/thebotclub/AgentGuard',
-        dashboard: 'https://app.agentguard.tech',
+        dashboard: 'https://agentguard.tech/dashboard/',
       },
     });
   });
@@ -743,7 +749,7 @@ async function main(): Promise<void> {
       error: 'Not found',
       hint: 'Try GET / for a list of available endpoints',
       docs: 'https://agentguard.tech',
-      dashboard: 'https://app.agentguard.tech',
+      dashboard: 'https://agentguard.tech/dashboard/',
     });
   });
 

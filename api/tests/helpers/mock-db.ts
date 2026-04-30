@@ -109,6 +109,7 @@ export function createMockDb(): IDatabase {
     getOrCreateSession: vi.fn().mockResolvedValue({ id: 'session-1', tenant_id: 'tenant-123', created_at: '2024-01-01T00:00:00.000Z', last_activity: null }),
     getSession: vi.fn().mockResolvedValue(undefined),
     updateSessionActivity: vi.fn().mockResolvedValue(undefined),
+    upsertSession: vi.fn().mockResolvedValue(undefined),
 
     // Approvals
     createApproval: vi.fn().mockResolvedValue({ id: 'approval-1', tenant_id: 'tenant-123', agent_id: null, tool: 'test', params_json: null, status: 'pending', created_at: '2024-01-01T00:00:00.000Z', resolved_at: null, resolved_by: null }),

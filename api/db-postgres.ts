@@ -981,11 +981,12 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       const keyHash = await hashApiKey(key);
       const keyPrefix = key.substring(0, 12);
       const keySha256 = sha256Hex(key);
-      // Store masked value in `key` column (never store plaintext) — auth uses key_hash/key_sha256
-      const maskedKey = `${keyPrefix.substring(0, 7)}****`;
+      // Keep the legacy primary key unique without storing plaintext.
+      // Auth uses key_sha256/key_hash; the `key` column remains only for
+      // backward-compatible schema shape and must not receive a shared mask.
       await pool.query(
         'INSERT INTO api_keys (key, tenant_id, name, key_hash, key_prefix, key_sha256) VALUES ($1, $2, $3, $4, $5, $6)',
-        [maskedKey, tenantId, name, keyHash, keyPrefix, keySha256]
+        [keySha256, tenantId, name, keyHash, keyPrefix, keySha256]
       );
     },
 

@@ -322,7 +322,7 @@ rules:
 Make sure you're calling `guard.evaluate()` or `guard.before_tool_execution()` in your agent's tool lifecycle, not in the task definition.
 
 **`require_approval` causing crew to hang**  
-Configure a webhook to receive approval events, or approve manually from the [dashboard](https://app.agentguard.tech). For testing, change `require_approval` to `monitor` in your policy.
+Configure a webhook to receive approval events, or approve manually from the [dashboard](https://agentguard.tech/dashboard/). For testing, change `require_approval` to `monitor` in your policy.
 
 **Python `AgentGuardBlockError` not importable**  
 Import from the integrations module: `from agentguard.integrations.errors import AgentGuardBlockError`
