@@ -59,7 +59,7 @@ export function createHealthRoutes(db: IDatabase): Router {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.status(statusCode).json({
       status: overallStatus,
-      version: '0.9.0',
+      version: '0.10.0',
       uptime: Math.floor(process.uptime()),
       components: {
         database: {

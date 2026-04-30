@@ -81,8 +81,8 @@ const guard = new AgentGuard({
 
 // Before executing any tool call from your agent:
 const decision = await guard.evaluate({
-  action: "sql.execute",
-  input: {
+  tool: "sql_execute",
+  params: {
     query: toolCall.args.query,
     database: "production",
   },
@@ -93,7 +93,7 @@ const decision = await guard.evaluate({
   },
 });
 
-if (decision.allowed) {
+if (decision.result === "allow") {
   // Safe to execute
   const result = await sqlTool.invoke(toolCall.args);
 } else {
@@ -112,8 +112,8 @@ guard = AgentGuard(api_key=os.environ["AGENTGUARD_API_KEY"])
 
 # Evaluate before execution
 decision = guard.evaluate(
-    action="shell.exec",
-    input={
+    tool="shell_exec",
+    params={
         "command": tool_call.args["command"],
     },
     context={
@@ -135,12 +135,12 @@ else:
 Here's a raw API call showing AgentGuard catching a destructive SQL operation:
 
 ```bash
-curl -X POST https://api.agentguard.tech/v1/evaluate \
-  -H "Authorization: Bearer $AGENTGUARD_API_KEY" \
+curl -X POST https://api.agentguard.tech/api/v1/evaluate \
+  -H "x-api-key: $AGENTGUARD_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "action": "sql.execute",
-    "input": {
+    "tool": "database_query",
+    "params": {
       "query": "DROP TABLE users;",
       "database": "production"
     },
@@ -156,12 +156,12 @@ Response:
 
 ```json
 {
-  "allowed": false,
+  "result": "block",
   "reason": "Destructive SQL operation (DROP) blocked on production database",
   "policy": "sql-safety-production",
-  "risk_score": 0.98,
+  "riskScore": 98,
   "timestamp": "2026-03-10T05:00:00Z",
-  "event_id": "evt_7f3a9b2c"
+  "eventId": "evt_7f3a9b2c"
 }
 ```
 

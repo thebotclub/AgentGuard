@@ -216,7 +216,7 @@ curl -X POST https://api.agentguard.tech/api/v1/policies \
    ```bash
    curl -X POST https://api.agentguard.tech/api/v1/evaluate \
      -H "x-api-key: $AGENTGUARD_API_KEY" \
-     -d '{ "tool": "file_write", "action": "write", "input": { "path": "/tmp/test.txt" } }'
+     -d '{ "tool": "file_write", "params": { "path": "/tmp/test.txt" } }'
    # Response includes matchedRuleId
    ```
 
@@ -359,7 +359,7 @@ curl https://api.agentguard.tech/health
 ```
 
 ```json
-{ "status": "ok", "db": "ok", "version": "0.9.0" }
+{ "status": "ok", "version": "0.10.0" }
 ```
 
 If `db` is not `ok`, the API may be in a degraded state. Check [status.agentguard.tech](https://status.agentguard.tech) for incidents.

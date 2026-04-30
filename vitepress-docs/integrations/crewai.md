@@ -143,8 +143,7 @@ class GuardedResearchAgent(Agent):
         """Override tool execution to add AgentGuard check."""
         decision = self._guard.evaluate(
             tool=tool_name,
-            action="execute",
-            input=kwargs,
+            params=kwargs,
         )
 
         if decision["result"] == "block":
@@ -189,7 +188,7 @@ guard = AgentGuard(api_key=os.environ["AGENTGUARD_API_KEY"])
 
 def guarded_tool_call(tool_name: str, **kwargs) -> dict:
     """Evaluate any tool call before execution."""
-    decision = guard.evaluate(tool=tool_name, action="execute", input=kwargs)
+    decision = guard.evaluate(tool=tool_name, params=kwargs)
     if decision["result"] == "block":
         raise AgentGuardBlockError(
             tool=tool_name,
@@ -230,8 +229,7 @@ class SecureCrew:
         for step in tool_plan:
             decision = self.guard.evaluate(
                 tool=step["tool"],
-                action="execute",
-                input=step["args"],
+                params=step["args"],
             )
             if decision["result"] == "block":
                 raise PermissionError(

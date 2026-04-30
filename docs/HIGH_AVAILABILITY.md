@@ -337,7 +337,7 @@ livenessProbe:
     "migrations": { "ok": true, "detail": "all required tables present" },
     "redis": { "ok": true, "latencyMs": 1, "detail": "sentinel" }
   },
-  "version": "0.9.0",
+  "version": "0.10.0",
   "timestamp": "2026-03-22T02:00:00.000Z"
 }
 ```

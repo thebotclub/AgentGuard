@@ -2,5 +2,5 @@
 from .client import AgentGuard
 from .integrations.errors import AgentGuardBlockError
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 __all__ = ["AgentGuard", "AgentGuardBlockError"]

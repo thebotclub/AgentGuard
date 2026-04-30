@@ -24,8 +24,7 @@
   -H "x-api-key: ag_live_ce0c9dd153d4f2ceff4efac537ac6abd" \
   -d '{
     "tool": "file_system",
-    "action": "read",
-    "input": {"path": "/etc/passwd"}
+    "params": {"path": "/etc/passwd"}
   }'</pre>
   <p style="font-size: 13px; color: #666;">(This should return a <strong style="color: #ef4444;">block</strong> decision — that's AgentGuard doing its job.)</p>
 

@@ -179,8 +179,7 @@ def run_sql(query: str) -> str:
     """Execute a SQL query — protected by AgentGuard."""
     decision = guard.evaluate(
         tool="run_sql",
-        action="execute",
-        input={"query": query},
+        params={"query": query},
     )
 
     if decision["result"] == "block":
@@ -209,7 +208,7 @@ guard = AgentGuard(api_key=os.environ["AGENTGUARD_API_KEY"])
 
 # Define tool functions with inline guards
 def search_web(query: str) -> str:
-    decision = guard.evaluate(tool="search_web", action="search", input={"query": query})
+    decision = guard.evaluate(tool="search_web", params={"query": query})
     if decision["result"] == "block":
         return f"[BLOCKED] Search not permitted: {decision.get('reason')}"
     # ... actual search
@@ -219,8 +218,7 @@ def search_web(query: str) -> str:
 def write_report(filename: str, content: str) -> str:
     decision = guard.evaluate(
         tool="write_file",
-        action="write",
-        input={"filename": filename, "content": content},
+        params={"filename": filename, "content": content},
     )
     if decision["result"] == "block":
         raise AgentGuardBlockError(
@@ -235,7 +233,7 @@ def write_report(filename: str, content: str) -> str:
 
 def execute_command(cmd: str) -> str:
     # This will be blocked by policy — return a safe error
-    decision = guard.evaluate(tool="shell_exec", action="run", input={"cmd": cmd})
+    decision = guard.evaluate(tool="shell_exec", params={"cmd": cmd})
     if decision["result"] == "block":
         return f"[BLOCKED] Command not permitted: {decision.get('reason')}"
     import subprocess
@@ -372,8 +370,7 @@ def check_approval_status(evaluation_id: str, api_key: str, timeout_secs: int = 
 def sensitive_api_call(endpoint: str, payload: dict) -> str:
     decision = guard.evaluate(
         tool="http_post",
-        action="send",
-        input={"url": endpoint, "body": payload},
+        params={"url": endpoint, "body": payload},
     )
 
     if decision["result"] == "require_approval":

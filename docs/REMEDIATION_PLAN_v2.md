@@ -462,7 +462,7 @@ Coverage thresholds are 60% lines / 45% functions / 65% branches. Phase 2 routes
 **Owner:** Backend | **Effort:** 1 day | **Priority:** P3
 
 **Problem:**
-OpenAPI spec (`api/openapi.yaml`, info.version 0.9.0) has auto-generation but no CI check to verify sync.
+OpenAPI spec (`api/openapi.yaml`, info.version 0.10.0) has auto-generation but no CI check to verify sync.
 
 **Solution:**
 - CI step: run `npm run openapi:generate` → `git diff --exit-code api/openapi.yaml`
@@ -792,7 +792,7 @@ Items consciously deferred with scale triggers:
 | `packages/python/agentguard/client.py` | Python SDK client | 1.4 |
 | `api/server.ts` | Express app, middleware chain | 2.1 |
 | `vite.config.ts` | Test coverage thresholds | 2.3 |
-| `api/openapi.yaml` | OpenAPI spec (info.version 0.9.0) | 2.4 |
+| `api/openapi.yaml` | OpenAPI spec (info.version 0.10.0) | 2.4 |
 | `dashboard/dashboard.js` | Vanilla JS dashboard (2,574 lines) | 2.6 |
 | `infra/main.tf` | Terraform infrastructure | 2.2 |
 | `packages/api/src/middleware/auth.ts` | JWT secret startup guard + shared secret export | 1.7 |

@@ -3,7 +3,7 @@
 
 **Document Version:** 1.0  
 **OWASP Framework:** OWASP Top 10 for Agentic AI Applications (ASI, v1.0 — December 2025)  
-**AgentGuard Version:** v0.9.0  
+**AgentGuard Version:** v0.10.0
 **Prepared by:** Nova3 / Atlas3 Fleet  
 **Classification:** Public — Marketing & Sales Enablement  
 **Last Updated:** March 2026
@@ -142,8 +142,7 @@ The policy engine supports:
 # Every tool call passes through evaluate endpoint before execution
 POST /v1/actions/evaluate → {
   "tool": "database_query",
-  "action": "execute",
-  "input": { "query": "DROP TABLE users" }
+  "params": { "query": "DROP TABLE users" }
 }
 → { "result": "block", "reason": "Destructive SQL operation", "riskScore": 95 }
 ```
@@ -319,7 +318,7 @@ POST /v1/agents {
 **Gaps:**
 - No cryptographic signing or verification of inter-agent messages
 - No replay attack protection for A2A tool calls
-- A2A policy inheritance is architecturally present but implementation depth is limited in v0.9.0
+- A2A policy inheritance is architecturally present but implementation depth is limited in v0.10.0
 - No alerting on anomalous inter-agent communication patterns
 
 **Planned:** Cryptographic inter-agent message signing (Q3 2026). Replay attack prevention with nonce validation (Q3 2026). A2A anomaly detection (Q4 2026).
@@ -1158,7 +1157,7 @@ anomaly_detection:
   actions:
     alert: true
     webhook: true
-    auto_suspend: false  # Manual kill switch only in v0.9.0; auto-suspend Q2 2026
+    auto_suspend: false  # Manual kill switch only in v0.10.0; auto-suspend Q2 2026
 
 # Audit trail configuration
 audit:
@@ -1521,7 +1520,7 @@ If you're deploying AI agents in production, this framework should be on your de
 - OWASP GenAI Agentic AI Threats & Mitigations v1.1 — genai.owasp.org
 - AgentGuard ARCHITECT_REVIEW.md — March 2026 (internal)
 - AgentGuard STRATEGY_REVIEW.md — March 2026 (internal)
-- AgentGuard owasp-controls.json — v0.9.0 (internal codebase)
+- AgentGuard owasp-controls.json — v0.10.0 (internal codebase)
 - AgentGuard owasp-agentic.yaml — policy template (internal codebase)
 - EchoLeak Attack Analysis — public security research
 - Amazon Q Tool Misuse Incident — public security research

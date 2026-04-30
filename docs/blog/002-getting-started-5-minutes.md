@@ -56,8 +56,7 @@ const guard = new AgentGuard({
 // Before executing a tool call:
 const decision = await guard.evaluate({
   tool: 'database_query',
-  action: 'execute',
-  input: { query: 'DROP TABLE users' },
+  params: { query: 'DROP TABLE users' },
   context: {
     agentId: 'my-agent',
     userId: 'user_123',
@@ -69,7 +68,7 @@ if (decision.result === 'block') {
   console.warn('Blocked:', decision.reason);
 } else {
   // Safe to run your tool
-  const result = await runDatabaseQuery(decision.input);
+  const result = await runDatabaseQuery('DROP TABLE users');
 }
 ```
 
@@ -94,8 +93,7 @@ guard = AgentGuard(api_key=os.environ["AGENTGUARD_API_KEY"])
 
 decision = guard.evaluate(
     tool="shell_exec",
-    action="run",
-    input={"cmd": "rm -rf /"},
+    params={"cmd": user_requested_command},
     context={
         "agent_id": "my-agent",
         "user_id": "user_123",
@@ -105,8 +103,8 @@ decision = guard.evaluate(
 if decision.result == "block":
     print(f"Blocked: {decision.reason}")
 else:
-    # Safe to execute
-    subprocess.run(decision.input["cmd"], shell=True)
+    # Safe to execute the same command you evaluated
+    subprocess.run(user_requested_command, shell=True)
 ```
 
 ---
@@ -264,7 +262,7 @@ Customise any of these with your own policy rules.
 - **[Policy Engine Guide](/guide/policy-engine)** — Deep dive on rule syntax, priority, conflict resolution
 - **[API Reference](/api/overview)** — Full REST API documentation
 - **[Architecture Overview](/architecture/overview)** — How AgentGuard fits in your stack
-- **[Self-Hosted Deployment](https://github.com/thebotclub/AgentGuard/blob/main/self-hosted/README.md)** — Run it on your own infrastructure
+- **[Self-Hosted Deployment](https://github.com/thebotclub/AgentGuard/blob/main/docs/SELF_HOSTED.md)** — Run it on your own infrastructure
 
 ---
 

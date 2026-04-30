@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgentGuard — AI Agent Deployment Enforcement | CI/CD Gate & Runtime Policy Engine</title>
-<meta name="description" content="AgentGuard enforces security policies at deploy-time and runtime. Like container scanning, but for AI agents. GitHub Action CI/CD gate, sub-millisecond local enforcement • ~200ms cloud API, tamper-evident compliance trail. EU AI Act, SOC 2, APRA CPS 234.">
+<meta name="description" content="AgentGuard is an alpha/private-beta security layer for AI agents: CI/CD policy checks, runtime tool-call evaluation, and tamper-evident audit logs for teams preparing production agent deployments.">
 <meta name="keywords" content="AI agent deployment enforcement, AI agent security, CI/CD gate AI agents, agentic AI governance, runtime policy engine, EU AI Act compliance, OWASP agentic AI, AI audit trail, agent firewall, LLM security, MCP security, LangChain security, CrewAI security, OpenClaw security">
 <meta name="author" content="Hani Kashi — Founder, AgentGuard">
 <meta name="robots" content="index, follow">
@@ -38,7 +38,7 @@
   "applicationCategory": "SecurityApplication",
   "operatingSystem": "Cloud",
   "url": "https://agentguard.tech",
-  "description": "AI agent deployment enforcement platform. CI/CD gate blocks unsafe agents before production. Runtime policy engine evaluates every tool call. Tamper-evident compliance trail for EU AI Act, APRA CPS 234, SOC 2.",
+  "description": "Alpha/private-beta AI agent deployment enforcement platform. CI/CD policy checks, runtime tool-call evaluation, and tamper-evident audit logs for teams preparing production agent deployments.",
   "offers": [
     { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD", "description": "100,000 evaluations/month, 3 agent seats, 30-day audit retention" },
     { "@type": "Offer", "name": "Pro", "price": "149", "priceCurrency": "USD", "description": "500,000 evaluations/month, 25 agent seats, SIEM, SSO, 90-day retention" }
@@ -433,7 +433,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
     <div class="nav-links">
       <a href="#how-it-works" class="nav-link">How It Works</a>
       <a href="#why-enforcement" class="nav-link">Why Enforcement</a>
-      <a href="#testimonials" class="nav-link">Customers</a>
+      <a href="#testimonials" class="nav-link">Use Cases</a>
       <a href="#pricing" class="nav-link">Pricing</a>
       <a href="https://docs.agentguard.tech" class="nav-link">Docs</a>
       <a href="#hero-form" class="nav-cta">Get Started Free →</a>
@@ -445,7 +445,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
   <div class="mobile-menu" id="mobile-menu" aria-label="Mobile navigation">
     <a href="#how-it-works">How It Works</a>
     <a href="#why-enforcement">Why Enforcement</a>
-    <a href="#testimonials">Customers</a>
+    <a href="#testimonials">Use Cases</a>
     <a href="#pricing">Pricing</a>
     <a href="https://docs.agentguard.tech">Docs</a>
     <a href="#hero-form" class="nav-cta">Get Started Free →</a>
@@ -467,7 +467,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
           <a href="#hero-form" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:14px 28px;border-radius:10px;font-weight:700;font-size:1rem;transition:background .15s" onmouseover="this.style.background='#4042b0'" onmouseout="this.style.background='var(--accent)'">Get Started Free →</a>
-          <a href="https://github.com/thebotclub" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:14px 28px;border-radius:10px;font-weight:600;font-size:1rem;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text-bright)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⭐ View on GitHub</a>
+          <a href="https://github.com/thebotclub/AgentGuard" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:14px 28px;border-radius:10px;font-weight:600;font-size:1rem;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text-bright)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⭐ View on GitHub</a>
         </div>
         <!-- Demo video -->
         <div style="margin-top:28px;display:block">
@@ -534,7 +534,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
 <div id="social-proof">
   <div class="container">
     <div class="social-inner">
-      <div class="social-stat"><strong>51</strong> API endpoints</div>
+      <div class="social-stat"><strong>Live</strong> alpha API</div>
       <div class="social-divider"></div>
       <div class="social-stat"><strong>TypeScript + Python</strong> SDKs</div>
       <div class="social-divider"></div>
@@ -545,9 +545,9 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
       <div class="urgency-bar">⚠️ <strong>August 2026:</strong> EU AI Act enforcement for high-risk AI systems begins</div>
     </div>
     <div class="trust-badges">
-      <div class="trust-badges-label">Trusted by teams building AI agents</div>
+      <div class="trust-badges-label">Built for teams preparing production AI agents</div>
       <div class="badge-row">
-        <span class="trust-badge green">🛡 SOC 2 Type II Ready</span>
+        <span class="trust-badge green">🛡 SOC 2 evidence mapping</span>
         <span class="trust-badge blue">⚡ Sub-ms local PolicyEngine • ~200ms cloud API</span>
         <span class="trust-badge green">📋 OWASP Top 10 for Agentic AI</span>
         <span class="trust-badge amber">🔒 EU AI Act Art. 9, 12, 14</span>
@@ -562,47 +562,47 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
 <!-- TESTIMONIALS & CUSTOMER LOGOS -->
 <section id="testimonials" aria-labelledby="testimonials-heading">
   <div class="container">
-    <div class="section-eyebrow">What Teams Are Saying</div>
+    <div class="section-eyebrow">Use Cases</div>
     <h2 class="section-head" id="testimonials-heading">Built for the people on the hook.</h2>
-    <p class="section-sub">From engineering teams shipping AI features daily to security leads answering board questions — here's what early users tell us.</p>
+    <p class="section-sub">Patterns we are validating with design partners and teams putting AI agents near production systems.</p>
 
     <div class="testimonials-grid">
       <div class="testimonial-card">
-        <p class="testimonial-quote">We had 40+ LangChain agents in production with zero visibility into what tools they were actually calling. AgentGuard gave us a kill switch and an audit trail in an afternoon. That's not nothing when the board asks about AI risk.</p>
+        <p class="testimonial-quote">Security teams need to answer what an agent accessed, which tools it called, and whether a risky action was blocked before impact.</p>
         <div class="testimonial-author">
           <div class="testimonial-avatar" aria-hidden="true">🔐</div>
           <div>
-            <div class="testimonial-name">Head of Security Engineering</div>
-            <div class="testimonial-role">Series B FinTech · 200+ agents deployed</div>
+            <div class="testimonial-name">Security Engineering</div>
+            <div class="testimonial-role">Fleet visibility and incident response</div>
           </div>
         </div>
       </div>
 
       <div class="testimonial-card">
-        <p class="testimonial-quote">Our EU AI Act readiness audit was 6 weeks out and we had nothing concrete to show the DPO. AgentGuard's compliance trail turned a Confluence page into actual evidence. Audit passed.</p>
+        <p class="testimonial-quote">GRC teams need evidence that agent controls are actually enforced, not just described in a policy document or system prompt.</p>
         <div class="testimonial-author">
           <div class="testimonial-avatar" aria-hidden="true">📊</div>
           <div>
-            <div class="testimonial-name">GRC Lead / Data Protection Officer</div>
-            <div class="testimonial-role">Enterprise SaaS · EU-regulated market</div>
+            <div class="testimonial-name">GRC / Data Protection</div>
+            <div class="testimonial-role">Audit evidence and control mapping</div>
           </div>
         </div>
       </div>
 
       <div class="testimonial-card">
-        <p class="testimonial-quote">Policy as code that lives in the same PR as the agent code — that's what I wanted. The CI gate catches uncovered tools before they hit main. Zero runtime surprises since we turned it on.</p>
+        <p class="testimonial-quote">Platform teams need policy-as-code checks in the same workflow as agent code, plus runtime enforcement when tools are called.</p>
         <div class="testimonial-author">
           <div class="testimonial-avatar" aria-hidden="true">⚙️</div>
           <div>
-            <div class="testimonial-name">Principal Engineer, AI Platform</div>
-            <div class="testimonial-role">Scale-up · LangChain + CrewAI + OpenClaw stack</div>
+            <div class="testimonial-name">AI Platform Engineering</div>
+            <div class="testimonial-role">CI/CD gate and runtime policy engine</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="customer-logos" aria-label="Trusted by innovative teams">
-      <div class="customer-logos-label">Trusted by innovative teams</div>
+    <div class="customer-logos" aria-label="Design partner focus areas">
+      <div class="customer-logos-label">Design partner focus areas</div>
       <div class="logos-row" role="list" aria-label="Team shapes">
         <!-- Abstract geometric shapes representing teams — no placeholder company names -->
         <div class="logo-shape" role="listitem" aria-label="Team">
@@ -899,7 +899,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
         <div class="persona-role">🔐 CISO / VP Security</div>
         <h3>Finally, something to put on the board slide</h3>
         <p class="persona-pain">You have agents deployed across multiple departments. You cannot tell the board what they accessed last month, whether any touched customer PII, or whether one is actively exfiltrating data.</p>
-        <div class="persona-outcome">Unified fleet visibility. Board-ready risk reports. Contractual SLA.</div>
+        <div class="persona-outcome">Unified fleet visibility, risk reports, and incident response controls.</div>
       </div>
       <div class="persona-card">
         <div class="persona-role">⚙️ VP Eng / Head of AI Platform</div>
@@ -1108,7 +1108,7 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
         <ul class="pricing-features">
           <li>500,000 evaluations/month</li>
           <li>Unlimited agent keys</li>
-          <li>Email support, SLA 99.9%</li>
+          <li>Email support</li>
           <li>90-day audit retention</li>
           <li>Webhook alerts (Slack, Teams, PagerDuty)</li>
           <li>Agent-scoped policies</li>
@@ -1128,11 +1128,11 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
         <ul class="pricing-features">
           <li>Unlimited evaluations</li>
           <li>Unlimited agent keys</li>
-          <li>Dedicated support, SLA 99.99%</li>
+          <li>Dedicated support options</li>
           <li>Unlimited audit retention</li>
           <li>Custom policies, RBAC, SSO</li>
           <li>On-prem deployment option</li>
-          <li>Compliance reports (SOC 2, APRA, EU AI Act)</li>
+          <li>Compliance evidence mappings (SOC 2, APRA, EU AI Act)</li>
           <li>Custom webhook integrations</li>
           <li>Priority cost &amp; usage analytics</li>
         </ul>
@@ -1149,10 +1149,10 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
       <div class="oss-left">
         <div class="oss-badge"><span class="oss-badge-dot"></span>Source Available — BSL 1.1</div>
         <h2>Transparent by design.</h2>
-        <p style="margin-top:10px">The core policy engine is open source. Read it. Audit it. Fork it. Enterprise features — compliance modules, SIEM integrations, advanced anomaly detection, executive reporting — are for teams that need them.</p>
-        <p style="margin-top:12px">Security tools you can't read are security theatre. We're not that.</p>
+        <p style="margin-top:10px">The core policy engine is source-available under BSL 1.1. Read it, audit it, and evaluate it before trusting it near production agents.</p>
+        <p style="margin-top:12px">Security infrastructure should be inspectable. AgentGuard is early, and we are keeping the implementation visible while it matures.</p>
         <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
-          <a href="https://github.com/thebotclub" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid var(--border-dim);border-radius:8px;padding:8px 16px;font-size:.85rem;font-weight:600;color:var(--text-dim);transition:color .15s" onmouseover="this.style.color='var(--text-bright)'" onmouseout="this.style.color='var(--text-dim)'">⭐ View on GitHub</a>
+          <a href="https://github.com/thebotclub/AgentGuard" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid var(--border-dim);border-radius:8px;padding:8px 16px;font-size:.85rem;font-weight:600;color:var(--text-dim);transition:color .15s" onmouseover="this.style.color='var(--text-bright)'" onmouseout="this.style.color='var(--text-dim)'">⭐ View on GitHub</a>
           <a href="https://docs.agentguard.tech" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent-dim);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:.85rem;font-weight:600;color:var(--accent-hi)">Read the Docs →</a>
         </div>
       </div>
@@ -1181,13 +1181,13 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
         <h2>The window is 18 months.</h2>
         <p>No category leader exists yet. Regulation is live. Agents are going to production. The enterprises that enforce security at deploy-time now won't be scrambling when their auditor — or their insurer — asks the hard questions.</p>
         <div class="stat-row" style="margin-top:24px">
-          <div class="stat-item"><strong>51</strong><span>API endpoints</span></div>
+          <div class="stat-item"><strong>Alpha</strong><span>public API</span></div>
           <div class="stat-item"><strong>Aug '26</strong><span>EU AI Act deadline</span></div>
           <div class="stat-item"><strong>Sub-ms</strong><span>Local PolicyEngine latency</span></div>
         </div>
         <div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap">
           <a href="#hero-form" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:14px 28px;border-radius:10px;font-weight:700;font-size:1rem;transition:background .15s" onmouseover="this.style.background='#4042b0'" onmouseout="this.style.background='var(--accent)'">Get Started Free →</a>
-          <a href="https://github.com/thebotclub" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:14px 28px;border-radius:10px;font-weight:600;font-size:1rem;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text-bright)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">View on GitHub</a>
+          <a href="https://github.com/thebotclub/AgentGuard" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:14px 28px;border-radius:10px;font-weight:600;font-size:1rem;transition:all .15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--text-bright)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">View on GitHub</a>
         </div>
       </div>
 

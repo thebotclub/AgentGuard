@@ -159,7 +159,7 @@ export function createHealthProbeRoutes(db: IDatabase): Router {
     res.status(allOk ? 200 : 503).json({
       status: allOk ? 'ready' : 'not-ready',
       checks,
-      version: '0.9.0',
+      version: '0.10.0',
       timestamp: new Date().toISOString(),
     });
   });
