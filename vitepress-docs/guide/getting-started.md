@@ -77,9 +77,9 @@ Evaluate up to 50 tool calls in a single request — useful for pipelines and pr
 
 ```typescript
 const results = await guard.evaluateBatch([
-  { tool: 'database_query', action: 'read', input: { table: 'users' } },
-  { tool: 'http_post', action: 'send', input: { url: 'https://api.example.com' } },
-  { tool: 'shell_exec', action: 'run', input: { cmd: 'ls -la' } },
+  { tool: 'database_query', params: { table: 'users' } },
+  { tool: 'http_post', params: { url: 'https://api.example.com' } },
+  { tool: 'shell_exec', params: { cmd: 'ls -la' } },
 ]);
 
 // results[].result: 'allow' | 'block' | 'monitor' | 'hitl_required'

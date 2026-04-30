@@ -27,7 +27,7 @@ export const swaggerOptions = {
     openapi: '3.0.3',
     info: {
       title: 'AgentGuard Policy Engine API',
-      version: '0.9.0',
+      version: '0.10.0',
       description: 'Runtime security platform for AI agents',
       contact: {
         name: 'AgentGuard Support',

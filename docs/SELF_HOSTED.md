@@ -482,7 +482,7 @@ curl http://localhost:3000/health | python3 -m json.tool
 
 ```bash
 # Roll back to a specific git tag
-git checkout v0.9.0
+git checkout v0.10.0
 docker compose build
 docker compose up -d
 ```
@@ -504,7 +504,7 @@ Example:
 
 ```bash
 curl http://localhost:3000/health
-# {"status":"ok","version":"0.9.0","db":"connected","redis":"connected"}
+# {"status":"ok","version":"0.10.0","db":"connected","redis":"connected"}
 
 curl http://localhost:3000/api/v1/health/detailed
 # {"status":"ok","components":{"database":{"status":"ok","latencyMs":2},"redis":{"status":"ok","latencyMs":1},...}}
@@ -726,4 +726,4 @@ DATABASE_URL=postgresql://agentguard:password@postgres:5432/agentguard?sslmode=r
 
 ---
 
-*Last updated: March 2026 — AgentGuard v0.9.0*
+*Last updated: April 2026 — AgentGuard v0.10.0*

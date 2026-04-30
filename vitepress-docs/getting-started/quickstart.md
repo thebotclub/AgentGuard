@@ -30,8 +30,7 @@ curl -X POST https://api.agentguard.tech/api/v1/evaluate \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "shell_exec",
-    "action": "run",
-    "input": { "cmd": "rm -rf /etc" }
+    "params": { "cmd": "rm -rf /etc" }
   }'
 ```
 
@@ -58,8 +57,7 @@ curl -X POST https://api.agentguard.tech/api/v1/evaluate \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "file_read",
-    "action": "read",
-    "input": { "path": "/app/data/report.csv" }
+    "params": { "path": "/app/data/report.csv" }
   }'
 ```
 
@@ -95,8 +93,7 @@ const guard = new AgentGuard({
 
 const decision = await guard.evaluate({
   tool: 'database_query',
-  action: 'execute',
-  input: { query: 'SELECT * FROM users WHERE id = $1', params: ['123'] },
+  params: { query: 'SELECT * FROM users WHERE id = $1', params: ['123'] },
 });
 
 if (decision.result === 'block') {
@@ -121,8 +118,7 @@ guard = AgentGuard(api_key=os.environ["AGENTGUARD_API_KEY"])
 
 decision = guard.evaluate(
     tool="database_query",
-    action="execute",
-    input={"query": "SELECT * FROM users WHERE id = %s", "params": ["123"]},
+    params={"query": "SELECT * FROM users WHERE id = %s", "params": ["123"]},
 )
 
 if decision["result"] == "block":
@@ -162,9 +158,9 @@ For pipelines with multiple tool calls, evaluate them in a single request:
 
 ```typescript
 const results = await guard.evaluateBatch([
-  { tool: 'database_query', action: 'read', input: { table: 'orders' } },
-  { tool: 'http_post', action: 'send', input: { url: 'https://api.stripe.com/charges' } },
-  { tool: 'file_write', action: 'write', input: { path: '/tmp/output.json' } },
+  { tool: 'database_query', params: { table: 'orders' } },
+  { tool: 'http_post', params: { url: 'https://api.stripe.com/charges' } },
+  { tool: 'file_write', params: { path: '/tmp/output.json' } },
 ]);
 
 for (const item of results) {
@@ -181,8 +177,8 @@ curl -X POST https://api.agentguard.tech/api/v1/evaluate/batch \
   -H "Content-Type: application/json" \
   -d '{
     "calls": [
-      { "tool": "database_query", "action": "read", "input": { "table": "orders" } },
-      { "tool": "http_post", "action": "send", "input": { "url": "https://api.stripe.com" } }
+      { "tool": "database_query", "params": { "table": "orders" } },
+      { "tool": "http_post", "params": { "url": "https://api.stripe.com" } }
     ]
   }'
 ```

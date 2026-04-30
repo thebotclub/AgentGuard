@@ -1312,7 +1312,7 @@
                 },
                 "example": {
                   "status": "ok",
-                  "version": "0.9.0",
+                  "version": "0.10.0",
                   "uptime": 86400,
                   "components": {
                     "database": {

@@ -21,13 +21,13 @@ But here's what the agent actually does:
 ```json
 {
   "tool": "database_query",
-  "input": { "query": "SELECT * FROM financial_results WHERE quarter = 'Q4'" }
+  "params": { "query": "SELECT * FROM financial_results WHERE quarter = 'Q4'" }
 }
 ```
 ```json
 {
   "tool": "email_send",
-  "input": {
+  "params": {
     "to": ["all-company@corp.com"],
     "subject": "Q4 Financial Results",
     "body": "[CONFIDENTIAL revenue figures, margin data, projections]"
@@ -66,8 +66,8 @@ Each tool call individually might seem reasonable. But the *sequence* represents
 "Send me a summary of our customer data" becomes:
 
 ```json
-{ "tool": "db_query", "input": { "query": "SELECT name, email, revenue FROM customers LIMIT 1000" } }
-{ "tool": "email_send", "input": { "to": "user@personal.com", "attachments": ["customer_export.csv"] } }
+{ "tool": "db_query", "params": { "query": "SELECT name, email, revenue FROM customers LIMIT 1000" } }
+{ "tool": "email_send", "params": { "to": "user@personal.com", "attachments": ["customer_export.csv"] } }
 ```
 
 The prompt is legitimate. The action is a GDPR violation.
@@ -77,7 +77,7 @@ The prompt is legitimate. The action is a GDPR violation.
 "Clean up the test environment" becomes:
 
 ```json
-{ "tool": "kubernetes_exec", "input": { "command": "kubectl delete namespace production" } }
+{ "tool": "kubernetes_exec", "params": { "command": "kubectl delete namespace production" } }
 ```
 
 The agent confused "test" with "production." The prompt was fine. The tool call would have been catastrophic.
@@ -93,12 +93,12 @@ guard = AgentGuard(api_key="your-key")
 
 # Before any tool executes:
 decision = guard.evaluate(
-    tool_name="email_send",
-    tool_input={"to": "all-company@corp.com", "body": "..."},
+    tool="email_send",
+    params={"to": "all-company@corp.com", "body": "..."},
     context={"agent_id": "summary-bot", "user": "analyst"}
 )
 
-if decision.action == "block":
+if decision.result == "block":
     print(f"Blocked: {decision.reason}")
     # "Sending email to company-wide distribution list requires approval"
 ```

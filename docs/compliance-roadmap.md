@@ -1,6 +1,6 @@
 # AgentGuard Compliance Roadmap
 
-## Current Compliance Features (v0.9.0)
+## Current Compliance Features (v0.10.0)
 
 ### ✅ Audit & Accountability
 - **Tamper-evident audit trail** — SHA-256 hash-chained event log, verifiable at any time

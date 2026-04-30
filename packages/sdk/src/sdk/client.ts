@@ -4,7 +4,7 @@ import os from 'os';
 import { LocalPolicyEngine } from './local-policy-engine.js';
 import type { PolicyBundle } from '../core/types.js';
 
-const SDK_VERSION = '0.9.0';
+const SDK_VERSION = '0.10.0';
 
 // ─── Telemetry batch event ─────────────────────────────────────────────────
 

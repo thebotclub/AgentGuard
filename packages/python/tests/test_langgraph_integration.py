@@ -291,13 +291,13 @@ class TestAgentGuardNodeAsync(unittest.TestCase):
     def test_ainvoke_allow(self):
         node = _make_node(decision="allow")
         state = _state_explicit_tool_calls(_tc("read_file"))
-        result = asyncio.get_event_loop().run_until_complete(node.ainvoke(state))
+        result = asyncio.run(node.ainvoke(state))
         self.assertIsNotNone(result)
 
     def test_ainvoke_block_adds_marker(self):
         node = _make_node(decision="block")
         state = _state_explicit_tool_calls(_tc("exec_cmd"))
-        result = asyncio.get_event_loop().run_until_complete(node.ainvoke(state))
+        result = asyncio.run(node.ainvoke(state))
         result_dict = _state_to_dict(result)
         self.assertIn("__agentguard_blocked__", result_dict)
 
@@ -415,7 +415,7 @@ class TestAguardedStream(unittest.TestCase):
                 results.append(item)
             return results
 
-        return asyncio.get_event_loop().run_until_complete(_run())
+        return asyncio.run(_run())
 
     def test_async_all_chunks_yielded(self):
         chunks = [{"tool_calls": []}, {"tool_calls": []}]
@@ -454,7 +454,7 @@ class TestAguardedStream(unittest.TestCase):
             MockGuard.return_value.evaluate = MagicMock(return_value={
                 "result": "block", "riskScore": 900, "reason": "Blocked"
             })
-            asyncio.get_event_loop().run_until_complete(_run())
+            asyncio.run(_run())
 
 
 # ─── wrap_tool_node tests ─────────────────────────────────────────────────────
@@ -506,7 +506,7 @@ class TestWrapToolNode(unittest.TestCase):
         guarded._guard.evaluate = MagicMock(return_value={"result": "allow", "riskScore": 0, "reason": "OK"})
 
         state = _state_explicit_tool_calls(_tc("read_file"))
-        result = asyncio.get_event_loop().run_until_complete(guarded.ainvoke(state))
+        result = asyncio.run(guarded.ainvoke(state))
         underlying.ainvoke.assert_called_once()
 
     def test_async_ainvoke_blocked_raises(self):
@@ -521,7 +521,7 @@ class TestWrapToolNode(unittest.TestCase):
             with self.assertRaises(AgentGuardBlockError):
                 await guarded.ainvoke(state)
 
-        asyncio.get_event_loop().run_until_complete(_run())
+        asyncio.run(_run())
         underlying.ainvoke.assert_not_called()
 
 

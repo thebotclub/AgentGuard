@@ -213,7 +213,7 @@ class TestGuardToolDecorator(unittest.TestCase):
         async def async_fetch(url: str) -> str:
             return "fetched"
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             async_fetch(url="https://example.com")
         )
         self.assertEqual(result, "fetched")
@@ -225,7 +225,7 @@ class TestGuardToolDecorator(unittest.TestCase):
         async def async_delete(path: str) -> bool:
             return True
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             async_delete(path="/etc/passwd")
         )
         self.assertIsNone(result)

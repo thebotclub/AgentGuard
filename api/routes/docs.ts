@@ -205,7 +205,7 @@ export function createDocsRoutes(): Router {
     <a class="ag-logo" href="https://agentguard.tech" target="_blank" rel="noopener">
       🛡️ AgentGuard
     </a>
-    <span class="ag-badge">API v0.9.0</span>
+    <span class="ag-badge">API v0.10.0</span>
     <div class="ag-topbar-links">
       <a href="https://app.agentguard.tech" target="_blank">Dashboard</a>
       <a href="/api/docs/spec.yaml" download="agentguard-openapi.yaml">↓ Download Spec</a>
