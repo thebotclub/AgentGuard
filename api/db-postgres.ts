@@ -596,7 +596,7 @@ export async function createPostgresAdapter(connectionString: string): Promise<I
       if (tenantId) {
         // SET LOCAL is transaction-scoped: automatically reset on COMMIT/ROLLBACK,
         // so it can never leak to the next request that reuses this connection.
-        await client.query('SET LOCAL app.current_tenant_id = $1', [tenantId]);
+        await client.query("SELECT set_config('app.current_tenant_id', $1, true)", [tenantId]);
       }
       const result = await fn(client);
       await client.query('COMMIT');
