@@ -47,5 +47,5 @@ outputs:
     description: '"true" if coverage meets threshold and no uncovered tools (when fail-on-uncovered is true), "false" otherwise'
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'index.js'

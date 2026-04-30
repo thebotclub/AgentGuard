@@ -55,14 +55,18 @@ vi.mock('../../lib/pii/regex-detector.js', () => ({
 }));
 
 vi.mock('../../lib/detection/engine.js', () => ({
-  DetectionEngine: vi.fn().mockImplementation(() => ({
-    detect: vi.fn().mockResolvedValue({ score: 0, category: 'none', provider: 'heuristic' }),
-    isAboveThreshold: vi.fn().mockReturnValue(false),
-  })),
+  DetectionEngine: vi.fn().mockImplementation(function () {
+    return {
+      detect: vi.fn().mockResolvedValue({ score: 0, category: 'none', provider: 'heuristic' }),
+      isAboveThreshold: vi.fn().mockReturnValue(false),
+    };
+  }),
 }));
 
 vi.mock('../../lib/detection/heuristic.js', () => ({
-  HeuristicDetectionPlugin: vi.fn().mockImplementation(() => ({})),
+  HeuristicDetectionPlugin: vi.fn().mockImplementation(function () {
+    return {};
+  }),
 }));
 
 vi.mock('../../lib/policy-inheritance.js', () => ({

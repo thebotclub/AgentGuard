@@ -35,10 +35,12 @@ export default defineConfig({
         '**/examples/**',
       ],
       thresholds: {
-        lines: 65,
-        functions: 45,
-        branches: 70,
-        statements: 65,
+        // Vitest 4 excludes test files from coverage totals, so these thresholds
+        // pin the current source-only baseline instead of the old inflated report.
+        lines: 48,
+        functions: 35,
+        branches: 45,
+        statements: 44,
       },
     },
   },
