@@ -150,6 +150,7 @@ describe('Security Regression: Tool Name Injection Prevention', () => {
       const app = buildApp(createEvaluateRoutes, mockDb);
       const res = await request(app)
         .post('/api/v1/evaluate')
+        .set('x-api-key', 'valid-key')
         .send({ tool: payload, params: {} });
 
       expect(res.status).toBe(400);

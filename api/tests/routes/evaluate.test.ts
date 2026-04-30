@@ -3,7 +3,7 @@
  *
  * Covers:
  *  - Happy path: allow, block, monitor decisions
- *  - Anonymous (demo) requests — no API key required
+ *  - Authentication is required for protected evaluation
  *  - Authenticated tenant requests
  *  - Input validation (tool name format, missing tool, etc.)
  *  - Kill switch (global + tenant)
@@ -112,7 +112,7 @@ describe('GET /api/v1/evaluate (discovery)', () => {
   });
 });
 
-describe('POST /api/v1/evaluate — anonymous (demo) mode', () => {
+describe('POST /api/v1/evaluate — auth and default policy', () => {
   let mockDb: IDatabase;
   let app: ReturnType<typeof buildEvalApp>;
 
@@ -125,19 +125,19 @@ describe('POST /api/v1/evaluate — anonymous (demo) mode', () => {
     app = buildEvalApp(mockDb);
   });
 
-  it('allows anonymous requests without API key (demo mode)', async () => {
+  it('returns 401 without API key', async () => {
     const res = await request(app)
       .post('/api/v1/evaluate')
       .send({ tool: 'search_web', params: { query: 'hello world' } });
 
-    expect(res.status).toBe(200);
-    expect(res.body.result).toBeTruthy();
-    expect(['allow', 'block', 'monitor', 'require_approval']).toContain(res.body.result);
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('unauthorized');
   });
 
   it('blocks known dangerous tools under default policy (shell_exec)', async () => {
     const res = await request(app)
       .post('/api/v1/evaluate')
+      .set('x-api-key', 'valid-key')
       .send({ tool: 'shell_exec', params: { command: 'ls' } });
 
     expect(res.status).toBe(200);
@@ -150,6 +150,7 @@ describe('POST /api/v1/evaluate — anonymous (demo) mode', () => {
   it('blocks sudo under default policy', async () => {
     const res = await request(app)
       .post('/api/v1/evaluate')
+      .set('x-api-key', 'valid-key')
       .send({ tool: 'sudo', params: { command: 'cat /etc/shadow' } });
 
     expect(res.status).toBe(200);
@@ -159,6 +160,7 @@ describe('POST /api/v1/evaluate — anonymous (demo) mode', () => {
   it('returns result, matchedRuleId, riskScore, reason, and durationMs', async () => {
     const res = await request(app)
       .post('/api/v1/evaluate')
+      .set('x-api-key', 'valid-key')
       .send({ tool: 'file_read', params: { path: '/tmp/test.txt' } });
 
     expect(res.status).toBe(200);
@@ -171,6 +173,7 @@ describe('POST /api/v1/evaluate — anonymous (demo) mode', () => {
   it('returns 400 for missing tool field', async () => {
     const res = await request(app)
       .post('/api/v1/evaluate')
+      .set('x-api-key', 'valid-key')
       .send({ params: { key: 'value' } });
 
     expect(res.status).toBe(400);
@@ -181,6 +184,7 @@ describe('POST /api/v1/evaluate — anonymous (demo) mode', () => {
   it('returns 400 for empty tool name', async () => {
     const res = await request(app)
       .post('/api/v1/evaluate')
+      .set('x-api-key', 'valid-key')
       .send({ tool: '', params: {} });
 
     expect(res.status).toBe(400);
@@ -189,6 +193,7 @@ describe('POST /api/v1/evaluate — anonymous (demo) mode', () => {
   it('returns 400 for tool name with invalid characters', async () => {
     const res = await request(app)
       .post('/api/v1/evaluate')
+      .set('x-api-key', 'valid-key')
       .send({ tool: 'tool; DROP TABLE users;', params: {} });
 
     expect(res.status).toBe(400);
@@ -198,14 +203,16 @@ describe('POST /api/v1/evaluate — anonymous (demo) mode', () => {
   it('returns 400 for tool name exceeding 200 chars', async () => {
     const res = await request(app)
       .post('/api/v1/evaluate')
+      .set('x-api-key', 'valid-key')
       .send({ tool: 'a'.repeat(201), params: {} });
 
     expect(res.status).toBe(400);
   });
 
-  it('stores an audit event for demo evaluations', async () => {
+  it('stores an audit event for authenticated evaluations', async () => {
     await request(app)
       .post('/api/v1/evaluate')
+      .set('x-api-key', 'valid-key')
       .send({ tool: 'file_write', params: { path: '/tmp/out.txt' } });
 
     expect(storeAuditEvent).toHaveBeenCalledOnce();
@@ -338,6 +345,7 @@ describe('POST /api/v1/evaluate — kill switch', () => {
 
     const res = await request(app)
       .post('/api/v1/evaluate')
+      .set('x-api-key', 'valid-key')
       .send({ tool: 'any_tool', params: {} });
 
     expect(res.status).toBe(200);
@@ -380,6 +388,7 @@ describe('POST /api/v1/evaluate — kill switch', () => {
 
     await request(app)
       .post('/api/v1/evaluate')
+      .set('x-api-key', 'valid-key')
       .send({ tool: 'any_tool', params: {} });
 
     expect(storeAuditEvent).toHaveBeenCalledWith(
@@ -517,6 +526,7 @@ describe('POST /api/v1/evaluate — decision types', () => {
 
     const res = await request(app)
       .post('/api/v1/evaluate')
+      .set('x-api-key', 'valid-key')
       .send({ tool: 'file_read', params: { path: '/etc/hosts', encoding: 'utf8' } });
 
     expect(res.status).toBe(200);

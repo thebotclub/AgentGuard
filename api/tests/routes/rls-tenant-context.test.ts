@@ -256,24 +256,28 @@ describe('Auth middleware RLS integration', () => {
     expect(capturedTenantId).toBe('tenant-123');
   });
 
-  it('anonymous requireEvaluateAuth does NOT set RLS context', async () => {
+  it('requireEvaluateAuth rejects missing API key before setting RLS context', async () => {
     const { createAuthMiddleware } = await import('../../middleware/auth.js');
     const { createMockDb } = await import('../helpers/mock-db.js');
     const mockDb = createMockDb();
     const auth = createAuthMiddleware(mockDb);
 
-    let capturedTenantId: string | undefined = 'should-be-undefined';
+    let capturedTenantId: string | undefined = 'next-not-called';
+    const status = vi.fn().mockReturnThis();
+    const json = vi.fn();
 
     const mockReq = {
       headers: {}, // no API key
     } as unknown as Request;
-    const mockRes = {} as Response;
+    const mockRes = { status, json } as unknown as Response;
     const mockNext: NextFunction = () => {
       capturedTenantId = rlsContext.getTenantId();
     };
 
     await auth.requireEvaluateAuth(mockReq, mockRes, mockNext);
 
-    expect(capturedTenantId).toBeUndefined();
+    expect(status).toHaveBeenCalledWith(401);
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({ error: 'unauthorized' }));
+    expect(capturedTenantId).toBe('next-not-called');
   });
 });

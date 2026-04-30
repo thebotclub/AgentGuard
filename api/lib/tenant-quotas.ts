@@ -265,7 +265,7 @@ export function createTenantQuotaMiddleware(
     res: Response,
     next: NextFunction,
   ): Promise<void> {
-    // Only apply to authenticated tenants (anonymous requests handled by IP limiter)
+    // Only apply to authenticated tenants; public endpoints are handled by IP limiter.
     const tenant = (req as Request & { tenant?: { id: string; plan: string } | null }).tenant;
     if (!tenant) {
       next();

@@ -173,7 +173,7 @@ describe('UAT: Global Kill Switch Flow', () => {
     expect(res.body.matchedRuleId).not.toBe('KILL_SWITCH');
   });
 
-  it('Step 5: Kill switch blocks anonymous (demo) evaluates too', async () => {
+  it('Step 5: Kill switch does not bypass evaluate authentication', async () => {
     const { getGlobalKillSwitch } = await import('../../routes/audit.js');
     vi.mocked(getGlobalKillSwitch).mockResolvedValue({
       active: true,
@@ -182,12 +182,10 @@ describe('UAT: Global Kill Switch Flow', () => {
 
     const res = await request(app)
       .post('/api/v1/evaluate')
-      // No API key — anonymous/demo mode
       .send({ tool: 'search_web', params: {} });
 
-    expect(res.status).toBe(200);
-    expect(res.body.result).toBe('block');
-    expect(res.body.matchedRuleId).toBe('KILL_SWITCH');
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('unauthorized');
   });
 
   it('Kill switch stores audit event with KILL_SWITCH rule ID', async () => {
