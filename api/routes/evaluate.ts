@@ -1,7 +1,7 @@
 /**
  * AgentGuard — Evaluate Routes
  *
- * POST /api/v1/evaluate  — stateless policy evaluation with optional tenant auth
+ * POST /api/v1/evaluate  — stateless policy evaluation with tenant or agent auth
  * GET  /api/v1/evaluate  — discovery/help response
  */
 import { Router, Request, Response } from 'express';
@@ -117,7 +117,7 @@ export function createEvaluateRoutes(
       method: 'POST required',
       description: 'Evaluate an agent action against the policy engine',
       example: {
-        curl: 'curl -X POST https://api.agentguard.tech/api/v1/evaluate -H "Content-Type: application/json" -d \'{"tool":"sudo","params":{"command":"cat /etc/shadow"}}\'',
+        curl: 'curl -X POST https://api.agentguard.tech/api/v1/evaluate -H "x-api-key: $AGENTGUARD_API_KEY" -H "Content-Type: application/json" -d \'{"tool":"sudo","params":{"command":"cat /etc/shadow"}}\'',
         body: { tool: 'sudo', params: { command: 'cat /etc/shadow' } },
       },
       try_interactive: 'https://app.agentguard.tech',

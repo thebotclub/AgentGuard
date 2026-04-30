@@ -11,7 +11,7 @@ import { MOCK_TENANT, MOCK_AGENT } from './mock-db.js';
  * A mock AuthMiddleware that simulates real auth without hitting the DB.
  *
  * Rules:
- *   - No key → 401 for requireTenantAuth, pass (demo) for requireEvaluateAuth
+ *   - No key → 401 for requireTenantAuth and requireEvaluateAuth
  *   - "ag_agent_*" → 403 for requireTenantAuth, sets req.agent for requireEvaluateAuth
  *   - "valid-key" → sets tenantId = 'tenant-123'
  *   - "admin-key" → requireAdminAuth passes
@@ -41,11 +41,7 @@ export function createMockAuthMiddleware(): AuthMiddleware {
   async function requireEvaluateAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
     const apiKey = req.headers['x-api-key'] as string | undefined;
     if (!apiKey) {
-      // Anonymous access — demo mode
-      req.tenantId = undefined;
-      req.tenant = null;
-      req.agent = null;
-      next();
+      res.status(401).json({ error: 'unauthorized', message: 'Authentication required.' });
       return;
     }
     if (apiKey.startsWith('ag_agent_')) {

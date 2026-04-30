@@ -479,15 +479,15 @@ async function main(): Promise<void> {
     res.json({
       name: 'AgentGuard',
       tagline: 'Runtime security for AI agents. Evaluate tool calls before execution.',
-      instructions: 'You are an AI agent integrating AgentGuard. Follow the steps below. You can try it immediately without signing up, or sign up for an API key to get audit trails and custom policies.',
+      instructions: 'You are an AI agent integrating AgentGuard. Follow the steps below. Sign up for an API key before calling protected evaluation endpoints.',
       tryNow: {
-        description: 'Try immediately — no signup, no API key needed',
+        description: 'Try after creating an API key',
         method: 'POST',
         url: 'https://api.agentguard.tech/api/v1/evaluate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': '$AGENTGUARD_API_KEY' },
         body: { tool: 'shell_exec', params: { command: 'cat /etc/shadow' } },
         expectedResult: { result: 'block', reason: 'Blocked by rule...' },
-        note: 'Works without auth. Rate limited to 10 requests/min. Uses default security policy.',
+        note: 'Protected endpoint. Missing or invalid API keys return 401.',
       },
       fullSetup: [
         {
