@@ -18,13 +18,24 @@ let evalCount = 0;
 let storedApiKey = null;
 
 // ── API Key Management ─────────────────────────────────
-function saveApiKey(key) {
-  storedApiKey = key.trim();
-  if (storedApiKey) {
-    try { sessionStorage.setItem('ag_dashboard_api_key', storedApiKey); } catch {}
-    document.getElementById('api-key-input').value = storedApiKey;
+async function validateTenantApiKey(key) {
+  if (!key.startsWith('ag_live_')) {
+    throw new Error('Enter a tenant API key that starts with ag_live_. Agent keys are evaluate-only and cannot manage the dashboard.');
   }
-  loadApiKey();
+  const r = await fetch(`${API}/api/v1/usage`, {
+    headers: { 'X-API-Key': key },
+    signal: AbortSignal.timeout(10000)
+  });
+  if (!r.ok) throw new Error(`API key validation failed (HTTP ${r.status})`);
+}
+
+async function saveApiKey(key) {
+  var nextKey = (key || '').trim();
+  if (!nextKey) return false;
+  await validateTenantApiKey(nextKey);
+  storedApiKey = nextKey;
+  try { sessionStorage.setItem('ag_dashboard_api_key', storedApiKey); } catch {}
+  document.getElementById('api-key-input').value = storedApiKey;
   // Hide no-key banner once a key is entered
   var demoBanner = document.getElementById('demo-banner');
   if (demoBanner && storedApiKey) demoBanner.classList.add('hidden');
@@ -36,6 +47,7 @@ function saveApiKey(key) {
     loadAuditTrail();
     loadApprovals();
   }
+  return true;
 }
 
 function loadApiKey() {
@@ -1182,9 +1194,9 @@ async function init() {
 
   // Fetch live kill switch state
   try {
-    const r = await fetch(`${API}/api/v1/killswitch`);
+    const r = await fetch(`${API}/api/v1/killswitch`, { headers: getApiHeaders() });
     const d = await r.json();
-    killActive = d.active;
+    killActive = d.tenant ? d.tenant.active : d.active;
     updateKillSwitchUI();
     document.getElementById('kill-api-status').textContent = d.message || '';
   } catch {}
@@ -1546,6 +1558,10 @@ function clearFeed() {
 async function toggleKillSwitch() {
   const btn = document.getElementById('kill-btn');
   const statusEl = document.getElementById('kill-api-status');
+  if (!storedApiKey || !storedApiKey.startsWith('ag_live_')) {
+    statusEl.textContent = 'Enter a valid ag_live_ tenant API key before using the kill switch.';
+    return;
+  }
   btn.disabled = true;
   btn.style.opacity = '0.6';
   statusEl.textContent = 'Contacting API...';
@@ -1554,7 +1570,7 @@ async function toggleKillSwitch() {
   try {
     const r = await fetch(`${API}/api/v1/killswitch`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getApiHeaders(),
       body: JSON.stringify({ active: newState })
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -1562,9 +1578,7 @@ async function toggleKillSwitch() {
     killActive = d.active;
     statusEl.textContent = d.message || '';
   } catch (e) {
-    // If API is unavailable, still toggle local state with clear warning
-    killActive = newState;
-    statusEl.textContent = '⚠️ API unreachable — local state only. Reload to sync.';
+    statusEl.textContent = 'Kill switch update failed. State was not changed.';
   } finally {
     btn.disabled = false;
     btn.style.opacity = '1';
@@ -2535,7 +2549,7 @@ function setOnboardingStep(step) {
   if (onboardingStep === 3) updateEvalCurl();
 }
 
-function onboardingNext() {
+async function onboardingNext() {
   if (onboardingStep === 2) {
     // Validate API key on step 2
     var keyInput = document.getElementById('ob-api-key');
@@ -2545,14 +2559,23 @@ function onboardingNext() {
       if (err) { err.textContent = 'Please enter your API key'; err.classList.remove('hidden'); }
       return;
     }
-    if (!key.startsWith('ag_live_') && !key.startsWith('ag_agent_')) {
+    if (!key.startsWith('ag_live_')) {
       var err = document.getElementById('ob-key-error');
-      if (err) { err.textContent = 'API keys start with ag_live_... — check your signup email'; err.classList.remove('hidden'); }
+      if (err) { err.textContent = 'Dashboard setup requires a tenant API key starting with ag_live_.'; err.classList.remove('hidden'); }
       return;
     }
-    saveApiKey(key);
     var err = document.getElementById('ob-key-error');
-    if (err) err.classList.add('hidden');
+    try {
+      if (err) { err.textContent = 'Validating API key...'; err.classList.remove('hidden'); }
+      await saveApiKey(key);
+      if (err) err.classList.add('hidden');
+    } catch (e) {
+      if (err) {
+        err.textContent = e instanceof Error ? e.message : 'API key validation failed';
+        err.classList.remove('hidden');
+      }
+      return;
+    }
   }
   if (onboardingStep < totalSteps) {
     setOnboardingStep(onboardingStep + 1);

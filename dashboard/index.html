@@ -127,7 +127,7 @@
     <!-- API Key input -->
     <div class="api-key-bar">
       <label class="api-key-label" for="api-key-input">API Key</label>
-      <input class="api-key-input" type="text" id="api-key-input" placeholder="ag_live_xxx" onchange="saveApiKey(this.value)">
+      <input class="api-key-input" type="text" id="api-key-input" placeholder="ag_live_xxx" onchange="saveApiKey(this.value).catch(function(e){alert(e.message || 'API key validation failed')})">
       <span class="text-xs-dim">Press Enter to save</span>
     </div>
 

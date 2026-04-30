@@ -872,11 +872,12 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
       const keyHash = await hashApiKey(key);
       const keyPrefix = key.substring(0, 12);
       const keySha256 = sha256Hex(key);
-      // Store masked value in `key` column (never store plaintext) — auth uses key_hash/key_sha256
-      const maskedKey = `${keyPrefix.substring(0, 7)}****`;
+      // Keep the legacy primary key unique without storing plaintext.
+      // Auth uses key_sha256/key_hash; the `key` column remains only for
+      // backward-compatible schema shape and must not receive a shared mask.
       db.prepare(
         'INSERT INTO api_keys (key, tenant_id, name, key_hash, key_prefix, key_sha256) VALUES (?, ?, ?, ?, ?, ?)'
-      ).run(maskedKey, tenantId, name, keyHash, keyPrefix, keySha256);
+      ).run(keySha256, tenantId, name, keyHash, keyPrefix, keySha256);
     },
 
     async deactivateApiKeyBySha256(sha256: string): Promise<void> {

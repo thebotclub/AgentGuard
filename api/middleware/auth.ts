@@ -191,7 +191,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
         error: 'unauthorized',
         message: 'Authentication required. Provide X-API-Key or Authorization: Bearer <token>',
         acceptedAuth: [
-          'Header: X-API-Key: ag_<key>',
+          'Header: X-API-Key: ag_live_<key>',
           'Header: Authorization: Bearer <jwt>',
         ],
         docs: 'https://agentguard.tech/docs/authentication',
@@ -208,7 +208,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
         error: 'unauthorized',
         message: 'Invalid or inactive API key',
         acceptedAuth: [
-          'Header: X-API-Key: ag_<key>',
+          'Header: X-API-Key: ag_live_<key>',
           'Header: Authorization: Bearer <jwt>',
         ],
         docs: 'https://agentguard.tech/docs/authentication',
@@ -258,7 +258,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
         error: 'unauthorized',
         message: 'Authentication required. Use X-API-Key or Authorization: Bearer.',
         acceptedAuth: [
-          'Header: X-API-Key: ag_<key>',
+          'Header: X-API-Key: ag_live_<key>',
           'Header: X-API-Key: ag_agent_<key>',
           'Header: Authorization: Bearer <jwt>',
         ],
@@ -273,7 +273,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
           error: 'unauthorized',
           message: 'Invalid or inactive agent key',
           acceptedAuth: [
-            'Header: X-API-Key: ag_<key>',
+            'Header: X-API-Key: ag_live_<key>',
             'Header: X-API-Key: ag_agent_<key>',
             'Header: Authorization: Bearer <jwt>',
           ],
@@ -294,7 +294,7 @@ export function createAuthMiddleware(db: IDatabase): AuthMiddleware {
         error: 'unauthorized',
         message: 'Invalid or inactive API key',
         acceptedAuth: [
-          'Header: X-API-Key: ag_<key>',
+          'Header: X-API-Key: ag_live_<key>',
           'Header: X-API-Key: ag_agent_<key>',
           'Header: Authorization: Bearer <jwt>',
         ],

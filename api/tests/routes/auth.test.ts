@@ -79,6 +79,24 @@ describe('POST /api/v1/signup', () => {
     expect(res.body.apiKey).toMatch(/^ag_live_/);
   });
 
+  it('issues unique API keys for consecutive signups', async () => {
+    const first = await request(app)
+      .post('/api/v1/signup')
+      .send({ name: 'First Agent', email: 'first@example.com' });
+    const second = await request(app)
+      .post('/api/v1/signup')
+      .send({ name: 'Second Agent', email: 'second@example.com' });
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    expect(first.body.apiKey).toMatch(/^ag_live_/);
+    expect(second.body.apiKey).toMatch(/^ag_live_/);
+    expect(first.body.apiKey).not.toBe(second.body.apiKey);
+    expect(mockDb.createApiKey).toHaveBeenCalledTimes(2);
+    expect((mockDb.createApiKey as ReturnType<typeof vi.fn>).mock.calls[0][0])
+      .not.toBe((mockDb.createApiKey as ReturnType<typeof vi.fn>).mock.calls[1][0]);
+  });
+
   it('recovers existing account by rotating key when email already registered', async () => {
     (mockDb.getTenantByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(MOCK_TENANT);
     (mockDb.all as ReturnType<typeof vi.fn>).mockResolvedValue([

@@ -27,7 +27,7 @@ export function createPlaygroundRoutes(
   // ── POST /api/v1/playground/session ──────────────────────────────────────
   router.post(
     '/api/v1/playground/session',
-    auth.requireEvaluateAuth,
+    auth.optionalTenantAuth,
     async (req: Request, res: Response) => {
       if (sessions.size >= MAX_SESSIONS) {
         return res
@@ -85,7 +85,7 @@ export function createPlaygroundRoutes(
   // ── POST /api/v1/playground/evaluate ─────────────────────────────────────
   router.post(
     '/api/v1/playground/evaluate',
-    auth.requireEvaluateAuth,
+    auth.optionalTenantAuth,
     async (req: Request, res: Response) => {
       const ks = await getGlobalKillSwitch(db);
       const tenantId = req.tenantId ?? 'demo';
@@ -233,7 +233,7 @@ export function createPlaygroundRoutes(
   // ── GET /api/v1/playground/audit/:sessionId ───────────────────────────────
   router.get(
     '/api/v1/playground/audit/:sessionId',
-    auth.requireEvaluateAuth,
+    auth.optionalTenantAuth,
     (req: Request, res: Response) => {
       const sid = req.params['sessionId'] as string;
       if (!sid || typeof sid !== 'string' || sid.length > 100) {
@@ -241,6 +241,9 @@ export function createPlaygroundRoutes(
       }
       const session = sessions.get(sid);
       if (!session) return res.status(404).json({ error: 'Session not found' });
+      if (session.tenantId !== (req.tenantId ?? 'demo')) {
+        return res.status(404).json({ error: 'Session not found' });
+      }
       res.json({
         sessionId: sid,
         eventCount: session.auditTrail.length,
@@ -250,14 +253,14 @@ export function createPlaygroundRoutes(
   );
 
   // ── GET /api/v1/playground/policy ─────────────────────────────────────────
-  router.get('/api/v1/playground/policy', auth.requireEvaluateAuth, (_req: Request, res: Response) => {
+  router.get('/api/v1/playground/policy', auth.optionalTenantAuth, (_req: Request, res: Response) => {
     res.json({ policy: DEFAULT_POLICY });
   });
 
   // ── GET /api/v1/playground/scenarios ──────────────────────────────────────
   router.get(
     '/api/v1/playground/scenarios',
-    auth.requireEvaluateAuth,
+    auth.optionalTenantAuth,
     (_req: Request, res: Response) => {
       res.json({
         scenarios: [

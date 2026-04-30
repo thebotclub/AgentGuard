@@ -134,7 +134,7 @@ export function createAuthRoutes(
     res.status(201).json({
       tenantId,
       apiKey,
-      dashboard: 'https://app.agentguard.tech',
+      dashboard: 'https://agentguard.tech/dashboard/',
       message:
         'Account created. Store your API key securely — it will not be shown again.',
       quickstart: {

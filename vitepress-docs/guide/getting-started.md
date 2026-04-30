@@ -95,7 +95,7 @@ curl -X POST https://api.agentguard.tech/api/v1/killswitch \
   -d '{"active": true}'
 ```
 
-Or via the dashboard at [app.agentguard.tech](https://app.agentguard.tech).
+Or via the dashboard at [agentguard.tech/dashboard](https://agentguard.tech/dashboard/).
 
 ## Next Steps
 

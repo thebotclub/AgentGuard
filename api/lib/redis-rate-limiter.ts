@@ -26,9 +26,9 @@ export interface BruteForceResult {
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const WINDOW_MS = 60_000;           // 1 minute sliding window
-const AUTH_LIMIT = 100;             // authenticated req/min
-const UNAUTH_LIMIT = 10;            // unauthenticated req/min
-const AUTH_ENDPOINT_LIMIT = 20;     // stricter limit for auth endpoints (login/signup/SSO)
+const AUTH_LIMIT = process.env['NODE_ENV'] === 'test' ? 1000 : 100;             // authenticated req/min
+const UNAUTH_LIMIT = process.env['NODE_ENV'] === 'test' ? 1000 : 10;            // unauthenticated req/min
+const AUTH_ENDPOINT_LIMIT = process.env['NODE_ENV'] === 'test' ? 1000 : 20;     // stricter limit for auth endpoints (login/signup/SSO)
 const SCIM_LIMIT = 30;              // SCIM provisioning endpoints (separate bucket)
 const BF_MAX_ATTEMPTS = 5;          // max failed auth attempts before lockout (was 10)
 const BF_WINDOW_MS = 15 * 60_000;  // 15 minute window

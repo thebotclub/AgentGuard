@@ -367,7 +367,7 @@ else:
 <tr><td>ag_agent_*</td><td><span class="param-type">agent</span></td><td>Restricted — <code>evaluate</code>, <code>audit</code>, and MCP evaluate only. Policies scoped to this agent.</td></tr>
 </table>
 
-<div class="callout callout-info"><strong>No API key?</strong> Requests without a key run in <strong>demo mode</strong> — fully functional but data isn't persisted. Great for testing. Demo mode returns a <code>sessionId</code> you can reference for the playground.</div>
+<div class="callout callout-info"><strong>No API key?</strong> Use the public playground endpoints: create a session with <code>POST /api/v1/playground/session</code>, then evaluate with <code>POST /api/v1/playground/evaluate</code>. Production <code>/api/v1/evaluate</code> requires an API key.</div>
 
 <div class="callout callout-warn"><strong>Agent keys are restricted.</strong> Using an <code>ag_agent_*</code> key on admin endpoints (create agent, kill switch, webhooks) returns <code>403</code>. Always use your tenant key for management operations.</div>
 
@@ -709,7 +709,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
 <pre><code>{
   "tenantId": "a80dd96c-...",
   "apiKey": "ag_live_bca6b529c4ac09e4...",
-  "dashboard": "https://app.agentguard.tech",
+  "dashboard": "https://agentguard.tech/dashboard/",
   "message": "Account created. Store your API key — it won't be shown again."
 }</code></pre>
     <div class="callout callout-warn"><strong>Save your API key immediately.</strong> It's hashed at rest and cannot be retrieved after this response.</div>
@@ -725,7 +725,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
   <div class="endpoint-header">
     <span class="method method-post">POST</span>
     <span class="path">/api/v1/evaluate</span>
-    <span class="auth-badge auth-optional">Auth Optional</span>
+    <span class="auth-badge auth-required">Auth Required</span>
   </div>
   <div class="endpoint-body">
     <h4>Request Body</h4>
@@ -1199,7 +1199,7 @@ jobs:
   <div class="endpoint-header">
     <span class="method method-post">POST</span>
     <span class="path">/api/v1/mcp/evaluate</span>
-    <span class="auth-badge auth-optional">Auth Optional</span>
+    <span class="auth-badge auth-required">Auth Required</span>
   </div>
   <div class="endpoint-body">
     <p>Evaluate an MCP tool call against the policy engine. Accepts either a raw MCP JSON-RPC <code>tools/call</code> message or a simplified <code>toolName</code>/<code>arguments</code> format.</p>
@@ -1937,7 +1937,7 @@ guard = AgentGuard(
 <div class="callout callout-info">
   <strong>Platform-level rate limits:</strong>
   <ul style="margin-top:8px;margin-bottom:0">
-    <li><strong>10 requests/min</strong> per IP for unauthenticated (demo mode) requests</li>
+    <li><strong>10 requests/min</strong> per IP for unauthenticated public playground requests</li>
     <li><strong>100 requests/min</strong> per IP for authenticated requests (any valid API key)</li>
   </ul>
   The custom rate limits below are <em>additional</em> tenant-configured limits on top of the platform defaults.

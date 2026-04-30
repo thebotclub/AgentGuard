@@ -35,7 +35,7 @@ Common issues and how to fix them.
    # or just use python-dotenv / os.environ
    ```
 
-3. **Revoked key** — Keys can be revoked from the dashboard. Check [app.agentguard.tech](https://app.agentguard.tech) → API Keys.
+3. **Revoked key** — Keys can be revoked from the dashboard. Check [agentguard.tech/dashboard](https://agentguard.tech/dashboard/) → API Keys.
 
 4. **Using test key in wrong environment** — `ag_test_*` keys work against `https://api.agentguard.tech` too, but confirm you're not accidentally pointing at a local instance that doesn't have the key.
 
@@ -368,7 +368,7 @@ If `db` is not `ok`, the API may be in a degraded state. Check [status.agentguar
 
 ## Getting Help
 
-- **Dashboard:** [app.agentguard.tech](https://app.agentguard.tech) — view audit logs, test policies
+- **Dashboard:** [agentguard.tech/dashboard](https://agentguard.tech/dashboard/) — view audit logs, test policies
 - **Demo playground:** [demo.agentguard.tech](https://demo.agentguard.tech) — test evaluations without auth
 - **GitHub Issues:** [github.com/thebotclub/AgentGuard](https://github.com/thebotclub/AgentGuard/issues)
 - **OpenAPI Spec:** [API Reference →](/api/swagger) — interactive docs for all 144 endpoints

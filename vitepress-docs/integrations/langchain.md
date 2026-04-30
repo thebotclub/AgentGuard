@@ -299,7 +299,7 @@ LangChain may wrap errors in its own exception types. Check `err.cause` or catch
 You're likely using the default permissive policy. Upload a custom policy via the API or dashboard.
 
 **`require_approval` decisions are blocking execution indefinitely**  
-Approvals require a webhook or the dashboard. Set up a webhook listener or approve manually at [app.agentguard.tech](https://app.agentguard.tech).
+Approvals require a webhook or the dashboard. Set up a webhook listener or approve manually at [agentguard.tech/dashboard](https://agentguard.tech/dashboard/).
 
 ---
 

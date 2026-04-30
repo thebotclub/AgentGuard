@@ -922,7 +922,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
   <div class="container">
     <h2 class="section-head" style="margin-bottom:.5rem">Test the real engine.</h2>
     <p class="section-sub" style="text-align:center;margin-bottom:.75rem;max-width:640px;margin-left:auto;margin-right:auto">This playground calls the <strong style="color:var(--text-bright)">live AgentGuard policy engine</strong>. Every evaluation is a real HTTP request — real decisions, real latency, real audit events.</p>
-    <p style="text-align:center;margin-bottom:2.5rem"><code style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:6px;padding:4px 10px;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--accent-hi)">POST https://api.agentguard.tech/api/v1/evaluate</code></p>
+    <p style="text-align:center;margin-bottom:2.5rem"><code style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:6px;padding:4px 10px;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--accent-hi)">POST https://api.agentguard.tech/api/v1/playground/evaluate</code></p>
 
     <div style="display:flex;justify-content:center;gap:8px;margin-bottom:2rem;flex-wrap:wrap" id="demo-tabs">
       <button class="demo-tab active" data-tab="simulate" onclick="switchTab('simulate')">⚡ Live Playground</button>
@@ -937,7 +937,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
           <div style="background:#0d0d1a;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
             <div style="background:rgba(99,102,241,0.08);padding:10px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)">
               <span style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--text-dim)">Request Builder</span>
-              <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)">POST /api/v1/evaluate</span>
+              <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)">POST /api/v1/playground/evaluate</span>
             </div>
             <div style="padding:16px">
               <div style="margin-bottom:12px">
@@ -1556,6 +1556,9 @@ async function runEval() {
         signal: AbortSignal.timeout(12000)
       });
       var data = await res.json();
+      if (!res.ok || !data.decision) {
+        throw new Error(data.error || 'Playground request failed');
+      }
       var totalMs = Math.round(performance.now() - t0);
 
       dot.style.background = data.decision.result === 'allow' ? 'var(--green)' : data.decision.result === 'block' ? 'var(--red)' : 'var(--amber)';

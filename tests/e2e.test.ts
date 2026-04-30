@@ -71,7 +71,7 @@ before(async () => {
   serverProcess = spawn(
     'npx', ['tsx', 'api/server.ts'],
     {
-      cwd: '/home/vector/.openclaw/workspace/agentguard-project',
+      cwd: process.cwd(),
       // AG_DB_PATH=:memory: ensures every test run starts with a clean DB — no state bleed between runs
       env: { ...process.env, PORT: '3001', NODE_ENV: 'test', ADMIN_KEY: 'e2e-admin-key-test', AG_DB_PATH: ':memory:' },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -100,7 +100,7 @@ describe('API Health & Root', () => {
     const res = await request('GET', '/health');
     assert.equal(res.status, 200);
     assert.equal(res.body['status'], 'ok');
-    assert.equal(res.body['version'], '0.6.0');
+    assert.equal(res.body['version'], '0.10.0');
     // Sensitive fields must NOT be present in public health endpoint
     assert.ok(!('engine' in res.body), 'engine should not be exposed');
     assert.ok(!('uptime' in res.body), 'uptime should not be exposed');
@@ -145,14 +145,16 @@ describe('Signup Flow', () => {
     tenantId = res.body['tenantId'] as string;
   });
 
-  it('POST /api/v1/signup rejects duplicate email with 409', async () => {
+  it('POST /api/v1/signup recovers duplicate email and returns a fresh key', async () => {
     const res = await request('POST', '/api/v1/signup', {
       name: 'Duplicate Corp',
       email: testEmail, // Same email as above
     });
-    assert.equal(res.status, 409);
-    assert.ok(typeof res.body['error'] === 'string');
-    assert.match(res.body['error'] as string, /already registered/i);
+    assert.equal(res.status, 200);
+    assert.equal(res.body['recovered'], true);
+    assert.equal(res.body['tenantId'], tenantId);
+    assert.ok((res.body['apiKey'] as string).startsWith('ag_live_'));
+    apiKey = res.body['apiKey'] as string;
   });
 
   it('POST /api/v1/signup rejects missing name with 400', async () => {
@@ -163,10 +165,10 @@ describe('Signup Flow', () => {
     assert.ok(typeof res.body['error'] === 'string');
   });
 
-  it('POST /api/v1/signup rejects missing email with 400', async () => {
+  it('POST /api/v1/signup accepts missing email for instant onboarding', async () => {
     const res = await request('POST', '/api/v1/signup', { name: 'No Email Corp' });
-    assert.equal(res.status, 400);
-    assert.ok(typeof res.body['error'] === 'string');
+    assert.equal(res.status, 201);
+    assert.ok((res.body['apiKey'] as string).startsWith('ag_live_'));
   });
 
   it('POST /api/v1/signup rejects invalid email format with 400', async () => {
@@ -526,7 +528,9 @@ describe('Input Validation', () => {
       { 'X-API-Key': apiKey },
     );
     assert.equal(res.status, 400);
-    assert.match(res.body['error'] as string, /too long/i);
+    assert.equal(res.body['error'], 'validation_error');
+    assert.equal(res.body['field'], 'tool');
+    assert.match(res.body['expected'] as string, /200/i);
   });
 
   it('POST /api/v1/signup with empty string name returns 400', async () => {
@@ -556,22 +560,22 @@ describe('Input Validation', () => {
 
 describe('Security Headers', () => {
   it('Response does not include X-Powered-By header', async () => {
-    const res = await request('GET', '/health');
+    const res = await request('GET', '/health', undefined, { 'X-API-Key': apiKey });
     assert.ok(!('x-powered-by' in res.headers), 'X-Powered-By should not be present');
   });
 
-  it('Response includes X-Frame-Options: DENY', async () => {
-    const res = await request('GET', '/health');
-    assert.equal(res.headers['x-frame-options'], 'DENY');
+  it('Response includes X-Frame-Options: SAMEORIGIN', async () => {
+    const res = await request('GET', '/health', undefined, { 'X-API-Key': apiKey });
+    assert.equal(res.headers['x-frame-options'], 'SAMEORIGIN');
   });
 
   it('Response includes X-Content-Type-Options: nosniff', async () => {
-    const res = await request('GET', '/health');
+    const res = await request('GET', '/health', undefined, { 'X-API-Key': apiKey });
     assert.equal(res.headers['x-content-type-options'], 'nosniff');
   });
 
   it('Response includes Referrer-Policy', async () => {
-    const res = await request('GET', '/health');
+    const res = await request('GET', '/health', undefined, { 'X-API-Key': apiKey });
     assert.ok(typeof res.headers['referrer-policy'] === 'string');
   });
 
@@ -592,7 +596,7 @@ describe('Security Headers', () => {
 describe('CORS', () => {
   it('CORS blocks requests from disallowed origin (evil.com)', async () => {
     const res = await fetch(`${BASE}/health`, {
-      headers: { Origin: 'https://evil.com' },
+      headers: { Origin: 'https://evil.com', 'X-API-Key': apiKey },
     });
     // Either blocked (403) or CORS header not set for evil.com
     const corsHeader = res.headers.get('access-control-allow-origin');
@@ -604,7 +608,7 @@ describe('CORS', () => {
 
   it('CORS allows requests from localhost', async () => {
     const res = await fetch(`${BASE}/health`, {
-      headers: { Origin: 'http://localhost:3000' },
+      headers: { Origin: 'http://localhost:3000', 'X-API-Key': apiKey },
     });
     const corsHeader = res.headers.get('access-control-allow-origin');
     // Localhost should be allowed (either explicitly or via wildcard)
@@ -619,6 +623,7 @@ describe('CORS', () => {
       method: 'OPTIONS',
       headers: {
         Origin: 'http://localhost:3000',
+        'X-API-Key': apiKey,
         'Access-Control-Request-Method': 'POST',
         'Access-Control-Request-Headers': 'Content-Type, X-API-Key',
       },
@@ -632,19 +637,19 @@ describe('CORS', () => {
 
 describe('404 Handling', () => {
   it('GET /nonexistent returns 404', async () => {
-    const res = await request('GET', '/this-does-not-exist');
+    const res = await request('GET', '/this-does-not-exist', undefined, { 'X-API-Key': apiKey });
     assert.equal(res.status, 404);
     assert.ok(typeof res.body['error'] === 'string');
   });
 
   it('GET /api/v1/fake returns 404 with hint', async () => {
-    const res = await request('GET', '/api/v1/fake-endpoint');
+    const res = await request('GET', '/api/v1/fake-endpoint', undefined, { 'X-API-Key': apiKey });
     assert.equal(res.status, 404);
     assert.ok('hint' in res.body || 'error' in res.body);
   });
 
   it('DELETE /api/v1/evaluate returns 404 (method not registered)', async () => {
-    const res = await request('DELETE', '/api/v1/evaluate');
+    const res = await request('DELETE', '/api/v1/evaluate', undefined, { 'X-API-Key': apiKey });
     // Express will return 404 for unregistered method+path combinations
     assert.ok([404, 405].includes(res.status));
   });
@@ -655,17 +660,27 @@ describe('404 Handling', () => {
 describe('Playground Flow', () => {
   let sessionId = '';
 
-  it('POST /api/v1/playground/session creates a new session', async () => {
+  it('Public playground creates a session and evaluates without signup', async () => {
     const res = await request('POST', '/api/v1/playground/session');
     assert.equal(res.status, 200);
     assert.ok(typeof res.body['sessionId'] === 'string');
     assert.ok(res.body['sessionId'] !== '');
     assert.ok(res.body['policy'] !== null && typeof res.body['policy'] === 'object');
-    sessionId = res.body['sessionId'] as string;
+    const publicSessionId = res.body['sessionId'] as string;
+
+    const evalRes = await request('POST', '/api/v1/playground/evaluate', {
+      sessionId: publicSessionId,
+      tool: 'sudo',
+      params: { command: 'whoami' },
+    });
+    assert.equal(evalRes.status, 200);
+    assert.equal(evalRes.body['sessionId'], publicSessionId);
   });
 
-  it('Playground session returns policy metadata', async () => {
-    const res = await request('POST', '/api/v1/playground/session');
+  it('Authenticated playground session returns policy metadata', async () => {
+    const res = await request('POST', '/api/v1/playground/session', undefined, { 'X-API-Key': apiKey });
+    assert.equal(res.status, 200);
+    sessionId = res.body['sessionId'] as string;
     const policy = res.body['policy'] as Record<string, unknown>;
     assert.ok(typeof policy['ruleCount'] === 'number');
     assert.ok((policy['ruleCount'] as number) > 0);
@@ -678,7 +693,7 @@ describe('Playground Flow', () => {
       sessionId,
       tool: 'sudo',
       params: { command: 'whoami' },
-    });
+    }, { 'X-API-Key': apiKey });
     assert.equal(res.status, 200);
     assert.equal(res.body['sessionId'], sessionId);
     assert.ok(res.body['decision'] !== null);
@@ -695,9 +710,9 @@ describe('Playground Flow', () => {
     await request('POST', '/api/v1/playground/evaluate', {
       sessionId,
       tool: 'file_read',
-    });
+    }, { 'X-API-Key': apiKey });
 
-    const res = await request('GET', `/api/v1/playground/audit/${sessionId}`);
+    const res = await request('GET', `/api/v1/playground/audit/${sessionId}`, undefined, { 'X-API-Key': apiKey });
     assert.equal(res.status, 200);
     assert.equal(res.body['sessionId'], sessionId);
     assert.ok(Array.isArray(res.body['events']));
@@ -705,7 +720,7 @@ describe('Playground Flow', () => {
   });
 
   it('GET /api/v1/playground/audit/:sessionId returns events with hash chain', async () => {
-    const res = await request('GET', `/api/v1/playground/audit/${sessionId}`);
+    const res = await request('GET', `/api/v1/playground/audit/${sessionId}`, undefined, { 'X-API-Key': apiKey });
     assert.equal(res.status, 200);
     const events = res.body['events'] as Array<Record<string, unknown>>;
     assert.ok(events.length > 0);
@@ -718,13 +733,13 @@ describe('Playground Flow', () => {
   });
 
   it('GET /api/v1/playground/audit/:sessionId returns 404 for unknown session', async () => {
-    const res = await request('GET', '/api/v1/playground/audit/nonexistent-session-xyz');
+    const res = await request('GET', '/api/v1/playground/audit/nonexistent-session-xyz', undefined, { 'X-API-Key': apiKey });
     assert.equal(res.status, 404);
     assert.ok(typeof res.body['error'] === 'string');
   });
 
   it('GET /api/v1/playground/policy returns the active policy document', async () => {
-    const res = await request('GET', '/api/v1/playground/policy');
+    const res = await request('GET', '/api/v1/playground/policy', undefined, { 'X-API-Key': apiKey });
     assert.equal(res.status, 200);
     assert.ok(res.body['policy'] !== null);
     const policy = res.body['policy'] as Record<string, unknown>;
@@ -734,7 +749,7 @@ describe('Playground Flow', () => {
   });
 
   it('GET /api/v1/playground/scenarios returns preset scenarios', async () => {
-    const res = await request('GET', '/api/v1/playground/scenarios');
+    const res = await request('GET', '/api/v1/playground/scenarios', undefined, { 'X-API-Key': apiKey });
     assert.equal(res.status, 200);
     assert.ok(Array.isArray(res.body['scenarios']));
     const scenarios = res.body['scenarios'] as Array<Record<string, unknown>>;
@@ -747,7 +762,7 @@ describe('Playground Flow', () => {
   });
 
   it('Playground evaluate rejects missing tool with 400', async () => {
-    const res = await request('POST', '/api/v1/playground/evaluate', { sessionId });
+    const res = await request('POST', '/api/v1/playground/evaluate', { sessionId }, { 'X-API-Key': apiKey });
     assert.equal(res.status, 400);
     assert.ok(typeof res.body['error'] === 'string');
   });
@@ -755,7 +770,7 @@ describe('Playground Flow', () => {
   it('Playground evaluate creates new session when sessionId is omitted', async () => {
     const res = await request('POST', '/api/v1/playground/evaluate', {
       tool: 'file_read',
-    });
+    }, { 'X-API-Key': apiKey });
     assert.equal(res.status, 200);
     assert.ok(typeof res.body['sessionId'] === 'string');
     assert.ok(res.body['sessionId'] !== sessionId); // New session
@@ -766,21 +781,21 @@ describe('Playground Flow', () => {
       sessionId,
       tool: 'chmod',
       params: { path: '/usr/bin/agent', mode: '777' },
-    });
+    }, { 'X-API-Key': apiKey });
     assert.equal(res.status, 200);
     const decision = res.body['decision'] as Record<string, unknown>;
     assert.equal(decision['result'], 'block');
   });
 
   it('Playground audit trail length increments with each action', async () => {
-    const newSession = await request('POST', '/api/v1/playground/session');
+    const newSession = await request('POST', '/api/v1/playground/session', undefined, { 'X-API-Key': apiKey });
     const sid = newSession.body['sessionId'] as string;
 
-    await request('POST', '/api/v1/playground/evaluate', { sessionId: sid, tool: 'sudo' });
-    await request('POST', '/api/v1/playground/evaluate', { sessionId: sid, tool: 'file_read' });
-    await request('POST', '/api/v1/playground/evaluate', { sessionId: sid, tool: 'rm' });
+    await request('POST', '/api/v1/playground/evaluate', { sessionId: sid, tool: 'sudo' }, { 'X-API-Key': apiKey });
+    await request('POST', '/api/v1/playground/evaluate', { sessionId: sid, tool: 'file_read' }, { 'X-API-Key': apiKey });
+    await request('POST', '/api/v1/playground/evaluate', { sessionId: sid, tool: 'rm' }, { 'X-API-Key': apiKey });
 
-    const audit = await request('GET', `/api/v1/playground/audit/${sid}`);
+    const audit = await request('GET', `/api/v1/playground/audit/${sid}`, undefined, { 'X-API-Key': apiKey });
     assert.equal(audit.body['eventCount'], 3);
   });
 });

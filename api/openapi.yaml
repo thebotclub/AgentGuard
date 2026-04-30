@@ -927,7 +927,7 @@ paths:
               example:
                 tenantId: "550e8400-e29b-41d4-a716-446655440000"
                 apiKey: "ag_live_a1b2c3d4e5f67890abcd1234"
-                dashboard: "https://app.agentguard.tech"
+                dashboard: "https://agentguard.tech/dashboard/"
                 message: "Account created. Store your API key securely — it will not be shown again."
         '400':
           description: Validation error
@@ -1064,12 +1064,14 @@ paths:
         The core evaluation endpoint. Submits an agent action (tool call) to the policy engine
         and receives a decision: `allow`, `block`, `monitor`, or `require_approval`.
 
-        Authentication is optional — unauthenticated calls use the default policy.
-        Authenticated calls use tenant-specific custom policies.
+        Authentication is required. Use a tenant `ag_live_*` key or an
+        agent-scoped `ag_agent_*` key.
+
+        For no-signup demos, use `/playground/session` and
+        `/playground/evaluate`.
       operationId: evaluate
       security:
         - ApiKeyAuth: []
-        - {}
       requestBody:
         required: true
         content:
@@ -5108,7 +5110,8 @@ paths:
       description: |
         Evaluate a tool call within an existing playground session.
         Results are stored in the session's in-memory audit log but not persisted.
-        Authentication: tenant API key or unauthenticated (uses default policy).
+        Authentication: optional. Omit the API key for the public no-signup
+        playground, or provide a tenant key to scope the session to your tenant.
       operationId: playgroundEvaluate
       security:
         - ApiKeyAuth: []
