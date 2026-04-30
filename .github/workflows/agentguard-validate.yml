@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: AgentGuard Policy Coverage Check
         # Non-blocking until AGENTGUARD_API_KEY secret is properly configured
