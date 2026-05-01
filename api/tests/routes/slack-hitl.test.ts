@@ -16,7 +16,7 @@ import request from 'supertest';
 import crypto from 'crypto';
 import express from 'express';
 import { createSlackHitlRoutes } from '../../routes/slack-hitl.js';
-import { createMockDb, MOCK_TENANT } from '../helpers/mock-db.js';
+import { createMockDb } from '../helpers/mock-db.js';
 import { buildApp, createMockAuthMiddleware } from '../helpers/create-app.js';
 import { encryptConfig } from '../../lib/integration-crypto.js';
 import type { IDatabase } from '../../db-interface.js';

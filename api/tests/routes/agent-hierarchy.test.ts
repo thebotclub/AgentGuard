@@ -11,7 +11,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { createAgentHierarchyRoutes } from '../../routes/agent-hierarchy.js';
-import { createMockDb, MOCK_AGENT, MOCK_TENANT } from '../helpers/mock-db.js';
+import { createMockDb, MOCK_AGENT } from '../helpers/mock-db.js';
 import { buildApp } from '../helpers/create-app.js';
 import type { IDatabase, ChildAgentRow, AgentRow } from '../../db-interface.js';
 

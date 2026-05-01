@@ -14,8 +14,8 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
-import { createMockDb, MOCK_TENANT, MOCK_AGENT } from '../helpers/mock-db.js';
-import { buildApp, createMockAuthMiddleware } from '../helpers/create-app.js';
+import { createMockDb, MOCK_AGENT } from '../helpers/mock-db.js';
+import { buildApp } from '../helpers/create-app.js';
 import type { IDatabase } from '../../db-interface.js';
 
 // ── Module mocks ───────────────────────────────────────────────────────────
@@ -208,9 +208,6 @@ describe('Security Regression: API Key Validation Uses SHA-256', () => {
   it('auth route uses SHA-256 hash for key lookup (not plaintext comparison)', async () => {
     // This test verifies the auth middleware uses getApiKeyBySha256,
     // ensuring constant-time lookup via hash rather than string comparison
-    const mockDb = createMockDb();
-    const auth = createMockAuthMiddleware();
-
     // The real auth middleware in api/middleware/auth.ts uses:
     //   const sha256 = crypto.createHash('sha256').update(apiKey).digest('hex');
     //   let keyRow = await db.getApiKeyBySha256(sha256);

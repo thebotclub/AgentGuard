@@ -9,7 +9,6 @@
  */
 import crypto from 'crypto';
 import type { IDatabase } from '../db-interface.js';
-import type { FailedWebhookRow } from '../db-interface.js';
 import { getCircuitBreaker, CircuitBreakerOpenError } from './circuit-breaker.js';
 import { publishEvent } from './redis-pubsub.js';
 

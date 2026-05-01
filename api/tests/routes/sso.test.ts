@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { createSsoRoutes } from '../../routes/sso.js';
-import { createMockDb, MOCK_TENANT } from '../helpers/mock-db.js';
+import { createMockDb } from '../helpers/mock-db.js';
 import { buildApp } from '../helpers/create-app.js';
 import type { IDatabase, SsoUserRow } from '../../db-interface.js';
 import { verifySsoJwt, SSO_JWT_COOKIE } from '../../lib/sso-jwt.js';

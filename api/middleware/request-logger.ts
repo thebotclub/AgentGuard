@@ -21,7 +21,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
       path: req.originalUrl || req.url,
       status,
       duration: Math.round(durationMs * 100) / 100,
-      tenantId: (req as any).tenantId as string | undefined,
+      tenantId: req.tenantId,
     };
 
     if (status >= 500) {

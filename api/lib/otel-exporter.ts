@@ -20,7 +20,7 @@
  *   const otel = getOtelExporter();
  *   otel.recordPolicyDecision({ agentId, toolName, decision, ... });
  */
-import { createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
