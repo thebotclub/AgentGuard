@@ -15,7 +15,6 @@ import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import yaml from 'js-yaml';
 const API_DIR = join(__dirname, '..');
-const ROOT_DIR = join(__dirname, '..', '..');
 
 // ── 1. Load base YAML spec ──────────────────────────────────────────────────
 

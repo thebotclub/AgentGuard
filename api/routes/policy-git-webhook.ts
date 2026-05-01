@@ -32,7 +32,6 @@ import { logger } from '../lib/logger.js';
 import type { IDatabase } from '../db-interface.js';
 import type { AuthMiddleware } from '../middleware/auth.js';
 import { requireRole } from '../lib/rbac.js';
-import { requireFeature } from '../middleware/feature-gate.js';
 import { storeAuditEvent } from './audit.js';
 import { PolicyRuleSchema } from '../../packages/sdk/src/core/types.js';
 
@@ -398,7 +397,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
         }
         await db.deleteGitWebhookConfig(tenantId);
         return res.json({ message: 'Git webhook configuration removed' });
-      } catch (err) {
+      } catch {
         return res.status(500).json({ error: 'Failed to remove git webhook config' });
       }
     },
@@ -415,7 +414,7 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
       try {
         const logs = await db.listGitSyncLogs(tenantId, limit);
         return res.json({ logs });
-      } catch (err) {
+      } catch {
         return res.status(500).json({ error: 'Failed to fetch sync logs' });
       }
     },
@@ -552,7 +551,6 @@ export function createPolicyGitWebhookRoutes(db: IDatabase, auth: AuthMiddleware
         // We scan using the repo full_name from the payload
         const repoInfo = payload['repository'] as { full_name?: string; html_url?: string } | undefined;
         const repoFullName = repoInfo?.full_name;
-        const repoHtmlUrl = repoInfo?.html_url;
 
         if (!repoFullName) {
           return res.status(400).json({ error: 'Missing repository.full_name in payload' });

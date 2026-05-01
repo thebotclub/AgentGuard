@@ -13,17 +13,9 @@
  * that SET LOCAL is called with the right tenant_id before every DB query.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { NextFunction, Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { rlsContext } from '../../lib/rls-context.js';
 import { nextWithRlsContext } from '../../middleware/rls-tenant-context.js';
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function makeNext(): NextFunction & { calls: number } {
-  const fn = vi.fn() as unknown as NextFunction & { calls: number };
-  fn.calls = 0;
-  return fn;
-}
 
 // ── rlsContext ─────────────────────────────────────────────────────────────
 

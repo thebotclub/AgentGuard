@@ -19,6 +19,7 @@ import { createMockDb, MOCK_TENANT, MOCK_AGENT } from '../helpers/mock-db.js';
 import { buildApp, createMockAuthMiddleware } from '../helpers/create-app.js';
 import type { IDatabase } from '../../db-interface.js';
 import express from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
 // ── Module mocks (hoisted by vitest before any imports) ────────────────────
 
@@ -369,7 +370,7 @@ describe('POST /api/v1/evaluate — kill switch', () => {
     const tenantWithKillSwitch = { ...MOCK_TENANT, kill_switch_active: 1, kill_switch_at: '2024-01-01T00:00:00.000Z' };
 
     // Override requireEvaluateAuth to inject kill-switch tenant
-    auth.requireEvaluateAuth = async (req: any, _res: any, next: any): Promise<void> => {
+    auth.requireEvaluateAuth = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
       req.tenantId = 'tenant-123';
       req.tenant = tenantWithKillSwitch;
       req.agent = null;

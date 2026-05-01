@@ -28,6 +28,7 @@ export function createMockAuthMiddleware(): AuthMiddleware {
       res.status(403).json({ error: 'Agent keys cannot perform tenant admin operations.' });
       return;
     }
+    // eslint-disable-next-line security/detect-possible-timing-attacks
     if (apiKey === 'valid-key') {
       req.tenantId = 'tenant-123';
       req.tenant = MOCK_TENANT;
@@ -45,6 +46,8 @@ export function createMockAuthMiddleware(): AuthMiddleware {
       return;
     }
     if (apiKey.startsWith('ag_agent_')) {
+      // Test fixture only; literal-key branches intentionally exercise auth paths.
+      // eslint-disable-next-line security/detect-possible-timing-attacks
       if (apiKey === 'ag_agent_valid') {
         req.agent = MOCK_AGENT;
         req.tenant = MOCK_TENANT;
@@ -55,6 +58,8 @@ export function createMockAuthMiddleware(): AuthMiddleware {
       res.status(401).json({ error: 'unauthorized', message: 'Invalid or inactive agent key' });
       return;
     }
+    // Test fixture only; literal-key branches intentionally exercise auth paths.
+    // eslint-disable-next-line security/detect-possible-timing-attacks
     if (apiKey === 'valid-key') {
       req.tenantId = 'tenant-123';
       req.tenant = MOCK_TENANT;
@@ -67,6 +72,8 @@ export function createMockAuthMiddleware(): AuthMiddleware {
 
   async function optionalTenantAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
     const apiKey = req.headers['x-api-key'] as string | undefined;
+    // Test fixture only; literal-key branches intentionally exercise auth paths.
+    // eslint-disable-next-line security/detect-possible-timing-attacks
     if (apiKey === 'valid-key') {
       req.tenantId = 'tenant-123';
       req.tenant = MOCK_TENANT;
@@ -80,6 +87,8 @@ export function createMockAuthMiddleware(): AuthMiddleware {
 
   function requireAdminAuth(req: Request, res: Response, next: NextFunction): void {
     const apiKey = req.headers['x-api-key'] as string | undefined;
+    // Test fixture only; literal-key branches intentionally exercise auth paths.
+    // eslint-disable-next-line security/detect-possible-timing-attacks
     if (apiKey === 'admin-key') {
       next();
       return;

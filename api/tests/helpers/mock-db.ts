@@ -171,7 +171,7 @@ export function createMockDb(): IDatabase {
     incrementChildToolCalls: vi.fn().mockResolvedValue(undefined),
 
     // License
-    insertLicenseKey: vi.fn().mockResolvedValue({} as any),
+    insertLicenseKey: vi.fn().mockResolvedValue({} as unknown),
     getLicenseKeyByTenant: vi.fn().mockResolvedValue(null),
     getLicenseKeyByHash: vi.fn().mockResolvedValue(null),
     revokeLicenseKey: vi.fn().mockResolvedValue(undefined),
@@ -181,11 +181,11 @@ export function createMockDb(): IDatabase {
     getLicenseUsage: vi.fn().mockResolvedValue(null),
 
     // Anomaly / Alerts
-    insertAnomalyRule: vi.fn().mockResolvedValue({} as any),
+    insertAnomalyRule: vi.fn().mockResolvedValue({} as unknown),
     getAnomalyRules: vi.fn().mockResolvedValue([]),
     updateAnomalyRule: vi.fn().mockResolvedValue(undefined),
     deleteAnomalyRule: vi.fn().mockResolvedValue(undefined),
-    insertAlert: vi.fn().mockResolvedValue({} as any),
+    insertAlert: vi.fn().mockResolvedValue({} as unknown),
     getAlerts: vi.fn().mockResolvedValue([]),
     resolveAlert: vi.fn().mockResolvedValue(undefined),
     getActiveAlert: vi.fn().mockResolvedValue(undefined),
@@ -197,7 +197,7 @@ export function createMockDb(): IDatabase {
 
     // Team
     getTeamMembers: vi.fn().mockResolvedValue([]),
-    addTeamMember: vi.fn().mockResolvedValue({} as any),
+    addTeamMember: vi.fn().mockResolvedValue({} as unknown),
     removeTeamMember: vi.fn().mockResolvedValue(undefined),
     updateTeamMemberRole: vi.fn().mockResolvedValue(undefined),
     getTeamMemberByEmail: vi.fn().mockResolvedValue(undefined),
@@ -211,18 +211,18 @@ export function createMockDb(): IDatabase {
     failJob: vi.fn().mockResolvedValue(undefined),
 
     // SCIM
-    createScimToken: vi.fn().mockResolvedValue({} as any),
+    createScimToken: vi.fn().mockResolvedValue({} as unknown),
     getScimTokenByHash: vi.fn().mockResolvedValue(undefined),
     listScimTokens: vi.fn().mockResolvedValue([]),
     revokeScimToken: vi.fn().mockResolvedValue(undefined),
     touchScimToken: vi.fn().mockResolvedValue(undefined),
-    createScimUser: vi.fn().mockResolvedValue({} as any),
+    createScimUser: vi.fn().mockResolvedValue({} as unknown),
     getScimUser: vi.fn().mockResolvedValue(undefined),
     getScimUserByUserName: vi.fn().mockResolvedValue(undefined),
     listScimUsers: vi.fn().mockResolvedValue({ users: [], total: 0 }),
     updateScimUser: vi.fn().mockResolvedValue(undefined),
     deleteScimUser: vi.fn().mockResolvedValue(undefined),
-    createScimGroup: vi.fn().mockResolvedValue({} as any),
+    createScimGroup: vi.fn().mockResolvedValue({} as unknown),
     getScimGroup: vi.fn().mockResolvedValue(undefined),
     listScimGroups: vi.fn().mockResolvedValue({ groups: [], total: 0 }),
     updateScimGroup: vi.fn().mockResolvedValue(undefined),

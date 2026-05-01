@@ -1181,7 +1181,7 @@ export function createSqliteAdapter(dbPath?: string): { adapter: IDatabase; raw:
     async getAgentByKey(apiKey: string): Promise<AgentRow | undefined> {
       // Fix 1: SHA-256 lookup first, then bcrypt verify
       const sha256 = sha256Hex(apiKey);
-      let row = getSync<Record<string, unknown>>('SELECT * FROM agents WHERE api_key_sha256 = ? AND active = 1', [sha256]);
+      const row = getSync<Record<string, unknown>>('SELECT * FROM agents WHERE api_key_sha256 = ? AND active = 1', [sha256]);
       if (row) {
         if (row['api_key_hash']) {
           const valid = await verifyApiKey(apiKey, row['api_key_hash'] as string);

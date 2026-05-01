@@ -11,7 +11,7 @@
  *  - OIDC claims → AgentGuard role mapping
  */
 import crypto from 'node:crypto';
-import { importJWK, jwtVerify, decodeJwt } from 'jose';
+import { importJWK, jwtVerify } from 'jose';
 import type { JWTPayload, JWK } from 'jose';
 
 // ── Types ─────────────────────────────────────────────────────────────────

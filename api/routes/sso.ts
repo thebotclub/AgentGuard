@@ -23,7 +23,6 @@ import { requireRole } from '../lib/rbac.js';
 import { encryptConfig, decryptConfig } from '../lib/integration-crypto.js';
 import { requireFeature } from '../middleware/feature-gate.js';
 import {
-  fetchDiscovery,
   buildAuthorizationUrl,
   exchangeCodeForTokens,
   validateIdToken,
@@ -61,20 +60,6 @@ const SsoConfigUpdateSchema = z.object({
   memberGroup: z.string().optional().nullable(),
   idpMetadataXml: z.string().optional().nullable(),
   spEntityId: z.string().optional().nullable(),
-});
-
-const SsoAuthorizeSchema = z.object({
-  tenantId: z.string().min(1),
-  returnTo: z.string().optional(),
-});
-
-const SsoCallbackSchema = z.object({
-  code: z.string().optional(),
-  state: z.string().min(1),
-  SAMLResponse: z.string().optional(),
-  RelayState: z.string().optional(),
-  error: z.string().optional(),
-  error_description: z.string().optional(),
 });
 
 // ── Legacy Schema (keep existing POST /api/v1/sso/configure working) ──────

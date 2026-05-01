@@ -7,7 +7,7 @@
  * - Connection limit enforcement
  * - Status endpoint for admins
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { createEventsRoutes } from '../../routes/events.js';
