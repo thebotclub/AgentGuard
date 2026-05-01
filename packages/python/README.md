@@ -4,7 +4,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/agentguard-tech)](https://pypi.org/project/agentguard-tech/)
 [![Python versions](https://img.shields.io/pypi/pyversions/agentguard-tech)](https://pypi.org/project/agentguard-tech/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: BSL 1.1](https://img.shields.io/badge/License-BSL_1.1-orange.svg)](https://github.com/thebotclub/AgentGuard/blob/main/LICENSE)
 
 ## Overview
 
@@ -17,6 +17,10 @@ AgentGuard gives AI agents production-grade guardrails:
 - ⚡ **Zero dependencies** — pure Python stdlib, works anywhere
 
 ---
+
+## License
+
+AgentGuard is distributed under the Business Source License 1.1. See the repository [LICENSE](https://github.com/thebotclub/AgentGuard/blob/main/LICENSE) for current terms.
 
 ## Installation
 

@@ -1,6 +1,5 @@
 <div align="center">
 
-<!-- LOGO PLACEHOLDER: replace with actual SVG/PNG logo -->
 <img src="assets/agentguard-logo.png" alt="AgentGuard" width="120" height="120" />
 
 # AgentGuard
@@ -13,7 +12,7 @@
 [![npm](https://img.shields.io/npm/v/@the-bot-club/agentguard?color=4f46e5&logo=npm)](https://www.npmjs.com/package/@the-bot-club/agentguard)
 [![PyPI](https://img.shields.io/pypi/v/agentguard-tech?color=4f46e5&logo=pypi)](https://pypi.org/project/agentguard-tech/)
 [![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/thebotclub)
-[![Tests](https://img.shields.io/badge/tests-193_passing-brightgreen)](https://github.com/thebotclub/agentguard/actions)
+[![Tests](https://img.shields.io/badge/tests-626_JS%2FTS_passing-brightgreen)](https://github.com/thebotclub/agentguard/actions)
 
 [**Website**](https://agentguard.tech) · [**Docs**](https://docs.agentguard.tech) · [**Pricing**](https://agentguard.tech/pricing) · [**Demo**](https://demo.agentguard.tech) · [**Twitter/X**](https://x.com/agentguardtech)
 
@@ -66,7 +65,7 @@ const decision = await guard.evaluate({
 
 > **Python?** `pip install agentguard-tech` — same API, same policies.
 
-Free tier includes 10,000 tool-call evaluations/month. [Sign up →](https://agentguard.tech/signup)
+Free tier includes 100,000 tool-call evaluations/month and 5 agent seats. [Sign up →](https://agentguard.tech/signup)
 
 ---
 
@@ -172,7 +171,7 @@ Full API reference: [docs.agentguard.tech/api](https://docs.agentguard.tech/api)
 ## 🔐 Security
 
 - **BSL 1.1 license** — free for non-commercial and small commercial use; contact us for enterprise terms
-- **SOC 2 Type II** — report available on request
+- **SOC 2 evidence mapping** — AgentGuard helps collect evidence; AgentGuard's own SOC 2 certification is in progress
 - **Data residency** — US (default), EU available on Enterprise
 - **Responsible disclosure:** [security@agentguard.tech](mailto:security@agentguard.tech) · [SECURITY.md](SECURITY.md)
 
@@ -182,9 +181,9 @@ Full API reference: [docs.agentguard.tech/api](https://docs.agentguard.tech/api)
 
 | | Free | Pro | Enterprise |
 |---|---|---|---|
-| Tool calls/month | 10,000 | 500,000 | Unlimited |
-| Agents | 3 | Unlimited | Unlimited |
-| Audit retention | 30 days | 365 days | Unlimited |
+| Tool calls/month | 100,000 | 500,000 | Unlimited |
+| Agents | 5 | 100 | Unlimited |
+| Audit retention | 30 days | 365 days | 7 years / custom |
 | Kill switch | ✅ | ✅ | ✅ |
 | Compliance templates | ✅ | ✅ | ✅ |
 | HITL approvals | ❌ | ✅ | ✅ |

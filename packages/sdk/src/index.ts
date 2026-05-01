@@ -1,5 +1,5 @@
 /**
- * @agentguard/sdk — Main entry point
+ * @the-bot-club/agentguard — Main entry point
  * Re-exports from core and sdk sub-packages.
  * Named exports only per team standards.
  */

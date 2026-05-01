@@ -110,7 +110,7 @@
     <button class="nav-item" onclick="showPage('siem', event)">📡 SIEM</button>
     <div class="sidebar-spacer"></div>
     <div class="sidebar-footer">
-      <div class="sidebar-version">AgentGuard v0.9.0</div>
+      <div class="sidebar-version">AgentGuard v0.10.0</div>
       <span id="sidebar-engine-info">Engine: 7 rules loaded<br>Default: allow</span>
     </div>
   </nav>
@@ -150,7 +150,7 @@
             <div class="qs-card-title">Install SDK</div>
             <div class="qs-card-desc">Add AgentGuard to your project in seconds</div>
             <div class="qs-code-box">
-              <span class="text-ellipsis" id="sdk-install-cmd">npm install @agentguard/sdk</span>
+              <span class="text-ellipsis" id="sdk-install-cmd">npm install @the-bot-club/agentguard</span>
               <button class="copy-btn-sm" onclick="copyToClipboard('sdk-install-cmd',this)" title="Copy">📋</button>
             </div>
             <div class="sdk-lang-row">
@@ -168,9 +168,9 @@
             <div class="qs-card-desc">Run policy checks in your GitHub Actions pipeline</div>
             <div class="cicd-code-box">
               <pre class="pre-wrap" id="cicd-snippet">- name: AgentGuard Policy Check
-  uses: agentguard/action@v1
-  with:
-    api-key: $\{{ secrets.AG_API_KEY }}</pre>
+  run: npx -y @the-bot-club/agentguard-cli validate .
+  env:
+    AGENTGUARD_API_KEY: $\{{ secrets.AGENTGUARD_API_KEY }}</pre>
               <div class="pos-bottom-right">
                 <button class="copy-btn-bare" onclick="copyToClipboard('cicd-snippet',this)" title="Copy">📋</button>
               </div>
@@ -1053,7 +1053,7 @@ const { result, riskScore } = await res.json();</pre>
             <div class="lic-plan-badge lic-badge-free" id="lic-plan-badge">
               Free Plan
             </div>
-            <div class="lic-plan-sub" id="lic-plan-sub">100,000 events/month · 3 agents · 30-day retention</div>
+            <div class="lic-plan-sub" id="lic-plan-sub">100,000 events/month · 5 agents · 30-day retention</div>
             <button class="btn btn-primary btn-upgrade" onclick="window.open('https://agentguard.tech/pricing?ref=dashboard','_blank')">
               ⚡ Upgrade to Pro — $149/mo
             </button>

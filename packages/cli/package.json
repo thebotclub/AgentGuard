@@ -2,7 +2,7 @@
   "name": "@the-bot-club/agentguard-cli",
   "version": "0.10.0",
   "description": "AgentGuard CLI \u2014 scan agent source code and validate policy coverage",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "commonjs",
   "main": "./dist/cli.js",
   "bin": {

@@ -1149,8 +1149,8 @@ function applyLicenseStatus(data) {
   }
   if (sub) {
     var subText = {
-      free:       '100,000 events/month · 3 agents · 30-day retention',
-      pro:        '500,000 events/month · 25 agents · 90-day retention',
+      free:       '100,000 events/month · 5 agents · 30-day retention',
+      pro:        '500,000 events/month · 100 agents · 365-day retention',
       enterprise: 'Unlimited events · custom seats · custom retention'
     };
     sub.textContent = subText[tier] || subText.free;
@@ -3015,7 +3015,7 @@ function copyToClipboard(elemId, btn) {
 
 function switchSdkLang(lang) {
   var cmds = {
-    npm: 'npm install @agentguard/sdk',
+    npm: 'npm install @the-bot-club/agentguard',
     pip: 'pip install agentguard',
     curl: 'curl https://api.agentguard.tech/health'
   };

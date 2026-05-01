@@ -40,8 +40,8 @@
   "url": "https://agentguard.tech",
   "description": "Alpha/private-beta AI agent deployment enforcement platform. CI/CD policy checks, runtime tool-call evaluation, and tamper-evident audit logs for teams preparing production agent deployments.",
   "offers": [
-    { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD", "description": "100,000 evaluations/month, 3 agent seats, 30-day audit retention" },
-    { "@type": "Offer", "name": "Pro", "price": "149", "priceCurrency": "USD", "description": "500,000 evaluations/month, 25 agent seats, SIEM, SSO, 90-day retention" }
+    { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD", "description": "100,000 evaluations/month, 5 agent seats, 30-day audit retention" },
+    { "@type": "Offer", "name": "Pro", "price": "149", "priceCurrency": "USD", "description": "500,000 evaluations/month, 100 agent seats, SIEM export, anomaly detection, 365-day retention" }
   ],
   "author": {
     "@type": "Person",
@@ -524,7 +524,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
           </div>
           <p style="margin-top:12px;font-size:.88rem">Check your email for setup instructions and docs.</p>
         </div>
-        <div class="form-trust"><span aria-hidden="true">🔒</span> Free forever. No spam. No card required.</div>
+        <div class="form-trust"><span aria-hidden="true">🔒</span> Free tier. No spam. No card required.</div>
       </div>
     </div>
   </div>
@@ -812,8 +812,8 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
       <div class="step-card">
         <div class="step-number">3</div>
         <h3>Add the CI Gate</h3>
-        <p>One line in your GitHub Actions workflow. Fails the pipeline if any agent tool lacks policy coverage.</p>
-        <div class="code-block"><span class="cm"># .github/workflows/deploy.yml</span><br><span class="kw">- uses</span>: <span class="str">agentguard-tech/validate@v1</span><br>&nbsp;&nbsp;<span class="kw">with</span>:<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">path</span>: <span class="str">.</span><br><span class="cm"># Blocks deploy if uncovered tools</span></div>
+        <p>Run the CLI in GitHub Actions. Fail the pipeline if any agent tool lacks policy coverage.</p>
+        <div class="code-block"><span class="cm"># .github/workflows/deploy.yml</span><br><span class="kw">- name</span>: <span class="str">AgentGuard policy gate</span><br>&nbsp;&nbsp;<span class="kw">run</span>: <span class="str">npx -y @the-bot-club/agentguard-cli validate .</span><br><span class="kw">env</span>:<br>&nbsp;&nbsp;<span class="kw">AGENTGUARD_API_KEY</span>: <span class="str">${{ secrets.AGENTGUARD_API_KEY }}</span></div>
       </div>
 
       <div class="step-card">
@@ -830,7 +830,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
 <!-- CODE EXAMPLE: GitHub Actions -->
 <section id="code-example">
   <div class="container">
-    <div class="section-eyebrow">GitHub Actions Integration</div>
+    <div class="section-eyebrow">CI/CD Integration</div>
     <h2 class="section-head" style="margin-bottom:12px">Your pipeline. Your gate.</h2>
     <p class="section-sub" style="margin-bottom:36px">Drop this workflow into any repo. AgentGuard validates tool coverage before every deploy — like container scanning, but for agents.</p>
 
@@ -855,12 +855,10 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
     <span class="y-key">runs-on:</span> <span class="y-val">ubuntu-latest</span>
     <span class="y-key">steps:</span>
       <span class="y-cmt"># ✅ Step 1 — Validate agent tool coverage against policy</span>
-      - <span class="y-key">uses:</span> <span class="y-val">agentguard-tech/validate@v1</span>
-        <span class="y-key">with:</span>
-          <span class="y-key">path:</span> <span class="y-str">.</span>                          <span class="y-cmt"># scan the entire repo</span>
-          <span class="y-key">policy:</span> <span class="y-str">./policy.yaml</span>           <span class="y-cmt"># your security policy</span>
-          <span class="y-key">api-key:</span> <span class="y-str">${{ secrets.AGENTGUARD_KEY }}</span>
-          <span class="y-key">fail-on-uncovered:</span> <span class="y-val">true</span>        <span class="y-cmt"># ← blocks deploy if any tool lacks coverage</span>
+      - <span class="y-key">name:</span> <span class="y-val">AgentGuard policy gate</span>
+        <span class="y-key">run:</span> <span class="y-str">npx -y @the-bot-club/agentguard-cli validate . --threshold 100</span>
+        <span class="y-key">env:</span>
+          <span class="y-key">AGENTGUARD_API_KEY:</span> <span class="y-str">${{ secrets.AGENTGUARD_API_KEY }}</span>
 
   <span class="y-key">deploy:</span>
     <span class="y-key">needs:</span> <span class="y-val">agentguard-gate</span>            <span class="y-cmt"># ← deploy only runs if gate passes</span>
@@ -882,7 +880,7 @@ footer{border-top:1px solid var(--border-dim);padding:32px 0}
       </div>
       <div style="padding:16px 20px;background:var(--bg-card);border:1px solid rgba(245,158,11,0.2);border-radius:var(--radius);display:flex;gap:12px;align-items:flex-start">
         <span style="font-size:1.4rem;flex-shrink:0">📋</span>
-        <div><div style="font-size:.88rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Certification created</div><div style="font-size:.8rem;color:var(--text-dim)">Every successful gate creates a deployment certification in the audit trail</div></div>
+        <div><div style="font-size:.88rem;font-weight:600;color:var(--text-bright);margin-bottom:4px">Validation recorded</div><div style="font-size:.8rem;color:var(--text-dim)">Every gate records coverage and policy context for audit review</div></div>
       </div>
     </div>
   </div>
@@ -1090,11 +1088,11 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
         <p class="pricing-desc">Perfect for testing and small projects.</p>
         <ul class="pricing-features">
           <li>100,000 evaluations/month</li>
-          <li>3 agent seats + 30-day retention</li>
+          <li>5 agent seats</li>
           <li>Community support</li>
-          <li>7-day audit retention</li>
+          <li>30-day audit retention</li>
           <li>5 compliance templates</li>
-          <li>GitHub Action CI gate</li>
+          <li>CLI/CI policy gate</li>
         </ul>
         <a href="#hero-form" class="pricing-cta primary">Get Started Free</a>
       </div>
@@ -1107,9 +1105,9 @@ decision = requests.<span style="color:var(--accent-hi)">post</span>(
         <p class="pricing-desc">For teams building production agents.</p>
         <ul class="pricing-features">
           <li>500,000 evaluations/month</li>
-          <li>Unlimited agent keys</li>
+          <li>100 agent keys</li>
           <li>Email support</li>
-          <li>90-day audit retention</li>
+          <li>365-day audit retention</li>
           <li>Webhook alerts (Slack, Teams, PagerDuty)</li>
           <li>Agent-scoped policies</li>
           <li>Cost attribution &amp; rate limiting</li>
