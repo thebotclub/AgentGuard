@@ -159,54 +159,16 @@ jobs:
 
       - name: Health check
         if: steps.changes.outputs.api == 'true'
+        env:
+          AGENTGUARD_API_KEY: ${{ secrets.AGENTGUARD_API_KEY }}
+          AGENTGUARD_SMOKE_WAIT_SECONDS: "60"
         run: |
-          set +e
-          echo "⏳ Waiting for API to start (cold start may take ~60s)..."
-          sleep 60
-          API_URL="https://api.agentguard.tech"
-          for i in $(seq 1 12); do
-            HEALTH=$(curl -sf --max-time 10 "$API_URL/health" 2>/dev/null)
-            if [ $? -eq 0 ]; then
-              VERSION=$(echo "$HEALTH" | python3 -c "import sys,json; print(json.load(sys.stdin).get('version','?'))" 2>/dev/null)
-              echo "✅ API healthy (attempt $i) — version $VERSION"
-              RESULT=$(curl -s --max-time 10 -X POST "$API_URL/api/v1/evaluate" \
-                -H "Content-Type: application/json" \
-                -H "X-API-Key: ${{ secrets.AGENTGUARD_API_KEY }}" \
-                -d '{"tool":"sudo","params":{"command":"test"}}')
-              echo "Smoke test: $RESULT"
-              # Also verify unauth is rejected
-              UNAUTH=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 -X POST "$API_URL/api/v1/evaluate" \
-                -H "Content-Type: application/json" \
-                -d '{"tool":"test","params":{}}')
-              if [ "$UNAUTH" = "401" ]; then
-                echo "✅ Auth enforcement verified (unauth → 401)"
-              else
-                echo "⚠️ Unauth evaluate returned $UNAUTH (expected 401)"
-              fi
-              PLAYGROUND=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 -X POST "$API_URL/api/v1/playground/evaluate" \
-                -H "Content-Type: application/json" \
-                -d '{"tool":"sudo","params":{"command":"test"}}')
-              if [ "$PLAYGROUND" = "200" ]; then
-                echo "✅ Public playground verified"
-              else
-                echo "⚠️ Public playground returned $PLAYGROUND (expected 200)"
-              fi
-              exit 0
-            fi
-            echo "Attempt $i — waiting ${i}0s..."
-            sleep $((i * 10))
-          done
-          echo "::warning::Health check did not respond in time — container may still be starting (scale-to-zero cold start)"
-          echo "Check manually: curl https://api.agentguard.tech/health"
-          exit 0
+          scripts/production-smoke.sh
 
       - name: Smoke test
         continue-on-error: true
         timeout-minutes: 3
+        env:
+          AGENTGUARD_API_KEY: ${{ secrets.AGENTGUARD_API_KEY }}
         run: |
-          sleep 60
-          for site in api.agentguard.tech agentguard.tech app.agentguard.tech docs.agentguard.tech; do
-            code=$(curl -so /dev/null -w "%{http_code}" --max-time 10 "https://$site" 2>/dev/null || echo "000")
-            echo "$site: $code"
-            if [ "$code" = "000" ]; then echo "::warning::$site unreachable"; fi
-          done
+          AGENTGUARD_SMOKE_WAIT_SECONDS=60 scripts/production-smoke.sh
