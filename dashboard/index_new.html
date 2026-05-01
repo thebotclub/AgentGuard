@@ -117,7 +117,7 @@
     <button class="nav-item" onclick="showPage('siem', event)">📡 SIEM</button>
     <div style="flex:1"></div>
     <div style="padding:12px;border-top:1px solid var(--border-dim);font-size:0.78rem;color:var(--text-dim)">
-      <div style="font-weight:600;color:var(--accent-hi)">AgentGuard v0.9.0</div>
+      <div style="font-weight:600;color:var(--accent-hi)">AgentGuard v0.10.0</div>
       <span id="sidebar-engine-info">Engine: 7 rules loaded<br>Default: allow</span>
     </div>
   </nav>
@@ -157,7 +157,7 @@
             <div style="font-weight:600;color:var(--text-bright);margin-bottom:6px">Install SDK</div>
             <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:12px">Add AgentGuard to your project in seconds</div>
             <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:6px;padding:10px 12px;font-family:var(--mono);font-size:0.78rem;color:var(--accent-hi);display:flex;align-items:center;justify-content:space-between;gap:8px">
-              <span id="sdk-install-cmd" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">npm install @agentguard/sdk</span>
+              <span id="sdk-install-cmd" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">npm install @the-bot-club/agentguard</span>
               <button onclick="copyToClipboard('sdk-install-cmd',this)" style="background:var(--accent-dim);border:none;border-radius:4px;color:var(--accent-hi);cursor:pointer;padding:3px 8px;font-size:0.72rem;flex-shrink:0" title="Copy">📋</button>
             </div>
             <div style="margin-top:8px;display:flex;gap:6px">
@@ -175,9 +175,9 @@
             <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:12px">Run policy checks in your GitHub Actions pipeline</div>
             <div style="background:var(--bg-card2);border:1px solid var(--border-dim);border-radius:6px;padding:10px 12px;font-family:var(--mono);font-size:0.72rem;color:var(--accent-hi);max-height:88px;overflow:hidden;position:relative">
               <pre id="cicd-snippet" style="margin:0;white-space:pre-wrap;word-break:break-all">- name: AgentGuard Policy Check
-  uses: agentguard/action@v1
-  with:
-    api-key: $\{{ secrets.AG_API_KEY }}</pre>
+  run: npx -y @the-bot-club/agentguard-cli validate .
+  env:
+    AGENTGUARD_API_KEY: $\{{ secrets.AGENTGUARD_API_KEY }}</pre>
               <div style="position:absolute;bottom:0;right:0;padding:4px 8px">
                 <button onclick="copyToClipboard('cicd-snippet',this)" style="background:var(--accent-dim);border:none;border-radius:4px;color:var(--accent-hi);cursor:pointer;padding:3px 8px;font-size:0.72rem" title="Copy">📋</button>
               </div>
@@ -930,7 +930,7 @@ const { result, riskScore } = await res.json();</pre>
             <div id="lic-plan-badge" style="display:inline-block;padding:10px 32px;border-radius:40px;font-size:1.35rem;font-weight:700;letter-spacing:0.04em;margin-bottom:16px;background:rgba(34,197,94,0.12);color:#22c55e;border:2px solid rgba(34,197,94,0.3)">
               Free Plan
             </div>
-            <div id="lic-plan-sub" style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px">100,000 events/month · 3 agents · 30-day retention</div>
+            <div id="lic-plan-sub" style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px">100,000 events/month · 5 agents · 30-day retention</div>
             <button class="btn btn-primary" style="width:100%;padding:12px 24px;font-size:0.95rem;background:linear-gradient(135deg,#5254d4,#818cf8)" onclick="window.open('https://agentguard.tech/pricing?ref=dashboard','_blank')">
               ⚡ Upgrade to Pro — $149/mo
             </button>

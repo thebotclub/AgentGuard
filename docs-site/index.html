@@ -161,7 +161,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 <aside class="sidebar">
   <div class="sidebar-header">
     <a href="https://agentguard.tech" class="sidebar-logo"><img src="/agentguard-logo.png?v=4" alt="" class="logo-img"> AgentGuard</a>
-    <div class="sidebar-version">v0.9.0 · docs</div>
+    <div class="sidebar-version">v0.10.0 · docs</div>
   </div>
   <nav>
     <div class="nav-group">
@@ -245,7 +245,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
 
 <!-- OVERVIEW -->
 <h1 id="overview"><img src="/agentguard-logo.png?v=4" alt="" class="logo-img">AgentGuard Documentation</h1>
-<p style="font-size:1.1rem;color:var(--text);margin-bottom:24px">Runtime security platform for AI agents. Evaluate every action before execution — sub-millisecond, tamper-proof, compliance-ready.</p>
+<p style="font-size:1.1rem;color:var(--text);margin-bottom:24px">Runtime security platform for AI agents. Evaluate every action before execution — sub-millisecond, tamper-evident, compliance-ready.</p>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:32px">
   <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
@@ -258,7 +258,7 @@ pre code{background:none;padding:0;font-size:.8rem;color:var(--text)}
   </div>
   <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
     <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">VERSION</div>
-    <div style="font-size:1.1rem;font-weight:700;color:var(--accent-hi)">v0.9.0</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--accent-hi)">v0.10.0</div>
   </div>
   <div style="background:var(--bg-card);border:1px solid var(--border-dim);border-radius:var(--radius);padding:16px 20px">
     <div style="font-size:.75rem;color:var(--text-dim);margin-bottom:4px">ENDPOINTS</div>
@@ -1151,7 +1151,7 @@ console.log(`${batch.summary.blocked}/${batch.summary.total} calls blocked`);</c
 </div>
 
 <h3 id="github-action">GitHub Action</h3>
-<p>Gate deployments on AgentGuard policy coverage directly in your CI/CD pipeline. The <code>agentguard-tech/validate@v1</code> action scans your agent code, detects tool usage, and fails the PR if coverage drops below your threshold.</p>
+<p>Gate deployments on AgentGuard policy coverage directly in your CI/CD pipeline. The published AgentGuard CLI scans your agent code, detects tool usage, and fails the PR if coverage drops below your threshold.</p>
 
 <div class="code-header"><span>.github/workflows/agentguard.yml</span></div>
 <pre><code>name: AgentGuard Policy Gate
@@ -1165,16 +1165,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: AgentGuard Validate
-        uses: agentguard-tech/validate@v1
-        id: agentguard
-        with:
-          # Required
-          api-key: ${{ secrets.AGENTGUARD_API_KEY }}
-
-          # Optional — all have defaults
-          path: './src/agents'      # Directory to scan (default: '.')
-          threshold: '85'           # Coverage % required to pass (default: '80')
-          fail-on: 'high'           # Fail on uncovered tools of this severity (default: 'high')
+        run: npx -y @the-bot-club/agentguard-cli validate ./src/agents --threshold 100
+        env:
+          AGENTGUARD_API_KEY: ${{ secrets.AGENTGUARD_API_KEY }}
+          # The CLI fails when coverage is below threshold or uncovered tools remain.
           framework: 'auto'         # langchain|crewai|autogen|mcp|auto (default: 'auto')
           agent-id: ''              # Validate against a registered agent's declared tools
           post-comment: 'true'      # Post PR coverage report as a comment (default: 'true')
@@ -1344,7 +1338,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- PROMPT INJECTION DETECTION -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="prompt-injection">Prompt Injection Detection <span class="badge-new">NEW in v0.9.0</span></h2>
+<h2 id="prompt-injection">Prompt Injection Detection <span class="badge-new">Added in v0.9.0</span></h2>
 <p>AgentGuard's prompt injection detection layer scans incoming messages and conversation histories for adversarial patterns before they reach your agent. Detection combines fast heuristic rules with an optional <a href="https://lakera.ai" target="_blank" rel="noopener">Lakera Guard</a> adapter for deep semantic analysis.</p>
 
 <h3>How It Works</h3>
@@ -1415,7 +1409,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- PII DETECTION & REDACTION -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="pii-detection">PII Detection &amp; Redaction <span class="badge-new">NEW in v0.9.0</span></h2>
+<h2 id="pii-detection">PII Detection &amp; Redaction <span class="badge-new">Added in v0.9.0</span></h2>
 <p>Scan text for personally identifiable information (PII) before it enters agent context or is written to logs. Supports three modes: <code>detect</code> (identify only), <code>redact</code> (replace with type tag), and <code>mask</code> (partial masking, e.g. last 4 digits).</p>
 
 <div class="endpoint">
@@ -1486,7 +1480,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- OWASP COMPLIANCE -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="owasp-compliance">OWASP Compliance <span class="badge-new">NEW in v0.9.0</span></h2>
+<h2 id="owasp-compliance">OWASP Compliance <span class="badge-new">Added in v0.9.0</span></h2>
 <p>Generate structured compliance reports mapped to the <a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" target="_blank" rel="noopener">OWASP Top 10 for LLM Applications</a> and the emerging OWASP Agentic AI framework. Reports include per-control evidence drawn from your audit trail.</p>
 
 <div class="endpoint">
@@ -1573,7 +1567,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- MCP POLICY ENFORCEMENT -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="mcp-policy">MCP Policy Enforcement <span class="badge-new">NEW in v0.9.0</span></h2>
+<h2 id="mcp-policy">MCP Policy Enforcement <span class="badge-new">Added in v0.9.0</span></h2>
 <p>Advanced policy enforcement for <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> servers. Go beyond basic tool evaluation — register MCP servers in a central registry, enforce SSRF protection, and apply per-server policy rules before any tool call reaches the upstream.</p>
 
 <div class="callout callout-info"><strong>MCP Server Registry.</strong> Register your MCP servers once via <code>PUT /api/v1/mcp/config</code>. AgentGuard maintains a registry of approved servers and their allowed tool sets. Calls to unregistered servers are blocked by default.</div>
@@ -1635,7 +1629,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- SLACK HITL INTEGRATION -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="slack-hitl">Slack HITL Integration <span class="badge-new">NEW in v0.9.0</span></h2>
+<h2 id="slack-hitl">Slack HITL Integration <span class="badge-new">Added in v0.9.0</span></h2>
 <p>Route human-in-the-loop approval requests directly to Slack. When an evaluation returns <code>require_approval</code>, AgentGuard sends a rich Block Kit message to your configured Slack channel. Reviewers approve or deny with one click — no dashboard login required.</p>
 
 <h3>Callback Flow</h3>
@@ -1720,7 +1714,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- MULTI-AGENT A2A -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="multi-agent">Multi-Agent A2A <span class="badge-new">NEW in v0.9.0</span></h2>
+<h2 id="multi-agent">Multi-Agent A2A <span class="badge-new">Added in v0.9.0</span></h2>
 <p>Model agent-to-agent (A2A) relationships with parent/child hierarchies. Child agents automatically inherit the parent's policy scope — with configurable TTL and budget caps — giving you fine-grained control over orchestrated multi-agent workflows.</p>
 
 <div class="callout callout-info"><strong>Policy Inheritance.</strong> Child agents inherit the parent's policy rules plus any additional restrictions you specify. Children can never have <em>more permissive</em> policies than their parent — only equal or more restricted.</div>
@@ -1785,7 +1779,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- ANALYTICS -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="analytics">Analytics <span class="badge-new">NEW in v0.9.0</span></h2>
+<h2 id="analytics">Analytics <span class="badge-new">Added in v0.9.0</span></h2>
 <p>Platform-level analytics for multi-agent fleets. Get time-series usage data, trend analysis, and per-dimension breakdowns across your entire tenant.</p>
 
 <div class="endpoint">
@@ -1843,7 +1837,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- FEEDBACK -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="feedback">Feedback <span class="badge-new">NEW in v0.9.0</span></h2>
+<h2 id="feedback">Feedback <span class="badge-new">Added in v0.9.0</span></h2>
 <p>Submit feedback on evaluation decisions to improve policy accuracy over time. Feedback is logged in the audit trail and can be used to tune policy rules and risk scoring.</p>
 
 <div class="endpoint">
@@ -1887,7 +1881,7 @@ jobs:
 <!-- ────────────────────────────────────────────────── -->
 <!-- SDK TELEMETRY -->
 <!-- ────────────────────────────────────────────────── -->
-<h2 id="sdk-telemetry">SDK Telemetry <span class="badge-new">NEW in v0.9.0</span></h2>
+<h2 id="sdk-telemetry">SDK Telemetry <span class="badge-new">Added in v0.9.0</span></h2>
 <p>The AgentGuard SDK collects anonymous usage telemetry to help prioritise feature development. Telemetry is <strong>opt-in</strong> — it is disabled by default and never includes API keys, policy content, tool parameters, or any user data.</p>
 
 <h3>What Is Collected (when opted in)</h3>
@@ -2462,7 +2456,7 @@ guard.verify_audit_chain()
 
 <table class="params" style="margin:20px 0">
   <tr><th>Template ID</th><th>Name</th><th>Description</th></tr>
-  <tr><td>soc2-starter</td><td>SOC 2 Starter</td><td>SOC 2 Type II — access control, data handling, audit logging, change management</td></tr>
+  <tr><td>soc2-starter</td><td>SOC 2 Starter</td><td>SOC 2 evidence mapping — access control, data handling, audit logging, change management</td></tr>
   <tr><td>apra-cps234</td><td>APRA CPS 234</td><td>Australian prudential standard for information security — critical data, third-party risk</td></tr>
   <tr><td>eu-ai-act</td><td>EU AI Act</td><td>EU AI Act Articles 9, 12, 14 — risk management, logging, human oversight, prohibited practices</td></tr>
   <tr><td>owasp-agentic</td><td>OWASP Agentic Top 10</td><td>OWASP Top 10 for Agentic AI — prompt injection, privilege escalation, excessive permissions</td></tr>
@@ -2690,7 +2684,7 @@ guard.verify_audit_chain()
 <h2 id="self-hosted">Self-Hosted Deployment</h2>
 <p>Run AgentGuard on your own infrastructure. All features — policy enforcement, audit trail, HITL approvals, and the dashboard — run on your hardware. Self-hosted configuration files live in the <code>self-hosted/</code> directory of the repo.</p>
 
-<div class="callout callout-tip"><strong>Free tier included.</strong> Self-hosted is free for up to 100,000 evaluation events/month with 3 agent seats. No license key required to get started.</div>
+<div class="callout callout-tip"><strong>Free tier included.</strong> Self-hosted is free for up to 100,000 evaluation events/month with 5 agent seats. No license key required to get started.</div>
 
 <h3>Prerequisites</h3>
 <ul style="color:var(--text-dim);margin-left:24px;margin-bottom:16px;line-height:2">

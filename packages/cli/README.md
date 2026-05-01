@@ -13,8 +13,8 @@ The AgentGuard CLI analyses your agent's source code, detects every tool it uses
 AgentGuard policy rules. It surfaces uncovered tools and gives you a risk score —
 before the agent ever reaches production.
 
-It mirrors the logic in the [agentguard-validate GitHub Action](../../.github/actions/agentguard-validate/)
-so local results are consistent with CI/CD checks.
+Use the same command locally and in CI so policy coverage checks are consistent
+before deployment.
 
 ---
 
@@ -43,10 +43,10 @@ node dist/cli.js --help
 
 ```bash
 # Local scan only (no API key required)
-npx agentguard validate .
+npx -y @the-bot-club/agentguard-cli validate .
 
 # With policy coverage check
-AGENTGUARD_API_KEY=ag_live_xxx npx agentguard validate .
+AGENTGUARD_API_KEY=ag_live_xxx npx -y @the-bot-club/agentguard-cli validate .
 
 # Or pass the key explicitly
 agentguard validate ./src --api-key ag_live_xxx
@@ -257,4 +257,4 @@ npm run typecheck
 
 ## License
 
-MIT © The Bot Club
+Business Source License 1.1 © The Bot Club Pty Ltd

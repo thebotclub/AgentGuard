@@ -10,7 +10,7 @@
     <a href="https://demo.agentguard.tech"><img src="https://img.shields.io/badge/demo-try_it-green" alt="Demo"></a>
     <img src="https://img.shields.io/badge/license-BSL_1.1-orange" alt="License">
     <img src="https://img.shields.io/badge/endpoints-60+-blue" alt="Endpoints">
-    <img src="https://img.shields.io/badge/tests-617_JS%2FTS_passing-brightgreen" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-626_JS%2FTS_passing-brightgreen" alt="Tests">
     <img src="https://img.shields.io/badge/coverage-67%25-yellow" alt="Coverage">
     <a href="https://github.com/thebotclub/AgentGuard/actions/workflows/test-coverage.yml"><img src="https://github.com/thebotclub/AgentGuard/actions/workflows/test-coverage.yml/badge.svg" alt="Tests"></a>
     <a href="https://github.com/thebotclub/AgentGuard/actions/workflows/e2e.yml"><img src="https://github.com/thebotclub/AgentGuard/actions/workflows/e2e.yml/badge.svg" alt="E2E Tests"></a>
@@ -77,7 +77,7 @@ decision = guard.evaluate(tool="shell_exec", params={"cmd": "rm -rf /"})
 
 - **Sub-millisecond local engine** — Policy evaluation runs in-process. No network round-trip
 - **Kill switch** — One call halts every agent in your tenant. Instantly
-- **Hash-chained audit trail** — Cryptographically tamper-evident. Provable in court
+- **Hash-chained audit trail** — Cryptographically tamper-evident evidence for audits and investigations
 - **Framework integrations** — LangChain, CrewAI, OpenAI, Express/Fastify middleware. Drop-in
 - **Batch evaluate** — 50 tool calls in one request. Built for pipelines
 - **Not just prompt scanning** — We evaluate *actions*, not just *inputs*
@@ -154,18 +154,18 @@ Drop-in security for the frameworks you already use:
 
 ```typescript
 // LangChain
-import { AgentGuardCallbackHandler } from '@the-bot-club/agentguard/integrations/langchain';
+import { AgentGuardCallbackHandler } from '@the-bot-club/agentguard';
 const handler = new AgentGuardCallbackHandler({ apiKey: '...' });
 
 // OpenAI — wraps the client, evaluates every tool call
-import { createGuardedOpenAI } from '@the-bot-club/agentguard/integrations/openai';
-const openai = createGuardedOpenAI(client, { apiKey: '...' });
+import { openaiGuard } from '@the-bot-club/agentguard';
+const openai = openaiGuard(client, { apiKey: '...' });
 
 // CrewAI
-import { createCrewAIGuard } from '@the-bot-club/agentguard/integrations/crewai';
+import { crewaiGuard } from '@the-bot-club/agentguard';
 
 // Express/Fastify middleware
-import { expressMiddleware } from '@the-bot-club/agentguard/integrations/express';
+import { expressMiddleware } from '@the-bot-club/agentguard';
 app.use('/agent', expressMiddleware({ apiKey: '...' }));
 ```
 
@@ -174,10 +174,10 @@ app.use('/agent', expressMiddleware({ apiKey: '...' }));
 from agentguard.integrations.langchain import AgentGuardCallbackHandler
 
 # OpenAI
-from agentguard.integrations.openai import create_guarded_openai
+from agentguard.integrations.openai import openai_guard
 
 # CrewAI
-from agentguard.integrations.crewai import create_crewai_guard
+from agentguard.integrations.crewai import crewai_guard
 ```
 
 ## CI/CD Gate
@@ -209,7 +209,7 @@ Block unsafe agent deployments before they reach production:
 | Auth | bcrypt + SHA-256 key hashing |
 | Validation | Zod schemas on all endpoints |
 | Database | PostgreSQL with RLS |
-| Tests | 617 JS/TS tests passing locally; Python integration tests included |
+| Tests | 626 JS/TS tests passing locally; Python integration tests included |
 | SDKs | TypeScript, Python |
 | Self-hosted | Docker + docker-compose |
 
@@ -218,12 +218,13 @@ Block unsafe agent deployments before they reach production:
 | | Free | Pro | Enterprise |
 |---|---|---|---|
 | **Events/month** | 100K | 500K | Unlimited |
-| **Audit retention** | 30 days | 1 year | Custom |
+| **Agents** | 5 | 100 | Unlimited |
+| **Audit retention** | 30 days | 365 days | 7 years / custom |
 | **Kill switch** | ✅ | ✅ | ✅ |
-| **SSO/RBAC** | — | ✅ | ✅ |
+| **SSO/RBAC** | — | Advanced RBAC | ✅ |
 | **SIEM export** | — | ✅ | ✅ |
-| **SLA** | — | — | 99.9% |
-| **Price** | $0 | $149/mo | $499/mo |
+| **SLA** | — | — | Custom |
+| **Price** | $0 | $149/mo | Custom |
 
 [Get started free →](https://agentguard.tech)
 
