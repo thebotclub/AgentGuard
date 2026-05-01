@@ -35,11 +35,12 @@ export function createAgentRoutes(
           .status(400)
           .json({ error: agentParsed.error.issues[0]!.message });
       }
-      const { name, policy_scope } = agentParsed.data;
+      const { name, policy_scope, policyScope } = agentParsed.data;
 
       let scopeJson = '[]';
-      if (Array.isArray(policy_scope)) {
-        scopeJson = JSON.stringify(policy_scope);
+      const scope = Array.isArray(policy_scope) ? policy_scope : policyScope;
+      if (Array.isArray(scope)) {
+        scopeJson = JSON.stringify(scope);
       }
 
       const agentKey = generateAgentKey();

@@ -42,6 +42,7 @@ vi.mock('../../middleware/rate-limit.js', () => ({
 // Import mocked modules at top level (after vi.mock, which is hoisted)
 import { signupRateLimit } from '../../middleware/rate-limit.js';
 import { getGlobalKillSwitch as mockGetGlobalKillSwitch, setGlobalKillSwitch as mockSetGlobalKillSwitch, storeAuditEvent as mockStoreAuditEvent } from '../../routes/audit.js';
+import { templateCache } from '../../lib/policy-engine-setup.js';
 
 describe('POST /api/v1/signup', () => {
   let mockDb: IDatabase;
@@ -330,5 +331,97 @@ describe('POST /api/v1/keys/rotate', () => {
       .set('x-api-key', 'ag_agent_somekey');
 
     expect(res.status).toBe(403);
+  });
+});
+
+describe('POST /api/v1/templates/:name/apply', () => {
+  let mockDb: IDatabase;
+  let app: ReturnType<typeof buildApp>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(mockStoreAuditEvent).mockResolvedValue('mock-hash');
+    mockDb = createMockDb();
+    app = buildApp(createAuthRoutes, mockDb);
+    templateCache.set('test-template', {
+      id: 'test-template',
+      name: 'Test Baseline',
+      version: '1.0',
+      description: 'Template used by route tests',
+      category: 'test',
+      tags: ['test'],
+      rules: [
+        {
+          name: 'block-shell',
+          description: 'Block shell access',
+          decision: 'block',
+          tool: ['shell_exec', 'sudo'],
+          params: {
+            command: { contains_any: ['rm -rf', 'cat /etc/shadow'] },
+            contains_pii: true,
+          },
+        },
+        {
+          name: 'review-money',
+          decision: 'hitl_required',
+          tool: 'transfer_funds',
+          params: { amount: { gte: 10000 } },
+        },
+      ],
+    });
+  });
+
+  it('translates and persists a template as a valid tenant policy document', async () => {
+    const res = await request(app)
+      .post('/api/v1/templates/test-template/apply')
+      .set('x-api-key', 'valid-key');
+
+    expect(res.status).toBe(200);
+    expect(res.body.applied).toBe(true);
+    expect(res.body.policy.version).toBe('1.0.0');
+    expect(res.body.policy.rules[0].action).toBe('block');
+    expect(res.body.policy.rules[0].when[0].tool.in).toEqual(['shell_exec', 'sudo']);
+    expect(res.body.policy.rules[0].when[1].params.contains_pii).toEqual({ eq: true });
+    expect(res.body.policy.rules[1].action).toBe('require_approval');
+    expect(mockDb.setCustomPolicy).toHaveBeenCalledWith(
+      'tenant-123',
+      expect.stringContaining('"rules"'),
+    );
+    expect(mockStoreAuditEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      'tenant-123',
+      null,
+      'template_apply',
+      'allow',
+      'template:test-template',
+      0,
+      expect.stringContaining('Applied policy template'),
+      0,
+      '',
+      null,
+    );
+  });
+
+  it('saves the previous custom policy version before replacing it', async () => {
+    (mockDb.getCustomPolicy as ReturnType<typeof vi.fn>).mockResolvedValue('{"id":"old"}');
+
+    const res = await request(app)
+      .post('/api/v1/templates/test-template/apply')
+      .set('x-api-key', 'valid-key');
+
+    expect(res.status).toBe(200);
+    expect(res.body.previousVersionSaved).toBe(true);
+    expect(mockDb.insertPolicyVersion).toHaveBeenCalledWith(
+      'custom-tenant-123',
+      'tenant-123',
+      '{"id":"old"}',
+    );
+  });
+
+  it('requires tenant authentication', async () => {
+    const res = await request(app).post('/api/v1/templates/test-template/apply');
+
+    expect(res.status).toBe(401);
+    expect(mockDb.setCustomPolicy).not.toHaveBeenCalled();
   });
 });

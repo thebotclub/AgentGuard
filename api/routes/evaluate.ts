@@ -384,6 +384,38 @@ export function createEvaluateRoutes(
       }
       const { tool, params } = evalParsed.data;
 
+      // ── Agent Runtime Scope: restrict ag_agent_* keys to declared tools ───
+      if (req.agent?.policy_scope) {
+        try {
+          const scope = JSON.parse(req.agent.policy_scope) as unknown;
+          if (Array.isArray(scope) && scope.length > 0 && !scope.includes('*') && !scope.includes(tool)) {
+            await storeAuditEvent(
+              db,
+              tenantId,
+              null,
+              tool,
+              'block',
+              'AGENT_SCOPE_VIOLATION',
+              900,
+              `Tool '${tool}' is outside this agent key's policy scope.`,
+              0,
+              NOOP_PREV_HASH,
+              agentId,
+            );
+            return res.json({
+              result: 'block',
+              matchedRuleId: 'AGENT_SCOPE_VIOLATION',
+              riskScore: 900,
+              reason: `Tool '${tool}' is outside this agent key's policy scope.`,
+              durationMs: 0,
+              agentId,
+            });
+          }
+        } catch {
+          // Malformed legacy scopes are ignored so existing keys keep working.
+        }
+      }
+
       // ── Child Agent Policy: tool-level check ───────────────────────────────
       if (childAgentPolicy && agentId) {
         const toolCheck = evaluateToolAgainstPolicy(tool, childAgentPolicy);

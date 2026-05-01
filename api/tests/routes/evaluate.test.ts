@@ -233,6 +233,7 @@ describe('POST /api/v1/evaluate — authenticated tenant', () => {
     vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true, remaining: -1, resetAt: 0 });
     vi.mocked(storeAuditEvent).mockResolvedValue('mock-hash');
     vi.mocked(incrementRateCounter).mockResolvedValue(undefined);
+    MOCK_AGENT.policy_scope = '[]';
     mockDb = createMockDb();
     (mockDb.getCustomPolicy as ReturnType<typeof vi.fn>).mockResolvedValue(null);
     (mockDb.getSetting as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
@@ -435,6 +436,32 @@ describe('POST /api/v1/evaluate — agent key requests', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.result).toBeTruthy();
+  });
+
+  it('blocks agent key calls outside the agent policy scope', async () => {
+    MOCK_AGENT.policy_scope = '["file_read"]';
+
+    const res = await request(app)
+      .post('/api/v1/evaluate')
+      .set('x-api-key', 'ag_agent_valid')
+      .send({ tool: 'sudo', params: { command: 'cat /etc/shadow' } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.result).toBe('block');
+    expect(res.body.matchedRuleId).toBe('AGENT_SCOPE_VIOLATION');
+    expect(storeAuditEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      'tenant-123',
+      null,
+      'sudo',
+      'block',
+      'AGENT_SCOPE_VIOLATION',
+      900,
+      expect.stringContaining('outside this agent key'),
+      0,
+      expect.any(String),
+      MOCK_AGENT.id,
+    );
   });
 
   it('returns 401 for invalid agent key (ag_agent_ prefix but not found)', async () => {

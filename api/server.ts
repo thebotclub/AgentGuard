@@ -147,7 +147,7 @@ app.use(
         callback(null, false);
       }
     },
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'X-API-Key', 'Authorization'],
     credentials: false,
   }),

@@ -631,6 +631,23 @@ describe('CORS', () => {
     // Should return 2xx for preflight
     assert.ok(res.status < 300, `preflight should return 2xx, got ${res.status}`);
   });
+
+  it('OPTIONS preflight allows dashboard PUT policy updates', async () => {
+    const res = await fetch(`${BASE}/api/v1/policy`, {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'https://app.agentguard.tech',
+        'X-API-Key': apiKey,
+        'Access-Control-Request-Method': 'PUT',
+        'Access-Control-Request-Headers': 'Content-Type, X-API-Key',
+      },
+    });
+    assert.ok(res.status < 300, `PUT preflight should return 2xx, got ${res.status}`);
+    assert.equal(
+      res.headers.get('access-control-allow-origin'),
+      'https://app.agentguard.tech',
+    );
+  });
 });
 
 // ─── 404 Handling ─────────────────────────────────────────────────────────────
