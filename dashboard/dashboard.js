@@ -16,6 +16,10 @@ let killActive = false;
 let totalLatency = 0;
 let evalCount = 0;
 let storedApiKey = null;
+let runtimeAgentKey = null;
+let activationState = {};
+let policyTemplates = [];
+let currentPolicy = null;
 
 // ── API Key Management ─────────────────────────────────
 async function validateTenantApiKey(key) {
@@ -29,6 +33,87 @@ async function validateTenantApiKey(key) {
   if (!r.ok) throw new Error(`API key validation failed (HTTP ${r.status})`);
 }
 
+async function sha256Text(value) {
+  const encoded = new TextEncoder().encode(value);
+  const hashBuf = await crypto.subtle.digest('SHA-256', encoded);
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function activationStorageKey() {
+  if (!storedApiKey) return null;
+  return 'ag_activation_' + (await sha256Text(storedApiKey)).slice(0, 24);
+}
+
+async function loadActivationState() {
+  activationState = {};
+  runtimeAgentKey = null;
+  var key = await activationStorageKey();
+  if (!key) return;
+  try { activationState = JSON.parse(sessionStorage.getItem(key) || '{}') || {}; } catch { activationState = {}; }
+  runtimeAgentKey = activationState.runtimeAgentKey || null;
+}
+
+async function saveActivationState() {
+  var key = await activationStorageKey();
+  if (!key) return;
+  if (runtimeAgentKey) activationState.runtimeAgentKey = runtimeAgentKey;
+  try { sessionStorage.setItem(key, JSON.stringify(activationState)); } catch {}
+}
+
+async function setActivationStep(name, value) {
+  activationState[name] = !!value;
+  await saveActivationState();
+  renderActivationChecklist();
+}
+
+function getRuntimeEvaluateKey() {
+  return runtimeAgentKey || storedApiKey;
+}
+
+function getEvaluateHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'X-API-Key': getRuntimeEvaluateKey() || ''
+  };
+}
+
+function normalizeEvaluationResponse(data) {
+  if (data && data.decision) return data;
+  return {
+    decision: {
+      result: data?.result,
+      matchedRuleId: data?.matchedRuleId ?? null,
+      riskScore: data?.riskScore ?? 0,
+      reason: data?.reason ?? 'Decision returned by production evaluate',
+      durationMs: data?.durationMs ?? 0
+    },
+    raw: data
+  };
+}
+
+function parseToolScope(value) {
+  return String(value || '')
+    .split(',')
+    .map(function(tool) { return tool.trim(); })
+    .filter(Boolean);
+}
+
+function runtimeSnippet(key) {
+  var visibleKey = key || 'ag_agent_...';
+  return 'export AGENTGUARD_API_KEY="' + visibleKey + '"\n\n' +
+    'curl -X POST https://api.agentguard.tech/api/v1/evaluate \\\n' +
+    '  -H "X-API-Key: $AGENTGUARD_API_KEY" \\\n' +
+    '  -H "Content-Type: application/json" \\\n' +
+    '  -d \'{"tool":"file_read","params":{"path":"/reports/q4.csv"}}\'';
+}
+
+function showRuntimeSnippet(key, targetId) {
+  var el = document.getElementById(targetId);
+  if (!el) return;
+  el.textContent = runtimeSnippet(key);
+  el.classList.remove('hidden');
+}
+
 async function saveApiKey(key) {
   var nextKey = (key || '').trim();
   if (!nextKey) return false;
@@ -36,6 +121,8 @@ async function saveApiKey(key) {
   storedApiKey = nextKey;
   try { sessionStorage.setItem('ag_dashboard_api_key', storedApiKey); } catch {}
   document.getElementById('api-key-input').value = storedApiKey;
+  await loadActivationState();
+  await setActivationStep('key', true);
   // Hide no-key banner once a key is entered
   var demoBanner = document.getElementById('demo-banner');
   if (demoBanner && storedApiKey) demoBanner.classList.add('hidden');
@@ -46,6 +133,7 @@ async function saveApiKey(key) {
     loadUsageStats();
     loadAuditTrail();
     loadApprovals();
+    updateConnectionStatus();
   }
   return true;
 }
@@ -101,6 +189,55 @@ function getApiHeaders() {
   return headers;
 }
 
+function renderActivationChecklist() {
+  var el = document.getElementById('activation-steps');
+  if (!el) return;
+  var steps = [
+    ['key', 'Tenant key validated'],
+    ['agent', 'Runtime agent key created'],
+    ['evaluation', 'Protected evaluation run'],
+    ['audit', 'Audit event verified']
+  ];
+  el.innerHTML = steps.map(function(step) {
+    var done = !!activationState[step[0]];
+    return '<div style="padding:12px;border:1px solid ' + (done ? 'rgba(34,197,94,0.35)' : 'var(--border)') + ';background:' + (done ? 'rgba(34,197,94,0.08)' : 'var(--bg-card2)') + ';border-radius:8px">' +
+      '<div style="font-weight:700;color:' + (done ? 'var(--green)' : 'var(--text-bright)') + '">' + (done ? '✓ ' : '○ ') + esc(step[1]) + '</div>' +
+      '</div>';
+  }).join('');
+  var result = document.getElementById('activation-result');
+  if (result && !storedApiKey) result.textContent = 'Enter a tenant API key above to start.';
+}
+
+function setText(id, value) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+async function updateConnectionStatus() {
+  try {
+    var health = await fetch(API + '/health', { signal: AbortSignal.timeout(8000) });
+    if (health.ok) {
+      var h = await health.json();
+      setText('status-api-version', (h.status || 'ok') + ' · v' + (h.version || 'unknown'));
+    }
+  } catch {
+    setText('status-api-version', 'Unavailable');
+  }
+  setText('status-key', storedApiKey ? 'Validated tenant key' : 'Not connected');
+  setText('status-runtime-key', runtimeAgentKey ? 'Runtime key ready' : 'Not created');
+  try {
+    var r = await fetch(API + '/api/v1/killswitch', { headers: getApiHeaders(), signal: AbortSignal.timeout(8000) });
+    if (r.ok) {
+      var d = await r.json();
+      var active = d.tenant ? d.tenant.active : d.active;
+      setText('status-kill', active ? 'Active' : 'Inactive');
+    }
+  } catch {
+    setText('status-kill', 'Unknown');
+  }
+  renderActivationChecklist();
+}
+
 // ── Load Usage Stats from API ───────────────────────────
 async function loadUsageStats() {
   if (!storedApiKey) return; // Need API key for real data
@@ -121,7 +258,7 @@ async function loadUsageStats() {
         var total = data.totalEvaluations || 1;
         document.getElementById('stat-allow-pct').textContent = Math.round(data.allowed / total * 100) + '%';
         document.getElementById('stat-block-pct').textContent = Math.round(data.blocked / total * 100) + '%';
-        document.getElementById('stat-latency').textContent = (data.avgLatencyMs || 0) + 'ms';
+        document.getElementById('stat-latency').textContent = (data.avgResponseMs || data.avgLatencyMs || 0) + 'ms';
         return;
       }
     } catch {}
@@ -143,11 +280,12 @@ async function loadAuditTrail() {
         var data = await r.json();
         var events = data.events || [];
         document.getElementById('audit-count').textContent = events.length;
+        setText('status-audit-refresh', new Date().toLocaleTimeString());
         
         var tbody = document.getElementById('audit-tbody');
         if (events.length === 0) {
           tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">No audit events yet</td></tr>';
-          return;
+          return events;
         }
         
         tbody.innerHTML = events.map(function(e, idx) {
@@ -164,10 +302,11 @@ async function loadAuditTrail() {
             '<td style="font-family:var(--mono);font-size:0.75rem;color:var(--text-dim)">' + esc(e.hash || '—') + '</td>' +
             '</tr>';
         }).join('');
-        return;
+        return events;
       }
     } catch {}
   }
+  return [];
 }
 
 // ── Verify Integrity ───────────────────────────────────
@@ -254,9 +393,10 @@ async function loadAgents() {
     var tbody = document.getElementById('agents-tbody');
     if (agents.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:24px">No agents created yet</td></tr>'; return; }
     tbody.innerHTML = agents.map(function(a) {
+      var scopeText = Array.isArray(a.policyScope) ? a.policyScope.join(', ') : (a.policyScope || '—');
       return '<tr style="border-bottom:1px solid var(--border-dim)">' +
         '<td style="padding:12px 16px;font-weight:600;color:var(--text-bright)">' + esc(a.name) + '</td>' +
-        '<td style="padding:12px 16px;font-family:var(--mono);font-size:0.82rem;color:var(--accent-hi)">' + esc(a.policyScope || '—') + '</td>' +
+        '<td style="padding:12px 16px;font-family:var(--mono);font-size:0.82rem;color:var(--accent-hi)">' + esc(scopeText) + '</td>' +
         '<td style="padding:12px 16px"><span class="badge badge-allow">' + esc(a.status || 'active') + '</span></td>' +
         '<td style="padding:12px 16px;font-size:0.82rem;color:var(--text-dim)">' + (a.createdAt || '').replace('T', ' ').slice(0, 19) + '</td>' +
         '<td style="padding:12px 16px;text-align:right"><button class="btn btn-ghost" style="color:var(--red);font-size:0.78rem" onclick="deleteAgent(\'' + esc(a.id) + '\')">Delete</button></td>' +
@@ -321,15 +461,103 @@ async function createAgent() {
   var scope = document.getElementById('agent-scope').value.trim();
   if (!name) { alert('Agent name is required'); return; }
   try {
-    var r = await fetch(API + '/api/v1/agents', { method: 'POST', headers: getApiHeaders(), body: JSON.stringify({ name: name, policy_scope: scope || undefined }) });
+    var body = { name: name };
+    var scopeList = parseToolScope(scope);
+    if (scopeList.length > 0) body.policy_scope = scopeList;
+    var r = await fetch(API + '/api/v1/agents', { method: 'POST', headers: getApiHeaders(), body: JSON.stringify(body) });
     var data = await r.json();
     if (r.ok) {
+      runtimeAgentKey = data.apiKey;
+      activationState.runtimeAgentKey = runtimeAgentKey;
+      await saveActivationState();
+      await setActivationStep('agent', true);
       document.getElementById('agent-create-result').innerHTML = '<div style="padding:12px;background:rgba(34,197,94,0.08);border-radius:8px;border:1px solid rgba(34,197,94,0.25)"><strong>Agent created!</strong> Key: <code style="font-family:var(--mono);color:var(--accent-hi);user-select:all">' + esc(data.apiKey) + '</code><br><span style="font-size:0.78rem;color:var(--text-dim)">Save this key — it won\'t be shown again.</span></div>';
+      showRuntimeSnippet(data.apiKey, 'agent-runtime-snippet');
+      showRuntimeSnippet(data.apiKey, 'activation-snippet');
+      renderSdkPattern();
       document.getElementById('agent-name').value = '';
       document.getElementById('agent-scope').value = '';
+      updateConnectionStatus();
       loadAgents();
     } else { document.getElementById('agent-create-result').innerHTML = '<div style="color:var(--red)">' + esc(data.error || 'Failed') + '</div>'; }
   } catch { document.getElementById('agent-create-result').innerHTML = '<div style="color:var(--red)">API error</div>'; }
+}
+
+async function createActivationAgent() {
+  var result = document.getElementById('activation-result');
+  if (!storedApiKey) {
+    result.innerHTML = '<div style="color:var(--red)">Enter a tenant API key first.</div>';
+    return;
+  }
+  result.textContent = 'Creating runtime key...';
+  try {
+    var r = await fetch(API + '/api/v1/agents', {
+      method: 'POST',
+      headers: getApiHeaders(),
+      body: JSON.stringify({
+        name: 'first-runtime-agent-' + Date.now(),
+        policy_scope: ['file_read', 'list_files', 'sudo']
+      }),
+      signal: AbortSignal.timeout(15000)
+    });
+    var data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Failed to create runtime key');
+    runtimeAgentKey = data.apiKey;
+    activationState.runtimeAgentKey = runtimeAgentKey;
+    await saveActivationState();
+    await setActivationStep('agent', true);
+    showRuntimeSnippet(runtimeAgentKey, 'activation-snippet');
+    renderSdkPattern();
+    result.innerHTML = '<div style="padding:12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px">Runtime key created. Use the snippet below for protected evaluate calls.</div>';
+    updateConnectionStatus();
+    loadAgents();
+  } catch (e) {
+    result.innerHTML = '<div style="color:var(--red)">' + esc(e.message || 'Could not create runtime key') + '</div>';
+  }
+}
+
+async function runActivationEvaluation() {
+  var result = document.getElementById('activation-result');
+  if (!runtimeAgentKey) {
+    result.innerHTML = '<div style="color:var(--red)">Create a runtime key first.</div>';
+    return;
+  }
+  result.textContent = 'Running protected evaluation...';
+  try {
+    var t0 = performance.now();
+    var r = await fetch(API + '/api/v1/evaluate', {
+      method: 'POST',
+      headers: getEvaluateHeaders(),
+      body: JSON.stringify({ tool: 'file_read', params: { path: '/reports/q4.csv' } }),
+      signal: AbortSignal.timeout(15000)
+    });
+    var data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Evaluation failed');
+    await setActivationStep('evaluation', true);
+    renderResult(normalizeEvaluationResponse(data), 'file_read', { path: '/reports/q4.csv' }, Math.round(performance.now() - t0));
+    result.innerHTML = '<div style="padding:12px;background:var(--bg-card2);border:1px solid var(--border);border-radius:8px">Protected evaluation returned <strong>' + esc(data.result || data.decision?.result) + '</strong>. Open Evaluate to inspect details.</div>';
+    await loadUsageStats();
+    await loadAuditTrail();
+  } catch (e) {
+    result.innerHTML = '<div style="color:var(--red)">' + esc(e.message || 'Evaluation failed') + '</div>';
+  }
+}
+
+async function confirmActivationAudit() {
+  var result = document.getElementById('activation-result');
+  if (!storedApiKey) {
+    result.innerHTML = '<div style="color:var(--red)">Enter a tenant API key first.</div>';
+    return;
+  }
+  result.textContent = 'Checking audit trail...';
+  var events = await loadAuditTrail();
+  var hasEvent = (events || []).some(function(e) { return e.tool === 'file_read' || e.tool === 'sudo' || e.tool === 'http_post'; });
+  if (hasEvent) {
+    await setActivationStep('audit', true);
+    result.innerHTML = '<div style="padding:12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px">Audit event verified. The first protection loop is complete.</div>';
+  } else {
+    result.innerHTML = '<div style="color:var(--amber)">No matching audit event found yet. Run a protected evaluation, then retry.</div>';
+  }
 }
 
 async function deleteAgent(id) {
@@ -1130,6 +1358,9 @@ function connectSSE() {
 async function init() {
   // Load stored API key
   loadApiKey();
+  await loadActivationState();
+  renderActivationChecklist();
+  updateConnectionStatus();
   
   // Show cold-start warning immediately
   document.getElementById('cold-start-banner').classList.add('visible');
@@ -1145,7 +1376,7 @@ async function init() {
         apiOnline = true;
         document.getElementById('api-dot').style.background = 'var(--green)';
         document.getElementById('api-status').innerHTML =
-          `<span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span> API Online (${Math.round(d.uptime)}s uptime)`;
+          `<span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span> API Online (v${esc(d.version || 'unknown')})`;
 
         // Sync kill switch state from API
         if (d.killSwitch === true) {
@@ -1191,6 +1422,7 @@ async function init() {
 
   // Load policy page: uses authenticated endpoint if key available
   await loadPolicyPage();
+  renderSdkPattern();
 
   // Fetch live kill switch state
   try {
@@ -1200,6 +1432,7 @@ async function init() {
     updateKillSwitchUI();
     document.getElementById('kill-api-status').textContent = d.message || '';
   } catch {}
+  updateConnectionStatus();
 }
 
 // ── Load Policy Page ─────────────────────────────────────
@@ -1211,12 +1444,14 @@ async function loadPolicyPage() {
       if (r.ok) {
         var d = await r.json();
         var policy = d.policy || {};
+        currentPolicy = policy;
         document.getElementById('policy-json').textContent = JSON.stringify(policy, null, 2);
         if (policy.rules) renderPolicyRules(policy.rules);
-        var header = document.querySelector('#page-policy .card-header h2');
+        var header = document.getElementById('policy-title');
         if (header) header.textContent = (policy.id || 'tenant-policy') + (d.isCustom ? ' (custom)' : ' (default)');
-        var sub = document.querySelector('#page-policy .card-header span');
+        var sub = document.getElementById('policy-summary');
         if (sub) sub.textContent = (policy.rules ? policy.rules.length : 0) + ' rules · default: ' + (policy.default || 'allow');
+        await loadPolicyTemplates();
         return;
       }
     } catch {}
@@ -1225,11 +1460,127 @@ async function loadPolicyPage() {
   try {
     const r = await fetch(`${API}/api/v1/playground/policy`);
     const d = await r.json();
+    currentPolicy = d.policy;
     document.getElementById('policy-json').textContent = JSON.stringify(d.policy, null, 2);
     renderPolicyRules(d.policy.rules);
+    await loadPolicyTemplates();
   } catch {
     document.getElementById('policy-rules').innerHTML =
       '<div style="padding:24px;text-align:center;color:var(--text-dim)">Could not load policy. <button class="btn btn-ghost" onclick="loadPolicyPage()" style="margin-left:8px">Retry</button></div>';
+  }
+}
+
+async function loadPolicyTemplates() {
+  var select = document.getElementById('policy-template-select');
+  var preview = document.getElementById('template-preview');
+  if (!select || !preview) return;
+  preview.textContent = 'Loading templates...';
+  try {
+    var r = await fetch(API + '/api/v1/templates', { signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var data = await r.json();
+    policyTemplates = data.templates || [];
+    select.innerHTML = policyTemplates.map(function(t) {
+      return '<option value="' + esc(t.id) + '">' + esc(t.name || t.id) + ' · ' + esc(t.ruleCount || 0) + ' rules</option>';
+    }).join('');
+    if (policyTemplates.length === 0) {
+      preview.textContent = 'No templates are available.';
+      return;
+    }
+    await previewSelectedTemplate();
+  } catch (e) {
+    preview.innerHTML = '<span style="color:var(--red)">Could not load templates.</span>';
+  }
+}
+
+async function previewSelectedTemplate() {
+  var select = document.getElementById('policy-template-select');
+  var preview = document.getElementById('template-preview');
+  if (!select || !preview || !select.value) return;
+  preview.textContent = 'Loading template...';
+  try {
+    var r = await fetch(API + '/api/v1/templates/' + encodeURIComponent(select.value), { signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var data = await r.json();
+    var t = data.template || {};
+    var rules = Array.isArray(t.rules) ? t.rules : [];
+    preview.innerHTML =
+      '<div style="font-weight:700;color:var(--text-bright);margin-bottom:6px">' + esc(t.name || t.id) + '</div>' +
+      '<div style="color:var(--text-dim);font-size:0.86rem;margin-bottom:10px">' + esc(t.description || 'No description') + '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+      rules.slice(0, 6).map(function(rule) {
+        return '<span class="badge badge-' + esc(rule.decision || rule.type || 'monitor') + '">' +
+          esc(rule.name || rule.tool || 'rule') + '</span>';
+      }).join('') +
+      (rules.length > 6 ? '<span class="text-sm-dim">+' + (rules.length - 6) + ' more</span>' : '') +
+      '</div>';
+  } catch {
+    preview.innerHTML = '<span style="color:var(--red)">Could not preview template.</span>';
+  }
+}
+
+async function applySelectedTemplate() {
+  var select = document.getElementById('policy-template-select');
+  var result = document.getElementById('template-apply-result');
+  if (!storedApiKey) {
+    result.innerHTML = '<div style="color:var(--red)">Enter a tenant API key before applying a template.</div>';
+    return;
+  }
+  if (!select || !select.value) return;
+  result.textContent = 'Applying template...';
+  try {
+    var r = await fetch(API + '/api/v1/templates/' + encodeURIComponent(select.value) + '/apply', {
+      method: 'POST',
+      headers: getApiHeaders(),
+      signal: AbortSignal.timeout(15000)
+    });
+    var data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Failed to apply template');
+    currentPolicy = data.policy;
+    document.getElementById('policy-json').textContent = JSON.stringify(data.policy, null, 2);
+    renderPolicyRules(data.policy.rules || []);
+    setText('policy-title', (data.policy.id || 'tenant-policy') + ' (custom)');
+    setText('policy-summary', (data.policy.rules ? data.policy.rules.length : 0) + ' rules · default: ' + (data.policy.default || 'allow'));
+    result.innerHTML = '<div style="padding:12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px">Applied <strong>' + esc(data.templateName) + '</strong> as the active policy.</div>';
+    await loadAuditTrail();
+  } catch (e) {
+    result.innerHTML = '<div style="color:var(--red)">' + esc(e.message || 'Failed to apply template') + '</div>';
+  }
+}
+
+async function testPolicyCoverage() {
+  var input = document.getElementById('policy-coverage-tools');
+  var result = document.getElementById('policy-coverage-result');
+  if (!storedApiKey) {
+    result.innerHTML = '<div style="color:var(--red)">Enter a tenant API key before testing policy coverage.</div>';
+    return;
+  }
+  var tools = parseToolScope(input ? input.value : '');
+  if (tools.length === 0) {
+    result.innerHTML = '<div style="color:var(--red)">Enter at least one tool.</div>';
+    return;
+  }
+  result.textContent = 'Testing coverage...';
+  try {
+    var r = await fetch(API + '/api/v1/policy/coverage', {
+      method: 'POST',
+      headers: getApiHeaders(),
+      body: JSON.stringify({ tools: tools }),
+      signal: AbortSignal.timeout(15000)
+    });
+    var data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Coverage test failed');
+    result.innerHTML =
+      '<div style="padding:12px;background:var(--bg-card2);border:1px solid var(--border);border-radius:8px">' +
+      '<strong style="color:var(--text-bright)">' + esc(data.coverage) + '% covered</strong>' +
+      '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' +
+      (data.results || []).map(function(item) {
+        var badge = item.decision === 'block' ? 'badge-block' : item.decision === 'allow' ? 'badge-allow' : 'badge-monitor';
+        return '<span class="badge ' + badge + '">' + esc(item.tool) + ': ' + esc(item.decision) + '</span>';
+      }).join('') +
+      '</div></div>';
+  } catch (e) {
+    result.innerHTML = '<div style="color:var(--red)">' + esc(e.message || 'Coverage test failed') + '</div>';
   }
 }
 
@@ -1286,6 +1637,7 @@ function showPage(id, evt) {
   if (id === 'audit') { loadAuditTrail(); }
   if (id === 'agents') { loadAgents(); }
   if (id === 'policy') { loadPolicyPage(); }
+  if (id === 'sdk') { renderSdkPattern(); }
   if (id === 'readiness') { loadReadiness(); }
   if (id === 'webhooks') { loadWebhooks(); }
   if (id === 'ratelimits') { loadRateLimits(); }
@@ -1324,45 +1676,29 @@ async function doEvaluate() {
     return;
   }
 
-  // Kill switch: still call the real API (which will also block)
-  // But show immediate feedback
-  if (killActive) {
-    resultEl.innerHTML = `
-      <div style="text-align:center;padding:24px 0">
-        <div style="font-size:1.5rem;font-weight:700;color:var(--red);margin-bottom:8px">✕ BLOCKED</div>
-        <div style="font-family:var(--mono);font-size:0.85rem;color:var(--text-dim);margin-bottom:4px">rule: KILL_SWITCH</div>
-        <div style="color:var(--text-dim);font-size:0.85rem;margin-bottom:20px">Global kill switch is ACTIVE — all agent actions are blocked.</div>
-      </div>`;
-    evalCount++;
-    const event = {
-      time: new Date(), tool: esc(tool), params, result: 'block',
-      ruleId: 'KILL_SWITCH', riskScore: 1000,
-      reason: 'Kill switch active', durationMs: 0,
-      hash: 'killswitch'
-    };
-    allEvents.push(event);
-    updateStats();
-    addFeedItem(event);
-    addAuditRow(event);
-    return;
-  }
-
   btn.disabled = true;
   btn.textContent = '⏳ Evaluating...';
   const t0 = performance.now();
 
   try {
-    const r = await fetch(`${API}/api/v1/playground/evaluate`, {
+    var hasEvaluateKey = !!getRuntimeEvaluateKey();
+    const r = await fetch(hasEvaluateKey ? `${API}/api/v1/evaluate` : `${API}/api/v1/playground/evaluate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, tool, params })
+      headers: hasEvaluateKey ? getEvaluateHeaders() : { 'Content-Type': 'application/json' },
+      body: JSON.stringify(hasEvaluateKey ? { tool, params } : { sessionId, tool, params })
     });
     const data = await r.json();
+    if (!r.ok) throw new Error(data.error || data.message || 'Evaluation failed');
     const roundTrip = Math.round(performance.now() - t0);
-    renderResult(data, tool, params, roundTrip);
+    renderResult(normalizeEvaluationResponse(data), tool, params, roundTrip);
+    if (hasEvaluateKey) {
+      await setActivationStep('evaluation', true);
+      loadUsageStats();
+      loadAuditTrail();
+    }
   } catch (e) {
     resultEl.innerHTML =
-      `<div style="color:var(--red)">API Error: Connection failed</div>` +
+      `<div style="color:var(--red)">API Error: ${esc(e.message || 'Connection failed')}</div>` +
       `<div style="color:var(--text-dim);margin-top:8px">API may be cold-starting. Try again in 15s.</div>`;
     document.getElementById('cold-start-banner').classList.add('visible');
   } finally {
@@ -1385,13 +1721,13 @@ function updateStats() {
 }
 
 function renderResult(data, tool, params, roundTrip) {
-  const d = data.decision;
+  const d = data && data.decision ? data.decision : { result: 'monitor', reason: 'No decision returned', riskScore: 0, durationMs: 0 };
   const colors = { allow: 'var(--green)', block: 'var(--red)', monitor: 'var(--accent-hi)', require_approval: 'var(--amber)' };
   const icons = { allow: '✓ ALLOWED', block: '✕ BLOCKED', monitor: '◉ MONITORED', require_approval: '⏸ APPROVAL REQUIRED' };
   const c = colors[d.result] || 'var(--text)';
 
   evalCount++;
-  totalLatency += d.durationMs;
+  totalLatency += Number(d.durationMs || 0);
   const avgLatency = (totalLatency / evalCount).toFixed(2);
 
   // Use esc() for all API-derived text values (XSS prevention)
@@ -2589,10 +2925,75 @@ function onboardingPrev() {
 }
 
 function updateEvalCurl() {
-  var key = storedApiKey || 'YOUR_API_KEY';
-  var cmd = 'curl -X POST https://api.agentguard.tech/api/v1/evaluate \\\n  -H "x-api-key: ' + key + '" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"tool":"file_read","params":{"path":"/var/log/app.log"}}\'';
+  var key = runtimeAgentKey || 'ag_agent_...';
+  var cmd = 'export AGENTGUARD_API_KEY="' + key + '"\n\n' +
+    'curl -X POST https://api.agentguard.tech/api/v1/evaluate \\\n' +
+    '  -H "X-API-Key: $AGENTGUARD_API_KEY" \\\n' +
+    '  -H "Content-Type: application/json" \\\n' +
+    '  -d \'{"tool":"file_read","params":{"path":"/var/log/app.log"}}\'';
   var el = document.getElementById('ob-curl-cmd');
   if (el) el.textContent = cmd;
+}
+
+function sdkEnvLine() {
+  return 'export AGENTGUARD_API_KEY="' + (runtimeAgentKey || 'ag_agent_...') + '"';
+}
+
+function renderSdkPattern() {
+  var select = document.getElementById('sdk-pattern-select');
+  var output = document.getElementById('sdk-pattern-snippet');
+  if (!select || !output) return;
+  var snippets = {
+    http: sdkEnvLine() + '\n\ncurl -X POST https://api.agentguard.tech/api/v1/evaluate \\\n' +
+      '  -H "X-API-Key: $AGENTGUARD_API_KEY" \\\n' +
+      '  -H "Content-Type: application/json" \\\n' +
+      '  -d \'{"tool":"file_read","params":{"path":"/reports/q4.csv"}}\'',
+    typescript: 'const decision = await fetch("https://api.agentguard.tech/api/v1/evaluate", {\n' +
+      '  method: "POST",\n' +
+      '  headers: {\n' +
+      '    "Content-Type": "application/json",\n' +
+      '    "X-API-Key": process.env.AGENTGUARD_API_KEY!\n' +
+      '  },\n' +
+      '  body: JSON.stringify({ tool, params })\n' +
+      '}).then(r => r.json());\n\n' +
+      'if (decision.result === "block") throw new Error(decision.reason);',
+    python: 'import os\nimport requests\n\n' +
+      'decision = requests.post(\n' +
+      '    "https://api.agentguard.tech/api/v1/evaluate",\n' +
+      '    headers={"X-API-Key": os.environ["AGENTGUARD_API_KEY"]},\n' +
+      '    json={"tool": tool, "params": params},\n' +
+      ').json()\n\n' +
+      'if decision["result"] == "block":\n' +
+      '    raise RuntimeError(decision["reason"])',
+    langchain: 'async function guardedToolCall(toolName, params, callTool) {\n' +
+      '  const decision = await fetch("https://api.agentguard.tech/api/v1/evaluate", {\n' +
+      '    method: "POST",\n' +
+      '    headers: { "Content-Type": "application/json", "X-API-Key": process.env.AGENTGUARD_API_KEY! },\n' +
+      '    body: JSON.stringify({ tool: toolName, params })\n' +
+      '  }).then(r => r.json());\n\n' +
+      '  if (decision.result === "block") throw new Error(decision.reason);\n' +
+      '  return callTool(params);\n' +
+      '}',
+    crewai: 'def guarded_tool_call(tool_name, params, call_tool):\n' +
+      '    decision = requests.post(\n' +
+      '        "https://api.agentguard.tech/api/v1/evaluate",\n' +
+      '        headers={"X-API-Key": os.environ["AGENTGUARD_API_KEY"]},\n' +
+      '        json={"tool": tool_name, "params": params},\n' +
+      '    ).json()\n\n' +
+      '    if decision["result"] == "block":\n' +
+      '        raise RuntimeError(decision["reason"])\n' +
+      '    return call_tool(**params)',
+    'openai-agents': 'async function beforeToolCall(toolName, params) {\n' +
+      '  const decision = await fetch("https://api.agentguard.tech/api/v1/evaluate", {\n' +
+      '    method: "POST",\n' +
+      '    headers: { "Content-Type": "application/json", "X-API-Key": process.env.AGENTGUARD_API_KEY! },\n' +
+      '    body: JSON.stringify({ tool: toolName, params })\n' +
+      '  }).then(r => r.json());\n\n' +
+      '  if (decision.result === "block") throw new Error(decision.reason);\n' +
+      '  return decision;\n' +
+      '}'
+  };
+  output.textContent = snippets[select.value] || snippets.http;
 }
 
 function copyOnboardingCurl() {
@@ -2631,4 +3032,3 @@ function switchSdkLang(lang) {
 
 // Call after init so onboarding check happens after API key is loaded
 setTimeout(maybeShowOnboarding, 100);
-</script>

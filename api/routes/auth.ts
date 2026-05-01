@@ -20,6 +20,7 @@ import { signupRateLimit, recoveryRateLimit } from '../middleware/rate-limit.js'
 import {
   templateCache,
 } from '../lib/policy-engine-setup.js';
+import { PolicyDocumentSchema, type PolicyDocument, type PolicyAction } from '../../packages/sdk/src/core/types.js';
 import {
   getGlobalKillSwitch,
   setGlobalKillSwitch,
@@ -35,6 +36,96 @@ function generateApiKey(): string {
 
 function uuid(): string {
   return crypto.randomUUID();
+}
+
+function normalizeTemplateVersion(version: unknown): string {
+  const raw = typeof version === 'string' ? version : '1.0';
+  return /^\d+\.\d+\.\d+$/.test(raw) ? raw : `${raw}.0`;
+}
+
+function normalizeTemplateDecision(rule: Record<string, unknown>): PolicyAction {
+  const decision = String(rule['decision'] ?? rule['type'] ?? 'monitor');
+  if (decision === 'hitl_required' || decision === 'hitl') return 'require_approval';
+  if (decision === 'allow' || decision === 'block' || decision === 'monitor' || decision === 'require_approval') {
+    return decision;
+  }
+  return 'monitor';
+}
+
+function isConstraintObject(value: Record<string, unknown>): boolean {
+  const keys = new Set([
+    'eq',
+    'not_eq',
+    'in',
+    'not_in',
+    'contains',
+    'contains_any',
+    'pattern',
+    'regex',
+    'domain_not_in',
+    'exists',
+    'is_null',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+  ]);
+  return Object.keys(value).some((key) => keys.has(key));
+}
+
+function normalizeTemplateParams(params: Record<string, unknown>): Record<string, unknown> {
+  const normalized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const record = value as Record<string, unknown>;
+      normalized[key] = isConstraintObject(record) ? record : normalizeTemplateParams(record);
+    } else if (Array.isArray(value)) {
+      normalized[key] = { in: value.filter((item) => typeof item === 'string' || typeof item === 'number') };
+    } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      normalized[key] = { eq: value };
+    }
+  }
+  return normalized;
+}
+
+function templateToPolicyDocument(template: { id: string; name: string; version: string; description?: string; rules: Array<Record<string, unknown>> }, tenantId: string): PolicyDocument {
+  const rules = template.rules.map((rule, index) => {
+    const toolsRaw = rule['tool'];
+    const tools = Array.isArray(toolsRaw)
+      ? toolsRaw.filter((tool): tool is string => typeof tool === 'string' && tool.trim().length > 0)
+      : typeof toolsRaw === 'string'
+        ? [toolsRaw]
+        : ['*'];
+    const params = rule['params'];
+    const when: Array<Record<string, unknown>> = [
+      tools.includes('*') ? { tool: { matches: ['*'] } } : { tool: { in: tools } },
+    ];
+    if (params && typeof params === 'object' && !Array.isArray(params)) {
+      when.push({ params: normalizeTemplateParams(params as Record<string, unknown>) });
+    }
+    const action = normalizeTemplateDecision(rule);
+    return {
+      id: String(rule['name'] ?? `${template.id}-rule-${index + 1}`).slice(0, 100),
+      description: typeof rule['description'] === 'string' ? rule['description'] : undefined,
+      priority: (index + 1) * 10,
+      action,
+      severity: action === 'block' || action === 'require_approval' ? 'high' : 'medium',
+      when,
+      tags: [template.id],
+      riskBoost: action === 'block' ? 150 : action === 'require_approval' ? 100 : 0,
+      ...(action === 'require_approval' ? { approvers: ['security-team'], timeoutSec: 300, on_timeout: 'block' as const } : {}),
+    };
+  });
+
+  const candidate = {
+    id: `template-${template.id}-${tenantId}`,
+    name: template.name,
+    description: template.description,
+    version: normalizeTemplateVersion(template.version),
+    default: 'allow' as const,
+    rules,
+  };
+  return PolicyDocumentSchema.parse(candidate);
 }
 
 export function createAuthRoutes(
@@ -445,28 +536,46 @@ export function createAuthRoutes(
         ? template.rules.length
         : 0;
 
-      const prevHash = await getLastHash(db, tenantId);
-      await storeAuditEvent(
-        db,
-        tenantId,
-        null,
-        'template_apply',
-        'allow',
-        `template:${template.id}`,
-        0,
-        `Applied policy template: ${template.name} (${ruleCount} rules)`,
-        0,
-        prevHash,
-        null,
-      );
+      try {
+        const policyDoc = templateToPolicyDocument(template, tenantId);
+        const policyId = `custom-${tenantId}`;
+        const currentPolicy = await db.getCustomPolicy(tenantId);
+        let previousVersionSaved = false;
+        if (currentPolicy) {
+          await db.insertPolicyVersion(policyId, tenantId, currentPolicy);
+          previousVersionSaved = true;
+        }
+        await db.setCustomPolicy(tenantId, JSON.stringify(policyDoc));
 
-      res.json({
-        applied: true,
-        templateId: template.id,
-        templateName: template.name,
-        rulesInTemplate: ruleCount,
-        message: `Template '${template.name}' applied. ${ruleCount} rules available for reference. Integrate rules into your policy engine configuration.`,
-      });
+        const prevHash = await getLastHash(db, tenantId);
+        await storeAuditEvent(
+          db,
+          tenantId,
+          null,
+          'template_apply',
+          'allow',
+          `template:${template.id}`,
+          0,
+          `Applied policy template: ${template.name} (${ruleCount} rules)`,
+          0,
+          prevHash,
+          null,
+        );
+
+        res.json({
+          applied: true,
+          tenantId,
+          templateId: template.id,
+          templateName: template.name,
+          rulesInTemplate: ruleCount,
+          previousVersionSaved,
+          policy: policyDoc,
+          message: `Template '${template.name}' applied as the active tenant policy.`,
+        });
+      } catch (e) {
+        logger.error({ err: e instanceof Error ? e : String(e), templateId: template.id }, '[templates] apply error');
+        res.status(500).json({ error: 'Failed to apply policy template' });
+      }
     },
   );
 

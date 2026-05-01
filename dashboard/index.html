@@ -201,6 +201,36 @@
         </div>
       </div>
 
+      <div class="card card-no-mb-default" id="connection-status-card">
+        <div class="card-body card-body-p20">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px">
+            <div><div class="label">API</div><div class="mono-meta" id="status-api-version">Checking...</div></div>
+            <div><div class="label">Tenant key</div><div class="mono-meta" id="status-key">Not connected</div></div>
+            <div><div class="label">Runtime key</div><div class="mono-meta" id="status-runtime-key">Not created</div></div>
+            <div><div class="label">Kill switch</div><div class="mono-meta" id="status-kill">Unknown</div></div>
+            <div><div class="label">Last audit refresh</div><div class="mono-meta" id="status-audit-refresh">Never</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-no-mb-default" id="activation-card">
+        <div class="card-header">
+          <h2>First Protection Checklist</h2>
+          <span class="text-sm-dim">Connect a tenant key, create a runtime key, run one protected call, then verify audit.</span>
+        </div>
+        <div class="card-body">
+          <div id="activation-steps" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <button class="btn btn-primary" onclick="createActivationAgent()" id="activation-agent-btn">Create runtime key</button>
+            <button class="btn btn-primary" onclick="runActivationEvaluation()" id="activation-eval-btn">Run protected evaluation</button>
+            <button class="btn btn-ghost" onclick="confirmActivationAudit()" id="activation-audit-btn">Verify audit event</button>
+            <button class="btn btn-ghost" onclick="showPage('sdk')">Open snippets</button>
+          </div>
+          <div class="form-result" id="activation-result">Enter a tenant API key above to start.</div>
+          <pre class="code-pre hidden" id="activation-snippet"></pre>
+        </div>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-card">
           <div class="label">Total Evaluations</div>
@@ -339,10 +369,38 @@
     <!-- ── POLICY PAGE ────────────────────────────────── -->
     <div class="page" id="page-policy" role="main">
       <div class="main-header"><h1>📜 Policy Rules</h1></div>
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header"><h2>Templates</h2><span class="text-sm-dim">Preview, test, then apply a baseline</span></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="policy-template-select">Template</label>
+              <select class="filter-select" id="policy-template-select" onchange="previewSelectedTemplate()"></select>
+            </div>
+            <div id="template-preview" class="text-muted">Enter a tenant API key to load templates.</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+              <button class="btn btn-ghost" onclick="loadPolicyTemplates()">Reload templates</button>
+              <button class="btn btn-primary" onclick="applySelectedTemplate()">Apply template</button>
+            </div>
+            <div class="form-result" id="template-apply-result"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Coverage Test</h2><span class="text-sm-dim">Check tool decisions before changing agents</span></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="policy-coverage-tools">Tools</label>
+              <input class="inline-input" id="policy-coverage-tools" type="text" value="file_read, sudo, transfer_funds" placeholder="file_read, sudo, transfer_funds">
+            </div>
+            <button class="btn btn-primary" onclick="testPolicyCoverage()">Test coverage</button>
+            <div class="form-result" id="policy-coverage-result"></div>
+          </div>
+        </div>
+      </div>
       <div class="card">
         <div class="card-header">
-          <h2>demo-policy v1.0.0</h2>
-          <span class="text-sm-dim">7 rules · default: allow</span>
+          <h2 id="policy-title">demo-policy v1.0.0</h2>
+          <span class="text-sm-dim" id="policy-summary">7 rules · default: allow</span>
         </div>
         <div class="card-body no-pad" id="policy-rules">
           <div class="empty-state">Loading policy...</div>
@@ -453,11 +511,13 @@
             </div>
             <div>
               <label class="inline-label">Policy Scope (optional)</label>
-              <input class="inline-input" id="agent-scope" type="text" placeholder="read-only">
+              <input class="inline-input" id="agent-scope" type="text" placeholder="file_read, list_files">
+              <div class="field-hint">Comma-separated tools this runtime key may use</div>
             </div>
             <button class="btn btn-primary" onclick="createAgent()">Create</button>
           </div>
           <div class="form-result" id="agent-create-result"></div>
+          <pre class="code-pre hidden" id="agent-runtime-snippet"></pre>
         </div>
       </div>
       <div class="card">
@@ -692,11 +752,31 @@
           <p class="text-muted">Send any agent action to this endpoint to get a real-time policy decision.</p>
         </div>
       </div>
+      <div class="card">
+        <div class="card-header"><h2>Integration Pattern</h2><span class="text-sm-dim">Use a runtime agent key in code</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="sdk-pattern-select">Stack</label>
+            <select class="filter-select" id="sdk-pattern-select" onchange="renderSdkPattern()">
+              <option value="http">Raw HTTP</option>
+              <option value="typescript">TypeScript service</option>
+              <option value="python">Python service</option>
+              <option value="langchain">LangChain tool wrapper</option>
+              <option value="crewai">CrewAI tool wrapper</option>
+              <option value="openai-agents">OpenAI Agents guard call</option>
+            </select>
+          </div>
+          <pre class="code-pre" id="sdk-pattern-snippet"></pre>
+        </div>
+      </div>
       <div class="grid-2col">
         <div class="card">
           <div class="card-header"><h2>cURL</h2></div>
           <div class="card-body">
-            <pre class="code-pre">curl -X POST https://api.agentguard.tech/api/v1/evaluate \
+            <pre class="code-pre" id="sdk-curl-snippet">export AGENTGUARD_API_KEY="ag_agent_..."
+
+curl -X POST https://api.agentguard.tech/api/v1/evaluate \
+  -H "X-API-Key: $AGENTGUARD_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "tool": "http_post",
@@ -709,10 +789,12 @@
         <div class="card">
           <div class="card-header"><h2>Python</h2></div>
           <div class="card-body">
-            <pre class="code-pre">import requests
+            <pre class="code-pre" id="sdk-python-snippet">import os
+import requests
 
 r = requests.post(
     "https://api.agentguard.tech/api/v1/evaluate",
+    headers={"X-API-Key": os.environ["AGENTGUARD_API_KEY"]},
     json={
         "tool": "http_post",
         "params": {"destination": url}
@@ -726,11 +808,14 @@ if decision["result"] == "block":
         <div class="card">
           <div class="card-header"><h2>TypeScript</h2></div>
           <div class="card-body">
-            <pre class="code-pre">const res = await fetch(
+            <pre class="code-pre" id="sdk-typescript-snippet">const res = await fetch(
   "https://api.agentguard.tech/api/v1/evaluate",
   {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": process.env.AGENTGUARD_API_KEY!
+    },
     body: JSON.stringify({
       tool: "http_post",
       params: { destination: url }

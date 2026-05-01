@@ -53,6 +53,25 @@ describe('POST /api/v1/agents', () => {
     expect(res.body.policyScope).toEqual(['file_read', 'file_write']);
   });
 
+  it('creates agent with camelCase policyScope from browser clients', async () => {
+    const agentWithScope = { ...MOCK_AGENT, policy_scope: '["file_read","list_files"]' };
+    (mockDb.insertAgent as ReturnType<typeof vi.fn>).mockResolvedValue(agentWithScope);
+
+    const res = await request(app)
+      .post('/api/v1/agents')
+      .set('x-api-key', 'valid-key')
+      .send({ name: 'Browser Scoped Agent', policyScope: ['file_read', 'list_files'] });
+
+    expect(res.status).toBe(201);
+    expect(mockDb.insertAgent).toHaveBeenCalledWith(
+      'tenant-123',
+      'Browser Scoped Agent',
+      expect.stringMatching(/^ag_agent_/),
+      '["file_read","list_files"]',
+    );
+    expect(res.body.policyScope).toEqual(['file_read', 'list_files']);
+  });
+
   it('returns 401 when no API key provided', async () => {
     const res = await request(app)
       .post('/api/v1/agents')
